@@ -1,0 +1,83 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Human.Models.V3_Category.V3_CommuneResponse
+@(Html.X().Window()
+    .ID("CreateCommuneWindow")
+    .Title("Thêm mới Xã/Phường")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreateCommuneForm")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .MarginSpec("0 10 10 10")
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 100)
+            .DefaultAnchor("100%")
+            .Items(
+                                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên xã/phường" + Html.Required())
+                                    .EmptyText("Nhập tên xã/phường")
+                                    .BlankText("Bạn phải nhập tên xã/phường!")
+                                    .AllowBlank(false).AllowOnlyWhitespace(false),
+                                Html.X().ComboBoxFor(m => m.DistrictId)
+                                    .FieldLabel("Quận/Huyện" + Html.Required())
+                                    .Editable(false)
+                                    .EmptyText("Chọn quận/huyện")
+                                        .Store(
+                                            Html.X().Store()
+                                            .AutoLoad(true)
+                                            .ID("DistrictCbox")
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadData", "v3_District", new { area = "Human" }))
+                                                    .Reader(
+                                                        Html.X().JsonReader().Root("data"))
+                                        )
+                                        .Model(
+                                            Html.X().Model()
+                                                .Fields(
+                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                                )
+                                        )
+                                    )
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createCommuneSubmit(false)"),
+        Html.X().ButtonSaveAndExit().Handler("createCommuneSubmit(true)"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var createCommuneSubmit = function (exit) {
+        App.CreateCommuneForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadCommune();
+                    if (exit) {
+                        App.CreateCommuneWindow.close();
+                    }
+                    else {
+                        App.CreateCommuneForm.reset();
+                        App.TabMain.setActiveTab('tabCommuneCreate');
+                    }
+                }
+            }
+        });
+    };
+</script>

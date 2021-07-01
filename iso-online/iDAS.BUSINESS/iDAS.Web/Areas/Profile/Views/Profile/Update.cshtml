@@ -1,0 +1,259 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileItem
+@(
+ Html.X().Window()
+    .ID("winEditProfile")
+    .Title("Sửa thông tin hồ sơ")
+    .Icon(Icon.Pencil)
+          .Width(870)
+        .BodyPadding(6)
+        .Border(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .AutoScroll(true)
+        .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .ID("frEditProfile")
+            .Frame(true)
+            .Items(
+              Html.X().HiddenFor(m => m.ID).ID("hdID"),
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                     Html.X().TextFieldFor(m => m.Code)
+                        .ColumnWidth(0.5)
+                        .ID("Code").FieldLabel("Mã hồ sơ" + Html.Required())
+                        .TabIndex(1)
+                        .MaxLength(50)
+                        .AllowBlank(false)
+                        .AllowOnlyWhitespace(false)
+                        .BlankText("Mã hồ sơ bắt buộc nhập!"),
+                    Html.X().ComboBoxFor(m => m.SecurityID)
+                        .ID("cbSecurity")
+                        .ColumnWidth(0.5)
+                        .MarginSpec("0 0 0 5")
+                        .FieldLabel("Mức độ bảo mật" + Html.Required())
+                        .TabIndex(2)
+                            .EmptyText("Chọn mức độ mật của hồ sơ...")
+                        .AllowBlank(false)
+                        .BlankText("Mức độ mật bắt buộc chọn!")
+                        .QueryMode(DataLoadMode.Local)
+                        .ForceSelection(true)
+                       .LabelWidth(110)
+                        .TriggerAction(TriggerAction.All)
+                        .DisplayField("Name")
+                        .ValueField("ID")//GetDataCboSecurity
+                        .Tpl(
+                        @<text>
+                            <tpl for=".">
+                                <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                    <div style="width: 50px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left">&nbsp;{Name}</div>
+                                </div>
+                            </tpl>
+                        </text>)
+                        .Store(
+                            Html.X().Store()
+                                .ID("stProfSecurity")
+                                .AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                            new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                        )
+                                        )
+                                .Proxy(
+                                    Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataCboSecurity", "SecurityLevel", new { area = "Profile" }))//ham load dl cho combobox
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                )
+                                .Listeners(l => l.Change.Handler = "getColor(App.cbSecurity, App.stProfSecurity);")
+                ),
+                Html.X().TextFieldFor(m => m.Name)
+                    .ID("txtName")
+                    .FieldLabel("Tên hồ sơ" + Html.Required())
+                    .TabIndex(3)
+                     .AllowOnlyWhitespace(false)
+                    .MaxLength(200)
+                    .AllowBlank(false)
+                    .BlankText("Tên hồ sơ bắt buộc nhập!"),
+                       Html.X().Container().Layout(LayoutType.Column).ColSpan(2).Items(
+                Html.X().ComboBoxFor(m => m.CategoryID)
+                            .ID("cbCategory")
+                            .FieldLabel("Danh mục hồ sơ" + Html.Required())
+                            .TabIndex(4)
+                            .ColumnWidth(0.7)
+                            .AllowBlank(false).BlankText("Danh mục hồ sơ bắt buộc chọn!")
+                            .EmptyText("Chọn danh mục hồ sơ...")
+                            .QueryMode(DataLoadMode.Local)
+                            .ForceSelection(true)
+                            .TriggerAction(TriggerAction.All)
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .Store(
+                                Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                            )
+                                            )
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataCate"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                )
+                            .Triggers(
+                                Html.X().FieldTrigger().Icon(TriggerIcon.SimpleEdit)
+                                )
+                                .Listeners(ls =>
+                                {
+                                    ls.BeforeSelect.Handler = "return false;";
+                                    ls.TriggerClick.Fn = "ShowFrmDocCate";
+                                }),
+                Html.X().DateFieldFor(m => m.ReceivedAt).LabelWidth(90).MarginSpec("0 0 0 5").FieldLabel("Ngày sử dụng" + Html.Required()).Listeners(ls => ls.Change.Handler = "App.dfNotUseAt.setMinValue(this.value)").AllowBlank(false).ColumnWidth(0.3)
+                                ),
+                Html.X().CheckboxGroupFor(m => m.StorageFormID, new List<Checkbox.Config> {
+                    new Checkbox.Config{BoxLabel = "Bản mềm", InputValue =iDAS.Items.StorageForm.SoftCopy.ToString() , Checked=true, TabIndex=5},
+                    new Checkbox.Config{BoxLabel = "Bản cứng", InputValue =iDAS.Items.StorageForm.HardCopy.ToString(), TabIndex=6}
+                        }).FieldLabel("Loại Hồ sơ" + Html.Required())
+                    .ID("rabgrStore")
+                    .ColumnWidth(0.5)
+                    .AllowBlank(false)
+                    .BlankText("Loại hồ sơ bắt buộc chọn!"),
+                   Html.X().FieldSet()
+                        .Title("Thời gian lưu trữ")
+                        .Layout(LayoutType.Form)
+                        .PaddingSpec("-3 5 5 5")
+                            .MarginSpec("-9 0 10 0")
+                        .Items(
+                            Html.X().Container().Layout(LayoutType.Column).Items(
+
+                                 Html.X().NumberFieldFor(m => m.StoragePartTime)
+                                        .ID("txtStoreDepartment")
+                                        .FieldLabel("Tại bộ phận" + Html.Required())
+                                        .EmptyText("Nhập thời gian lưu trữ Hồ sơ tại bộ phận...")
+                                        .TabIndex(7)
+                                        .LabelWidth(105)
+                                        .ColumnWidth(0.5).AllowBlank(false).BlankText("Thời gian lưu trữ tại bộ phận bắt buộc nhập!")
+                                        .MinValue(0).MinText("Dữ liệu nhập vào trường Thời gian lưu trữ Hồ sơ phải lớn hơn 0")
+                                        .InvalidText("Dữ liệu nhập vào phải lớn hơn hoặc bằng không!").AllowDecimals(false)
+                                        .MaxValue(System.Int32.MaxValue).MaxText("Dữ liệu nhập vào trường Thời gian lưu trữ Hồ sơ phải nhỏ hơn giá trị 2.147.483.647"),
+                                Html.X().Label().Text("(tháng). Nếu thời gian lưu là vĩnh viễn thì nhập giá trị 0.").MarginSpec("2 0 0 10").ColumnWidth(0.5)
+                            ),
+                                Html.X().Container().Layout(LayoutType.Column).Items(
+
+                                Html.X().NumberFieldFor(m => m.StorageRoomTime)
+                                    .ID("txtStoreTime")
+                                    .FieldLabel("Tại phòng lưu trữ")
+                                    .EmptyText("Nhập thời gian lưu trữ Hồ sơ tại phòng lưu trữ...")
+                                    .TabIndex(8)
+                                    .ColumnWidth(0.5)
+                                    .MinValue(0).MinText("Dữ liệu nhập vào trường Thời gian lưu trữ Hồ sơ phải lớn hơn 0")
+                                    .MaxValue(System.Int32.MaxValue).MaxText("Dữ liệu nhập vào trường Thời gian lưu trữ Hồ sơ phải nhỏ hơn giá trị 2.147.483.647")
+                                    .InvalidText("Dữ liệu nhập vào phải lớn hơn hoặc bằng không!").AllowDecimals(false)
+                                    .LabelWidth(105),
+                                Html.X().Label().Text("(tháng). Nếu thời gian lưu là vĩnh viễn thì nhập giá trị 0.").MarginSpec("2 0 0 10").ColumnWidth(0.5)
+                            )
+                        ),
+                Html.X().Container().Layout(LayoutType.Column).Height(113).MarginSpec("-9 0 0 0").Items(
+                Html.X().Container().Layout(LayoutType.Form).ColumnWidth(0.6).MarginSpec("0 5 0 0").Items(
+                Html.X().TextAreaFor(m => m.StorageRoomPosition)
+                    .ID("txtStorageRoomPosition")
+                    .FieldLabel("Vị trí lưu")
+                    .Height(32)
+                    .Flex(1)
+                    .EmptyText("Nhập vị trí lưu trữ Hồ sơ...")
+                    .TabIndex(10),
+                Html.X().FileUploadFieldFor(m => m.AttachmentFile)),
+                Html.X().EmployeeFieldFor(m => m.EmployeeInfo).AllowBlank(false).Title("Người lưu trữ" + Html.Required()).MarginSpec("-6 0 0 0").ID("fsEmployee").ColumnWidth(0.4)),
+                Html.X().TextAreaFor(m => m.Note)
+                        .ID("txtDescription")
+                            .MarginSpec("-9 0 0 0")
+                        .FieldLabel("Ghi chú")
+                        .TabIndex(11).MinHeight(70).Flex(1)
+                        .MaxLength(1000),
+                            Html.X().Container().Layout(LayoutType.Column).Items(
+                            Html.X().CheckboxFor(m => m.IsUse).BoxLabel("Sử dụng").ColumnWidth(0.7).Listeners(ls => { ls.Change.Handler = "checkNotUse(this);"; }).MarginSpec("0 5 0 115").HideLabel(true),
+                            Html.X().DateFieldFor(m => m.NotUseAt).FieldLabel("Ngày không sử dụng").ID("dfNotUseAt").Disabled(Model.IsUse ? true : false).MinDate(Model.ReceivedAt.HasValue?Model.ReceivedAt.Value:new DateTime()).MarginSpec("0 0 0 0").ColumnWidth(0.3)
+                       )
+                   )
+                )
+        .Buttons(
+              Html.X().Button()
+                .ID("btnSave")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(12)
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frEditProfile";
+                        de.Click.ExtraParams.Add(new { isEdit = true });
+                        de.Click.Url = Url.Action("Update");
+                        de.Click.Before = @"if (!#{frEditProfile}.getForm().isValid()) { return false; }";
+                        de.Click.EventMask.ShowMask = true;
+                        de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                        de.Click.Failure = @"Ext.Msg.show({
+                                        title   : 'Thông báo',
+                                        msg     : 'Lỗi khi cập nhật dữ liệu.',
+                                        minWidth: 200,
+                                        modal   : true,
+                                        icon    : Ext.Msg.ERROR,
+                                        buttons : Ext.Msg.OK
+                                    });";
+                        de.Click.Success = "if(result.result){this.up('window').close();}";
+                    }),
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var checkNotUse = function (obj) {
+        if (obj.value) {
+            App.dfNotUseAt.setValue(null);
+            App.dfNotUseAt.allowBlank = true;
+            App.dfNotUseAt.setDisabled(true);
+        } else {
+            App.dfNotUseAt.setDisabled(false);
+            App.dfNotUseAt.allowBlank = false;
+            App.dfNotUseAt.setValue(new Date());
+        }
+    };
+    function onSelectEmployee(records) {
+        if (records.length == 1) {
+            App.nameApproval.setValue(records[0].get('Name'));
+            App.hdfEmployeeApproveId.setValue(records[0].get('ID'));
+            App.avatarApproval.setImageUrl(records[0].get('Avatar'));
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showDepartment = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowDepartment", "Profile", new { Area = "Document" }, null))'
+        });
+    };
+    var fillDepartent = function (id) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            App.cbDepartment.setValue(parseInt(id));
+            App.winChoiceDepartment.close();
+        }
+    };
+</script>

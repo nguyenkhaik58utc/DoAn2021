@@ -1,0 +1,96 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@{
+    var cateId = ViewData["CateID"];
+}
+@(Html.X().Window()
+          .ID("winCoppyDataCriteria")
+          .Title("Danh sách bộ tiêu chí đánh giá sử dụng lại")
+          .Icon(Icon.DatabaseCopy)
+          .Height(360)
+          .Width(650)
+          .BodyPadding(0)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+               Html.X().GridPanel()
+                .Region(Region.Center)
+                .ID("grCoppyCateCriteria")
+                .Border(false)
+                .RowLines(true)
+                .ColumnLines(true)
+                .ForceFit(true)
+                     .Store(Html.X().Store().ID("stCoppyCategoryCriteria")
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy()
+                                           .Url(Url.Action("GetDataCoppy", "AuditCriteriaCategoryKPI", new { area = "Human" }))
+                                           .Reader(Html.X().JsonReader()
+                                           .Root("data")
+                                           )
+                                    )
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("cateId", cateId.ToString(), ParameterMode.Value));
+                                    })
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name")
+                                 )
+                             )
+                        )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                    Html.X().Column()
+                            .Text("Bộ tiêu chí")
+                            .Align(Alignment.Left)
+                            .DataIndex("Name")
+                            .Flex(1)
+                            )
+                            .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            )
+                    .Plugins(
+                        Html.X().CellEditing()
+                            .ClicksToEdit(1)
+                        )
+                    .BottomBar(Html.X().CustomPagingToolbar())
+            )
+            .Buttons(
+                Html.X().Button()
+                    .ID("btnSave")
+                    .Text("Tiến hành coppy dữ liệu")
+                    .Icon(Icon.DatabaseSave)
+                    .Handler("coppyData();"),
+                Html.X().Button()
+                    .ID("btnCancel")
+                    .Text("Hủy")
+                    .Icon(Icon.Cancel)
+                    .TabIndex(20)
+                    .Handler("this.up('window').close();")
+            )
+)
+
+<script type="text/javascript">
+    var coppyData = function () {
+        var records = App.grCoppyCateCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("CoppyData", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+            var params = {
+                id: '@cateId',
+                cateId:records[0].get('ID')
+                };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

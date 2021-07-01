@@ -1,0 +1,233 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model iDAS.Items.ActionItem
+@{
+    var roleId = ViewData["roleId"] != null ? ViewData["roleId"] : 0;
+    var roleName = ViewData["roleName"] != null ? ViewData["roleName"].ToString() : "";
+    string SystemCode = "CENTER";
+}
+@(Html.X().Store()
+    .ID("StoreModules")
+    .AutoLoad(true)
+    .Proxy(
+        Html.X().AjaxProxy()
+            .Url(Url.Action("LoadModules", "Module", new { area = "Systems" }))
+            .ActionMethods(am => am.Read = HttpMethod.POST)
+            .Reader(Html.X().JsonReader().Root("data"))
+        )
+    .Parameters(ps => ps.Add(new StoreParameter("systemCode", SystemCode, ParameterMode.Value)))
+    .Listeners(ls => ls.Load.Handler = "App.ComboboxModules.select(App.ComboboxModules.store.getAt(0))")
+    .Model(Html.X().Model()
+        .Fields(
+            new ModelField("Name"),
+            new ModelField("Code")
+        )
+    )
+)
+@(
+ Html.X().Window()
+        .ID("winPermission")
+        .Title("Phân quyền chức năng cho chức danh [" + roleName + "]")
+        .Icon(Icon.Key)
+        .Width(1000)
+        .Height(450)
+        .Maximized(true)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Layout(LayoutType.Border)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+                Html.X().GridPanel()
+                    .ID("GridPanelFunctions")
+                    .Title("Danh sách nhóm chức năng hệ thống")
+                    .ColumnLines(true)
+                    .Border(true)
+                    .Header(false)
+                    .MarginSpec("1 1 1 1")
+                    .ForceFit(true)
+                    .Region(Region.Center)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                        Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                        Html.X().ComboBox()
+                                .FieldLabel("<b>Module</b>")
+                                .MarginSpec("0 5 0 5")
+                                .LabelWidth(50)
+                                .Editable(false).Width(300).ID("ComboboxModules")
+                                .StoreID("StoreModules")
+                                .DisplayField("Name").ValueField("Code")
+                                .Listeners(ls => ls.Change.Handler = "App.GridPanelFunctions.getStore().load();")
+                            )
+                    )
+                    .Store(
+                        Html.X().StoreForModel()
+                            .ID("StoreFunctions")
+                            .AutoLoad(false)
+                            .PageSize(10)
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("moduleCode", "App.ComboboxModules.getValue()", ParameterMode.Raw));
+                                        ps.Add(new StoreParameter("systemCode", SystemCode, ParameterMode.Value));
+                                    }
+                            )
+                            .Proxy(
+                                Html.X().AjaxProxy()
+                                    .Url(Url.Action("LoadFunctions", "Function", new { area = "Systems" }))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                    .IDParam("ID")
+                            )
+                    )
+                    .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT").Width(33)
+                                    .Align(Alignment.Center)
+                                    .StyleSpec("font-weight: bold; text-align: center;"),
+                            Html.X().Column()
+                                    .DataIndex(Model, m => m.Name)
+                                    .Text("Chức năng")
+                                    .Align(Alignment.Left)
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Flex(1)
+                        )
+                            .SelectionModel(
+                                Html.X().CheckboxSelectionModel()
+                                        .Mode(SelectionMode.Single)
+                                            .Listeners(ls => ls.Select.Handler = "App.GridPanelActions.getStore().load();")
+                                        )
+                            .BottomBar(
+                        Html.X().PagingToolbar()
+                                .EmptyMsg("Hiện không có dữ liệu")
+                                .NextText("Trang kế tiếp")
+                                .PrevText("Trang trước")
+                                .LastText("Trang cuối cùng")
+                                .FirstText("Trang đầu tiên")
+                                .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                                .BeforePageText("Trang")
+                                .AfterPageText("của {0}")
+                                .RefreshText("Tải lại Dữ liệu")
+                                .Items(
+                                    Html.X().Label("Số bản ghi trên 1 trang"),
+                                    Html.X().ToolbarSpacer(10),
+                                    Html.X().ComboBox()
+                                        .Width(50)
+                                        .Items("10", "20", "30", "50", "100")
+                                        .SelectedItems("10")
+                                        .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                                )
+                                .Plugins(Html.X().ProgressBarPager())
+                            )
+        ,
+                Html.X().GridPanel()
+                        .ID("GridPanelActions")
+                    .MarginSpec("0 0 0 0")
+                    .ColumnLines(true)
+                        .MarginSpec("1 1 1 5")
+                    .Icon(Icon.TextListBullets)
+                    .Region(Region.East)
+                        .Width(315)
+                    .Title("CHỨC NĂNG THUỘC HỆ THỐNG")
+                    .Header(false)
+                    .Border(true)
+                    .Store(
+                            Html.X().Store()
+                                .Listeners(ls => ls.Load.Handler = "GetValueHeader();")
+                                .RemotePaging(true)
+                                .AutoLoad(false)
+                                .ID("StorePermissions")
+                                .PageSize(100)
+                                .Model(
+                                        Html.X().Model()
+                                                .IDProperty("ID")
+                                                .Fields(
+                                                        new ModelField("ID"),
+                                                            new ModelField("Name"),
+                                                            new ModelField("Permission"),
+                                                            new ModelField("IsEnable")
+                                                        )
+                                         )
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPermissions")).Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("roleId", roleId.ToString(), ParameterMode.Raw));
+                                        ps.Add(new StoreParameter("moduleCode", "App.GridPanelFunctions.selModel.getSelection().length > 0 ? App.GridPanelFunctions.selModel.getSelection()[0].get('ModuleCode') : 0", ParameterMode.Raw));
+                                        ps.Add(new StoreParameter("funtionCode", "App.GridPanelFunctions.selModel.getSelection().length > 0 ? App.GridPanelFunctions.selModel.getSelection()[0].get('Code') : 0", ParameterMode.Raw));
+                                    }
+                                    )
+                                )
+                            .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Width(33).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("Name").Text("Quyền thao tác").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Left).Flex(1),
+                                    Html.X().CheckColumn().DataIndex("IsEnable").Text("Cho phép").HideTitleEl(true).Align(Alignment.Center).Editable(true).Width(60)
+                                            .HeaderItems(
+                                                        Html.X().Checkbox().ID("HeadCheckBoxID").Hidden(true)
+                                                                .Listeners(ls => ls.Change.Handler = "updatePermissions(this)")
+                                            )
+                            )
+                            .Plugins(Html.X().CellEditing()
+                            .Listeners(ls =>
+                            {
+                                ls.Edit.Fn = "onEditPermission";
+                            }))
+                            .Features(
+                                Html.X().Grouping()
+                                .HideGroupedHeader(true).GroupHeaderTplString("{name} ({[values.rows.length]})"),
+                                Html.X().RowWrap()
+                            )
+
+        )
+        .Buttons(
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Thoát")
+                .Handler("this.up('window').close();")
+        )
+)
+<script>
+    var updateUrl = '@(Url.Action("UpdatePermission"))';
+    var onEditPermission = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: updateUrl,
+                params: {
+                    data: e.record.data,
+                    roleId: App.RoleID.value
+                }
+            });
+        };
+    };
+    var GetValueHeader = function () {
+        var perData = App.GridPanelActions.getStore().getRange();
+        var value = true;
+        Ext.each(perData, function (record) {
+            if (record.data.IsEnable == false) { value = false; };
+        });
+        App.HeadCheckBoxID.hide();
+        App.HeadCheckBoxID.setValue(value);
+        App.HeadCheckBoxID.show();
+    };
+    var updatePermissions = function (obj) {
+        if (obj.hidden == false) {
+            var value = obj.value;
+            var perData = App.GridPanelActions.getStore().getRange();
+            var gridData = new Array();
+            Ext.each(perData, function (record) {
+                if (record.data.IsEnable != value)
+                    gridData.push(record.data.ID);
+            });
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdatePermissions"))',
+                params: {
+                    data: gridData,
+                    roleId: App.RoleID.value,
+                    isEnable: value
+                }
+            });
+        };
+    };
+</script>

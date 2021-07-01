@@ -1,0 +1,153 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.LibraryItem
+
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("LibraryPanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateLibrary").Icon(Icon.Add).Handler("showCreateLibrary();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateLibrary").Icon(Icon.Pencil).Handler("showUpdateLibrary();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteLibrary").Icon(Icon.Delete).Handler("showDeleteLibrary();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailLibrary").Icon(Icon.Zoom).Handler("showDetailLibrary();").Disabled(true),
+                Html.X().Button().Text("File nội dung").ID("btnViewLibraryContent").Icon(Icon.ImageMagnify).Handler("showViewLibraryContent();").Disabled(true),
+                Html.X().ToolbarFill(),
+                Html.X().ComboBox().ID("cboLibraryCategory")
+                .QueryMode(DataLoadMode.Local)
+                .EmptyText("Chọn Danh mục tin tức ...")
+                .DisplayField("Name")
+                .ValueField("ID")
+                .FieldLabel("<b>Danh mục</b>")
+                .MarginSpec("0 10 0 0")
+                .Flex(1)
+                .LabelWidth(60)
+                .Editable(false)
+                .Store(
+                    Html.X().Store().AutoLoad(true)
+                    .Model(
+                        Html.X().Model().IDProperty("ID")
+                        .Fields(
+                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                        )
+                    )
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadLibraryCategories")).Reader(Html.X().JsonReader().Root("data")))
+                    .Listeners(ls => ls.Load.Handler = "App.cboLibraryCategory.select(App.cboLibraryCategory.store.getAt(0))")
+                )
+                .Listeners(ls => ls.DirtyChange.Handler = "reloadLibrary();")
+                .Listeners(ls => ls.Select.Handler = "reloadLibrary();")
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .AutoLoad(false)
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .Parameters(Html.X().StoreParameter().Name("LibraryCategoryId").Value("App.cboLibraryCategory.value").Mode(ParameterMode.Raw))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectLibrary()")
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex("ID").Hidden(true),
+            Html.X().Column().Text("Chủ đề").DataIndex("Name").StyleSpec("font-weight: bold;text-align: center").Width(250).Wrap(true),
+            Html.X().Column().Text("Mô tả").DataIndex("Description").StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex("IsActive").StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex("CreateAt").Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex("UpdateAt").Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeLibrary()")
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var urlCreateLibrary = '@Url.Action("Create", "Library", new { area = "Web" })';
+    var urlUpdateLibrary = '@Url.Action("Update", "Library", new { area = "Web" })';
+    var urlDeleteLibrary = '@Url.Action("Delete", "Library", new { area = "Web" })';
+    var urlDetailLibrary = '@Url.Action("Detail", "Library", new { area = "Web" })'; 
+    var urlViewLibraryContent = '@Url.Action("Index", "LibraryContent", new { area = "Web" })'; 
+
+    var getLibrarySelection = function () {
+        return App.LibraryPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadLibrary = function () {
+        App.LibraryPanel.getStore().reload();
+        deSelectLibrary();
+    }
+    var deSelectLibrary = function () {
+        App.LibraryPanel.selModel.lastSelected = null;
+        selectionChangeLibrary();
+    }
+    var showCreateLibrary = function () {
+        var url = urlCreateLibrary;
+        var libraryCategoryId = App.cboLibraryCategory.value;
+        var params = { libraryCategoryId: libraryCategoryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateLibrary = function () {
+        var url = urlUpdateLibrary;
+        var record = getLibrarySelection();
+        var libraryId = record == null ? 0 : record.data.ID;
+        var params = { libraryId: libraryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteLibrary = function () {
+        var url = urlDeleteLibrary;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getLibrarySelection();
+                            var libraryId = record == null ? 0 : record.data.ID;
+                            var params = { libraryId: libraryId };
+                            onDirectMethod(url, params, 'post', reloadLibrary);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailLibrary = function () {
+        var url = urlDetailLibrary;
+        var record = getLibrarySelection();
+        var libraryId = record == null ? 0 : record.data.ID;
+        var params = { libraryId: libraryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showViewLibraryContent = function () {
+        var url = urlViewLibraryContent;
+        onDirectMethod(url, null, 'get');
+    };
+    var selectionChangeLibrary = function () {
+        var record = getLibrarySelection();
+        App.btnUpdateLibrary.setDisabled(record == null);
+        App.btnDeleteLibrary.setDisabled(record == null);
+        App.btnDetailLibrary.setDisabled(record == null); 
+        App.btnViewLibraryContent.setDisabled(record == null); 
+    };
+</script>

@@ -1,0 +1,106 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.RecruimentProfileItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin hồ sơ tuyển dụng")
+    .Icon(Icon.Add)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Họ tên *"),
+                            Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").Height(80),
+                            Html.X().TextFieldFor(m => m.Address).FieldLabel("Khu vực")
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true)
+                        )
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().DateFieldFor(m => m.RefreshAt).ColumnWidth(0.5).FieldLabel("Ngày đăng").Value(DateTime.Now),
+                        Html.X().Container().ColumnWidth(0.1),
+                        Html.X().NumberFieldFor(m => m.Quatity).ColumnWidth(0.4).FieldLabel("Số lượng").Value(0)
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().DateFieldFor(m => m.FinishAt).ColumnWidth(0.5).FieldLabel("Ngày kết thúc").Value(DateTime.Now)
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().CheckboxFor(m => m.IsFirst).ColumnWidth(0.4).FieldLabel("Hiển thị").BoxLabel("Luôn ở trang đầu"),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.3).HideLabel(true).Value(true).BoxLabel("Kích hoạt")
+                    )
+                ),
+                Html.X().Panel().Title("Nội dung").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Fit)
+                .Items(
+                    Html.X().Button().Icon(Icon.ImageEdit).Hidden(true).ID("hdImage"),
+                    Html.X().HtmlEditorFor(m => m.Html).HideLabel(true).ID("txtHtml")
+                    .Listeners(ls => ls.Render.Handler = "renderEditor(this)")
+                ),
+                Html.X().Panel().Title("Liên hệ").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().TextFieldFor(m => m.ContactName).FieldLabel("Người liên hệ"),
+                    Html.X().TextFieldFor(m => m.ContactPhone).FieldLabel("Số điện thoại"),
+                    Html.X().TextFieldFor(m => m.ContactMail).FieldLabel("Email liên hệ")
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "this.up('window').close(); reloadRecruiment();";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+
+<script type="text/javascript">
+     function renderEditor(htmlEditor) {
+        var toolbar = htmlEditor.getToolbar();
+        toolbar.add({ handler: function () { BrowseImage(); }, iconCls: "icon-imageedit", text: "", tooltip: '<b> Insert Image</b><br>Upload a new Image</br>' });
+    };
+    function BrowseImage() {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("frmBrowseImage", "News", new { Area = "Web" }, null))'
+        });
+    };
+    function insertHandler(htmlEditor) {
+        var urlImage = App.urlImage.getValue();
+        App.txtHtml.insertAtCursor(urlImage);
+    };
+</script>

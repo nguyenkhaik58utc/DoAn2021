@@ -1,0 +1,94 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.EquipmentProductionErrorItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới thông tin sự cố của thiết bị";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật thông tin sự cố của thiết bị";
+    }
+}
+@(Html.X().Window()
+.ID("WinEquipmentProductionError")
+.Title(title)
+.Icon(IconView)
+.Height(1)
+.Maximized(true)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmEquipmentErrorUpdate")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .Border(false)
+    .MarginSpec("0 -4 -3 -4")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 120; })
+    .Items(
+            X.HiddenFor(m => m.ID).ID("hdfEquipmentError"),
+            X.HiddenFor(m => m.EquipmentProductionID).ID("hdfEquipmentProduction"),
+            X.EmployeeFieldFor(m => m.HumanEmployee).AllowBlank(false)
+                .Title("Người xử lý" + Html.Required())
+                .ColumnWidth(1)
+                .MarginSpec("5 8 5 8"),
+            X.DepartmentFieldFor(m => m.HumanDepartment).AllowBlank(false)
+                .FieldLabel("Phòng ban sử dụng" + Html.Required())
+                .ColumnWidth(1)
+                .MarginSpec("5 8 5 8"),
+            X.DateTimeFieldFor(m => m.Time).FieldLabel("Thời gian xảy ra")
+                 .ColumnWidth(0.4).MarginSpec("5 8 5 8"),
+            X.Container().ColumnWidth(1).Layout(LayoutType.Column).MarginSpec("0 4 0 4")
+                    .Items(
+                            X.TextAreaFor(m => m.Cause).FieldLabel("Mô tả").LabelAlign(LabelAlign.Top)
+                                    .ColumnWidth(0.5).MarginSpec("0 2 0 0").Height(150),
+                            X.TextAreaFor(m => m.Solution).FieldLabel("Biện pháp").LabelAlign(LabelAlign.Top)
+                                    .ColumnWidth(0.5).MarginSpec("0 2 0 0").Height(150)
+            ),
+            X.FieldSet().Title("Thông tin khắc phục").ColumnWidth(1).Layout(LayoutType.Column)
+                .Items(
+                     X.Container().ColumnWidth(0.4).Layout(LayoutType.Column).MarginSpec("0 4 0 4")
+                    .Items(
+                            X.DateTimeFieldFor(m => m.StartTime).FieldLabel("Bắt đầu")
+                                    .ColumnWidth(1).MarginSpec("15 8 5 8"),
+                            X.DateTimeFieldFor(m => m.EndTime).FieldLabel("Kết thúc")
+                                    .ColumnWidth(1).MarginSpec("5 8 5 8"),
+                            X.CheckboxFor(m => m.IsFixed).FieldLabel("Đã khắc phục").BoxLabel("Xác nhận").ColumnWidth(1).MarginSpec("5 8 5 8")
+                      ),
+                    X.TextAreaFor(m => m.Problem).FieldLabel("Những tồn tại cần khắc phục tiếp")
+                            .LabelAlign(LabelAlign.Top).LabelWidth(250)
+                            .ColumnWidth(0.6).Margin(0).Height(100)
+                )
+            )
+    )
+    .Buttons(
+        Html.X().Button()
+                        .Text("Lưu lại")
+                        .Icon(Icon.DatabaseSave)
+                        .DirectEvents(de =>
+                                    {
+                                        de.Click.Before = @"if (!App.frmEquipmentErrorUpdate.getForm().isValid()) { return false; }; ";
+                                        de.Click.ExtraParams.Add(new { exit = true });
+                                        de.Click.Url = Url.Action("Update", "EquipmentProductionError", new { Area = "Equipment" });
+                                        de.Click.EventMask.ShowMask = true;
+                                        de.Click.Success = "this.up('window').close(); App.StoreError.reload();";
+                                        de.Click.FormID = "frmEquipmentErrorUpdate";
+                                    })
+        , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

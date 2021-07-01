@@ -1,0 +1,788 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Human.Controllers
+
+@model iDAS.Web.Areas.Human.Model.V3_HumanEmployeeResponse
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+    var listPermission = ViewBag.lstPermission;
+}
+<script>
+    var lstPermission = @Html.Raw(@listPermission);
+    var msgDeny = 'Bạn không có quyền thực hiện thao tác này!';
+    //ham kiem tra quyen thao tac doi voi moi ho so
+    function checkPermission(lstDepartmentTitleID) {
+        var isView = false;
+        var isUpdate = false;
+        var arrID = lstDepartmentTitleID.split('|')
+        for (var i = 0; i < lstPermission.length; i++) {
+            for (var j = 0; j < arrID.length; j++) {
+                if (lstPermission[i].DepartmentTitleToID == arrID[j]) {
+                    if (lstPermission[i].IsView==true) {
+                        isView = true;
+                    }
+                    if (lstPermission[i].IsUpdate == true) {
+                        isUpdate = true;
+                    }
+                }
+            }
+        }
+        var result;
+        if (isView == false && isUpdate == false) {
+            //khong co quyen
+            result = 0;
+        }
+        if (isView == true && isUpdate == false) {
+            //quyen xem
+            result = 1;
+        }
+        if (isView == false && isUpdate == true) {
+            //quyen sua
+            result = 2;
+        }
+        if (isView == true && isUpdate == true) {
+            //quyen full
+            result = 3;
+        }
+        return result;
+    }
+
+    var deleteUrl = '@(Url.Action("DeleteUser"))';
+
+    //kiem tra trang thai
+    function CheckStatus() {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            SetEnabled(App.btnChangDepartment);
+            if (records.length == 1) {
+                SetEnabled(App.btnDetail, App.btnDelete, App.btnDelete, App.btnSetting, App.btnSettingV3, App.btnUpdate, App.btnAccount, App.btnProfile);
+            }
+            else {
+                SetDisabled(App.btnDetail, App.btnSetting, App.btnSettingV3, App.btnDelete, App.btnUpdate, App.btnAccount, App.btnProfile);
+            };
+        }
+        else {
+            SetDisabled(App.btnDetail, App.btnSetting, App.btnSettingV3, App.btnDelete, App.btnUpdate, App.btnAccount, App.btnProfile, App.btnChangDepartment);
+        };
+    };
+
+    //them moi nhan vien
+    var ShowInsert = function () {
+        onDirectMethod('@(Url.Action("Insert", "Employee", new { area = "Human" }))', null, 'get')
+    };
+
+    @* Ext.MessageBox.show({
+        title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn chuyển nhân sự sang tổ chức mới không?',
+        buttons: { yes: 'Đồng ý', no: 'Không' },
+        iconCls: '#Information',
+        fn: function (btn) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ChangeDepartment", "Organization", new { Area = "Human" }, null))',
+                params: { strEmployessId: strEmployeesId, roleId: records[0].get('ID'), departmentId: '@departmentId' }
+            });
+        }
+    });*@
+    var ShowUpdate = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+
+            var postUrl = '@(Url.Action("Update", "Employee", new { area = "Human" }))';
+            var check = checkPermission(records[0].get('ListIDDepartmentTitle'));
+            if (check==2||check==3) {
+                onDirectMethod(postUrl, { Id: records[0].get('ID') }, 'get');
+            } else {
+                checkMessageBox(msgDeny);
+            }
+        }
+        else {
+            MessageBox();
+        };
+    };
+
+    //hien thi thong bao kiem tra quyen thao tac
+    function checkMessageBox(mes) {
+        Ext.MessageBox.show({
+            title: 'Cảnh báo', msg: mes,
+            buttons: { yes: 'Đồng ý' },
+            iconCls: '#Exclamation',
+            fn: function (btn) {
+                return false;
+            }
+        });
+    }
+    var ViewDetail = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var check = checkPermission(records[0].get('ListIDDepartmentTitle'));
+            if (check == 1 || check == 3) {
+                openEmployeeDetail(records[0].get('ID'));
+            } else {
+                checkMessageBox(msgDeny);
+            }
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var RoleSetting = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var postUrl = '@(Url.Action("SettingForm", "Employee", new { area = "Human"}))';
+            onDirectMethod(postUrl, { Id: records[0].get('ID') });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var RoleSettingV3 = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var postUrl = '@(Url.Action("SettingFormV3", "Employee", new { area = "Human"}))';
+            onDirectMethod(postUrl, { Id: records[0].get('ID') });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showChangeDepartment = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        var record = App.DepartmentPanelId.down('treepanel').selModel.getSelection();
+        if (records.length > 0 && record.length > 0) {
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = records[i]; i++) {
+                aId[i] = records[i].get('ID');
+            }
+            strId = aId.join();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowChangeDepartment", "Employee", new { Area = "Human" }, null))',
+                params: { strEmployeesId: strId, departmentId: record[0].get('id') }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban sau đó chọn nhân sự nào cần chuyển tổ chức?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnChangDepartment.setDisabled(true);
+                }
+            });
+        };
+    };
+    var AcountSetting = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateAccount", "Employee", new { area = "Human" }))';
+            var params = { Id: records[0].get('ID') };
+            onDirectMethod(url, params,'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ProfileForm = function () {
+
+         var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+           var check = checkPermission(records[0].get('ListIDDepartmentTitle'));
+        if (check == 1 || check == 2 || check == 3) {
+            var url = '@(Url.Action("ProfileForm", "V3_ProfileCuriculmViate", new { area = "Human" }))';
+            var params = { Id: App.GrEmployee.selModel.getSelection()[0].data.ID, Check: check };
+              onDirectMethod(url, params);
+        } else {
+            checkMessageBox(msgDeny);
+        }
+        }
+        else {
+            MessageBox();
+        };
+    };
+
+    var ExportForm = function () {
+            var url = '@(Url.Action("FormProfileFieldExcel", "V3_EmployeeExport", new { area = "Human" }))';
+              onDirectMethod(url);
+    };
+
+    function OnSelectDepartment(records) {
+        App.hdfParentDepartmentId.setValue(records[0].get('id'));
+
+        App.GrEmployee.getStore().reload({ page: 1 });
+    };
+
+    function deleteUser() {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+           var check = checkPermission(records[0].get('ListIDDepartmentTitle'));
+            if (check == 2 || check == 3) {
+                  Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes')
+                    var url = '@(Url.Action("DeleteUser", "V3_Employee", new { area = "Human" }))';
+                      var params = { Id: App.GrEmployee.selModel.getSelection()[0].data.ID };
+                    onDirectMethod(url, params);
+            });
+
+            } else {
+                checkMessageBox(msgDeny);
+            }
+        }
+        else {
+            MessageBox();
+        };
+    };
+
+    var ExportExcel = function () {
+        var Name = App.txtSearchByName.getValue();
+        var BirthDayFrom = App.txtSearchByBirthDayFrom.getValue();
+        var BirthDayTo = App.txtSearchByBirthDayTo.getValue();
+        var Native = App.txtSearchByNative.getValue();
+        var Religion = App.cbSearchByReligion.getValue();
+        var Ethnic = App.cbSearchByEthnic.getValue();
+
+        var PlaceOfWork = App.txtSearchByPlaceOfWork.getValue();
+        var Position = App.txtSearchByPosition.getValue();
+        var DepartmentName = App.txtSearchByDepartmentName.getValue();
+
+        var EduName = App.txtSearchByEduName.getValue();
+        var EducationType = App.cbSearchByEducationType.getValue();
+        var EducationResult = App.cbSearchByEducationResult.getValue();
+
+        var DiplomaName = App.txtSearchByDiplomaName.getValue();
+        var Major = App.cbSearchByMajor.getValue();
+        var DiplomaEducationType = App.cbSearchByDiplomaEducationType.getValue();
+        var DiplomaEducationOrg = App.cbSearchByDiplomaEducationOrg.getValue();
+        var DiplomaEducationLevel = App.cbSearchByDiplomaEducationLevel.getValue();
+        var DiplomaCertificateLevel = App.cbSearchByDiplomaCertificateLevel.getValue();
+
+        var NameOfCertificate = App.txtSearchByNameOfCertificate.getValue();
+        var CertificateLevel1 = App.cbSearchByCertificateLevel1.getValue();
+        var CertificateType = App.cbSearchByCertificateType.getValue();
+
+        var Number = App.txtSearchByNumber.getValue();
+        var reason = App.txtSearchByReason.getValue();
+        var Reward = App.cbSearchByReward.getValue();
+        var url = '@(Url.Action("FormProfileFieldExcel", "V3_EmployeeExport", new { area = "Human" }))';
+        var params = {
+            Name: Name,
+            BirthDayFrom: BirthDayFrom,
+            BirthDayTo: BirthDayTo,
+            Native: Native,
+            Religion: Religion,
+            Ethnic: Ethnic,
+            EducationResult: EducationResult,
+            EducationType: EducationType,
+            EduName: EduName,
+            DepartmentName: DepartmentName,
+            Position: Position,
+            PlaceOfWork: PlaceOfWork,
+            DiplomaCertificateLevel: DiplomaCertificateLevel,
+            DiplomaEducationLevel: DiplomaEducationLevel,
+            DiplomaEducationOrg: DiplomaEducationOrg,
+            DiplomaEducationType: DiplomaEducationType,
+            Major: Major,
+            DiplomaName: DiplomaName,
+            Reward: Reward,
+            reason: reason,
+            Number: Number,
+            CertificateType: CertificateType,
+            CertificateLevel1: CertificateLevel1,
+            NameOfCertificate: NameOfCertificate
+        };
+        onDirectMethod(url, params);
+    };
+
+    var resetFilters = function () {
+        App.txtSearchByName.setValue("");
+        App.txtSearchByBirthDayFrom.setValue("");
+        App.txtSearchByBirthDayTo.setValue("");
+        App.txtSearchByNative.setValue("");
+        App.cbSearchByReligion.setSelection(0);
+        App.cbSearchByEthnic.setSelection(0);
+
+        App.txtSearchByPlaceOfWork.setValue("");
+        App.txtSearchByPosition.setValue("");
+        App.txtSearchByDepartmentName.setValue("");
+
+        App.txtSearchByEduName.setValue("");
+        App.cbSearchByEducationType.setSelection(0);
+        App.cbSearchByEducationResult.setSelection(0);
+
+        App.txtSearchByDiplomaName.setValue("");
+        App.cbSearchByMajor.setSelection(0);
+        App.cbSearchByDiplomaEducationType.setSelection(0);
+        App.cbSearchByDiplomaEducationOrg.setSelection(0);
+        App.cbSearchByDiplomaEducationLevel.setSelection(0);
+        App.cbSearchByDiplomaCertificateLevel.setSelection(0);
+
+        App.txtSearchByNameOfCertificate.setValue("");
+        App.cbSearchByCertificateLevel1.setSelection(0);
+        App.cbSearchByCertificateType.setSelection(0);
+
+        App.txtSearchByNumber.setValue("");
+        App.txtSearchByReason.setValue("");
+        App.cbSearchByReward.setSelection(0);
+    };
+
+</script>
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.Hidden().ID("hdfParentDepartmentId"),
+        X.DepartmentPanel().Handler("OnSelectDepartment").ID("DepartmentPanelId"),
+
+        //Tìm kiếm
+        X.Panel().ID("pnlSearchEmployee")
+            .Width(300)
+            .Region(Region.North)
+            .Header(true)
+            .BodyPadding(4)
+            .Layout(LayoutType.VBox)
+            .Defaults(X.Parameter().Name("margin").Value("0 0 0 0").Mode(ParameterMode.Value))
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .IconCls("x-fa fa-search")
+            .Title("TÌM KIẾM")
+            .Collapsible(true)
+            .Collapsed(true)
+            .Split(true)
+            .Items(
+                X.FieldSet().MarginSpec("0 0 0 0").Padding(1).Title("Tìm kiếm theo lý lịch")
+                    .AnchorHorizontal("100%")
+                    .Layout(LayoutType.HBox)
+                    .Defaults(X.Parameter().Name("margin").Value("0 5 0 0").Mode(ParameterMode.Value))
+                    .Items(
+                    X.TextField().ID("txtSearchByName").EmptyText("Họ tên"),
+                    X.DateField().ID("txtSearchByBirthDayFrom").Width(135).Format("dd/MM/yyyy").EmptyText("Ngày sinh: từ"),
+                    X.DateField().ID("txtSearchByBirthDayTo").Width(130).Format("dd/MM/yyyy").EmptyText("đến"),
+                    X.TextField().ID("txtSearchByNative").EmptyText("Nơi sinh"),
+                    X.ComboBox().ID("cbSearchByReligion").EmptyText("Chọn tôn giáo").Editable(false)
+                        .Items(
+                            new ListItem("Tất cả", "")
+                        )
+                        .Store(
+                            X.Store()
+                            .AutoLoad(true)
+                            .ID("stMasterReligion")
+                            .Proxy(X.AjaxProxy()
+                                    .Url(Url.Action("GetReligionCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                    .Reader(X.JsonReader().Root("data"))
+                            )
+                            .Model(
+                                Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                    )
+                            )
+                        )
+                        .DisplayField("Name")
+                        .ValueField("ID"),
+                    X.ComboBox().ID("cbSearchByEthnic").EmptyText("Chọn dân tộc").Editable(false)
+                    .Items(
+                        new ListItem("Tất cả", "")
+                    )
+                    .Store(
+                        X.Store()
+                        .AutoLoad(true)
+                        .ID("stMasterEthnic")
+                        .Proxy(
+                            X.AjaxProxy()
+                                .Url(Url.Action("GetEthnicCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .Model(
+                            Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                )
+                        )
+                    )
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                ),
+                X.FieldSet().MarginSpec("0 0 0 0").Padding(1).Title("Tìm kiếm theo quá trình công tác")
+                    .AnchorHorizontal("100%")
+                    .Layout(LayoutType.HBox)
+                    .Defaults(X.Parameter().Name("margin").Value("0 5 0 0").Mode(ParameterMode.Value))
+                    .Items(
+                        X.TextField().ID("txtSearchByPlaceOfWork").EmptyText("Nơi công tác"),
+                        X.TextField().ID("txtSearchByPosition").EmptyText("Chức vụ"),
+                        X.TextField().ID("txtSearchByDepartmentName").EmptyText("Phòng ban")
+                    ),
+
+                X.FieldSet().MarginSpec("0 0 0 0").Padding(1).Title("Tìm kiếm theo quá trình đào tạo")
+                    .AnchorHorizontal("100%")
+                    .Layout(LayoutType.HBox)
+                    .Defaults(X.Parameter().Name("margin").Value("0 5 0 0").Mode(ParameterMode.Value))
+                    .Items(
+                        X.TextField().ID("txtSearchByEduName").EmptyText("Tên khóa học"),
+                        X.ComboBox().ID("cbSearchByEducationType").Editable(false).EmptyText("Chọn hình thức")
+                            .Items(
+                                new ListItem("Tất cả", "")
+                            )
+                            .Store(
+                                X.Store()
+                                .AutoLoad(true)
+                                .ID("stMasterEducationType")
+                                .Proxy(
+                                    X.AjaxProxy()
+                                        .Url(Url.Action("GetEducationTypeCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                        .Reader(Html.X().JsonReader().Root("data") )
+                                )
+                                .Model(
+                                    Html.X().Model()
+                                        .Fields(
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                        )
+                                )
+                            )
+                            .DisplayField("Name")
+                            .ValueField("ID"),
+                        X.ComboBox().ID("cbSearchByEducationResult").Editable(false).EmptyText("Chọn kết quả")
+                            .Items(
+                                new ListItem("Tất cả", "")
+                            )
+                            .Store(
+                                X.Store()
+                                .AutoLoad(true)
+                                .ID("stMasterEducationResult")
+                                .Proxy(
+                                    X.AjaxProxy()
+                                        .Url(Url.Action("GetEducationResultCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                        .Reader(Html.X().JsonReader().Root("data") )
+                                )
+                                .Model(
+                                    Html.X().Model()
+                                        .Fields(
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                        )
+                                )
+                            )
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                    ),
+                X.FieldSet().MarginSpec("0 0 0 0").Padding(1).Title("Tìm kiếm theo văn bằng")
+                    .AnchorHorizontal("100%")
+                    .Layout(LayoutType.HBox)
+                    .Defaults(X.Parameter().Name("margin").Value("0 5 0 0").Mode(ParameterMode.Value))
+                    .Items(
+                        X.TextField().ID("txtSearchByDiplomaName").EmptyText("Tên văn bằng"),
+                        X.ComboBox().ID("cbSearchByMajor").Editable(false).EmptyText("Chọn chuyên ngành")
+                            .Items(
+                                new ListItem("Tất cả", "")
+                            )
+                            .Store(
+                                X.Store()
+                                .AutoLoad(true)
+                                .ID("stMasterDiplomaMajor")
+                                .Proxy(
+                                    X.AjaxProxy()
+                                        .Url(Url.Action("GetEducationFieldCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                        .Reader(Html.X().JsonReader().Root("data") )
+                                )
+                                .Model(
+                                    Html.X().Model()
+                                        .Fields(
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                        )
+                                )
+                            )
+                            .DisplayField("Name")
+                            .ValueField("ID"),
+                        X.ComboBox().ID("cbSearchByDiplomaEducationType").Editable(false).EmptyText("Chọn hình thức đào tạo")
+                            .Items(
+                                new ListItem("Tất cả", "")
+                            )
+                            .Store(
+                                X.Store()
+                                .AutoLoad(true)
+                                .ID("stMasterEducationTyp1")
+                                .Proxy(
+                                    X.AjaxProxy()
+                                        .Url(Url.Action("GetEducationTypeCb", "V3_ProfileCuriculmViate", new { area = "Human" }))
+                                        .Reader(Html.X().JsonReader().Root("data") )
+                                )
+                                .Model(
+                                    Html.X().Model()
+                                        .Fields(
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                        )
+                                )
+                            )
+                            .DisplayField("Name")
+                            .ValueField("ID"),
+                        X.ComboBox().ID("cbSearchByDiplomaEducationOrg").Editable(false).EmptyText("Chọn nơi đào tạo")
+                            .Items(
+                                new ListItem("Tất cả", "")
+                            )
+                            .Store(
+                                X.Store()
+                                .AutoLoad(true)
+                                .ID("stMasterEducationOrg")
+                                .Proxy(
+                                    X.AjaxProxy()
+                                        .Url(Url.Action("GetEducationOrgCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Model(
+                                    Html.X().Model()
+                                        .Fields(
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                        )
+                                )
+                            )
+                            .DisplayField("Name")
+                            .ValueField("ID"),
+                        X.ComboBox().ID("cbSearchByDiplomaEducationLevel").Editable(false).EmptyText("Chọn trình độ")
+                            .Items(
+                                new ListItem("Tất cả", "")
+                            )
+                            .Store(
+                                X.Store()
+                                .AutoLoad(true)
+                                .ID("stMasterEducationLevel")
+                                .Proxy(
+                                    X.AjaxProxy()
+                                        .Url(Url.Action("GetEducationLevelCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Model(
+                                    Html.X().Model()
+                                        .Fields(
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                        )
+                                )
+                            )
+                            .DisplayField("Name")
+                            .ValueField("ID"),
+                        X.ComboBox().ID("cbSearchByDiplomaCertificateLevel").Editable(false).EmptyText("Chọn xếp loại")
+                        .Items(
+                            new ListItem("Tất cả", "")
+                        )
+                        .Store(
+                            X.Store()
+                            .AutoLoad(true)
+                            .ID("stMasterCertificateLevel")
+                            .Proxy(
+                                X.AjaxProxy()
+                                    .Url(Url.Action("GetCertificateLevelCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Model(
+                                Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                    )
+                            )
+                        )
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                    ),
+                X.FieldSet().MarginSpec("0 0 0 0").Padding(1).Title("Tìm kiếm theo chứng chỉ")
+                    .AnchorHorizontal("100%")
+                    .Layout(LayoutType.HBox)
+                    .Defaults(X.Parameter().Name("margin").Value("0 5 0 0").Mode(ParameterMode.Value))
+                    .Items(
+                        X.TextField().ID("txtSearchByNameOfCertificate").EmptyText("Tên chứng chỉ"),
+                        X.ComboBox().ID("cbSearchByCertificateLevel1").Editable(false).EmptyText("Chọn hạng")
+                        .Items(
+                            new ListItem("Tất cả", "")
+                        )
+                        .Store(
+                            X.Store()
+                            .AutoLoad(true)
+                            .ID("stMasterCertificateLevel1")
+                            .Proxy(
+                                X.AjaxProxy()
+                                    .Url(Url.Action("GetCertificateLevelCb", "V3_ProfileCuriculmViate", new { area = "Human" }))
+                                    .Reader(
+                                        Html.X().JsonReader().Root("data")
+                                    )
+                            )
+                            .Model(
+                                Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                    )
+                            )
+                        )
+                        .DisplayField("Name")
+                        .ValueField("ID"),
+                        X.ComboBox().ID("cbSearchByCertificateType").Editable(false).EmptyText("Chọn loại")
+                        .Items(
+                            new ListItem("Tất cả", "")
+                        )
+                        .Store(
+                            X.Store()
+                            .AutoLoad(true)
+                            .ID("stMasterCertificateType")
+                            .Proxy(
+                                X.AjaxProxy()
+                                    .Url(Url.Action("GetCertificateTypeCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Model(
+                                Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                    )
+                            )
+                        )
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                    ),
+                X.FieldSet().MarginSpec("0 0 0 0").Padding(1).Title("Tìm kiếm theo khen thưởng")
+                    .AnchorHorizontal("100%")
+                    .Layout(LayoutType.HBox)
+                    .Defaults(X.Parameter().Name("margin").Value("0 5 0 0").Mode(ParameterMode.Value))
+                    .Items(
+                        X.TextField().ID("txtSearchByNumber").EmptyText("Số quyết định"),
+                        X.TextField().ID("txtSearchByReason").EmptyText("Lý do"),
+                        X.ComboBox().ID("cbSearchByReward").Editable(false).EmptyText("Chọn hình thức khen thưởng")
+                        .Items(
+                            new ListItem("Tất cả", "")
+                        )
+                        .Store(
+                            X.Store()
+                            .AutoLoad(true)
+                            .ID("stMasterDiscipline")
+                            .Proxy(
+                                X.AjaxProxy()
+                                    .Url(Url.Action("GetAwardTypeCb", "V3_ProfileCuriculmViate", new { area = "Human" }) )
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Model(
+                                Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                    )
+                            )
+                        )
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                    ),
+
+                X.FormPanel().Border(false)
+                .Layout(LayoutType.HBox)
+                .PaddingSpec("5 0 0 0")
+                .Defaults(X.Parameter().Name("margin").Value("0 5 0 0").Mode(ParameterMode.Value))
+                .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Middle, Pack = BoxPack.End })
+                .Items(
+                    X.Button().ID("btnFilters").Text("Tìm kiếm").Icon(Icon.Find).Handler("App.stEmployees.reload();"),
+                    X.Button().ID("btnResetFilters").Text("Xoá bộ lọc").Icon(Icon.TableRefresh).Handler("resetFilters()")
+
+                )
+
+            ),
+
+        // Danh sách nhân sự
+        X.GridPanel()
+            .Title("Danh sách thành viên").Header(false)
+            .ID("GrEmployee")
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                X.Toolbar()
+                .Layout(LayoutType.HBox)
+                .Items(
+                    X.ButtonCreate().ID("btnCreate").Handler("ShowInsert();"),
+                    X.ToolbarSeparator(),
+                    X.ButtonUpdate().ID("btnUpdate").Handler("ShowUpdate();"),
+                    X.ToolbarSeparator(),
+                    X.ButtonDelete().ID("btnDelete").Handler("deleteUser();"),
+                    X.ToolbarSeparator(),
+                    X.ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                    X.ToolbarSeparator(),
+                    X.Button().Text("Thiết lập chức danh").ToolTip("Thiết lập chức danh").ID("btnSetting").Handler("RoleSetting();").Icon(Icon.Creditcards).Disabled(true),
+                    X.ToolbarSeparator(),
+                    X.Button().Text("Thiết lập chức danh_V3").ToolTip("Thiết lập chức danh_v3").ID("btnSettingV3").Handler("RoleSettingV3();").Icon(Icon.Creditcards).Disabled(true),
+                    X.ToolbarSeparator(),
+                    X.Button().Text("Tài khoản hệ thống").ID("btnAccount").Handler("AcountSetting();").Disabled(true).Icon(Icon.UserAdd),
+                    X.ToolbarSeparator(),
+                    X.Button().Text("Hồ sơ nhân sự").ID("btnProfile").Handler("ProfileForm();").Disabled(true).Icon(Icon.UserBrown),
+                    X.ToolbarSeparator(),
+                    X.Button().Text("Xuất file").ID("btnProfile1121").Handler("ExportExcel();").Disabled(false).Icon(Icon.PageExcel),
+                    X.ToolbarSeparator(),
+                    X.Button().Text("Chuyển tổ chức").ToolTip("Chuyển tổ chức").ID("btnChangDepartment").Handler("showChangeDepartment();").Icon(Icon.DoorIn).Disabled(true),
+                    Html.X().ToolbarFill(),
+                    Html.X().ButtonTutorial()
+                    )
+
+            )
+            .Store(
+                X.StoreForModel()
+                    .ID("stEmployees")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(X.AjaxProxy().Url(Url.Action("LoadUsers")).Reader(X.JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(pr =>
+                    {
+                        pr.Add(new StoreParameter("departmentID", "App.hdfParentDepartmentId.value", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("name", "App.txtSearchByName.value", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("native", "App.txtSearchByNative.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("religion", "App.cbSearchByReligion.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("ethnic", "App.cbSearchByEthnic.getValue()", ParameterMode.Raw));
+
+                        pr.Add(new StoreParameter("placeOfWork", "App.txtSearchByPlaceOfWork.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("position", "App.txtSearchByPosition.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("departmentName", "App.txtSearchByDepartmentName.getValue()", ParameterMode.Raw));
+
+                        pr.Add(new StoreParameter("eduName", "App.txtSearchByEduName.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("educationType", "App.cbSearchByEducationType.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("educationResult", "App.cbSearchByEducationResult.getValue()", ParameterMode.Raw));
+
+                        pr.Add(new StoreParameter("diplomaName", "App.txtSearchByDiplomaName.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("major", "App.cbSearchByMajor.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("diplomaEucationType", "App.cbSearchByDiplomaEducationType.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("diplomaEducationOrg", "App.cbSearchByDiplomaEducationOrg.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("educationLevel", "App.cbSearchByDiplomaEducationLevel.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("certificateLevel", "App.cbSearchByDiplomaCertificateLevel.getValue()", ParameterMode.Raw));
+
+                        pr.Add(new StoreParameter("certificateName", "App.txtSearchByNameOfCertificate.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("level", "App.cbSearchByCertificateLevel1.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("certificatetype", "App.cbSearchByCertificateType.getValue()", ParameterMode.Raw));
+
+                        pr.Add(new StoreParameter("numberOfDecision", "App.txtSearchByNumber.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("reason", "App.txtSearchByReason.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("form", "App.cbSearchByReward.getValue()", ParameterMode.Raw));
+                        //pr.Add(new StoreParameter("quitWorkStatus", "App.cbTaskStatus.getValue()", ParameterMode.Raw));
+                    })
+                )
+            .ColumnModel(
+                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                    X.TemplateColumn().DataIndex(Model, m => m.FileID).Width(31).Filterable(false).Tpl(
+                        X.XTemplate().Html(@<text>
+                        <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                    </text>)
+                    ),
+                    X.Column().DataIndex(Model, m => m.Name).Flex(1).Text("Họ tên").Width(120).StyleSpec("font-weight: bold;text-align: center"),
+                    X.DateColumnExtend().DataIndex(Model, m => m.BirthDay).Text("Ngày sinh").Align(Alignment.Right).Width(100).StyleSpec("font-weight: bold;text-align: center"),
+                    X.Column().DataIndex(Model, m => m.Email).Text("Email").Width(160).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center"),
+                    X.Column().DataIndex(Model, m => m.Phone).Text("Số điện thoại").Width(100).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center"),
+                    X.Column().DataIndex(Model, m => m.DepartmentTitle).Text("Chức danh").Width(250).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center")
+
+            )
+            .SelectionModel(X.CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Multi).Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+            //.Plugins(Html.X().FilterHeader())
+            .BottomBar(
+                    X.CustomPagingToolbar()
+            )
+    )
+)

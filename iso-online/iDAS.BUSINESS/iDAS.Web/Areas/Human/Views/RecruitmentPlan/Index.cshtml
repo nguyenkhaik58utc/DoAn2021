@@ -1,0 +1,202 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentPlanItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitTask = Url.Action("InsertTask", "RecruitmentPlan", new { area = "Human" });
+    var urlStoreTask = Url.Action("LoadPlanTask", "RecruitmentPlan", new { area = "Human" });
+    var paramStoreTask = Html.X().StoreParameter().Name("planId").Value("getPlanId()").Mode(ParameterMode.Raw);
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(2).Frame(false).StyleSpec("border: none;")
+.Items(
+             
+        Html.X().DepartmentPanel().Handler("onDepartmentReady"),
+        Html.X().GridPanel()
+                .Region(Region.Center)
+                .Layout(LayoutType.Fit)
+                .Header(false)
+                .ID("GrPlan")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Hidden().ID("hdfDepartmentPlan"), Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"), 
+                        Html.X().ButtonCreate().Handler("AddNew();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrPlan.selModel.getSelection()[0].get('ID'));"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Vòng thi tuyển").Disabled(true).Icon(Icon.BookTabs).ID("btnTaskInterview").Handler("InterviewForPlan();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonSend().ID("btnSend").Handler("SendApprove();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonApproval().ID("btnApproveProfileInterview").Handler("Approve();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask()
+                                    .Listeners(ls => ls.Focus.Handler = "showIncorrectTask(this.up('gridpanel'))")
+                                    .ID("btnTask").Disabled(true).Text("Giao việc"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                Html.X().Store()
+                    .ID("StorePlan")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlan", "RecruitmentPlan")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("departmentID", "App.hdfDepartmentPlan.value", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("StartDate"),
+                            Html.X().ModelField().Name("EndDate"),
+                            Html.X().ModelField().Name("TotalCost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("Status")
+                        )
+                     )
+            )
+            .ColumnModel(
+                         Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                         Html.X().Column().DataIndex("Name").Text("Tên kế hoạch tuyển dụng").Width(300).Locked(true),
+                         Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                                 .Columns(
+                                    Html.X().DateColumnExtend().DataIndex("StartDate").Text("Ngày bắt đầu").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                    Html.X().DateColumnExtend().DataIndex("EndDate").Text("Ngày kết thúc").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center)
+                                    ),
+                         Html.X().NumberColumn().DataIndex("TotalCost").Text("Chí phí").Flex(1).Align(Alignment.Right).MinWidth(100),
+                         Html.X().Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Locked(true)
+                )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                             .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+            .BottomBar(
+                    Html.X().CustomPagingToolbar()
+        )
+    )
+)
+<script>
+    var deleteUrl = '@(Url.Action("DeletePlan"))';
+    function onDepartmentReady(records) {
+        App.hdfDepartmentPlan.setValue(records[0].get('id'));
+        App.GrPlan.getStore().reload();
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+    function CheckStatus() {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length == 1) {
+            var IsEdit = records[0].get('IsEdit');
+            if (IsEdit == true) {
+                SetEnabled(App.btnDelete, App.btnTaskInterview, App.btnSend, App.btnUpdate)
+                App.btnApproveProfileInterview.setDisabled(true);
+                App.btnTask.setDisabled(true);
+            }
+            else {
+                SetDisabled(App.btnDelete, App.btnTaskInterview, App.btnSend, App.btnUpdate);
+                App.btnApproveProfileInterview.setDisabled(false);
+                App.btnTask.setDisabled(false);
+            }
+            App.btnDetail.setDisabled(false);
+        }
+        else {
+            SetDisabled(App.btnDetail, App.btnDelete, App.btnTask, App.btnTaskInterview, App.btnSend, App.btnUpdate, App.btnApproveProfileInterview);
+        };
+    };
+    var AddNew = function () {
+        var url = '@(Url.Action("Insert", "RecruitmentPlan", new { Area = "Human" }, null))';
+        onDirectMethod(url, null,'get');
+    };
+    var UpdateItem = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "RecruitmentPlan", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params,'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "RecruitmentPlan", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var InterviewForPlan = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url =  '@(Url.Action("InterviewForm", "RecruitmentPlanInterview", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SendApprove = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("SendApprove", "RecruitmentPlan", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params,'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var Approve = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Approve", "RecruitmentPlan", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var getPlanId = function () {
+        var id = 0;
+        var records = PlanGridPanel.selModel.getSelection();
+        if (records.length > 0) {
+            id = records[0].get('ID');
+        };
+        return id;
+    };
+    var showIncorrectTask = function (grid) {
+        PlanGridPanel = grid;
+    };
+</script>

@@ -1,0 +1,285 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@using iDAS.Web.Areas.Problem.Models;
+@model iDAS.Web.Areas.Problem.Models.ProblemEventDTO
+@{
+    bool readOnly = (bool)ViewData["ReadOnly"];
+    List<ProblemTypeDTO> lstType = ViewData["lstType"] as List<ProblemTypeDTO>;
+}
+
+@( Html.X().Window().ID("winProblemTempEdit")
+    .Title("Cập nhật mẫu sự cố")
+    .Icon(Icon.Add)
+    .Width(780)
+    .Height(430)
+    .Layout(LayoutType.Fit)
+    .BodyPadding(0)
+    .Maximizable(true)
+    .Constrain(true)
+    .Modal(true)
+    .Border(true)
+    .Items(
+        Html.X().FormPanel()
+                .Url(@"/Problem/ProblemEventTemp/Insert")
+                //    .BaseParams(a =>
+                //    {
+                //        a.Add(ViewData["Parameter"] as Parameter);
+                //        a.Add(new { arrObject = new JRawValue("getObjectPartial()") });
+                //    })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(lb => lb.LabelWidth = 110)
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Items(
+
+            // tab Thông tin sự cố
+            Html.X().Panel()
+                .BodyPadding(6)
+                .Icon(Icon.ApplicationViewDetail)
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .StyleSpec("border: none;")
+                .Frame(true)
+                .Header(false)
+                .Items(
+                    Html.X().Container()
+                            .Layout(LayoutType.Column)
+                            .ColSpan(2)
+                            .MarginSpec("0 0 0 0")
+                            .Items(
+                                Html.X().HiddenFor(m => m.ID).ID("hdfProblemEventID"),
+                                Html.X().ComboBoxFor(m => m.ProblemTypeID)
+                                    .MarginSpec("0 0 0 5")
+                                    .FieldLabel("Loại")
+                                    .EmptyText("Chọn phân loại sự cố")
+                                    .AllowBlank(true)
+                                    .ID("cboType")
+                                    .Listeners(ls => ls.Select.Handler = "App.stCboGroup.load();")
+                                    .Editable(false)
+                                    .DisplayField("ProblemTypeName")
+                                    .ValueField("ID")
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("0 5 5 0")
+                                    .Store(
+                                        Html.X().Store()
+                                            .AutoLoad(true)
+                                            //.Proxy(Html.X().AjaxProxy()
+                                            //        .Url(Url.Action("GetTypeCbo"))
+                                            //        .Reader(Html.X().JsonReader().Root("data"))
+                                            //)
+                                            .Model(Html.X().Model()
+                                                .Fields(
+                                                    new ModelField("ID"),
+                                                    new ModelField("ProblemTypeName")
+                                                )
+                                            )
+                                            .DataSource(lstType)
+                                    ),
+                                Html.X().ComboBoxFor(m => m.ProblemGroupID)
+                                    .FieldLabel("Nhóm")
+                                    .EmptyText("Chọn nhóm sự cố")
+                                    .AllowBlank(true)
+                                    .ID("cboGroup")
+                                    .Editable(false)
+                                    .DisplayField("ProblemGroupName")
+                                    .ValueField("ID")
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("0 0 5 0")
+                                    .Store(
+                                        Html.X().Store().ID("stCboGroup")
+                                            .AutoLoad(true)
+                                            .Proxy(Html.X().AjaxProxy()
+                                                    .Url(Url.Action("GetGroupCbo"))
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                            )
+                                            .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("typeID", "App.cboType.getValue()", ParameterMode.Raw));
+                                            }
+                                            )
+                                            .Model(Html.X().Model()
+                                                .Fields(
+                                                    new ModelField("ID"),
+                                                    new ModelField("ProblemGroupName")
+                                                )
+                                            )
+                                            .Listeners(ls =>
+                                                ls.Load.Handler = @"var combo = App.cboGroup; combo.setValue(null); if (records[0] !== undefined) {combo.setValue(records[0].get(combo.valueField));}"
+                                            )
+                                    )
+                                ),
+                    Html.X().TextFieldFor(m => m.Code)
+                        .ID("txtCode")
+                        .AllowOnlyWhitespace(false)
+                        .FieldLabel("Mã sự cố mẫu" + Html.Required())
+                        .EmptyText("Nhập mã sự cố")
+                        .MaxLength(50)
+                        .AllowBlank(false)
+                        .BlankText("Mã sự cố không được bỏ trống!"),
+                    Html.X().TextFieldFor(m => m.Name)
+                            .ID("txtName")
+                            .AllowOnlyWhitespace(false)
+                            .FieldLabel("Tên sự cố" + Html.Required())
+                            .EmptyText("Nhập tên sự cố")
+                            .MaxLength(100)
+                            .AllowBlank(false)
+                            .BlankText("Tên sự cố không được bỏ trống!"),
+
+                    Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 0 0").Items(
+                        Html.X().ComboBoxFor(m => m.EmergencyTypeID)
+                            .MarginSpec("0 5 5 0")
+                            .FieldLabel("Độ khẩn cấp")
+                            .EmptyText("Chọn độ khẩn")
+                            .AllowBlank(true)
+                            .ID("cboEmergency")
+                            .Editable(false)
+                            .DisplayField("ProblemEmergencyName")
+                            .ValueField("ID")
+                            .ColumnWidth(0.5)
+                            .Store(
+                                Html.X().Store()
+                                    .AutoLoad(true)
+                                    .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetEmergencyCbo"))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    .Model(Html.X().Model()
+                                        .Fields(
+                                            new ModelField("ID"),
+                                            new ModelField("ProblemEmergencyName")
+                                        )
+                                    )
+                            ),
+                        Html.X().ComboBoxFor(m => m.CriticalLevelID)
+                            .ID("cboCriticalLevel")
+                            .MarginSpec("0 0 5 0")
+                            .FieldLabel("Độ nghiêm trọng")
+                            .EmptyText("Chọn mức độ nghiêm trọng")
+                            .DisplayField("CriticalLevelName")
+                            .ValueField("ID")
+                            .Editable(false)
+                            .ColumnWidth(0.5)
+                            .Store(
+                                Html.X().Store()
+                                    .ID("stCriticalLevel")
+                                    .AutoLoad(true)
+                                    .Model(
+                                        Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                new ModelField("ID"),
+                                                new ModelField("CriticalLevelName")
+                                            )
+                                    )
+                                    .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetCriticalLevelCbo"))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                            )
+                    ),
+                Html.X().TextAreaFor(m => m.Description)
+                        .ID("txtDescription")
+                        .FieldLabel("Mô tả sự cố")
+                        .Flex(1),
+                Html.X().TextAreaFor(m => m.Reason)
+                        .ID("txtReason")
+                        .FieldLabel("Nguyên nhân")
+                        .Flex(1),
+                Html.X().TextAreaFor(m => m.Solution)
+                        .ID("txtSolution")
+                        .FieldLabel("Xử lý/Khắc phục")
+                        .Flex(1)
+                    )
+
+            )
+        )
+    .Buttons(
+        Html.X().Button()
+            .ID("btnCreateProblem")
+            .Text("Tạo sự cố")
+            .Hidden(readOnly == false)
+            .Handler("showFormProblemEvent1();"),
+        Html.X().ButtonSave()
+            .ID("btnSave")
+            .Hidden(readOnly)
+            .Handler("insertProblemEvent(this.up('window'))"),
+        Html.X().Button().ID("btnDelete").Icon(Icon.Delete).Text("Xóa").Handler("deleteTemp();").Hidden(readOnly),
+        Html.X().ButtonExit()
+    )
+)
+<script type="text/javascript">
+
+    function CheckStatusProblem() {
+        var records = App.grdReport.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnEditReport.setDisabled(false);
+            App.btnDeleteReport.setDisabled(false);
+            App.btnViewReport.setDisabled(false);
+        }
+        else {
+            App.btnEditReport.setDisabled(true);
+            App.btnDeleteReport.setDisabled(true);
+            App.btnViewReport.setDisabled(true);
+        };
+    };
+
+    var showFormProblemEvent1 = function () {
+        var testID = App.hdfProblemEventID.getValue();
+        App.winProblemTempEdit.close();
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("InsertWindowFromTemp", "ProblemEvent", new { Area = "Problem" }, null))',
+                params: {
+                    ID: testID
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+
+    };
+
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.stM.data.length; i++) {
+            arr.push(App.stM.data.items[i].data.ID);
+        }
+        return arr.join(",");
+    };
+
+    var insertProblemEvent = function (window) {
+        var form = window.down('form');
+        form.submit({
+            success: function (form, action) {
+                App.winProblemTempEdit.close();
+                App.grdProblem.getStore().load();
+            },
+        });
+    };
+
+    var deleteTemp = function () {
+        var id = App.hdfProblemEventID.getValue();
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "ProblemEventTemp", new { Area = "Problem" }, null))',
+                            params: { id: id },
+                            success: function (form, action) {
+                                App.winProblemTempEdit.close();
+                                App.grdProblem.getStore().load();
+                            }
+                        });
+                    }
+                }
+            });
+    };
+
+
+</script>

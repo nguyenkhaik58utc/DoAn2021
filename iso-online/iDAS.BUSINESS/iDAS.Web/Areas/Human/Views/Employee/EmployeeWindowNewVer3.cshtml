@@ -1,0 +1,64 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@(Html.X().Window().ID("windowObject").Layout(LayoutType.Fit)
+    .Title("Danh sách nhân sự Ver 03")
+    .Icon(Icon.ApplicationSideList)
+    .Border(false)
+    .Modal(true)
+    .Constrain(true)
+    .Height(450)
+    .Width(800)
+    .ItemsFromAction("EmployeeViewNewVer3", "Employee", new { Area = "Human", gridProblemRelativePeople = "grdProblemRelativePeople", hdfDepartmentId = "hdfEmployeeViewDeparmentSelect" })
+    .Buttons(
+    Html.X().Button()
+    .Icon(Icon.Accept)
+    .Listeners(ls => ls.Click.Handler = "SaveObject();")
+    .ToolTip("Lưu nhân sự liên quan đã chọn đến sự cố")
+    .Text("Lưu")
+    .ID("btnSelectObject"),
+    Html.X().ButtonExit()
+    .Listeners(ls => ls.Click.Handler = "CancelObject();")
+    )
+)
+<script>
+
+    function SaveObject() {
+        if (App.windowObject.hidden == true) {
+            App.windowObject.show();
+        }
+        else {
+            var records = App.grdProblemRelativePeople.selModel.getSelection();
+            if (records.length > 0) {
+                var lstHumanEmployeeID = '';
+                var departmentId = App.hdfEmployeeViewDeparmentSelect.value;
+                for (var i = 0; i < records.length; i++) {
+                    lstHumanEmployeeID += records[i].data.ID + ',';
+                }
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("SaveRelativePeople", "Employee", new { Area = "Human" }, null))',
+                    params: {
+                        problemEventID: @ViewData["problemEventID"],
+                        lstRelativeDeptsFilter: '@ViewData["lstRelativeDeptsFilter"]',
+                        lstSelectedRole: '@ViewData["lstSelectedRole"]',
+                        deptId: departmentId,
+                        lstHumanEmployeeId: lstHumanEmployeeID
+                    }
+                });
+                window.close();
+                App.stListRelativePeople.reload();
+            }
+            else {
+                Ext.MessageBox.show({
+                    title: 'Thông báo', msg: 'Chưa lựa chọn nhân sự nào!',
+                    buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+                });
+            };
+        }
+    };
+
+    function CancelObject() {
+        App.windowObject.hide();
+    };
+
+</script>

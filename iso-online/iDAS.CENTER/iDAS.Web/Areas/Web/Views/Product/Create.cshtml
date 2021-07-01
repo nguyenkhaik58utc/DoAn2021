@@ -1,0 +1,84 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin sản phẩm")
+    .Icon(Icon.Add)
+    .Height(370)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.ProductCategoryID).Value(ViewData["ProductCategoryID"]),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).AllowBlank(false).EmptyText("Nhập tên sản phẩm").BlankText("Bắt buộc nhập !").FieldLabel("Sản phẩm *:"),
+                            Html.X().TextAreaFor(m => m.Description).ID("Description").FieldLabel("Mô tả").Height(80),
+                            Html.X().Container().Layout(LayoutType.Column).Items(
+                                Html.X().DateFieldFor(m => m.PublicAt).FieldLabel("Ngày công bố").ColumnWidth(0.5).Value(DateTime.Now),
+                                Html.X().Container().ColumnWidth(0.1),
+                                Html.X().TextFieldFor(m => m.Version).FieldLabel("Phiên bản").ColumnWidth(0.4).Value("version 1.0")
+                            )
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true)
+                        )
+                    ),
+                    Html.X().SitemapFieldFor(m => m.Sitemap),
+                    Html.X().TextFieldFor(m => m.Tags).FieldLabel("Tags"),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.Rate).ColumnWidth(0.3).FieldLabel("Đánh giá").Value(3),
+                        Html.X().Container().ColumnWidth(0.1),
+                        Html.X().NumberFieldFor(m => m.TotalRegister).ColumnWidth(0.3).FieldLabel("Số đăng ký").Value(10),
+                        Html.X().Container().ColumnWidth(0.1),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.2).HideLabel(true).Value(true).BoxLabel("Kích hoạt")
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.Position).FieldLabel("Thứ tự hiển thị").ColumnWidth(0.4).Value(0)
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if (result.result){ this.up('window').close(); reloadProduct(); }";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+

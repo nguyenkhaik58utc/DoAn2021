@@ -1,0 +1,73 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    var windowID = "StatisticalProfile";
+    var StoreParamProfile = ViewData["StoreParamProfileStatiscal"] as StoreParameter;
+}
+@(Html.X().Window()
+            .ID(windowID)
+            .Title("Danh sách nhân sự")
+            .StyleSpec("-webkit-border-radius:0")
+            .Icon(Icon.ApplicationSideList)
+            .Height(1)
+            .Maximized(true)
+            .Constrain(true)
+            .Layout(LayoutType.Fit)
+            .Modal(true)
+            .Resizable(false)
+            .Margin(0)
+            .BodyPadding(0)
+            .Border(true)
+            .Items(
+           Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrProfileContract")
+                    .ColumnLines(true)
+                    .Border(false)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)                   
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreProfileContract")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("renderContract", "EmployeeStatistical", new { Area = "Human" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                             .Parameters(ps =>
+                                        {
+                                            ps.Add(StoreParamProfile);
+                                            ps.Add(new { depId = ViewData["depId"] });
+                                        })
+                        .Model(
+                            Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("NumberOfContracts"),
+                            Html.X().ModelField().Name("StartDate"),
+                            Html.X().ModelField().Name("EndDate"),
+                            Html.X().ModelField().Name("Type"),
+                            Html.X().ModelField().Name("EmployeeName"),
+                            Html.X().ModelField().Name("Condition")
+                            )
+                          )
+                )
+                .ColumnModel(
+                            Html.X().RowNumbererColumn().DataIndex("ID").Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                    Html.X().Column().DataIndex("EmployeeName").Text("Tên nhân sự").Width(200).StyleSpec("font-weight: bold;text-align: center"),
+                            Html.X().Column().DataIndex("NumberOfContracts").Text("Số hợp đồng").Width(150).StyleSpec("font-weight: bold;text-align: center"),
+                            Html.X().Column().DataIndex("Type").Text("Loại hợp đồng").Width(200).StyleSpec("font-weight: bold;text-align: center"),
+                            Html.X().DateColumnExtend().DataIndex("StartDate").Text("Ngày bắt đầu").Width(250).StyleSpec("font-weight: bold;text-align: center"),
+                                Html.X().DateColumnExtend().DataIndex("EndDate").Text("Ngày kết thúc").Width(250).StyleSpec("font-weight: bold;text-align: center")
+                            
+                    )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(Html.X().CustomPagingToolbar())
+           )
+
+)
+<script>
+    var renderRed = function (value) {        
+        return "<span style=\"color:red\">" + value + "</span>";
+    };
+</script>

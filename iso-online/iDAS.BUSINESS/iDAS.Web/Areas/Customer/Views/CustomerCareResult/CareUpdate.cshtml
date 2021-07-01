@@ -1,0 +1,96 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerCareResultItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+
+        IconView = Icon.Add;
+        title = "Thêm mới kết quả chăm sóc";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật kết quả chăm sóc";
+    }
+}
+@(Html.X().Window()
+.ID("winCareUpdate")
+.Title(title)
+.Icon(IconView)
+.Width(800)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+     X.FormPanel().ID("frmUpdate")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .Border(false)
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 133; })
+    .Items(
+                        X.HiddenFor(m => m.ID),
+                        X.HiddenFor(m => m.CustomerID).ID("hdfCustomerID"),
+                        X.HiddenFor(m=>m.GroupCustomerID).ID("hdfGroupCustomerID"),
+                        X.ComboBoxFor(m => m.CareID).AllowBlank(false)
+                                    .FieldLabel("Chương trình chăm sóc" + Html.Required())
+                                    .QueryMode(DataLoadMode.Local)
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+                                    .Store(
+                                        Html.X().Store()
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .AutoDataBind(true)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCare"))
+                                        .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("customerID", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                                })
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Name")
+                                                )
+                                            )
+                                    )
+                                    .ColumnWidth(1)
+                                    .MarginSpec("4 8 0 8"),
+                        X.TextFieldFor(m=>m.Method).FieldLabel("Hình thức")
+                            .ColumnWidth(1)
+                                .MarginSpec("5 8 0 8"),
+                        X.TextAreaFor(m => m.Note)
+                            .FieldLabel("Nội dung")
+                            .ColumnWidth(1)
+                                .MarginSpec("5 8 0 8")
+                            .Height(100)
+                            .EmptyText("Nhập nội dung chăm sóc khách hàng..."),
+                        X.CheckboxFor(m => m.IsSuccess).FieldLabel("Kết quả")
+                                .ColumnWidth(1).BoxLabel("Thành công")
+                                .MarginSpec("5 8 0 8")
+                        )
+           )
+.Buttons(
+    Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.ExtraParams.Add(new { exit = true });
+                                    de.Click.Url = Url.Action("CareUpdateAction");
+                                    de.Click.FormID = "frmUpdate";
+                                })
+    , Html.X().ButtonExit())
+)

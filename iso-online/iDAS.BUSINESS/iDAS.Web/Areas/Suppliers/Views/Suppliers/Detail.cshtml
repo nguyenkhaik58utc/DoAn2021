@@ -1,0 +1,128 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.SupplierItem
+
+@(Html.X().Window()
+.ID("winUpdateSupplier")
+.Title("Thông tin nhà cung cấp")
+    .Icon(Icon.Zoom)
+    .Height(470)
+    .Maximizable(true)
+    .Width(670)
+    .Padding(6)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frUpdateSupplier")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+        .Layout(LayoutType.Form)
+        .Items(
+        Html.X().HiddenFor(m => m.ID).ID("hdfId").ReadOnly(true),
+               Html.X().TextFieldFor(m => m.Code).ColumnWidth(0.4).FieldLabel("Mã").MarginSpec("0 5 0 0").ReadOnly(true),
+    Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên NCC"),
+Html.X().Container().Layout(LayoutType.Column).Items(
+Html.X().Container().Layout(LayoutType.Form).ColumnWidth(0.7).Items(
+Html.X().TextFieldFor(m => m.BrandName).FieldLabel("Thương hiệu").ReadOnly(true),
+Html.X().TextFieldFor(m => m.Email).FieldLabel("Email").StandardVtype(ValidationType.Email).RegexText("Email không đúng định dạng!").ReadOnly(true),
+Html.X().TextFieldFor(m => m.Website).FieldLabel("Website").EmptyText("dasvietnam.com.vn").ReadOnly(true),
+    Html.X().TextFieldFor(m => m.Phone).FieldLabel("Điện thoại").ReadOnly(true),
+    Html.X().TextFieldFor(m => m.Fax).FieldLabel("Fax").ReadOnly(true)
+
+),
+Html.X().Container().Layout(LayoutType.Fit).ColumnWidth(0.3).MarginSpec("3 0 0 10").Items(
+
+Html.X().ImageButton()
+.Height(120)
+.ID("imgLogoEdit")
+.ImageUrl(Model.ImageUrl)
+.Listeners(l => l.Click.Handler = "showBrowseLogo();")
+
+)
+),
+ Html.X().TextFieldFor(m => m.Address).FieldLabel("Địa chỉ").ReadOnly(true),
+     Html.X().TextFieldFor(m => m.Commodity).FieldLabel("Mặt hàng CC" ).ReadOnly(true),
+Html.X().Container().Layout(LayoutType.Column).Items(
+    Html.X().ComboBoxFor(m => m.CountryId).ReadOnly(true)
+.FieldLabel("Quốc gia")
+.ColumnWidth(0.5)
+.ID("cbCountry")
+
+.MarginSpec("0 5 0 0")
+.QueryMode(DataLoadMode.Local)
+.ForceSelection(true)
+.DisplayField("Name")
+.ValueField("ID")
+.Store(Html.X().Store()
+.AutoLoad(true)
+.Model(Html.X().Model()
+.IDProperty("ID")
+.Fields(
+new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+)
+)
+.Proxy(Html.X().AjaxProxy()
+.Url(Url.Action("GetCountry"))
+.Reader(Html.X().JsonReader().Root("data")
+)
+)
+    ).Listeners(ls =>
+            ls.Change.Handler = "App.cbProvince.clearValue(); App.cbProvince.getStore().load()"
+            ),
+            Html.X().ComboBoxFor(m => m.ProvinceId)
+            .ID("cbProvince")
+                .FieldLabel("Tỉnh thành").ReadOnly(true)
+            
+            .ColumnWidth(0.5)
+            .TypeAhead(true)
+            .QueryMode(DataLoadMode.Local)
+            .ForceSelection(true)
+            .TriggerAction(TriggerAction.All)
+            .DisplayField("Name")
+            .ValueField("ID")
+            .EmptyText("Loading...")
+            .ValueNotFoundText("Loading...")
+            .Store(Html.X().Store()
+            .AutoLoad(false)
+            .Model(Html.X().Model()
+                .IDProperty("ID")
+                .Fields(
+                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                )
+            )
+            .Proxy(Html.X().AjaxProxy()
+                .Url(Url.Action("GetProvine"))
+                .Reader(Html.X().JsonReader().Root("data"))
+            )
+            .Parameters(ps =>
+                    ps.Add(new StoreParameter("countryid", "App.cbCountry.getValue()", ParameterMode.Raw))
+            )
+            )
+    ),
+            Html.X().TextFieldFor(m => m.Representative).FieldLabel("Người đại diện").ReadOnly(true),
+        Html.X().Container().Layout(LayoutType.Column).Items(
+        Html.X().TextFieldFor(m => m.Position).FieldLabel("Chức vụ").ColumnWidth(0.5).MarginSpec("0 5 0 0").ReadOnly(true),
+        Html.X().CheckboxFor(m => m.IsCustomer).BoxLabel("Là khách hàng").MarginSpec("0 0 0 105").ColumnWidth(0.5).HideLabel(true)
+    ),
+            Html.X().TextAreaFor(m => m.Description).Height(100).FieldLabel("Diễn giải").ReadOnly(true)
+
+
+    ))
+
+)
+
+        .Buttons(
+       
+        Html.X().ButtonExit()
+        )
+)

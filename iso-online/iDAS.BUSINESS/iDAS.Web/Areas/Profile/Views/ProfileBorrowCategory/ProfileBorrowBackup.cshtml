@@ -1,0 +1,161 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCategoryItem
+@{
+    var X = Html.X();
+    var depId = Model.DepartmentID;
+}
+@( Html.X().Window()
+    .ID("winListProfileBorrowDelete")
+    .Title("Danh sách sổ mượn hồ sơ bị xóa")
+    .Icon(Icon.Zoom)
+    .Height(500)
+    .Width(900)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(0)
+    .Border(false)
+    .Center()
+    .Items(
+         Html.X().GridPanel()
+                .ID("grListProfileBorrowDelete")
+                .MarginSpec("0 0 0 0")
+                .ColumnLines(true)
+                .Header(false)
+                .Border(false)
+                .Height(400)
+                    .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button()
+                            .Text("Khôi phục")
+                            .Disabled(true)
+                            .Icon(Icon.PackageIn)
+                            .Handler("backupDelete();")
+                            .ID("btnBackupProfile"),
+                        Html.X().Button()
+                            .Text("Xem chi tiết")
+                            .Disabled(true)
+                            .Icon(Icon.Zoom)
+                            .Handler("ShowDocumentDetail();")
+                            .ID("btnLstProfileDetail")
+                            )
+
+                        )
+                .Store(
+                    Html.X().Store()
+                        .RemotePaging(true)
+                        .AutoLoad(true)
+                        .ID("stProfileBorrowCateDelete")
+                        .PageSize(20)
+                        .Model(
+                                Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                       Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),//Ten Ho so
+                                        Html.X().ModelField().Name("Note").Type(ModelFieldType.String),//Thoi gian tiep nhan HS
+                                        Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),//Thoi gian luu tai bo phan
+                                        Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)//Thoi gian luu tai phong luu tru
+                                    )
+                                    )
+                        .Proxy(
+                            Html.X().AjaxProxy()
+                                .Url(Url.Action("LoadProfileBorrowDeleteByDept"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("id", Model.ID.ToString(), ParameterMode.Raw));
+                    }
+                     )
+                    )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .Align(Alignment.Center)
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(33),
+                    Html.X().Column()
+                        .DataIndex("Name")
+                        .Text("Tên Sổ theo dõi")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Flex(1),
+                    Html.X().Column()
+                        .Text("Ghi chú")
+                        .DataIndex("Note")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Flex(1),
+                    Html.X().DateColumnExtend()
+                        .Text("Ngày tạo")
+                        .DataIndex("CreateAt")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(90)
+                        .Format("dd/MM/yyyy")
+                        .Align(Alignment.Center),
+                    Html.X().DateColumnExtend()
+                        .DataIndex("UpdateAt")
+                        .Text("Ngày sửa")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(90)
+                        .Format("dd/MM/yyyy")
+                        .Align(Alignment.Center)
+                )
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                        .ShowHeaderCheckbox(false)
+                        .Mode(SelectionMode.Single)
+                            .Listeners(l => l.SelectionChange.Handler = "checkStatusProfile();")
+                            )
+                .BottomBar(Html.X().CustomPagingToolbar())
+            )
+    .Buttons(
+       Html.X().ButtonExit()
+        )
+)
+<script>
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var checkStatusProfile = function () {
+        var record = App.grListProfileBorrowDelete.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnBackupProfile.setDisabled(false);
+            App.btnLstProfileDetail.setDisabled(false);
+
+        } else {
+            App.btnBackupProfile.setDisabled(true);
+            App.btnLstProfileDetail.setDisabled(true);
+        }
+    };
+    var backupDelete = function () {
+        Ext.MessageBox.show({
+            title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn khôi phục sổ theo dõi mượn hồ sơ này không??',
+            buttons: { yes: 'Đồng ý', no: 'Không' },
+            iconCls: '#Information',
+            fn: function (btn) {
+                if (btn == 'yes') {
+                    var records = App.grListProfileBorrowDelete.selModel.getSelection();
+                    var id = records[0].get('ID');
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("BackupCate", "ProfileBorrowCategory", new { Area = "Profile" }, null))', params: { id: id }
+                    });
+                }
+            }
+        });
+    };
+    var ShowDocumentDetail = function () {
+        var record = App.grListProfileBorrowDelete.selModel.getSelection();
+        var id = record[0].get('ID');
+        var depId = '@depId';
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmProfileBorrow", "ProfileBorrowCategory", new { Area = "Profile" }, null))', params: { id: id, depId: depId, isDetail: true }
+        });
+    };
+</script>

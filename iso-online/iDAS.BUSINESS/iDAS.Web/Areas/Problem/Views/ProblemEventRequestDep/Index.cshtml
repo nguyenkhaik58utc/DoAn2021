@@ -1,0 +1,132 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateProblemEventRequestDep = '@(Url.Action("Create", "ProblemEventRequestDep", new { area = "Problem" }))';
+    var urlUpdateProblemEventRequestDep = '@(Url.Action("Update", "ProblemEventRequestDep", new { area = "Problem" }))';
+    var urlDeleteProblemEventRequestDep = '@(Url.Action("Delete", "ProblemEventRequestDep", new { Area = "Problem" }))';
+    var urlDetailProblemEventRequestDep = '@(Url.Action("ShowFrmDetail", "ProblemEventRequestDep", new { Area = "Problem" }))';
+    var sortProblemEventRequestDepIndex = null;
+    var showCreateProblemEventRequestDep = function () {
+        var url = urlCreateProblemEventRequestDep;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateProblemEventRequestDep = function () {
+        var url = urlUpdateProblemEventRequestDep;
+        var record = getProblemEventRequestDepSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getProblemEventRequestDepSelection = function () {
+        var records = App.ProblemEventRequestDepPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setProblemEventRequestDepSelection = function () {
+        if (sortProblemEventRequestDepIndex != null) {
+            App.ProblemEventRequestDepPanel.selModel.select(sortProblemEventRequestDepIndex);
+        }
+    };
+
+    var showDeleteProblemEventRequestDep = function () {
+        var url = urlDeleteProblemEventRequestDep;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ danh mục đơn vị yêu cầu này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemEventRequestDepSelection();
+                            var ID = record == null ? 0 : record.data.ID;
+                            var params = { ID: ID };
+                            onDirectMethod(url, params, 'post', reloadProblemEventRequestDep);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProblemEventRequestDep = function () {
+        var url = urlDetailProblemEventRequestDep;
+        var record = getProblemEventRequestDepSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadProblemEventRequestDep = function () {
+        App.ProblemEventRequestDepPanel.store.reload();
+    };
+
+    var selectionChangeProblemEventRequestDep = function () {
+        var record = getProblemEventRequestDepSelection();
+        var isDisabled = record == null;
+        App.btnUpdateProblemEventRequestDep.setDisabled(isDisabled);
+        App.btnDeleteProblemEventRequestDep.setDisabled(isDisabled);
+        App.btnDetailProblemEventRequestDep.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý đơn vị yêu cầu").Header(false)
+                    .ID("ProblemEventRequestDepPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateProblemEventRequestDep").ID("btnCreateProblemEventRequestDep()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateProblemEventRequestDep").Handler("showUpdateProblemEventRequestDep();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteProblemEventRequestDep").Handler("showDeleteProblemEventRequestDep()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailProblemEventRequestDep").Handler("showDetailProblemEventRequestDep();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreProblemEventRequestDep")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Description").Type(ModelFieldType.String)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setProblemEventRequestDepSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên đơn vị yêu cầu").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("Description").Text("Mô tả").Flex(1).MenuDisabled(true)
+             )
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProblemEventRequestDep();")
+    )
+    )

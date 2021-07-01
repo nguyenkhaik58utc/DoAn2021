@@ -1,0 +1,179 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Human.Controllers;
+@{
+    var planId = ViewData["planId"] != null ? ViewData["planId"].ToString() : "0";
+}
+@(
+ Html.X().Window()
+ .Title("Danh sách đợt đào tạo")
+.Layout(LayoutType.Fit)
+.Constrain(true)
+.Modal(true)
+.Icon(Icon.ApplicationViewDetail)
+.Frame(true)
+.Width(860).Height(500)
+.Items(
+    Html.X().GridPanel()
+                .ID("grMnPlanTrainingDetail")
+                .Border(false)
+                .ColumnLines(true)
+                .RowLines(true)
+                .TopBar(
+                Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonCreate().DirectEvents(de =>
+                                        {
+                                            de.Click.ExtraParams.Add(new { planId = planId });
+                                            de.Click.Url = Url.Action("ShowFrmAdd", "PlanDetail");
+                                        }),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnUpdatePlanDetail").Handler("updateRecordPlanDetail();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ID("btnDeletePlanDetail").Handler("deleteRecordPlanDetail();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ID("btnViewDetail").Handler("showDetail();"),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                        )
+                        )
+                    .Store(Html.X().Store()
+                            .ID("stMnPlanTrainingDetail")
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetData"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                                     .Parameters(ps => ps.Add(new StoreParameter("planId", planId, ParameterMode.Value)))
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                            Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("PlanID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Content").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Number").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Reason").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("TrainingTypeID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("ExpectedCost").Type(ModelFieldType.Float),
+                                        Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("FromDate").Type(ModelFieldType.Date),
+                                        Html.X().ModelField().Name("ToDate").Type(ModelFieldType.Date),
+                                        Html.X().ModelField().Name("IsCommit").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("CommitContent").Type(ModelFieldType.String)
+
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .Align(Alignment.Center)
+                                    .Width(33),
+                            Html.X().Column()
+                                    .Text("ID")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                            Html.X().Column().Text("Nội dung")
+                                    .DataIndex("Content")
+                                     .Flex(1).Wrap(true),
+                            Html.X().Column()
+                                    .Text("Số lượng")
+                                    .DataIndex("Number")
+                                    .Align(Alignment.Right)
+                                    .Width(70).Wrap(true),
+                            Html.X().Column()
+                                    .Text("Lý do")
+                                    .DataIndex("Reason")
+                                    .Width(170)
+                                    .Wrap(true),
+                            Html.X().Column()
+                                    .Text("Kinh phí dự kiến")
+                                    .Align(Alignment.Right)
+                                    .DataIndex("ExpectedCost")
+                                    .Width(100)
+                                    .Wrap(true),
+                            Html.X().DateColumnExtend()
+                                    .Text("Bắt đầu")
+                                    .DataIndex("FromDate")
+                                    .Format("dd/MM/yyyy HH:mm")
+                                    .Width(100)
+                                    .Wrap(true),
+                            Html.X().DateColumnExtend()
+                                    .Text("Kết thúc")
+                                    .Format("dd/MM/yyyy HH:mm")
+                                    .DataIndex("ToDate")
+                                    .Width(100)
+                                    .Wrap(true)
+
+                    ).SelectionModel(Html.X().RowSelectionModel()
+                                                .Mode(SelectionMode.Multi)
+                                                .Listeners(l =>
+                                                {
+                                                    l.Select.Handler = "checkStatusPlanDetail()";
+                                                })
+                                                )
+
+                        .View(Html.X().GridView().MarkDirty(false))
+                        .Plugins(Html.X().CellEditing())
+                        .BottomBar(Html.X().CustomPagingToolbar())
+
+)
+      .Buttons(
+                    Html.X().ButtonExit()
+                )
+
+)
+<script type="text/javascript">
+    var checkStatusPlanDetail = function () {
+        var records = App.grMnPlanTrainingDetail.selModel.getSelection();
+        if (records.length > 0) {
+            SetEnabled(App.btnUpdatePlanDetail, App.btnDeletePlanDetail, App.btnViewDetail);
+        }
+        else {
+            SetDisabled(App.btnUpdatePlanDetail, App.btnDeletePlanDetail, App.btnViewDetail);
+        };
+    };
+
+    var deleteRecordPlanDetail = function () {
+        var record = App.grMnPlanTrainingDetail.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa đợt đào tạo đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "PlanDetail", new { Area = "Human" }, null))',
+                            params: { id: id },
+                            success: function () {
+
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    };
+    var updateRecordPlanDetail = function () {
+        var record = App.grMnPlanTrainingDetail.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("ShowFrmUpdate", "PlanDetail", new { Area = "Human" }, null))';
+            var params = { id: record[0].get('ID'), };
+            onDirectMethod(url, params);
+        };
+    };
+    var showDetail = function () {
+        var record = App.grMnPlanTrainingDetail.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("ShowFrmDetail", "PlanDetail", new { Area = "Human" }, null))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params);
+        }
+    };
+</script>

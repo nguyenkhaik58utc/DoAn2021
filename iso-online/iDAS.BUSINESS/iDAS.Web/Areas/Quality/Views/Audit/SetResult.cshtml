@@ -1,0 +1,211 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    var programId = ViewData["programId"] != null ? ViewData["programId"].ToString() : "0";
+    var urlSubmitIncorrect = Url.Action("InsertIncorrect", "AuditResultIncorrect", new { area = "Quality" });
+    var urlStoreIncorrect = Url.Action("LoadIncorrect", "AuditResultIncorrect", new { area = "Quality" });
+    var paramStoreIncorrect = Html.X().StoreParameter().Name("AuditID").Value("getAuditId()").Mode(ParameterMode.Raw);
+ } 
+@( Html.X().Window()
+    .Title("Cập nhật kết quả đánh giá")
+    .Icon(Icon.Star)
+    .Height(520)
+    .Width(890)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(0)
+    .Border(true)
+    .Center()
+    .Items(
+        Html.X().GridPanel()
+                    .ID("grMnDetailResult")
+                    .Border(false)
+                         .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                                 Html.X().ButtonAudit().ID("btnAudit").Disabled(true).Handler("updateFormAudit_Q(this.up('gridpanel'));")
+                                    
+                        )
+                    )
+                .Store (Html.X().Store()
+                        .ID("stMnDetailResult")
+                        .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetData", "Audit"))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                            .Parameters(ps =>
+                            {
+
+                                ps.Add(new StoreParameter("programId", programId, ParameterMode.Value));
+
+                            })
+                        .RemoteSort(true)
+                        .AutoLoad(true)
+                                 .GroupField("DepartmentName")
+                                   .Sorters(
+                            Html.X().DataSorter().Property("ID").Direction(Ext.Net.SortDirection.ASC)
+                        )
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                        Html.X().Model()
+                                .Fields(
+
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("ISOStandardID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                         Html.X().ModelField().Name("ISOName").Type(ModelFieldType.String),
+                                              Html.X().ModelField().Name("DepartmentName").Type(ModelFieldType.String),
+                                                   Html.X().ModelField().Name("Result").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("IsPass").Type(ModelFieldType.Boolean),
+                                            Html.X().ModelField().Name("IsAudit").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                         Html.X().ModelField().Name("Index").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("Obs").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("Maximum").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Medium").Type(ModelFieldType.Int)
+
+                                )
+                              )
+                          )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                                      Html.X().Column()
+                                    .Text("Điều")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("Index")
+                                   .Width(80)
+                                    .Wrap(true),                                    
+                        Html.X().Column()
+                                .Text("Yêu cầu tiêu chuẩn")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Name")
+                                    .Flex(1)
+                               .Width(300)
+                                .Wrap(true),
+                                      Html.X().Column()
+                                    .Text("Tiêu chuẩn ISO")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("ISOName")
+                                   .Width(200)
+                                   
+                                    .Wrap(true),
+                                      Html.X().Column()
+                                    .Text("Kết quả")
+                                    .Align(Alignment.Center)
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("Result")
+                                   .Width(110)
+                                    .Wrap(true),
+                                            Html.X().ComponentColumn()
+                                .Text("Tổng số điểm không phù hợp")
+                                .Columns(
+                                 Html.X().Column()
+                                .Text("Obs")
+                                     .Align(Alignment.Right)
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("Obs")
+                               .Width(80),
+                                      Html.X().Column()
+                                    .Text("M")
+                                         .Align(Alignment.Right)
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("Maximum")
+                                   .Width(80)
+                                    .Wrap(true),
+                                      Html.X().Column()
+                                    .Text("m")
+                                    .Align(Alignment.Right)
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("Medium")
+                                   .Width(80)
+                                    .Wrap(true)
+                                )                            
+                               
+
+                ).SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "checkStatusDetailResult();";
+                            })
+                            )
+                                .View(
+                    Html.X().GridView().MarkDirty(false)
+                )
+                .Features(
+                    Html.X().GroupingSummary()
+                        .ID("GroupingSummary1")
+                        .GroupHeaderTplString("{name}")
+                        .HideGroupedHeader(true)
+                        .EnableGroupingMenu(false)
+                )                     
+                .BottomBar
+                (
+                Html.X().CustomPagingToolbar()
+                 )
+              )
+            .Buttons(
+                Html.X().ButtonExit()
+            )
+
+)
+<script type="text/javascript">
+    var getAuditId = function () {
+        var auditId = 0;
+        var records = GridPanelAudit.selModel.getSelection();
+        if (records.length > 0) {
+            auditId = records[0].get('ID');
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có Công việc nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+        return auditId;
+    };
+    var updateFormAudit_Q = function (grid) {
+        AuditGridPanel = grid;
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AuditUpdateWindow", "Audit", new { Area = "Quality" }))',
+                params: { id: records[0].get('ID'), iSOStandardId: records[0].get('ISOStandardID') },
+                success: function (result) {
+                    mask.hide();
+                },
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa chọn bản ghi nào?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+    };  
+    var checkStatusDetailResult = function () {
+        var records = App.grMnDetailResult.selModel.getSelection();
+        switch (records.length) {
+            case 0:               
+                App.btnAudit.setDisabled(true);
+                break;
+            case 1:
+                App.btnAudit.setDisabled(false);
+                break;
+            default:
+                App.btnAudit.setDisabled(true);
+        } 
+    };
+</script>

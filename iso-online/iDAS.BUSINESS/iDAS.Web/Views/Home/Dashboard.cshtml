@@ -1,0 +1,402 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Human.Models.ShiftHistoryDTO
+@{
+    Layout = null;
+
+    string shirtText = (string)ViewData["ShiftText"];
+    DateTime shiftTime = (DateTime)ViewData["ShiftTime"];
+}
+@( Html.X().Panel().ID("pnlDashboard").Title("Bàn làm việc").Layout(LayoutType.Fit).Items(
+    Html.X().Hidden().ID("hdfStartTime").Value(DateTime.Now.ToShortDateString()),
+  Html.X().Container().Layout(LayoutType.Column).Layout(LayoutType.Border).Items(
+          Html.X().FormPanel()
+         .MarginSpec("1 1 1 1")
+         .Title("Biểu đồ")
+         .Header(false)
+         .Region(Region.North)
+         .BodyPadding(5)
+         .Width(870)
+        .FieldDefaults(fd =>
+        {
+            fd.LabelAlign = LabelAlign.Left;
+            fd.MsgTarget = MessageTarget.Side;
+        })
+        .LayoutConfig(new VBoxLayoutConfig() { Align = VBoxAlign.Stretch })
+        .Items(
+                     Html.X().Panel()
+                    .Height(295)
+                    .Layout(LayoutType.Fit)
+                    .MarginSpec("0 0 3 0")
+                          .TopBar(Html.X().Toolbar()
+            .Items(
+                    Html.X().Button()
+                    .Text("Tải lại")
+                    .Icon(Icon.ArrowRefresh)
+                    .Handler("#{ChartTaskPerson}.getStore().reload()"),
+                   Html.X().Button()
+                    .Text("Lưu biểu đồ")
+                    .Icon(Icon.Disk)
+                    .Handler("saveChart")
+            ))
+                    .Items(
+                    Html.X().Chart()
+                    .ID("ChartTaskPerson")
+                    .Shadow(true)
+                    .StandardTheme(StandardChartTheme.Base)
+                        .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Top)
+                    .LabelFont("11px Tahoma")
+                    .BoxStroke("#084594")
+                        )
+                    .Animate(true)
+                        .Store(Html.X().Store()
+                        .Data(Model)
+                            .Model(Html.X().Model()
+                            .Fields(
+                                        Html.X().ModelField().Name("TimeFix"),
+                                        Html.X().ModelField().Name("TotalValue"),
+                                        Html.X().ModelField().Name("DoingValue"),
+                                        Html.X().ModelField().Name("FinishValue"),
+                                             Html.X().ModelField().Name("PauseValue"),
+                                                  Html.X().ModelField().Name("OverTimeValue"),
+                                                       Html.X().ModelField().Name("FinishOverTimeValue")
+                            )
+                        )
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetData"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                    )
+                    .Axes(
+                            Html.X().NumericAxis()
+                                    .Fields(new string[] { "TotalValue" })
+                            .Grid(true)
+                            .Title("Đơn vị: Công việc")
+                            .Minimum(0)
+                                .Label(Html.X().AxisLabel()
+                                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                            ),
+                           Html.X().CategoryAxis()
+                            .Position(Position.Bottom)
+                                .Fields("TimeFix")
+                                .Title("Biểu đồ thống kê công việc năm " + DateTime.Now.Year)
+                    )
+                        .Series(
+                        Html.X().ColumnSeries()
+                        .Axis(Position.Bottom)
+                        .Highlight(true)
+                            .XField("TimeFix")
+                            .YField(new string[] { "TotalValue" })
+                                   .Title("Tổng công việc")
+                            .Tips(Html.X().ChartTip()
+                            .TrackMouse(true)
+                            .Width(140)
+                            .Height(28)
+                            .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('TotalValue') + ' công việc');")
+                             ),
+                                       Html.X().LineSeries()
+                            .Axis(Position.Left).Fill(true)
+                                        .Smooth(3)
+                            .XField("TimeFix")
+                        .YField("DoingValue")
+                               .Title("Đang thực hiện")
+                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                 .Tips(Html.X().ChartTip()
+
+                                .Width(280)
+                                .Height(28)
+                                .TrackMouse(true)
+                                  .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('DoingValue') + ' công việc đang thực hiện');")
+
+                                 )
+                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Arrow, Size = 5, Radius = 5, StrokeWidth = 0 }),
+                             Html.X().LineSeries()
+                            .Axis(Position.Left)
+                                                .Smooth(3).Fill(true)
+                                .XField("TimeFix")
+                                .YField("PauseValue")
+                                   .Title("Tạm dừng")
+                            .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                     .Tips(Html.X().ChartTip()
+                                    .Width(280)
+                                    .Height(28)
+                                    .TrackMouse(true)
+                                      .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('PauseValue') + ' công việc đang tạm dừng');")
+
+                                     )
+                            .MarkerConfig(new SpriteAttributes { Type = SpriteType.Triangle, Size = 5, Radius = 5, StrokeWidth = 0 }),
+                                 Html.X().LineSeries()
+                            .Axis(Position.Left)
+                                                .Smooth(3).Fill(true)
+                                .XField("TimeFix")
+                                .YField("OverTimeValue")
+                                   .Title("Quá hạn")
+                            .HighlightConfig(new SpriteAttributes { Size = 4, Radius = 4 })
+                                     .Tips(Html.X().ChartTip()
+                                    .Width(280)
+                                    .Height(28)
+                                    .TrackMouse(true)
+                                      .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('OverTimeValue') + ' công việc quá hạn');")
+
+                                     )
+                            .MarkerConfig(new SpriteAttributes { Type = SpriteType.Cross, Size = 4, Radius = 4, StrokeWidth = 0 }),
+                                 Html.X().LineSeries()
+                            .Axis(Position.Left)
+                                                .Smooth(3).Fill(true)
+                                .XField("TimeFix")
+                                .YField("FinishOverTimeValue")
+                                   .Title("Hoàn thành quá hạn")
+                            .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                     .Tips(Html.X().ChartTip()
+                                    .Width(280)
+                                    .Height(28)
+                                    .TrackMouse(true)
+                                      .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('FinishOverTimeValue') + ' công việc hoàn thành quá hạn');")
+
+                                     )
+                            .MarkerConfig(new SpriteAttributes { Type = SpriteType.Circle, Size = 4, Radius = 4, StrokeWidth = 0 }),
+                         Html.X().LineSeries()
+                            .Axis(Position.Bottom)
+                                .Smooth(3).Fill(true)
+                            .XField("TimeFix")
+                            .YField("FinishValue")
+                                   .Title("Hoàn thành")
+                            .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                            .Tips(Html.X().ChartTip()
+                            .Width(280)
+                            .Height(28)
+                            .TrackMouse(true)
+                             .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('FinishValue') + ' công việc đã hoàn thành');")
+                             )
+                            .MarkerConfig(new SpriteAttributes { Type = SpriteType.Circle, Size = 4, Radius = 4, StrokeWidth = 0 })
+                            .Label(Html.X().SeriesLabel()
+                            .Display(SeriesLabelDisplay.InsideStart)
+                            .Field(new[] { "TotalValue" })
+                            .Orientation(Orientation.Horizontal)
+                            .Color("#333")
+                            .TextAnchor("middle")
+                            .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0');")
+                        )
+                    )
+            )),
+               Html.X().Panel().Title("Lọc nhanh công việc").Icon(Icon.Find).Padding(0).BodyStyle("background-color: transparent;").MarginSpec("1 1 1 1").Region(Region.Center).Layout(LayoutType.Fit).Frame(true).Items(
+                     Html.X().GridPanel()
+                .ID("GridTaskViewNew")
+                .Border(false)
+                    .Listeners(l => l.SelectionChange.Handler = "if (selected[0]) {App.DetaiForm.getForm().loadRecord(selected[0]); App.avatarApproval.setImageUrl('/Generic/File/LoadAvatarFile?employeeId='+selected[0].get('TaskInfo.EmployeesIDCreate')); App.txtPercen.updateProgress(selected[0].get('TaskInfo.Rate')/100, selected[0].get('TaskInfo.Rate') + '%');}")
+                .TopBar(Html.X().Toolbar()
+                .ID("tbGridTaskView")
+                .Items(
+                    Html.X().Hidden().ID("employeeId").Value(ViewBag.EmployeeID),
+             Html.X().ComboBox().ID("cbStatus").FieldLabel("Trạng thái").LabelWidth(60).MarginSpec("0 0 0 10").Width(300).SelectedItems(new ListItem("Công việc mới được giao", 0)).Items(
+                    new ListItem("Công việc mới được giao", 0),
+                    new ListItem("Công việc đang thực hiện", 1)
+                    ).Listeners(ls => ls.Change.Handler = "App.GridTaskViewNew.getStore().reload();"),
+                    Html.X().ToolbarFill(),
+                    Html.X().ButtonView().ID("btnTaskDetail").Disabled(true).Handler("showTaskDetail();")
+                )
+            )
+            .Store(
+                Html.X().Store()
+                .ID("stTask")
+                .AutoLoad(false)
+                    .Proxy(
+                        Html.X().AjaxProxy().Url(Url.Action("GetDataTaskPersonalNew", "TaskPerson")).Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("employeeId", "App.employeeId.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("status", "App.cbStatus.getValue()", ParameterMode.Raw));
+                    })
+                    .RemoteSort(false).RemotePaging(true).PageSize(100)
+                    .Model(Html.X().Model()
+                        .Fields(
+                            new ModelField("TaskInfo.ID"),
+                            new ModelField("TaskInfo.Name", ModelFieldType.String),
+                            new ModelField("TaskInfo.TaskCodeText", ModelFieldType.String),
+                            new ModelField("TaskInfo.LevelID", ModelFieldType.Int),
+                            new ModelField("TaskInfo.LevelName", ModelFieldType.String),
+                            new ModelField("TaskInfo.LevelColor", ModelFieldType.String),
+                            new ModelField("TaskInfo.StartTime", ModelFieldType.Date),
+                            new ModelField("TaskInfo.EndTime", ModelFieldType.Date),
+                            new ModelField("TaskInfo.IsNew", ModelFieldType.Boolean),
+                            new ModelField("TaskInfo.IsEdit", ModelFieldType.Boolean),
+                            new ModelField("TaskInfo.IsApproval", ModelFieldType.Boolean),
+                            new ModelField("TaskInfo.IsAccept", ModelFieldType.Boolean),
+                            new ModelField("TaskInfo.IsComplete", ModelFieldType.Boolean),
+                            new ModelField("TaskInfo.IsPass", ModelFieldType.Boolean),
+                            new ModelField("TaskInfo.IsPause", ModelFieldType.Boolean),
+                            new ModelField("TaskInfo.IsOverTime", ModelFieldType.Boolean),
+                            new ModelField("TaskInfo.PerformBy", ModelFieldType.Int),
+                            new ModelField("TaskInfo.EmployeesIDCreate", ModelFieldType.Int),
+                            new ModelField("TaskInfo.DepartmentCreateName", ModelFieldType.String),
+                            new ModelField("TaskInfo.RoleCreateName", ModelFieldType.String),
+                            new ModelField("TaskInfo.AvatarCreateName", ModelFieldType.String),
+                            new ModelField("TaskInfo.CreateByName", ModelFieldType.String),
+                            new ModelField("TaskInfo.Status", ModelFieldType.String),
+                            new ModelField("TaskInfo.Rate", ModelFieldType.Float),
+                            new ModelField("TaskInfo.Cost", ModelFieldType.Float),
+                            new ModelField("TaskInfo.Content", ModelFieldType.String),
+                            new ModelField("TaskInfo.Note", ModelFieldType.String),
+                            new ModelField("IsNew", ModelFieldType.Boolean),
+                            new ModelField("IsCreate", ModelFieldType.Boolean),
+                            new ModelField("IsPerform", ModelFieldType.Boolean),
+                            new ModelField("IsApproval", ModelFieldType.Boolean),
+                            new ModelField("TaskID", ModelFieldType.Int)
+
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                    .Text("STT.")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(33)
+                    .Align(Alignment.Center),
+                Html.X().Column()
+                    .Text("Công việc")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .DataIndex("TaskInfo.Name")
+                    .Wrap(true)
+                    .Flex(1),
+                      Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                .Columns(
+                        Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                        .Width(120)
+                        .Text("Bắt đầu")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Center)
+                        .DataIndex("TaskInfo.StartTime")
+                        .Format("dd/MM/yyyy HH:mm"),
+                        Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                        .Width(120)
+                        .Text("Kết thúc")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Center)
+                        .DataIndex("TaskInfo.EndTime")
+                        .Format("dd/MM/yyyy HH:mm")
+                    )
+                )
+            .SelectionModel(
+               Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                   .Listeners(ls => ls.Select.Handler = "App.btnTaskDetail.setDisabled(false);")
+                )
+
+            ),
+
+               Html.X().FormPanel().ID("DetaiForm2").MarginSpec("0 0 0 5").Header(false)
+                        .Region(Region.East).Width(450).MarginSpec("1 1 1 1").Layout(LayoutType.Border)
+                        //.LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch }).Padding(6)
+                        .Frame(true)
+                        .Items(
+
+
+                    Html.X().FormPanel().ID("DetaiForm").Title("Chi tiết công việc").Icon(Icon.ApplicationViewDetail).AutoScroll(true).MarginSpec("0 0 0 5")
+                        .Region(Region.Center).Width(450).MarginSpec("1 1 1 1").Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch }).Padding(6)
+                        .Frame(true)
+                        .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                        .Defaults(d =>
+                        {
+                            d.Add(new Parameter("LabelWidth", "90"));
+                            d.Add(new Parameter("Disabled", "false"));
+                            d.Add(new Parameter("ReadOnly", "true"));
+                        })
+                        .Items(
+                            Html.X().TextField().FieldLabel("Công việc").Name("TaskInfo.Name"),
+                            Html.X().NumberField().FieldLabel("Chi phí (VNĐ)").Name("TaskInfo.Cost"),
+                            Html.X().Container().Layout(LayoutType.HBox).Items(
+                                Html.X().DisplayField().Text("Người giao việc: ").Width(95),
+                                Html.X().FieldSet().Padding(4).MarginSpec("5 0 0 0").Flex(1).Layout(LayoutType.Column).ColSpan(2).Items(
+                                    Html.X().Hidden().Name("TaskInfo.EmployeesIDCreate").ID("hdApprovalId").Value(0),
+                                    Html.X().ImageButton().ID("avatarApproval").ImageUrl("/Content/images/underfind.jpg").StyleSpec("border: 1px solid #b5b8c8;").Height(80).Width(60).UIName("TaskInfo.EmployeesIDCreate").ColumnWidth(0.2)
+                                        .Listeners(ls => ls.Click.Handler = @"var id = this.up().queryById('hdApprovalId').getValue(); if (id == '' || id == 0) { return; }; openEmployeeDetailDashboard(id);"),
+                                    Html.X().Container().MarginSpec("0 0 0 5").Layout(LayoutType.Form).ColumnWidth(0.8).Items(
+                                        Html.X().DisplayField().StyleSpec("border-bottom: 1px solid #b5b8c8;").Name("TaskInfo.CreateByName").Text("N/A").FieldStyle("font-weight:bold").HideLabel(true).MarginSpec("0 0 5 0").ReadOnly(true),
+                                        Html.X().Container().Items(
+                                            Html.X().DisplayField().Name("TaskInfo.DepartmentCreateName").Text("Phòng ban: N/A").FieldStyle("font-style: italic; font-size: 1em;").HideLabel(true).MarginSpec("-4 0 0 0"),
+                                            Html.X().DisplayField().Name("TaskInfo.RoleCreateName").Text("Chức vụ: N/A").FieldStyle("font-style: italic; font-size: 1em;").HideLabel(true).MarginSpec("-4 0 0 0")
+                                            )
+                                        )
+                                    )
+                                ),
+                           Html.X().Container().Layout(LayoutType.HBox).Items(
+                                Html.X().DisplayField().Text("Hoàn thành: ").Width(95),
+                                Html.X().ProgressBar().ID("txtPercen").Text("%").MarginSpec("5 0 0 0").Flex(1))
+
+                           ),
+
+                     Html.X().FormPanel().ID("ShiftForm").Title("Ca trực").Icon(Icon.ApplicationViewDetail).AutoScroll(true).MarginSpec("0 0 0 5")
+                        .Region(Region.South).Width(450).MarginSpec("1 1 1 1").Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch }).Padding(2)
+                        .Frame(true)
+                        .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                        .Items(
+                            Html.X().Label().ID("ShiftInfo").Text(shirtText).MarginSpec("0 0 5 0"),
+                            
+                            Html.X().FormPanel().Items(
+                                Html.X().HiddenFor(m=>m.ID),
+                                Html.X().DateTimeFieldFor(m=>m.ShiftTime).Layout(LayoutType.HBox).LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Top }),
+                                Html.X().Button().ID("btnShiftOn").Text("Vào ca").Icon(Icon.StatusOnline).MarginSpec("0 5 0 0").Hidden(Model.ID>0)
+                                    .DirectEvents(de =>
+                                    {
+                                        de.Click.ExtraParams.Add(new { val = false });
+                                        //de.Click.Before = @"if (!App.frmTitle.getForm().isValid()) { return false; } ";
+                                        de.Click.Action = "Insert";
+                                        de.Click.FormID = "ShiftForm";
+                                        de.Click.Success = "location.reload();";
+                                    }),
+                                Html.X().Button().ID("btnShipftOff").Text("Kết thúc ca").Icon(Icon.StatusOffline).Hidden(Model.ID == 0)
+                                    .DirectEvents(de =>
+                                    {
+                                        //de.Click.ExtraParams.Add(new { val = false });
+                                        //de.Click.Before = @"if (!App.frmTitle.getForm().isValid()) { return false; } ";
+                                        de.Click.Action = "UpdateShift";
+                                        de.Click.FormID = "ShiftForm";
+                                        de.Click.Success = "location.reload();";
+                                    }),
+                                Html.X().EmployeeFieldFor(m => m.UserTo).AllowBlank(false).ID("userTo").Title("Người nhận ca").Hidden(Model.ID == 0),//.MarginSpec("0 0 0 115")
+                                Html.X().Button().ID("btnShipftChange").Text("Giao ca").Icon(Icon.ArrowRefresh).MarginSpec("0 5 0 0").Hidden(Model.ID == 0)
+                                    .DirectEvents(de =>
+                                        {
+                                            //de.Click.ExtraParams.Add(new { val = false });
+                                            //de.Click.Before = @"if (!App.frmTitle.getForm().isValid()) { return false; } ";
+                                            de.Click.Action = "HandOverShift";
+                                            de.Click.FormID = "ShiftForm";
+                                            de.Click.Success = "location.reload();";
+                                        })
+                                    )
+
+                         )
+                    )
+
+                 )
+            )
+)
+<script type="text/javascript">
+    var showTaskDetail = function () {
+        var taskId = App.GridTaskViewNew.selModel.getSelection()[0].get('TaskInfo.ID');
+        if (taskId != 0) {
+            var url = '@(Url.Action("DetailWindow", "Task", new { Area = "Task" }))';
+            var params = { taskId: taskId };
+            onDirectMethod(url, params);
+        }
+    };
+    var openEmployeeDetailDashboard = function (id) {
+        var url = '@(Url.Action("DetailForm", "Employee", new { Area = "Human" }))';
+        var params = {
+            id: id,
+        };
+        onDirectMethod(url, params);
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Xác nhận', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+</script>

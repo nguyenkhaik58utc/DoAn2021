@@ -1,0 +1,187 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerCareItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+.ID("winResultCare")
+.Title("Kết quả chăm sóc khách hàng")
+.Icon(Icon.CartMagnify)
+.Maximized(true)
+.Height(1)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+    X.HiddenFor(m => m.ID).ID("hdfCareResultId"),
+     X.Hidden().ID("hdfGroupId"),
+    X.Panel()
+    .Border(false)
+    .Layout(LayoutType.Border)
+    .Items(
+    X.GridPanel().ID("GrCaredGroupCustomer")
+    .ColumnLines(true)
+    .ForceFit(true)
+            .Title("NHÓM KHÁCH HÀNG").TitleAlign(TitleAlign.Center)
+        // .Header(false)
+            .Collapsible(true)
+            .Region(Region.West).Width(300)
+            .MarginSpec("-1 0 -1 -1")
+            .Split(true)
+            .Layout(LayoutType.Fit)
+                .Icon(Icon.TextListBullets)
+                .Store(
+                        Html.X().Store().ID("storeCustomerCareObject")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadResultCustomerCareObject", "CustomerCare", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")))
+                            .Parameters(ps => ps.Add(new StoreParameter("careID", "App.hdfCareResultId.getValue()", ParameterMode.Raw)))
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("CareID"),
+                                    Html.X().ModelField().Name("CategoryID"),
+                                    Html.X().ModelField().Name("IsSelect")
+                                )
+                            )
+                        )
+                        .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                X.Column().DataIndex("Name").Text("Tên nhóm").Flex(1)
+                            )
+                        .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single).Listeners(
+                                ls => ls.SelectionChange.Handler = "onSelectGroup();"))
+                        .BottomBar(Html.X().CustomPagingToolbar())
+                ,
+                    Html.X().GridPanel().ID("grCustomerCareResult")
+                        .Region(Region.Center)
+                        .Layout(LayoutType.Fit)
+                        .Header(false)
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .MarginSpec("-1 0 -1 -1")
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                  Html.X().Button().Text("Chăm sóc")
+                                             .ToolTip("Chăm sóc khách hàng").ID("btnAddCustomerCareResult").Icon(Icon.CartMagnify).Handler("AddCareCustomer();").Disabled(true),
+                                                Html.X().ToolbarSeparator(),
+                                  Html.X().Button()
+        //.Text("Kết quả chăm sóc")
+                                            .ToolTip("Xem chi tiết Kết quả chăm sóc").ID("btnDetailCustomerCareResult").Icon(Icon.Zoom).Handler("ViewDetailResultCare();").Disabled(true),
+                                            Html.X().ToolbarSeparator()
+                                )
+                            )
+                        .Store(
+                            Html.X().Store().AutoLoad(false)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCaredCustomerByGroup", "CustomerCare", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")))
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("groupID", "App.hdfGroupId.getValue()", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("careID", "App.hdfCareResultId.getValue()", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+        //   Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("CustomerID"),
+                                    Html.X().ModelField().Name("IsCare").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("Image"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Email"),
+                                    Html.X().ModelField().Name("Phone"),
+                                    Html.X().ModelField().Name("Type"),
+                                    Html.X().ModelField().Name("Address")
+                                )
+                          )
+                    )
+                    .ColumnModel(
+                            X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            X.ImageColumn().DataIndex("Image").Locked(true),
+                            X.Column().DataIndex("Name").Text("Khách hàng").Width(250).Locked(true),
+                            X.Column().DataIndex("IsCare").Renderer("CareRender").Text("Trạng thái").Width(100).Locked(true),
+                            X.Column().DataIndex("Type").Renderer("TypeRender").Text("Loại").Width(80).Align(Alignment.Center),
+                            X.Column().DataIndex("Phone").Text("Số điện thoại").Width(100).Align(Alignment.Right),
+                            X.Column().DataIndex("Email").Text("Email").Width(100),
+
+                                 X.Column().DataIndex("Address").Text("Địa chỉ").MinWidth(100).Flex(1)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusCustomerCare();"))
+                    .BottomBar(X.CustomPagingToolbar())
+                    )
+
+    )
+.Buttons(Html.X().ButtonExit())
+)
+<script>
+    var TypeRender = function (value) {
+        return value == false ? "Tổ chức" : "Cá nhân";
+    };
+    var template = '<span style="color:{0};">{1}</span>';
+    var CareRender = function (value) {
+        return Ext.String.format(template, (value == true ? "green" : "red"), (value == true ? "Đã chăm sóc" : "Chưa chăm sóc"));
+    };
+    var CheckStatusCustomerCare = function () {
+        var records = App.grCustomerCareResult.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnAddCustomerCareResult.setDisabled(false);
+            if (records[0].get('IsCare') == true) {
+                App.btnDetailCustomerCareResult.setDisabled(false);
+            }
+            else {
+                App.btnDetailCustomerCareResult.setDisabled(true);
+            };
+        }
+        else {
+            App.btnDetailCustomerCareResult.setDisabled(true);
+            App.btnAddCustomerCareResult.setDisabled(true);
+        };
+    };
+    var onSelectGroup = function () {
+        var records = App.GrCaredGroupCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            App.hdfGroupId.setValue(records[0].get('CategoryID'));
+            App.grCustomerCareResult.store.reload();
+        };
+    };
+    var AddCareCustomer = function () {
+        var records = App.grCustomerCareResult.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ResultUpdateForm", "CustomerCare", new { Area = "Customer" }, null))';
+            var params = {
+                customerID: records[0].get('CustomerID'),
+                careID: App.hdfCareResultId.getValue(),
+                customerName: records[0].get('Name')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetailResultCare = function () {
+        var records = App.grCustomerCareResult.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ResultCustomerDetailForm", "CustomerCare", new { Area = "Customer" }, null))';
+            var params = {
+                customerID: records[0].get('CustomerID'),
+                careID: App.hdfCareResultId.getValue()
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

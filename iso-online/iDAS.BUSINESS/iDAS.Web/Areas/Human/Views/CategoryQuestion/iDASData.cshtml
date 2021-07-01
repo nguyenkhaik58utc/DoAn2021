@@ -1,0 +1,174 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@(Html.X().Window().Layout(LayoutType.Fit).Maximized(true).Icon(Icon.PackageDown).Title("Bộ câu hỏi đánh giá mẫu của hệ thống iDAS")
+    .Items(
+            Html.X().Hidden().ID("hdfCenterLsCateID"),
+            Html.X().Panel().Header(false).Border(false).StyleSpec("border: none;").BodyPadding(2)
+                .Layout(LayoutType.Border)
+                .TopBar(
+                          Html.X().Toolbar()
+                                    .Items(
+                                            Html.X().ComboBox().FieldLabel("<b >Lựa chọn mã ngành nghề </b>" + Html.Required())
+                                                    .LabelWidth(165).ID("cbxNaceCode")
+                                                    .InputWidth(300)
+                                                    .DisplayField("Name")
+                                                    .ValueField("ID")
+                                                    .Editable(false)
+                                                    .Store(
+                                                             Html.X().Store().AutoLoad(true)
+                                                                        .Model(
+                                                                            Html.X().Model().IDProperty("ID")
+                                                                            .Fields(
+                                                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                            )
+                                                                        )
+                                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadISONaceCodeActive")).Reader(Html.X().JsonReader().Root("data")))
+                                                          )
+                                                    .Listeners(ls => ls.Change.Handler = "App.stCenterCategoryQuestion.read();")
+                                        )
+                        )
+                .Items(
+                        Html.X().TreePanel()
+                                .Header(false)
+                                .Title("Bộ câu hỏi đánh giá")
+                                .Region(Region.West)
+                                .ID("trCenterCategoryQuestion")
+                                .Width(350)
+                                .TitleAlign(TitleAlign.Center)
+                                .Collapsible(true)
+                                .Split(true)
+                                .Border(true)
+                                .RowLines(true)
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .RootVisible(false)
+                                .Root(Html.X().Node().NodeID("0").Expanded(true)
+                                                .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "Name", Value = "Bộ câu hỏi đánh giá", Mode = ParameterMode.Value }))
+                                                .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "ParentID", Value = "0", Mode = ParameterMode.Value }))
+                                                .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "IsUse", Value = "1", Mode = ParameterMode.Value }))
+                                      )
+                                .SingleExpand(false)
+                                .Store(Html.X().TreeStore().AutoLoad(false)
+                                .ID("stCenterCategoryQuestion")
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetIdasQuestionCategorys")))
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("naceCodeID", "getNaceCodeValue()", ParameterMode.Raw));
+                                            })
+                                        .Model(
+                                        Html.X().Model()
+                                                .Fields(
+                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                                                    Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean)
+                                                )
+                                              )
+                                          )
+                                    .ColumnModel(
+                                        Html.X().TreeColumn()
+                                            .Align(Alignment.Left)
+                                            .DataIndex("Name").Text("Bộ câu hỏi")
+                                            .Flex(1)
+                                )
+                            .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi).IgnoreRightMouseSelection(true)
+                            .Listeners(ls => { ls.SelectionChange.Handler = "onSelectCenterCategoryQuestion();"; }))
+                        ,
+                    Html.X().GridPanel()
+                    .Region(Region.Center)
+                    .ID("grCenterQuestion")
+                    .Border(true)
+                    .RowLines(true)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Store(
+                            Html.X().Store().ID("stCenterQuestion")
+                                    .AutoLoad(false)
+                                    .RemotePaging(true)
+                                    .PageSize(20)
+                                    .Proxy(Html.X().AjaxProxy()
+                                                        .Url(Url.Action("GetCenterQuestion")).Reader(Html.X().JsonReader().Root("data"))
+                                            )
+                                    .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("cateId", "App.hdfCenterLsCateID.value", ParameterMode.Raw));
+                                    }
+                                                )
+                                    .Model(
+                                            Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                                Html.X().ModelField().Name("ID"),
+                                                                Html.X().ModelField().Name("Name"),
+                                                                Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean)
+                                                            )
+                                            )
+                          )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().Text("Câu hỏi").Align(Alignment.Left)
+                                                    .DataIndex("Name").Flex(1)
+                                )
+                    .BottomBar(Html.X().CustomPagingToolbar())
+                 )
+         )
+              .Buttons(
+                        Html.X().Button().Icon(Icon.PackageDown).Text("Sử dụng").ID("btnUseDataIdas").Disabled(true)
+                                .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"";
+                                    de.Click.EventMask.ShowMask = true;
+                                    de.Click.ExtraParams.Add(new Parameter("questionSelectId", "IDASDataSelect()", ParameterMode.Raw));
+                                    de.Click.ExtraParams.Add(new Parameter("parentId", "App.hdfLsCateId.value", ParameterMode.Raw));
+                                    de.Click.Action = "IDASData";
+                                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                                    de.Click.Success = " this.up('window').close();App.trCategoryQuestion.store.reload();";
+                                }),
+                        Html.X().ButtonExit()
+                     )
+)
+<script type="text/javascript">
+    var onSelectCenterCategoryQuestion = function () {
+        var records = App.trCenterCategoryQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnUseDataIdas.setDisabled(false);
+            if (records.length == 1) {
+                var nodeSelect = App.stCenterCategoryQuestion.getNodeById(records[0].get('ID'));
+                if (nodeSelect.isLeaf() == false) {
+                    nodeSelect.reload();
+                }
+                App.hdfCenterLsCateID.setValue(records[0].get('ID'));
+                App.grCenterQuestion.store.reload();
+            }
+        }
+        else {
+            App.btnUseDataIdas.setDisabled(true);
+        }
+    };
+    var getNaceCodeValue = function () {
+        if (App.cbxNaceCode) {
+            if (App.cbxNaceCode.value) {
+                return App.cbxNaceCode.value;
+            }
+            return 0;
+        }
+        return 0;
+    };
+    var IDASDataSelect = function () {
+        var selecteds = App.trCenterCategoryQuestion.selModel.getSelection();
+        if (selecteds.length > 0) {
+            var results = new Array();
+            for (var i = 0; i < selecteds.length; i++) {
+                results.push(selecteds[i].data.ID);
+            };
+            return results.toString();
+        }
+        else {
+            return "";
+        }
+    };
+</script>

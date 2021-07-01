@@ -1,0 +1,54 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CenterAuditQuestionItem
+    @(Html.X().Window()
+                .ID("winEditQuestion")
+                .Title("Sửa thông tin bộ câu hỏi đánh giá")
+                .Icon(Icon.Pencil)
+                .Height(270)
+                .Width(550)
+                .BodyPadding(6)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                Html.X().FormPanel()
+                .ID("frQuestion")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                Html.X().HiddenFor(m => m.ID),
+                Html.X().HiddenFor(m=>m.CenterAuditCategoryQuestionID),
+                Html.X().TextAreaFor(m => m.Name).FieldLabel("Tên câu hỏi" + Html.Required()).Flex(1).LabelAlign(LabelAlign.Top)
+                            .BlankText("Tên câu hỏi không được trống!").AllowOnlyWhitespace(false),
+                Html.X().CheckboxFor(m => m.IsUse).BoxLabel("Sử dụng").HideLabel(true) 
+               )
+            )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnSaves")
+            .Text("Lưu lại")
+            .Icon(Icon.Disk)
+            .TabIndex(18)
+            .DirectEvents(de =>
+            {
+                de.Click.Before = @"if (!App.frQuestion.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "UpdateQuestion";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frQuestion";
+                de.Click.Success = " this.up('window').close();";
+            }),
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+            .Handler("App.frQuestion.reset(); this.up('window').close();")
+            )
+    )

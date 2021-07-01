@@ -1,0 +1,83 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityAuditRecordedVoteItem
+@(Html.X().Window()
+          .ID("winNewVote")
+          .Title("Sửa phiếu ghi chép đánh giá nội bộ")
+          .Icon(Icon.Pencil)
+                 .Height(400)
+              .Width(650)
+          .Maximizable(true)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().FormPanel()
+                .ID("frVote")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                Html.X().HiddenFor(m => m.ID),
+                Html.X().HiddenFor(m => m.QualityAuditProgramID),
+                Html.X().ComboBoxFor(m => m.HumanDepartmentID)
+                        .AllowBlank(false)
+                        .ID("cbDepartment")
+                        .LabelWidth(100)
+                        .BlankText("Phòng ban không được để trống")
+                        .FieldLabel("Phòng ban" + Html.Required())
+                        .Editable(false)
+                        .QueryMode(DataLoadMode.Local)
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Store(
+                            Html.X().Store()
+                                    .RemotePaging(true)
+                                    .AutoDataBind(true)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDepartment", "AuditDepartment", new { Area = "Quality", auditProgramId = Model.QualityAuditProgramID }, null))
+                                    .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                    .Model(
+                                            Html.X().Model().Fields(
+                                            Html.X().ModelField().Name("ID"),
+                                            Html.X().ModelField().Name("Name")
+                                            )
+                                        )
+                                    ),
+            Html.X().DateTimeFieldFor(m => m.AuditAt).AllowBlank(false).FieldLabel("Ngày đánh giá" + Html.Required()),
+            Html.X().EmployeeFieldFor(m => m.Auditer).AllowBlank(false).Title("Người đánh giá" + Html.Required()).MarginSpec("0 0 4 105"),
+            Html.X().TextAreaFor(m => m.Contents)
+                    .FieldLabel("Nội dung" + Html.Required())
+                    .AllowBlank(false)
+                    .AllowOnlyWhitespace(false)
+                    .Flex(1)
+                    )
+                )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnSaves")
+            .Text("Lưu lại")
+            .Icon(Icon.Disk)
+            .TabIndex(18)
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { val = true });
+                de.Click.Before = @"if (!App.frVote.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "UpdateVotePoint";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frVote";
+                de.Click.Success = "this.up('window').close();";
+            }),
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+            .Handler("App.frVote.reset(); this.up('window').close();")
+            )
+)

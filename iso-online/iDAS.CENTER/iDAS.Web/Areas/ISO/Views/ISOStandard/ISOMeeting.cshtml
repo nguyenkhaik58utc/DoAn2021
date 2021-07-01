@@ -1,0 +1,141 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@model iDAS.Items.ISOStandardItem
+@(
+Html.X().Window()
+        .ID("winIsoMeeting")
+        .Title("Danh sách Họp xem xét theo ISO mã ["+ Model.Code+"]")
+        .Icon(Icon.TableAdd)
+        .Width(800)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+            Html.X().FormPanel()
+                    .ID("frmIsoMeeting")
+                    .Layout(LayoutType.Form)
+                    .Frame(true)
+                    .Border(false)
+                    .MarginSpec("0 -4 -3 -4")
+                    .StyleSpec("border: none;")
+                    .FieldDefaults(df => df.LabelWidth = 100)
+                    .DefaultAnchor("100%")
+                    .Items(
+            Html.X().HiddenFor(m=>m.ID)
+                    .ID("hdfiSONaneCodeId"),          
+            Html.X().TextFieldFor(m => m.Name).ReadOnly(true)
+                    .ID("txtName")
+                    .Width(770)
+                    .FieldLabel("Tiêu chuẩn ISO")
+                    .LabelWidth(150)
+                    .MarginSpec("0 8 0 8") 
+                    .TabIndex(1),
+       
+            Html.X().Container()
+                .MarginSpec("0 0 0 0").Layout(LayoutType.Fit).Height(380)
+                .Items(
+                            Html.X().GridPanel()
+                                .ID("grIsoStandard")
+                                .MarginSpec("0 0 0 0")
+                                .ColumnLines(true)
+                                .Icon(Icon.TextListBullets)
+                                .Title("DANH SÁCH TIÊU CHUẨN")
+                                .Header(false)
+                                .Border(false)   
+                                .Store(
+                                        Html.X().Store()                                   
+                                            .RemotePaging(true)
+                                            .AutoLoad(true)
+                                            .ID("stModuleIsoNace")
+                                            .PageSize(10)
+                                            .Model(
+                                                    Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                        new ModelField("ID"),
+                                                        new ModelField("Name"),
+                                                     
+                                                        new ModelField("Note"),                                                       
+                                                        new ModelField("IsActive")
+                                                        ))
+                                                    .Proxy(
+                                                        Html.X().AjaxProxy()
+                                                           .Url(Url.Action("LoadIsoMeeting"))
+                                                           .Reader(Html.X().JsonReader().Root("data"))
+                                                        )
+                                                .Parameters(ps =>
+                                                    {
+                                                            ps.Add(new StoreParameter("id", Model.ID.ToString(), ParameterMode.Raw));
+                                                           
+                                                    }
+                                                )
+                                    )
+                                .ColumnModel(
+                                    Html.X().RowNumbererColumn()
+                                        .Text("STT")
+                                        .Align(Alignment.Center)
+                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                        .Width(33),
+                                    Html.X().Column()
+                                        .DataIndex("ID")
+                                        .ID("ID")
+                                        .Hidden(true),
+                                   
+                                    Html.X().Column()
+                                        .Text("Tiêu đề")                                        
+                                        .DataIndex("Name")
+                                        .StyleSpec("font-weight: bold;text-align: center; ")
+                                        .Width(300)
+                                        .Flex(1),
+                                  
+                                
+                                    Html.X().Column()
+                                        .Text("Ghi chú")                                        
+                                        .DataIndex("Note")
+                                        .StyleSpec("font-weight: bold;text-align: center; ")
+                                        .Width(300)
+                                        .Flex(1),
+                                    Html.X().CheckColumn()
+                                        .Text("Kích hoạt")
+                                        .DataIndex("IsActive")
+                                        .StyleSpec("font-weight: bold;text-align: center; ")
+                                        .Width(100)
+                                             
+                                ) 
+                        .BottomBar(
+                        Html.X().PagingToolbar()
+                                .EmptyMsg("Hiện không có dữ liệu")
+                                .NextText("Trang kế tiếp")
+                                .PrevText("Trang trước")
+                                .LastText("Trang cuối cùng")
+                                .FirstText("Trang đầu tiên")
+                                .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                                .BeforePageText("Trang")
+                                .AfterPageText("của {0}")
+                                .RefreshText("Tải lại Dữ liệu")
+                                .Items(
+                                    Html.X().Label("Số bản ghi trên 1 trang"),
+                                    Html.X().ToolbarSpacer(10),
+                                    Html.X().ComboBox()
+                                        .Width(50)
+                                        .Items("10", "20", "30", "50", "100")
+                                        .SelectedItems("10")
+                                       .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                                )
+                                .Plugins(Html.X().ProgressBarPager())
+                         ) 
+                    )                
+            )
+        )
+        .Buttons(            
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Decline)
+                .Text("Thoát")
+                .Handler("App.winIsoMeeting.close();")
+        )
+)

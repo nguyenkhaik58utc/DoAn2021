@@ -1,0 +1,127 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceItem        
+@(Html.X().Window()
+.ID("winNewService")
+.Title("Thêm mới thông tin dịch vụ")
+.Icon(Icon.Add)
+.Width(600)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frService")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+        .Layout(LayoutType.Form)
+        .Items(     
+        Html.X().ComboBoxFor(m=>m.CategoryID)
+        .ReadOnly(true)
+                .ID("cbServiceGroupId")
+                .FieldLabel("Nhóm dịch vụ"+Html.Required())
+                .LabelWidth(120)
+                .BlankText("Nhóm dịch vụ không được trống")
+                .AnchorHorizontal("100%")
+                .Editable(false)
+                .AllowBlank(false)
+                .TabIndex(1)
+                .QueryMode(DataLoadMode.Local)
+                .ForceSelection(true)
+                .DisplayField("Name")
+                .ValueField("ID")
+                .Store(Html.X().Store()
+                .AutoLoad(true)
+                .Model(Html.X().Model()
+                .IDProperty("ID")
+                .Fields(
+                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                )
+                )
+                .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("GetDataCboIsUse"))
+                .Reader(Html.X().JsonReader().Root("data")
+                )
+        )
+),
+
+    Html.X().TextFieldFor(m => m.Code)
+            .FieldLabel("Mã dịch vụ" + Html.Required())
+            .MaxLength(10)
+            .ID("txtCode")
+            .AllowBlank(false)
+            .LabelWidth(120)
+            .BlankText("Mã dịch vụ không được trống")
+            .AllowOnlyWhitespace(false)
+            .TabIndex(2),
+    Html.X().TextFieldFor(m => m.Name)
+            .FieldLabel("Tên dịch vụ" + Html.Required())
+            .ID("txtName")
+            .AllowBlank(false)
+            .LabelWidth(120)
+            .BlankText("Tên dịch vụ không được trống")
+            .AllowOnlyWhitespace(false)
+            .TabIndex(2),
+             Html.X().NumberFieldFor(m => m.Cost)
+            .FieldLabel("Giá tham khảo")
+            .ID("txtCost")
+            .AllowBlank(false)
+            .LabelWidth(120)           
+            .AllowOnlyWhitespace(false)
+            .Value(0)
+            .MinValue(0)
+            .AllowDecimals(true)
+            .TabIndex(2),
+    Html.X().ComboBoxFor(m => m.IsUse)    
+            .TabIndex(4)
+            .LabelWidth(120)        
+            .Editable(false)
+            .FieldLabel("Tình trạng"+Html.Required())
+            .ID("cbIsUse")
+            .Items(
+                    new ListItem ("Sử dụng", true ),
+                    new ListItem ("Không sử dụng", false )
+             ),
+        Html.X().TextAreaFor(m => m.Note)
+                .FieldLabel("Diễn giải")
+                .ID("txtDescription")
+                .LabelWidth(120)
+                .Height(150)                
+                .AnchorHorizontal("100%")
+                .TabIndex(5)
+                )
+             )
+        )
+        .Buttons(
+        Html.X().ButtonSave()
+        .ID("btnSave")
+        .DirectEvents(de =>
+        {
+            de.Click.ExtraParams.Add(new { val = false });
+            de.Click.Before = @"if (!App.frService.getForm().isValid()) { return false; } ";
+            de.Click.Action = "Insert";
+            de.Click.FormID = "frService";
+            de.Click.Success = "App.frService.reset()";
+        }),
+        Html.X().ButtonSaveAndExit()
+        .ID("btnSaves")
+        .DirectEvents(de =>
+        {
+            de.Click.ExtraParams.Add(new { val = true });          
+            de.Click.Before = @"if (!App.frService.getForm().isValid()) { return false; } ";
+            de.Click.Action = "Insert";
+            de.Click.FormID = "frService";
+        }),
+        Html.X().ButtonReset()
+        .Handler("App.frService.reset();"),
+        Html.X().ButtonExit()
+        )
+    )

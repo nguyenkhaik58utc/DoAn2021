@@ -1,0 +1,105 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.Problem.ProblemEmergencyItem
+@(Html.X().Window()
+    .ID("UpdateProblemEmergencyWindow")
+    .Title("Sửa thông tin mức độ khẩn cấp sự cố")
+    .Icon(Icon.Pencil)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("UpdateProblemEmergencyForm")
+            .Url(Url.Action("Update"))
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Items(
+                Html.X().TabPanel().ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin mức độ khẩn cấp sự cố")
+                            .BodyPadding(5)
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().TextAreaFor(m => m.ID).Hidden(true),
+                                Html.X().TextFieldFor(m => m.ProblemEmergencyName).FieldLabel("Tên mức độ khẩn cấp sự cố" + Html.Required())
+                                    .EmptyText("Nhập tên mức độ khẩn cấp sự cố")
+                                    .BlankText("Bạn phải nhập tên mức độ khẩn cấp sự cố!")
+                                    .AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().TextFieldFor(m => m.Code).FieldLabel("Mã mức độ khẩn cấp sự cố" + Html.Required())
+                                    .EmptyText("Nhập mã mức độ khẩn cấp sự cố").BlankText("Bạn phải nhập mã mức độ khẩn cấp sự cố").AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả"),
+                                Html.X().TextFieldFor(m => m.Color).ID("txtSelectColor").MarginSpec("0 0 5 0").Note("Chọn màu sắc").NoteAlign(NoteAlign.Top).HideLabel(true).AllowBlank(false).ReadOnly(true)
+                                    .RightButtons(Html.X().Button().IconCls("x-fa fa-pencil").ToolTip("Chọn màu sắc").Handler("SelectColor()").Icon(Icon.Color))
+                                    .LeftButtons(Html.X().Button().Disabled(true).Width(50).ID("btnSelectColor"))
+                                    )
+                            )
+                            )
+                                 .Buttons(
+                             Html.X().ButtonSave().Handler("updateProblemEmergencySubmit"),
+                             Html.X().ButtonExit().Handler("this.up('window').close();")
+                         )
+            )
+    )
+)
+
+@(Html.X().Window().ID("windowColor").MarginSpec("0 10 0 0").Hidden(true).RenderTo("UpdateProblemEmergencyForm")
+    .Listeners(ls =>
+    {
+        ls.BeforeShow.Handler = "this.alignTo(App.txtSelectColor,'tr-br'); this.el.slideIn('t',{duration : 400});";
+        ls.BeforeHide.Handler = "this.el.slideOut('r',{duration : 500});";
+    })
+    .Items(
+        Html.X().ColorPicker()
+        .Listeners(ls =>
+            {
+                ls.Select.Handler = "onSelectColor(item,color)";
+            })
+    )
+)
+<script>
+
+    var SelectColor = function () {
+        App.windowColor.show();
+    };
+
+    var onSelectColor = function (item, color) {
+        App.windowColor.close();
+        App.btnSelectColor.getEl().dom.style.background = "#" + color;
+        App.txtSelectColor.setValue("#" + color);
+    };
+
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = '';
+        if (record != null) {
+            color = record.get('Id');
+        }
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+
+    var updateProblemEmergencySubmit = function () {
+        App.UpdateProblemEmergencyForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadProblemEmergency();
+                    App.UpdateProblemEmergencyWindow.close();
+                }
+            }
+        });
+    };
+</script>

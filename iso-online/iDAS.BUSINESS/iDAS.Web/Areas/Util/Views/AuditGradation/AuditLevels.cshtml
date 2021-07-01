@@ -1,0 +1,176 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@{
+    var cateId = ViewData["CateId"];
+}
+@(Html.X().Window()
+          .ID("winNewAuditLevels")
+          .Title("Hình thức xếp loại")
+              .Icon(Icon.ApplicationViewDetail)
+              .Height(360)
+              .Width(650)
+              .BodyPadding(0)
+              .Padding(6)
+              .Constrain(true)
+              .Modal(true)
+              .Layout(LayoutType.Fit)
+              .Items(
+            Html.X().FormPanel()
+                    .ID("frAuditLevels")
+                    .Frame(true)
+                    .StyleSpec("border: none;")
+                    .Padding(0)
+                    .Margin(0)
+                    .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                    .Layout(LayoutType.Fit)
+                    .Items(
+                   Html.X().GridPanel()
+                    .Region(Region.Center)
+                    .ID("grAuditLevels")
+                    .Border(false)
+                    .RowLines(true)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .TopBar(
+                    Html.X().Toolbar()
+                            .Items(
+                                    Html.X().ButtonCreate()
+                                            .Handler("showFormAddAuditLevel();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate()
+                                            .ID("btnEditAuditLevel")
+                                            .Handler("updateFormAuditLevel();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete()
+                                            .ID("btnDeleteAuditLevel")
+                                            .Handler("deleteAuditLevel();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView()
+                                            .ID("btnDetailAuditLevel")
+                                            .Handler("showDetailAuditLevel();")
+                                    )
+                                )
+                    .Store(Html.X().Store().ID("stAuditLevel")
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy()
+                                                        .Url(Url.Action("GetAuditLevel", "AuditGradation", new { area = "Human" }))
+                                           .Reader(Html.X().JsonReader()
+                                           .Root("data")
+                                           )
+                            )
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("cateId", cateId.ToString(), ParameterMode.Value));
+                                })
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                            Html.X().ModelField().Name("MinPoint"),
+                                            Html.X().ModelField().Name("MaxPoint")
+                                 )
+                             )
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                    Html.X().Column()
+                            .Text("Xếp loại")
+                            .Align(Alignment.Left)
+                            .DataIndex("Name")
+                            .Flex(1),
+                                    Html.X().Column().Text("Từ(Điểm)").Align(Alignment.Right).DataIndex("MinPoint"),
+                                        Html.X().Column().Text("Từ(Điểm)").Align(Alignment.Right).DataIndex("MaxPoint")
+                        )
+                                  .Listeners(lS => lS.SelectionChange.Handler = "checkStatusAuditLevel()")
+                    .Plugins(
+                        Html.X().CellEditing()
+                            .ClicksToEdit(1)
+                            .Listeners(ls =>
+                            {
+                                
+                            })
+                        )
+                    .BottomBar(Html.X().CustomPagingToolbar())
+             )
+            )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+                .Handler("this.up('window').close();")
+            )
+)
+<script type="text/javascript">
+    var checkStatusAuditLevel = function () {
+        var records = App.grAuditLevels.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnEditAuditLevel.setDisabled(false);
+            App.btnDeleteAuditLevel.setDisabled(false);
+            App.btnDetailAuditLevel.setDisabled(false);
+        }
+        else {
+            App.btnEditAuditLevel.setDisabled(true);
+            App.btnDeleteAuditLevel.setDisabled(true);
+            App.btnDetailAuditLevel.setDisabled(true);
+        };
+    };
+    var showFormAddAuditLevel = function () {
+        var records = App.grRoleAudit.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("FormAddAuditLevel", "AuditGradation", new { Area = "Human" }, null))';
+            var params = {
+                roleAuditId: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function updateFormAuditLevel() {
+        var records = App.grAuditLevels.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowUpdateAuditLevel", "AuditGradation", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteAuditLevel = function () {
+        var records = App.grAuditLevels.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DeleteAuditLevel", "AuditGradation", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showDetailAuditLevel = function () {
+        var records = App.grAuditLevels.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetailAuditLevel", "AuditGradation", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

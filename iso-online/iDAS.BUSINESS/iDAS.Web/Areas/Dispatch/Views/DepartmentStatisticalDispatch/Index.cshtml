@@ -1,0 +1,738 @@
+﻿@model System.Collections.IEnumerable
+@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int userID = ViewData["UserLogOn"] != null ? (int)ViewData["UserLogOn"] : 0;
+}
+
+@(Html.X().Viewport()
+          .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+            .Items(
+        Html.X().Panel()
+                .MarginSpec("1 0 1 1")
+                .Region(Region.West)
+                .Title("XEM THỐNG KÊ DƯỚI DẠNG DỮ LIỆU")
+                .TitleAlign(TitleAlign.Center)
+                .Icon(Icon.ApplicationViewDetail)
+                .Collapsible(true)
+                .Split(true)
+                .Header(false)
+                .Border(true)
+                .Layout(LayoutType.Fit)
+                .Width(700)
+                .Items (
+          Html.X().TreePanel()
+                    .Layout(LayoutType.Fit)
+                    .Split(true)
+                    .Region(Region.West)
+                    .ID("gpDepartmentStatisticalDispatch")
+                    .TitleAlign(TitleAlign.Center)
+                    .Border(false)
+                    .AutoScroll(true)
+                    .Listeners(ls =>
+                    {
+                        ls.Load.Handler = "expandDepartment(records);";
+                    })
+                    .RootVisible(false)
+                    .ColumnLines(true)
+                    .RowLines(true)
+                    .TopBar(
+            Html.X().Toolbar()
+            .Height(85)
+                    .ID("tbgpDepartmentStatisticalDispatch")
+                    .Layout(LayoutType.Form)
+                    .Items(
+                Html.X().Container()
+                    .Layout(LayoutType.HBox)
+                    .Flex(1)
+                    .Height(26)
+                    .Items(
+                    Html.X().SearchByDate("refreshDepartment();onSelect();")
+                    .FromDateID("dfFromDate")
+                    .ToDateID("dfToDate"),
+                         Html.X().ToolbarFill(),
+                                                                            Html.X().ButtonExportExcelFile().GridIDGetFile("gpDepartmentStatisticalDispatch").isTree(true),       
+                    Html.X().Button()
+                            .Text("In báo cáo")
+                            .Hidden(true)
+                            .Handler("this.up('treepanel').print();")
+                            .Icon(Icon.Printer),
+                    Html.X().ToolbarFill()
+                                ),
+                            Html.X().Container()
+                                    .Layout(LayoutType.Form)
+                                    .MarginSpec("-4 0 0 0")
+                                    .Height(52).Items (
+                                    Html.X().Container().Layout(LayoutType.Column).Items(
+                                    Html.X().ComboBox()
+                                        .ID("cbSecurityLevelSearch")
+                                            .ColumnWidth(0.5)
+                                        .FieldLabel("Độ mật")
+                                        .Items(new ListItem("Tất cả", 0 ))
+                                        .SelectedItems(new ListItem("Tất cả", 0))
+                                        .DisplayField("Name")
+                                        .MarginSpec("0 5 0 0")
+                                        .ValueField("ID")
+                                        .LabelWidth(52)
+                                        .ForceSelection(true)
+                                        .Tpl(
+                                        @<text>
+                                            <tpl for=".">
+                                                <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                                    <div style="width: 50px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left">&nbsp;{Name}</div>
+                                                </div>
+                                            </tpl>
+                                        </text>)
+                                            .Store(
+                                                Html.X().Store()
+                                                    .ID("stDispatchSecuritySearch")
+                                                    .AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                                            new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                                            )
+                                                            )
+                                                    .Proxy(
+                                                        Html.X().AjaxProxy()
+                                                            .Url(Url.Action("LoadDispatchToCboSecurity", "DispatchToDepartment"))
+                                                            .Reader(Html.X().JsonReader().Root("data"))
+                                                )
+                                              )
+                                            .Listeners(l => l.Select.Handler = "getColor(App.cbSecurityLevelSearch, App.stDispatchSecuritySearch);refreshDepartment();onSelect();"),
+                                            Html.X().ComboBox()
+                                    .ID("cbCategorySearch")
+                                    .FieldLabel("Nhóm công văn")
+                                        .Items(new ListItem("Tất cả", 0))
+                                            .SelectedItems(new ListItem("Tất cả", 0))
+                                    .DisplayField("Name")
+                                        .ColumnWidth(0.5)
+                                    .ValueField("ID")
+                                         .LabelWidth(90)
+                                    .ForceSelection(true)
+                                                    .Listeners(ls => ls.Select.Handler = "refreshDepartment();onSelect();")
+                                    .QueryMode(DataLoadMode.Local)
+                                    .SelectOnFocus(true)
+                                    .EmptyText("Chọn nhóm công văn ...")
+                                    .Store(
+                                        Html.X().Store()
+                                                .AutoLoad(true)
+                                                .Model(Html.X().Model()
+                                                .IDProperty("ID")
+                                                .Fields(
+                                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                        )
+                                                    )
+                                                .Proxy(
+                                                    Html.X().AjaxProxy()
+                                                        .Url(Url.Action("LoadDispatchToCboCate", "DispatchToDepartment"))
+                                                        .Reader(Html.X().JsonReader().Root("data"))
+                                                        )
+                                                        )
+                                        
+                               
+                                    ),
+                                        Html.X().Container().Layout(LayoutType.Column).Items(
+                        
+                                                          Html.X().ComboBox()
+                                        .ID("cbUrgencyIdSearch")
+                                        .FieldLabel("Độ khẩn")
+                                            .ColumnWidth(0.5)
+                                        .DisplayField("Name")
+                                            .Items(new ListItem("Tất cả", 0))
+                                            .SelectedItems(new ListItem("Tất cả", 0))
+                                                 .LabelWidth(52)
+                                        .ForceSelection(true)
+                                        .MarginSpec("0 5 0 0")
+                                        .ValueField("ID")
+                                        .Tpl(
+                                        @<text>
+                                            <tpl for=".">
+                                                <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                                    <div style="width: 50px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left">&nbsp;{Name}</div>
+                                                </div>
+                                            </tpl>
+                                        </text>)
+                                            .Store(
+                                                    Html.X().Store()
+                                                        .ID("stDispatchUrgency")
+                                                        .AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                                        .Fields(
+                                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                                                new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                                                )
+                                                                )
+                                                        .Proxy(
+                                                            Html.X().AjaxProxy()
+                                                                .Url(Url.Action("LoadDispatchToCboUrgency", "DispatchToDepartment"))//ham load người ký cho combobox
+                                                                .Reader(Html.X().JsonReader().Root("data"))
+                                                    ))
+                                                 .Listeners(l => l.Select.Handler = "getColor(App.cbUrgencyIdSearch, App.stDispatchUrgency);refreshDepartment();onSelect();"),
+                                                        
+                                                       
+                                     Html.X().ComboBox()
+                                            .AllowBlank(false)
+                                            .ID("cbMethodSearch")
+                                                   .ColumnWidth(0.5)
+                                            .FieldLabel("Phương thức gửi")
+                                                .Items(new ListItem("Tất cả", 0))
+                                            .SelectedItems(new ListItem("Tất cả", 0))
+                                                            .Listeners(ls => ls.Select.Handler = "refreshDepartment();onSelect();")
+                                            .DisplayField("Name")
+                                            .ValueField("ID")
+                                            .LabelWidth(90)
+                                            .ForceSelection(true)
+                                            .QueryMode(DataLoadMode.Local)
+                                            .SelectOnFocus(true)
+                                            .MarginSpec("0 0 0 0")
+                                            .EmptyText("Chọn phương thức gửi công văn ...")
+                                            .Store(
+                                        Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                    )
+                                                    )
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadDispatchToCboMethod", "DispatchToDepartment"))
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                                    )
+                                                    )
+                                                    
+                                  )
+                                          )
+                                )
+                                
+                            )
+                            .Store(
+                                Html.X().TreeStore()
+                                        .ID("stDepartmentStatisticalDispatch")
+                                        .AutoLoad(false)
+                                        .Proxy(
+                                        Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetData"))
+                                        .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                        .Parameters(ps =>
+                                        {
+                                                ps.Add(new StoreParameter("securityLevelId", "App.cbSecurityLevelSearch.getValue()", ParameterMode.Raw));
+                                                ps.Add(new StoreParameter("urgencyId", "App.cbUrgencyIdSearch.getValue()", ParameterMode.Raw));
+                                                ps.Add(new StoreParameter("categoryId", "App.cbCategorySearch.getValue()", ParameterMode.Raw));
+                                                ps.Add(new StoreParameter("methodId", "App.cbMethodSearch.getValue()", ParameterMode.Raw));
+                                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                            })
+                                        .Model(
+                                            Html.X().Model().IDProperty("id")
+                                                    .Fields(
+                                                        Html.X().ModelField().Name("id"),
+                                                        Html.X().ModelField().Name("text"),
+                                                        Html.X().ModelField().Name("ParentID"),
+                                                        Html.X().ModelField().Name("TotalDispatchTo"),                                             
+                                                        Html.X().ModelField().Name("TotalDispatchToVerify"),
+                                                        Html.X().ModelField().Name("TotalDispatchGo"),                                                       
+                                                        Html.X().ModelField().Name("TotalDispatchGoVerify")
+                                                )
+                                             )
+                                        )
+                                .ColumnModel(
+                                Html.X().TreeColumn()
+                                        .Text("Phòng ban")
+                                        .Width(300)
+                                        .Flex(1)
+                                        .DataIndex("text"),
+                                Html.X().ComponentColumn()
+                                        .Text("Công văn đến từ bên ngoài")
+                                        .Columns(
+                                Html.X().Column()
+                                        .DataIndex("TotalDispatchTo")
+                                        .Text("Tổng số")
+                                        .Renderer("renderTotalDispatchTo")
+                                        .Width(70)
+                                        .Align(Alignment.Right),                              
+                                Html.X().Column()
+                                        .DataIndex("TotalDispatchToVerify")
+                                        .Text("Đã xác nhận")
+                                        .Renderer("renderDispatchToVerify")
+                                        .Width(100)
+                                        .Align(Alignment.Right)
+                                        ),
+                                Html.X().ComponentColumn()
+                                        .Text("Công văn đến trong nội bộ")
+                                        .Columns(
+                                Html.X().Column()
+                                        .DataIndex("TotalDispatchGo")
+                                        .Text("Tổng số")
+                                        .Renderer("renderTotalDispatchGo")
+                                        .Width(100)
+                                        .Align(Alignment.Right),                             
+                                Html.X().Column()
+                                            .DataIndex("TotalDispatchGoVerify")
+                                        .Text("Đã xác nhận")
+                                            .Renderer("renderDispatchGoVerify")
+                                        .Width(90).Align(Alignment.Right)
+                                        )
+                                        )
+                        .SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "onSelect();";
+                            })
+                            )
+                        ),
+                         Html.X().Panel()
+                            .Layout(LayoutType.Fit)
+                            .MarginSpec("1 1 1 0")
+                            .Region(Region.Center)
+                            .AutoScroll(false)
+                            .Header(false)
+                            .Border(true)
+                            .TopBar(
+                        Html.X().Toolbar()
+                            .Items(
+                        Html.X().ComboBox()
+                            .FieldLabel("Biểu đồ")
+                            .Width(300)
+                            .MarginSpec("0 0 0 5")
+                            .LabelWidth(50)
+                            .SelectedItems("0")
+                            .ID("cbSelectChart")
+                                .Items(
+                                    new ListItem() { Value = "0", Text = "Biểu đồ cột(SL)" }
+                                    )
+                                .Listeners(ls => ls.Select.Handler = "onSelectCombobox(this);"),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                            )
+                            )
+                        .Items (
+                        Html.X().Panel()
+                            .Layout(LayoutType.Fit)
+                            .ID("pChart0")
+                            .Title("<b>Biểu đồ cột(SL)</b>")
+                            .Border(false)
+                            .Header(false)
+                            .TopBar(Html.X().Toolbar()
+                            .Items(
+                        Html.X().Button()
+                            .Text("Tải lại")
+                            .Icon(Icon.ArrowRefresh)
+                            .Handler("#{Chart0}.getStore().reload()"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Lưu biểu đồ")
+                            .Icon(Icon.Disk)
+                            .Handler("saveChart")
+                                 )
+                            )
+                            .Items(
+                        Html.X().Chart()
+                            .ID("Chart0")
+                             .Shadow(true)
+                             .InsetPadding(30)
+                    .StandardTheme(StandardChartTheme.Category1)  
+                            .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Top)
+                        .LabelFont("11px Tahoma")
+                        .BoxStroke("#084594")
+                            )
+                    .Animate(true)
+                        .Store(Html.X().Store()
+                        .ID("stChart0")
+                        .Data(Model)
+                        .AutoLoad(true)
+                             .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("id", "App.gpDepartmentStatisticalDispatch.getSelectionModel().getLastSelected()!=null?App.gpDepartmentStatisticalDispatch.getSelectionModel().getLastSelected().get('id'):0", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("securityLevelId", "App.cbSecurityLevelSearch.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("urgencyId", "App.cbUrgencyIdSearch.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("categoryId", "App.cbCategorySearch.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("methodId", "App.cbMethodSearch.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                            })
+                            .Model(Html.X().Model()
+                            .Fields(
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Data1"),
+                                    Html.X().ModelField().Name("Data2")
+
+                            )
+                        )
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataColumn"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                    )
+                    .Axes(
+                            Html.X().NumericAxis()
+                            .Fields(new string[] { "Data1", "Data2" })
+                            .Grid(true)
+                            .Title("Đơn vị: công văn")
+                            .Minimum(0)
+                                .Label(Html.X().AxisLabel()
+                                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                            ),
+                           Html.X().CategoryAxis()
+                            .Position(Position.Bottom)
+                                .Fields("Name")
+                                .Width(400)
+                                     .Label(Html.X().AxisLabel()
+                                    .Font("10px Tahoma")
+                                )
+                                .Title("Biểu đồ thống kê công văn")
+                            )
+                        .Series(
+                        Html.X().ColumnSeries()
+                        .ShowInLegend(true)
+                        .Axis(Position.Bottom)
+                        .Highlight(true)
+                            .XField("Name")
+                            .YField(new string[] { "Data1", "Data2" })
+                            .Titles(new string[] { "Tổng công văn", "Công văn đã xác nhận" })
+                            .Tips(Html.X().ChartTip()
+                            .TrackMouse(true)
+                            .Width(200)
+                            .Height(58)
+                                .Renderer(r => r.Handler = "this.setTitle('Tổng công văn: ' + storeItem.get('Data1') + '<br/> Công văn đã xác nhận: '+storeItem.get('Data2'));")
+                             )
+                             )
+                            )
+                            )
+                        
+                        )
+)
+<script type="text/javascript">
+    var onSelect = function () {
+        var charId = "Chart" + App.cbSelectChart.getValue();
+        Ext.getCmp(charId).getStore().reload();
+    };
+    var onSelectCombobox = function (obj) {
+        var records = obj.store.getAllRange();
+        for (var i = 0; i < records.length; i++) {
+            var pcharId = "pChart" + records[i].data.field1;
+            Ext.getCmp(pcharId).hide();
+        };
+        Ext.getCmp("pChart" + obj.value).show();
+        Ext.getCmp("Chart" + obj.value).getStore().reload();
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var getDepartmentID = function () {
+        var records = App.gpDepartmentStatisticalDispatch.selModel.getSelection();
+        if (records.length > 0) {
+            return records[0].get('id');
+        }
+        else {
+            return 0;
+        }
+    };
+    var showDispatchStatiscal = function (storeUrl) {
+        var records = App.gpDepartmentStatisticalDispatch.selModel.getSelection();
+        var departmentID = 0;
+        if (records.length > 0) {
+            departmentID = records[0].get('id');
+        }
+        var url = '@(Url.Action("DispatchToViewStatistical", "DepartmentStatisticalDispatch", new { Area = "Dispatch" }))';
+        var params = {
+            urlStore: storeUrl,
+            Name: 'departmentId',
+            Value: departmentID,
+            Mode: '@(ParameterMode.Value)',
+            securityLevelId:App.cbSecurityLevelSearch.getValue(),
+            urgencyId:App.cbUrgencyIdSearch.getValue(),
+            categoryId:App.cbCategorySearch.getValue(),
+            methodId: App.cbMethodSearch.getValue(),
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+        };
+        onDirectMethod(url, params);
+    };
+    var showDispatchGoStatiscal = function (storeUrl) {
+        var records = App.gpDepartmentStatisticalDispatch.selModel.getSelection();
+        var departmentID = 0;
+        if (records.length > 0) {
+            departmentID = records[0].get('id');
+        }
+        var url = '@(Url.Action("DispatchGoViewStatistical", "DepartmentStatisticalDispatch", new { Area = "Dispatch" }))';
+        var params = {
+            urlStore: storeUrl,
+            Name: 'departmentId',
+            Value: departmentID,
+            Mode: '@(ParameterMode.Value)',
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+        };
+        onDirectMethod(url, params);
+    };
+    var renderTotalDispatchTo = function (value) {
+        var urlStoreDispatch = '@(Url.Action("LoadTotalDispatchTo", "DepartmentStatisticalDispatch", new { Area = "Dispatch" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDispatchStatiscal(\'" + urlStoreDispatch.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDispatchToVerify = function (value) {
+        var urlStoreDispatch = '@(Url.Action("LoadTotalDispatchToVerify", "DepartmentStatisticalDispatch", new { Area = "Dispatch" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDispatchStatiscal(\'" + urlStoreDispatch.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalDispatchGo = function (value) {
+        var urlStoreDispatch = '@(Url.Action("LoadTotalDispatchGo", "DepartmentStatisticalDispatch", new { Area = "Dispatch" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDispatchGoStatiscal(\'" + urlStoreDispatch.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDispatchGoVerify = function (value) {
+        var urlStoreDispatch = '@(Url.Action("LoadTotalDispatchGoVerify", "DepartmentStatisticalDispatch", new { Area = "Dispatch" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDispatchGoStatiscal(\'" + urlStoreDispatch.toString() + "\')\">" + value + "</a>";
+    };
+    var ShowFrmStatistical = function (cmd) {
+        if (cmd == 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAdd", "DispatchGoDepartment", new { Area = "Dispatch" }, null))'
+            });
+        }
+        else {
+            var record = App.grDispatchGoInfo.selModel.getSelection();
+            if (record.length > 0) {
+                var id = record[0].get('ID');
+                if (cmd == 1) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmUpdate", "DispatchGoDepartment", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 2) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmApprove", "DispatchGoDepartment", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 3) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmMove", "DispatchGoDepartment", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 4) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmVerify", "DispatchGoDepartment", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 5) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmDetail", "DispatchGoDepartment", new { Area = "Dispatch" }, null))', params: { id: id, type: cmd }
+                    });
+
+                }
+                else if (cmd == 6) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmMoveOut", "DispatchGoDepartment", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+            }
+        }
+    };
+    var showDepartment = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowDepartment", "Request", new { Area = "Document" }, null))'
+        });
+    };
+    var checkStatusStatistical = function () {
+        var record = App.grDispatchGoInfo.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnDetail.setDisabled(false);
+            if (record[0].get('IsEdit')) {
+                App.btnApprove.setDisabled(true);
+                App.btnEdit.setDisabled(false);
+                App.butDelete.setDisabled(false);
+                App.btnMove.setDisabled(true);
+                App.btnMoveOut.setDisabled(true);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (!record[0].get('FlagApprove') && record[0].get('ApprovalBy') == '@userID') {
+                App.btnApprove.setDisabled(false);
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnMove.setDisabled(true);
+                App.btnMoveOut.setDisabled(true);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (!record[0].get('FlagApprove') && !record[0].get('IsEdit') && record[0].get('ApprovalBy') != '@userID')//Hiện nút Duyệt
+            {
+                App.btnApprove.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnMove.setDisabled(true);
+                App.btnMoveOut.setDisabled(true);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (record[0].get('FlagApprove') && !record[0].get('IsAccept') && !record[0].get('IsEdit')) {
+
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnApprove.setDisabled(true);
+                App.btnMove.setDisabled(true);
+                App.btnMoveOut.setDisabled(true);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (record[0].get('FlagApprove') && record[0].get('IsAccept') && !record[0].get('IsSend') && !record[0].get('IsVerify')) {
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnApprove.setDisabled(true);
+                App.btnMove.setDisabled(false);
+                App.btnMoveOut.setDisabled(false);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (record[0].get('FlagApprove') && record[0].get('IsSend') && !record[0].get('IsVerify')) {
+                App.btnApprove.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnMove.setDisabled(false);
+                App.btnMoveOut.setDisabled(false);
+                if (!record[0].get('FlagVerify'))
+                    App.btnVerify.setDisabled(false);
+                else
+                    App.btnVerify.setDisabled(true);
+            }
+            else if (record[0].get('IsVerify')) {
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnApprove.setDisabled(true);
+                App.btnMove.setDisabled(false);
+                App.btnMoveOut.setDisabled(false);
+                if (!record[0].get('FlagVerify'))
+                    App.btnVerify.setDisabled(false);
+                else
+                    App.btnVerify.setDisabled(true);
+            }
+
+        } else {
+            App.btnApprove.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+            App.butDelete.setDisabled(true);
+            App.btnMove.setDisabled(true);
+            App.btnVerify.setDisabled(true);
+        }
+    };
+    var deleteRecordStatistical = function () {
+        var records = App.grDispatchGoInfo.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.butDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var aId = new Array();
+                        var strId = '';
+                        for (var i = 0, r; r = records[i]; i++) {
+                            aId[i] = records[i].get('ID');
+                        }
+                        strId = aId.join();
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "DispatchGoDepartment", new { Area = "Dispatch" }, null))',
+                            params: { stringId: strId }
+                        });
+                    }
+                }
+            });
+        }
+    };
+    var recordDepartments = null;
+    var expandDepartment = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                var node = records[i];
+                if (recordDepartments != null && checkExpandDepartment(node)) {
+                    node.expand();
+                }
+                else if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+                    node.expand();
+                }
+            }
+        }
+        if (App.gpDepartmentStatisticalDispatch.selModel.getCount() <= 0) {
+            setDepartmentSelection(0);
+        }
+    };
+    var checkExpandDepartment = function (record) {
+        var check = false;
+        recordDepartments.forEach(function (obj) {
+            if (!check && obj.id == record.data.id) {
+                check = obj.expanded;
+                if (obj.selected) {
+                    setDepartmentSelection(record);
+                }
+            }
+        })
+        return check;
+    };
+    var getDepartmentRecords = function () {
+        var records = App.gpDepartmentStatisticalDispatch.getView().store.getRange();
+        var node = getDepartmentSelection();
+        var data = [];
+        records.forEach(function (obj) {
+            var selected = obj.data.id == node.data.id;
+            var item = {
+                id: obj.data.id,
+                expanded: obj.data.expanded,
+                selected: selected
+            };
+            data.push(item);
+        });
+        return data;
+    };
+    var setDepartmentSelection = function (record) {
+        if (record != null) {
+            App.gpDepartmentStatisticalDispatch.selModel.select(record);
+        }
+    };
+    var getDepartmentSelection = function () {
+        return App.gpDepartmentStatisticalDispatch.getSelectionModel().getLastSelected();
+    };
+
+    var reloadDepartment = function () {
+        recordDepartments = getDepartmentRecords();
+        var node = getDepartmentSelection();
+        App.gpDepartmentStatisticalDispatch.store.reload({ node: node.parentNode });
+    };
+    var reloadDepartmentNode = function () {
+        recordDepartments = getDepartmentRecords();
+        var node = getDepartmentSelection();
+        App.gpDepartmentStatisticalDispatch.store.reload({ node: node });
+        node.data.leaf = false;
+        node.data.expanded = true;
+        node.expand();
+    };
+    var refreshDepartment = function () {
+        recordDepartments = getDepartmentRecords();
+        App.gpDepartmentStatisticalDispatch.selModel.deselectAll()
+        App.gpDepartmentStatisticalDispatch.getRootNode().reload();
+    };
+</script>

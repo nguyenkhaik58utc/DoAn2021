@@ -1,0 +1,205 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@model iDAS.Core.SystemUserItem
+
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@section headtag
+{
+    <script>
+        var updateUrl = '@(Url.Action("UpdateUser"))';
+        var deleteUrl = '@(Url.Action("DeleteUser"))';
+        var insertUrl = '@(Url.Action("InsertUser"))';
+
+        var updateOrganizationUrl = '@(Url.Action("UpdateOrganization"))';
+        var onEditOrganization = function (editor, e) {
+            if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+                Ext.net.DirectMethod.request({
+                    url: updateOrganizationUrl,
+                    params: {
+                        data: e.record.data,
+                        userId: App.UserId.value
+                    }
+                });
+            }
+        };
+    </script>
+}
+@(Html.X().TextField().ID("UserId").Hidden(true))
+@(Html.X().TextField().ID("GroupId").Hidden(true))
+
+@(Html.X().Window()
+    .ID("WindowAdd")
+    .Title("Tạo mới tài khoản thành viên")
+    .Icon(Icon.UserAdd)
+    .Hidden(true)
+    .Modal(true)
+    .Width(350)
+    .Layout(LayoutType.Fit)
+    .Closable(false)
+    .Border(false)
+    .Items(
+        Html.X().FormPanelForModel()
+            .FieldDefaults(lb=>lb.LabelWidth=120)
+            .Frame(true)
+            .DefaultAnchor("100%")
+            .BodyPadding(10)
+    )
+    .Buttons(
+        Html.X().Button()
+            .Text("Lưu")
+            .Icon(Icon.DatabaseSave)
+            .Handler("onAdd"),
+        Html.X().Button()
+            .Text("Đóng")
+            .Icon(Icon.DoorOut)
+            .Handler("onClosed")
+    )
+)
+
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().GridPanel()
+            .Title("Danh sách thành viên")
+            .Collapsible(true)
+            .Region(Region.North)
+            .Height(350)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .SelectionModel(sm=>sm.Add(Html.X().RowSelectionModel().SelectedIndex(0)))
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button()
+                            .Text("Tạo mới")
+                            .Icon(Icon.Add)
+                            .Handler("onOpen"),
+                        Html.X().ToolbarFill(),
+                        Html.X().Button()
+                            .ID("btnExtra")
+                            .Text("Tiện ích")
+                            .Icon(Icon.PackageGreen)
+                            .Menu(new Menu
+                            {
+                                Items = {
+                                    new MenuItem { Text = "Nhập khẩu bản ghi từ tệp Excel", Icon = Icon.PageWhiteExcel},
+                                    new MenuItem { Text = "Nhập khẩu bản ghi từ tệp XML", Icon = Icon.Xhtml},
+                                    Html.X().MenuSeparator(),
+                                    new MenuItem { Text = "Xuất khẩu bản ghi ra tệp Excel", Icon = Icon.PageWhiteExcel},
+                                    new MenuItem { Text = "Xuất khẩu bản ghi ra tệp Words", Icon = Icon.PageWhiteWord},
+                                    new MenuItem { Text = "Xuất khẩu bản ghi ra tệp XML", Icon = Icon.Xhtml}
+                                }
+                            })
+                    )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                    .ID("StoreUsers")
+                    .RemotePaging(true)
+                    .PageSize(10)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadUsers")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column().DataIndex(Model, m => m.FullName).Text("Họ Tên").Align(Alignment.Center).Editor(Html.X().TextField()).Flex(1),
+                Html.X().Column().DataIndex(Model, m => m.Email).Text("Email").Align(Alignment.Center).Editor(Html.X().TextField()).Width(300),
+                Html.X().Column().DataIndex(Model, m => m.Account).Text("Tài khoản").Align(Alignment.Center).Editor(Html.X().TextField()),
+                Html.X().Column().DataIndex(Model, m => m.Password).Text("Mật khẩu").Renderer("return '*********';").Align(Alignment.Center).Editor(Html.X().TextField()),
+                Html.X().CheckColumn().DataIndex(Model, m => m.IsActive).Text("Kích hoạt").Width(70).Align(Alignment.Center).Editable(true),
+                Html.X().DateColumn().DataIndex(Model, m => m.ActiveAt).Text("Ngày kích hoạt").Width(95).Format("dd-MM-yyyy").Align(Alignment.Center),
+                Html.X().CommandColumn().Width(25).Align(Alignment.Center)
+                    .Commands(Html.X().GridCommand().CommandName("Delete").Icon(Icon.Delete).ToolTip(tt => tt.Text = "Xóa"))
+                    .Listeners(ls => ls.Command.Handler = "onDelete(record.data.ID);")
+            )
+            .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEdit" ))
+            .Listeners(ls => ls.SelectionChange.Handler = "if (selected.length<=0) return; App.UserId.value = selected[0].data.ID; App.GridPanel1.getStore().load({params: {groupId: App.GroupId.value,userId: App.UserId.value}});")
+            .BottomBar(
+                Html.X().PagingToolbar()
+                    .EmptyMsg("Hiện không có dữ liệu")
+                    .NextText("Trang kế tiếp")
+                    .PrevText("Trang trước")
+                    .LastText("Trang cuối cùng")
+                    .FirstText("Trang đầu tiên")
+                    .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                    .BeforePageText("Trang")
+                    .AfterPageText("của {0}")
+                    .RefreshText("Tải lại dữ liệu")
+                    .Items(
+                        Html.X().Label("Số bản ghi trên 1 trang"),
+                        Html.X().ToolbarSpacer(10),
+                        Html.X().ComboBox()
+                            .Width(50)
+                            .Items("10", "20", "30", "50", "100")
+                            .SelectedItems("10")
+                            .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                    )
+                    .Plugins(Html.X().ProgressBarPager())
+            ),
+
+            Html.X().TreePanel()
+            .ID("TreePanel1")
+            .Title("Danh sách tổ chức")
+            .Region(Region.Center)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)
+            .SingleExpand(false)
+            .SelectionModel(sm=>sm.Add(Html.X().RowSelectionModel().SelectedIndex(0)))
+            .Store(
+                Html.X().TreeStore()
+                    .ID("StoreGroups")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadGroups")).Reader(Html.X().JsonReader().Root("data")))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("id"),
+                            Html.X().ModelField().Name("text"),
+                            Html.X().ModelField().Name("Description"),
+                            Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean)
+                        )
+                    )
+            )
+            .ColumnModel(Html.X().TreeColumn().Text("Sơ đồ tổ chức").DataIndex("text").Flex(1))
+            .Listeners(ls =>
+            {
+                ls.SelectionChange.Handler = "if (selected.length<=0) return;  App.GridPanel1.setTitle('Danh sách chức danh của '+ selected[0].data.text); App.GroupId.value=selected[0].data.id; App.GridPanel1.getStore().load({params: {groupId: App.GroupId.value,userId: App.UserId.value}});";
+            }),
+
+        Html.X().GridPanel()
+            .ID("GridPanel1")
+            .Title("Danh sách chức danh")
+            .Collapsible(true)
+            .Split(true)
+            .Width(550)
+            .Region(Region.East)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(false)
+                    .ID("StoreOrganizations")
+                    .RemotePaging(true)
+                    .PageSize(10)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadOrganizations")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Name").Text("Tên chức danh").Width(350).Align(Alignment.Center),
+                Html.X().CheckColumn().DataIndex("IsSelected").Text("Chọn").Editable(true).Width(90).Align(Alignment.Center)
+            )
+            .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditOrganization"))
+    )
+)

@@ -1,0 +1,103 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Core;
+@{
+    Layout = null;
+}
+<style>
+    .notify {
+        margin-top:-1px;
+    }
+    .notifyNew {
+        margin-top: -1px;
+        color: red;
+    }
+</style>
+<script>
+    var urlLogout = '@(Url.Action("LogOut", "Account", new { area = "" }))';
+    var logout = function () {
+        window.location.href = urlLogout;
+    };
+    var showSystemInfo = function () {
+        Ext.MessageBox.show({ title: 'Thông tin', msg: 'iDAS Solution version 1.0 - 2015', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+    };
+    var showfrmNewFeedback = function () {
+        Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chức năng này đang tạm dừng!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+    };
+</script>
+<script>
+    function notify() {
+        $.ajax({
+            type: "POST",
+            url: "@(Url.Action("GetNumberNotify", "Notify", null, null))",
+            data: {},
+            dataType: "json",
+            success: function (result) {
+                var text = "<div class='notify'>Thông báo</div>";
+                if (result != "") {
+                    text ="<div class='notifyNew'>Thông báo " + result.result + "</div>";
+                    App.NotifyStores.reload();
+                }
+                App.btnNotify.setText(text);
+            }
+        });
+    }
+</script>
+@{
+    string notifyNew = "<div class='notify'>Thông báo</div>";
+    if (!string.IsNullOrEmpty(ViewData["NotifyNewTotal"] as string))
+    {
+        notifyNew = "<div class='notifyNew'>Thông báo " + ViewData["NotifyNewTotal"].ToString() + "</div>";
+    }
+}
+@(Html.X().Toolbar().Layout(LayoutType.Border)
+    .Items(
+        Html.X().Toolbar().Border(false).Region(Region.Center)
+        .Items(
+        Html.X().Image().ImageUrl(Url.Action("LoadLogoFile", "File", new { area = "Generic", code = (User as UserPrincipal).Code })).MarginSpec("0 0 0 5").Width(72).Height(29),
+        Html.X().Image().ImageUrl("~/Images/idas-name.png").Margin(0).Height(27).MaxWidth(617).Flex(1)
+        ) ,
+        Html.X().Toolbar().Border(false).Region(Region.East)
+        .Items(
+            Html.X().Image().ImageUrl(Url.Action("LoadAvatarFile", "File", new { area = "Generic", employeeId = (User as UserPrincipal).EmployeeID })).Height(30).Width(23).Padding(1).StyleSpec("border: 1px solid #04408C;").MarginSpec("0 -1 0 0"),
+            Html.X().Button().Text("<b>" + User.Identity.Name + "</b>").Height(30).Margin(0)
+                .MenuAlign("tr-br")
+                .MenuItem(
+                        Html.X().MenuItem().Text("Thông tin nhân sự").Icon(Icon.User).Handler("openEmployeeDetailDashboard(" + (User as UserPrincipal).EmployeeID + ")"),
+                        Html.X().MenuItem().Text("Đổi mật khẩu").Icon(Icon.KeyStart).DirectClickAction("ShowChangePassword")
+                ),
+        
+        //Html.X().Label().Text(User.Identity.Name).MarginSpec("0 10 0 3").PaddingSpec("6 0 0 0").Height(30)
+        //    .StyleSpec("font-weight: bold; text-decoration: none;"),
+        Html.X().ToolbarSeparator(),
+        Html.X().Button().Height(30).Icon(Icon.UserComment).PaddingSpec("0 0 0 0").ToolTip("Chat nội bộ").Text("Chat").ID("btnChat")
+            .Listeners(ls => ls.Click.Fn = "function(){ if(App.ChatMain.hidden){App.ChatMain.show();App.ChatMain.expand();}else{App.ChatMain.hide();}}"),
+        Html.X().ToolbarSeparator(),
+        Html.X().Button().Height(30)
+            .ID("btnNotify")
+            .ToolTip("Thông báo")
+            .Text(notifyNew)
+            .Icon(Icon.Bell)
+            .MenuAlign("tr-br")
+            .Handler("if (App.NotifyStores.count()<=0) App.NotifyStores.reload();")
+            .Menu(
+                Html.X().Menu().ID("pnNotification")
+                    .ShowSeparator(false)
+                    .MaxHeight(450).Width(330)
+                    .AutoScroll(false)
+                    .Padding(0).BodyPadding(0)
+                    .Layout(LayoutType.Fit)
+                    .ItemsFromAction("Index", "Notify")
+           ),
+        Html.X().ToolbarSeparator(),
+        Html.X().Button().Text("Trợ giúp").ToolTip("Trợ giúp").Height(30).Margin(0).Icon(Icon.Help)
+            .MenuAlign("tr-br")
+            .MenuItem(
+                Html.X().MenuItem().Text("Thông tin phần mềm").Icon(Icon.Information).Handler("showSystemInfo"),
+                Html.X().MenuItem().Text("Đóng góp ý kiến").Icon(Icon.EmailGo).Handler("showfrmNewFeedback")
+            ),
+        Html.X().ToolbarSeparator(),
+        Html.X().Button().Text("Thoát").ToolTip("Thoát hệ thống").Height(30).Margins("0 5 0 0").Icon(Icon.ControlPowerBlue).Handler("logout")
+      )
+    )
+)

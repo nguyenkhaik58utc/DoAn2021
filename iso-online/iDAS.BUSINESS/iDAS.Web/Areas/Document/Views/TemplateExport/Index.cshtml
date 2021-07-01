@@ -1,0 +1,166 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+                            .Header(false)
+                            .ID("GrTempExport")
+                            .ColumnLines(true)
+                            .Border(false)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().ID("btAddNew").Handler("AddNewPartial();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdatePartial").Handler("UpdatePartial();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeletePartial").Handler("DeleteRecords();")
+                                    //Html.X().ToolbarSeparator(),
+                                    //Html.X().Button().Icon(Icon.ApplicationFormAdd).ID("btnAddCenter").Text("Thêm(Test)").Handler("AddNewCenter();"),
+                                    ////Html.X().ButtonView().ID("btnDetailPartial").Handler("ViewDetailPartial();"),
+                                    //Html.X().ToolbarSeparator(),
+                                    //Html.X().ComboBox()    
+                                    //    .Editable(false)
+                                    //        .SelectedItems(new ListItem("Excel", "Excel"))
+                                    //    .FieldLabel("Kiểu file")
+                                    //    .ID("cbType")
+                                    //    .Items(
+                                    //                new ListItem("Excel", "Excel"),
+                                    //                new ListItem("Word", "Word")
+                                    //    )
+                                )
+                        )
+                        .Store(
+                            Html.X().Store()
+                                .ID("stTempExport")
+                                        .RemotePaging(true).GroupField("ModuleCode")  
+                                .PageSize(20)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetListTemp")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                        {
+                                            //ps.Add(new StoreParameter("id", "App.hdfTempID.value", ParameterMode.Raw));
+                                        })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                                            new ModelField("ID", ModelFieldType.Int),
+                                                                new ModelField("Name", ModelFieldType.String),
+                                                                new ModelField("FileName", ModelFieldType.String),
+                                                                    new ModelField("Font", ModelFieldType.String),
+                                                                        new ModelField("FunctionCode", ModelFieldType.String),
+                                                                            new ModelField("ModuleCode", ModelFieldType.String),
+                                                                    new ModelField("Type", ModelFieldType.Int),
+                                                                        new ModelField("AttachmentFileIDs", ModelFieldType.Auto)
+                                    )
+                                )
+                        )
+                        .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                                    Html.X().Column().DataIndex("FunctionCode").Text("Chức năng").Wrap(true).Width(150),
+                                                        Html.X().Column().DataIndex("Font").Text("Mã biểu mẫu").Width(150),
+                                                Html.X().Column().DataIndex("Name").Text("Tên biểu mẫu").Width(250).Flex(1),
+                                                        Html.X().Column().DataIndex("FileName").Text("Tên file mẫu").Wrap(true).Width(150),
+                                                            Html.X().Column().DataIndex("Type").Text("Kiểu file").Wrap(true).Width(100).Renderer("if(value==1) return 'Excel'; else return 'Word'; "),
+                                                                Html.X().ColumnFileExtend("AttachmentFileIDs")
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                                         .Features(
+                                    Html.X().GroupingSummary()
+                                    .ID("GroupingSummaryModule")
+                                    .GroupHeaderTplString("{name}")
+                                    .HideGroupedHeader(true)
+                                    .EnableGroupingMenu(false)
+                            )           
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar()
+                    )    
+    
+    )
+    )
+
+<script>
+
+    function CheckStatus() {
+        var records = App.GrTempExport.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDeletePartial, App.btnUpdatePartial);
+            if (records[0].get('Status'))
+                SetDisabled(App.btnDeletePartial, App.btnUpdatePartial);
+        }
+        else {
+            SetDisabled(App.btnDeletePartial, App.btnUpdatePartial);
+        };
+    };
+    var ViewDetailPartial = function () {
+        var records = App.GrTempExport.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetailTemp", "TemplateExport", new { Area = "Document" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var UpdatePartial = function () {
+        var records = App.GrTempExport.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowFrmUpdateTemp", "TemplateExport", new { Area = "Document" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                ActionForm: '@(iDAS.Utilities.Form.Edit)'
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AddNewPartial = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmAddTemp", "TemplateExport", new { Area = "Document" }, null))'
+        });
+    };
+
+    @*var AddTempToFile = function (value) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAddTemp", "CustomerManTemplateExportagementContract", new { Area = "Document" }, null))',
+                params: {
+                    path: value
+                }
+            });
+        };var AddNewCenter = function () {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAddTempCenter", "TemplateExport", new { Area = "Document" }, null))'
+            });
+        };*@
+
+    var DeleteRecords = function () {
+        var records = App.GrTempExport.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var url = '@(Url.Action("DeleteTemplate", "TemplateExport", new { Area = "Document" }, null))';
+                        var params = {
+                            ID: records[0].get('ID'),
+                        };
+                        onDirectMethod(url, params);
+                    }
+                }
+            });
+        }
+    };
+
+</script>

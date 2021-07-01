@@ -1,0 +1,77 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+
+@*@{
+        var X = Html.X();
+        var SatrusCombobox = new List<ListItem>();
+        SatrusCombobox.Add(new ListItem() { Text = Resource.All, Value = "-1" });
+        SatrusCombobox.Add(new ListItem() { Text = Resource.Wait, Value = "0" });
+        SatrusCombobox.Add(new ListItem() { Text = Resource.Approved, Value = "1" });
+        SatrusCombobox.Add(new ListItem() { Text = Resource.Rejected, Value = "2" });
+    }
+    @(Html.X().Container()
+        .Layout(LayoutType.Fit)
+        .Border(false)
+        .Listeners(ls => ls.Resize.Handler = "this.updateLayout()")
+        .ID("ctWorkOuts")
+        .Items(
+            Html.X().Panel()
+            .BodyPadding(0)
+            .Layout(LayoutType.Fit)
+            .Padding(0)
+            .ID("pnWorkOut")
+            .Border(false)
+            .StyleSpec("border: none;")
+            .Header(false)
+            .Items(
+                Html.X().GridPanel()
+                    .ID("grWorkOut")
+                    .Title("Danh sách đăng ký làm việc bên ngoài")
+                    .Margin(-1)
+                    .TopBarItem(
+                        Html.X().ComboBox().ID("ccbWorkOutSearch").Width(200).Items(SatrusCombobox).EmptyText("Chọn trạng thái").Listeners(ls => ls.Select.Handler = "App.strefreshWorkOut.reload();")
+                    )
+                    .Border(false)
+                    .ColumnLines(true)
+                    .IconCls("x-fa fa-table")
+                    .Store(
+                        Html.X().Store()
+                        .ID("strefreshWorkOut")
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataForAllUsers", "EmployeeWorkOut", new { area = "TimeKeeping"}))
+                        .Reader(Html.X().JsonReader().RootProperty("data")))
+                        .Parameters(pr =>
+                        {
+                            pr.Add(new StoreParameter("Status", "App.ccbWorkOutSearch.value", ParameterMode.Raw));
+                        })
+                        .AutoLoad(true)
+                        .PageSize(25)
+                        .Model(Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("EmployeeName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("DepartmentTitles").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("StartTime").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("EndTime").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("Reason").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Address").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("EmployeeApproveName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("StatusForView").Type(ModelFieldType.String)
+                        )
+                    )
+                )
+                .EmptyText("Không có dữ liệu")
+                .ColumnModel(
+                    Html.X().RowNumbererColumnFormat(),
+                    Html.X().Column().Text("Họ tên").DataIndex("EmployeeName").Width(150),
+                    Html.X().Column().Text("Chức danh").DataIndex("DepartmentTitles").Flex(1),
+                    Html.X().DateColumn().Format("dd/MM/yyyy HH:mm").Text(Resource.StartTimeOff).DataIndex("StartTime").Width(120),
+                    Html.X().DateColumn().Format("dd/MM/yyyy HH:mm").Text(Resource.EndTimeOff).DataIndex("EndTime").Width(120),
+                    Html.X().Column().Text("Lý do").DataIndex("Reason").Flex(1),
+                    Html.X().Column().Text("Địa chỉ").DataIndex("Address").Width(180),
+                    Html.X().Column().Text("Người xét duyệt").DataIndex("EmployeeApproveName").Width(140),
+                    Html.X().Column().Text(Resource.Status).DataIndex("StatusForView").Width(100)
+                )
+                .BottomBar(Html.X().PagingToolbarFormat()
+            )
+        )
+        )
+    )*@

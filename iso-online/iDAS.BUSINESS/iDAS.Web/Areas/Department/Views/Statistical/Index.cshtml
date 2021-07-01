@@ -1,0 +1,102 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanEmployeeItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+@(
+ Html.X().Store().ID("storeModuleID")
+        .AutoLoad(true)
+        .PageSize(100)
+        .Model(Html.X().Model()
+        .IDProperty("Code")
+        .Fields(new ModelField("Code"),
+                new ModelField("Name"),
+                new ModelField("Icon")
+            )
+        )
+        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMenuSystem"))
+            .Reader(Html.X().JsonReader().Root("data")))
+        .Listeners(ls => ls.Load.Handler =
+        @"var select =App.cbxModuleSelect.store.getAt(0).data;
+        App.cbxModuleSelect.setValue(select.Code);App.stroreFunction.reload();"
+            )
+)
+@(
+ Html.X().Viewport().Border(false)
+.Layout(LayoutType.Border)
+ .Margin(0).Frame(false).StyleSpec("border: none;").Padding(2)
+.Items(
+            Html.X().TreePanel().ID("TreePanelFunctionBussiness").Region(Region.West).Width(350)
+                    .Title("Danh sách chức năng").Header(false).TitleAlign(TitleAlign.Center)
+                    .Border(true)
+                    .AutoScroll(true)
+                    .RootVisible(false).Split(true).Collapsible(true)
+                    .TopBar(
+                        Html.X().Toolbar().Layout(LayoutType.Fit)
+                                .Items(
+                                        Html.X().ComboBox().FieldLabel("Lựa chọn Module").ID("cbxModuleSelect")
+                                            .DisplayField("Name").Editable(true).ForceSelection(true)
+                                            .ValueField("Code")
+                                            .StoreID("storeModuleID")
+                                            .Listeners(ls =>ls.Select.Handler = "App.stroreFunction.reload();")
+                                    )
+                    )
+                .Store(
+                        Html.X().TreeStore().AutoLoad(false).ID("stroreFunction")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadFunction")))
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("moduleCode", "App.cbxModuleSelect.value", ParameterMode.Raw));
+                                    })
+                       )
+                .Listeners(ls => ls.Select.Handler = "App.StoreEmployee.reload();")
+                ,
+            X.GridPanel()
+                    .Title("Những thành viên có quyền truy cập")
+                    .ID("GrEmployee")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                .Store(
+                    X.StoreForModel().AutoLoad(false)
+                        .ID("StoreEmployee")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(X.AjaxProxy().Url(Url.Action("LoadEmployeePermission", "Statistical")).Reader(X.JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("moduleCode", "App.cbxModuleSelect.value", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("functionCode", "getFunctioncode()", ParameterMode.Raw));
+                            })
+                    )
+                .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.TemplateColumn().DataIndex(Model, m => m.FileID).Width(31).Tpl(
+                          X.XTemplate().Html(@<text>
+                                                <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                                     style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                                              </text>
+                                            )
+                        ),
+                        X.Column().DataIndex(Model, m => m.Name).Text("Họ Tên").Width(200),
+                        X.Column().DataIndex(Model, m => m.ChucDanh).Text("Chức danh").Flex(1).Width(300).Align(Alignment.Right)
+                        
+                )
+                .BottomBar(X.CustomPagingToolbar())           
+        )
+)
+<script>
+    var getFunctioncode = function () {
+        if(App.TreePanelFunctionBussiness.selModel.getSelection()[0])
+        {
+            return App.TreePanelFunctionBussiness.selModel.getSelection()[0].data.id;
+        }
+        else {
+            return "0";
+        }
+    };
+</script>

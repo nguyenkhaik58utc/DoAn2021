@@ -1,0 +1,245 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    var StoreParamRisk = ViewData["StoreParamRisk"] as StoreParameter;
+    var StoreParamType = ViewData["StoreParamType"] as StoreParameter;
+}
+@(Html.X().GridPanel()
+.ColumnLines(true)
+.ItemID("grRisksCommon")
+    //.Listeners(ls => ls.BeforeItemContextMenu.Handler = "itemcontextmenu(e)")
+    .Border(false)
+    .TopBar(
+        Html.X().Toolbar()
+            .Items(
+             Html.X().Hidden()
+                    .ID("RiskDepartmentID")
+                    .Value(0),
+                Html.X().ButtonCreate()
+                    .ItemID("btnRisksInsert")
+                    .Handler("showRisksInsert(this.up('gridpanel'));"),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonUpdate()
+                    .ItemID("btnRisksUpdate")
+                    .Disabled(true)
+                    .Handler("showRisksUpdate();"),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonDelete()
+                    .ItemID("butRisksDelete")
+                    .Handler("deleteRisksRecord(this.up('gridpanel'));"),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonView()
+                    .ItemID("btnRisksDetail")
+                    .Disabled(true)
+                    .Handler("showRisksDetail();"),
+                Html.X().ToolbarFill(),
+                Html.X().ButtonTutorial()
+        )
+    )
+    .Store(
+     Html.X().Store()
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .AutoLoad(false)
+                    .Proxy(Html.X().AjaxProxy()
+                    .Url(ViewData["StoreUrlRisk"].ToString())
+                    .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(a => a.Add(StoreParamRisk))
+                    .Parameters(a => a.Add(StoreParamType))
+                    .Model(
+                    Html.X().Model().Fields(
+                        new ModelField("ID"),
+                        new ModelField("Name", ModelFieldType.String),
+                        new ModelField("Consequence", ModelFieldType.Float),
+                        new ModelField("Description", ModelFieldType.String),
+                        new ModelField("Impact", ModelFieldType.Float),
+                        new ModelField("LikeLiHood", ModelFieldType.Float),
+                        new ModelField("RiskOwner.Name", ModelFieldType.String),
+                        new ModelField("Weakness", ModelFieldType.String)
+            )
+        )
+    )
+    .ColumnModel(
+        Html.X().RowNumbererColumn()
+            .Text("STT")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(35)
+            .Locked(true)
+            .Align(Alignment.Center),
+        Html.X().Column()
+            .Text("Tên rủi ro")
+            .Wrap(true)
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .DataIndex("Name")
+            .Locked(true)
+            .Width(300),
+        Html.X().Column()
+            .Text("Điểm yếu")
+            .Wrap(true)
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .DataIndex("Weakness")
+            .Width(300),
+        Html.X().ComponentColumn()
+            .Text("Định lượng rủi ro")
+            .Filterable(false)
+            .Columns(
+            Html.X().Column()
+                .Text("Hệ số")
+                .Align(Alignment.Right)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .DataIndex("Consequence")
+                .Width(60),
+            Html.X().Column()
+                .Text("Khả năng")
+                .Align(Alignment.Right)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .DataIndex("LikeLiHood")
+                .Width(60),
+            Html.X().Column()
+                .Text("Mức độ")
+                .Align(Alignment.Right)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .DataIndex("Impact")
+                .Width(60)),
+            Html.X().Column()
+                .Text("Giá trị rủi ro")
+                .Align(Alignment.Right)
+                .Filterable(false)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .DataIndex("")
+                .Renderer(new Renderer { Fn = "function(value, meta, record) { return record.get('LikeLiHood')*record.get('Impact')*record.get('Consequence'); }" })
+                .Width(80),
+            Html.X().Column()
+                .Text("Người nắm giữ")
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                    .DataIndex("RiskOwner.Name")
+                .Width(130)
+                )
+                .Listeners(ls => ls.SelectionChange.Handler = "checkStatusRisk(this)")
+                .SelectionModel(
+                    Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                )
+                .Plugins(
+                Html.X().FilterHeader().Remote(false)
+                )
+                .View(
+                 Html.X().GridView().MarkDirty(false)
+                )
+        .Plugins(Html.X().CellEditing())
+        .BottomBar(
+            Html.X().CustomPagingToolbar())
+)
+<script type="text/javascript">
+    var showRisksInsert = function (grid) {
+        var departId = App.RiskDepartmentID.getValue();
+        RiskGridPanel = grid;
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("AddForm", "Risks", new { Area = "Risk" }))',
+            params: { id: 0, type: '@(StoreParamType.Value)', departId: departId },
+            success: function (result) {              
+            }
+        });
+    };
+    var showRisksUpdate = function () {
+        var RisksId = getRisksId();
+        var departId = App.RiskDepartmentID.getValue();
+        if (RisksId != 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AddForm", "Risks", new { Area = "Risk" }))',
+                params: { id: RisksId, type: '@(StoreParamType.Value)', departId: departId },
+                success: function (result) {
+                }
+            });           
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showRisksDetail = function () {
+        var RisksId = getRisksId();
+        var departId = App.RiskDepartmentID.getValue();
+        if (RisksId != 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "Risks", new { Area = "Risk" }))',
+                params: { id: RisksId, type: '@(StoreParamType.Value)', departId: departId },
+                success: function (result) {
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };   
+    
+    var getRisksId = function () {
+        var RisksId = 0;
+        var records = RiskGridPanel.selModel.getSelection();
+        if (records.length > 0) {
+            RisksId = records[0].get('ID');
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có rủi ro nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+        return RisksId;
+    }; 
+    var checkStatusRisk = function (grid) {
+        RiskGridPanel = grid;
+        var records = RiskGridPanel.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                grid.queryById('btnRisksUpdate').setDisabled(true);
+                grid.queryById('butRisksDelete').setDisabled(true);
+                grid.queryById('btnRisksDetail').setDisabled(true); 
+                break;
+            case 1:
+                grid.queryById('btnRisksUpdate').setDisabled(false);
+                grid.queryById('btnRisksDetail').setDisabled(false);
+                grid.queryById('butRisksDelete').setDisabled(false);
+                break;
+            default:
+                grid.queryById('btnRisksUpdate').setDisabled(true);
+                grid.queryById('btnRisksDetail').setDisabled(true);
+                grid.queryById('butRisksDelete').setDisabled(true);
+                break;
+        }
+    };
+    var deleteRisksRecord = function (grid) {
+        var RisksId = getRisksId();
+        switch (RisksId) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        grid.getStore().reload();
+                        return false;
+
+                    }
+                });
+                break;
+            default:
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "Risks", new { Area = "Risk" }, null))',
+                                params: { id: RisksId }
+                            });
+                            grid.getStore().reload();
+                        }
+                    }
+                });
+                break;
+        }
+    };
+</script>

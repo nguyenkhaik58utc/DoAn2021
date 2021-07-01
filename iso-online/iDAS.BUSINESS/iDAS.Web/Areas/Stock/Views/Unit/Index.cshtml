@@ -1,0 +1,327 @@
+﻿@model System.Collections.IEnumerable
+@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Utilities;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section headtag
+{
+<link href="~/Content/FieldSet.css" rel="stylesheet" />
+<script type="text/javascript" src="@Url.Content("~/Areas/Stock/Content/js/jsCommon.js")"></script>
+<script type ="text/javascript"> 
+    // Hàm gọi hàm lọc dữ liệu trên Header
+    var applyFilter = function (field) {
+        var store = App.gpUnit.getStore();
+        store.filterBy(getRecordFilter());
+    };
+    // Hàm lọc dữ liệu theo kiểu string
+    var filterString = function (value, dataIndex, record) {
+        var val = record.get(dataIndex);
+        if (typeof val != "string") {
+            return value.length == 0;
+        }
+        return val.toLowerCase().indexOf(value.toLowerCase()) > -1;
+    };
+    // Hàm lọc dữ liệu theo kiểu true - false
+    var filterBoolean = function (value, dataIndex, record) {
+        var val = record.get(dataIndex);
+        if (typeof val != "boolean") {
+            return value.length == 0;
+        }
+        return val.toString().toLowerCase().indexOf(value.toString().toLowerCase()) > -1;
+    };
+    // Hàm lọc dữ liệu
+    var getRecordFilter = function () {   
+        var f = [];
+        // Tìm kiếm theo tên
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftName.getValue() || "", "Name", record);
+            }
+        });
+        // Tìm kiểm theo diễn giải
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftDescription.getValue() || "", "Description", record);
+            }
+        });
+        // Tìm kiếm theo tình trạng sử dụng
+        f.push({
+            filter: function (record) {
+                return filterBoolean(App.ftIsUse.getValue() || "", "IsUse", record);
+            }
+        });
+        var len = f.length;
+        return function (record) {
+            for (var i = 0; i < len; i++) {
+                if (!f[i].filter(record)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+    };
+    var clearFilter = function () {
+        App.ftName.reset();
+        App.ftDescription.reset();
+        App.ftIsUse.reset();
+        App.stUnit.clearFilter();
+    };
+    // Hàm hiện thị context menu
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    // Hàm check trạng thái của button xóa nếu có chọn dòng thì button xóa enable
+    var checkStatus = function () {
+        var records = App.gpUnit.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.cmDelete.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                break;
+            case 1:
+                App.cmDelete.setDisabled(false);
+                App.butDelete.setDisabled(false);
+                break;
+            default:
+                App.cmDelete.setDisabled(false);
+                App.butDelete.setDisabled(false);
+                break;
+        }
+    };
+    // Hàm thực hiện thao tác lưu trên grid
+    var handlecmd = function (cmd, grid, id, name, description, isuse, type) {
+        var records = App.gpUnit.selModel.getSelection();
+        var urlAdd = '@(Url.Action("Insert", "Unit", new { Area = "Stock" }, null))';
+        var urlEdit = '@(Url.Action("Update", "Unit", new { Area = "Stock" }, null))';
+        warehouseHandlecmd(cmd, grid, urlAdd, urlEdit, id, name, description, isuse, type);
+    }; 
+    // Hàm xóa dữ liệu
+    var deleteRecord = function () {
+        var records = App.gpUnit.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {           
+                    App.butDelete.setDisabled(true);
+                    App.cmDelete.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var urlDelete = '@(Url.Action("Delete", "Unit", new { Area = "Stock" }, null))';
+            warehouseDeleteRecord(urlDelete, records);
+        }
+    };
+  // Hàm render trạng thái sử dụng của bản ghi   
+    var GetBooleanChar = function (value) {
+        var sUse = "<span style='color:blue'>Sử dụng</span>";
+        var sNot = "<span style='color:red'>Không sử dụng</span>";
+        if (value == "1") {      
+            return sUse;
+        } else {
+            return sNot;
+        }
+    };
+</script>
+}
+@(Html.X().Menu()
+          .ID("cmMenu")         
+          .Items(
+                new MenuItem {
+                    Text = "Thêm mới",
+                    ID = "cmAdd", Icon = Icon.Add,
+                    Handler = "warehouseAddNewRecord(App.gpUnit);" 
+                },
+                new MenuItem { 
+                    Text = "Xóa",
+                    ID = "cmDelete", Disabled = true,
+                    Icon = Icon.Delete, Handler = "deleteRecord();" 
+                }
+           )
+)
+@(Html.X().Viewport()
+          .Layout(LayoutType.Fit)
+          .Items(
+            Html.X().GridPanel()
+                    .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                    .ID("gpUnit")
+                    .ColumnLines(true)
+                    .Height(400).Border(false)
+                    .TopBar(
+                             Html.X().Toolbar().ID("tbgpUnit")
+                                     .Items(
+                                        Html.X().ButtonCreate()
+                                                .ID("btnAdd")
+                                                .Handler("warehouseAddNewRecord(this.up('grid'));"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonDelete()
+                                                .ID("butDelete")
+                                                .Disabled(true)
+                                                .Handler("deleteRecord();"),
+                                               Html.X().ToolbarFill(),
+                                                             Html.X().ButtonTutorial()
+                                       
+                                        )//end Toolbar
+                                )//End TopBar
+            .Store(Html.X().Store()
+                    .ID("stUnit")                   
+                   .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetData"))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)                 
+                    .Model(
+                        Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean)                            
+                            )
+                    )                 
+                    
+            )
+.ColumnModel(
+Html.X().RowNumbererColumn()
+        .Text("STT")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(33)
+        .Wrap(true)
+        .Align(Alignment.Center),
+Html.X().Column()
+        .Text("Tên đơn vị tính"+Html.Required())
+        .DataIndex("Name")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(200)
+        .Wrap(true)
+        .Editor(
+        Html.X().TextField()
+                .MaxLength(200)
+                .TabIndex(1)
+                .AllowOnlyWhitespace(false)
+                .AllowBlank(false)
+                .BlankText("Tên đơn vị tính bắt buộc phải nhập ")
+        )
+        .HeaderItems(
+                Html.X().TextField()
+                        .ID("ftName")
+                        .Icon(Icon.Magnifier)
+                        .Listeners(ls =>
+                        {
+                            ls.Change.Handler = "applyFilter(this);";
+                            ls.Change.Buffer = 80;
+                        })
+                        .Plugins(Html.X().ClearButton())
+                    ),
+Html.X().Column()
+        .Text("Diễn giải")
+        .DataIndex("Description")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Flex(1)
+        .Wrap(true)
+        .Editor(
+        Html.X().TextField()
+                .TabIndex(2)
+                .MaxLength(500)
+        )
+        .HeaderItems(
+        Html.X().TextField()
+                .ID("ftDescription")
+                .Icon(Icon.Magnifier)
+                .Listeners(ls =>
+                {
+                    ls.Change.Handler = "applyFilter(this);";
+                    ls.Change.Buffer = 80;
+                })
+                .Plugins(Html.X().ClearButton()
+                )
+            ),
+Html.X().Column()
+        .Text("Sử dụng")
+        .DataIndex("IsUse")
+        .Width(100)
+        .Wrap(true)
+        .Renderer("GetBooleanChar")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Editor(
+        Html.X().ComboBox()
+                .TabIndex(3)             
+                .Items(
+                new ListItem("Sử dụng", true),
+                new ListItem("Không sử dụng", false)
+                )
+        )
+        .HeaderItems(
+            Html.X().ComboBox()
+                    .Items(                       
+                    new ListItem("Sử dụng", "true"),
+                    new ListItem("Không sử dụng", "false")
+                    )
+                    .ID("ftIsUse")
+                    .Icon(Icon.Magnifier)
+                    .Listeners(ls =>
+                    {
+                        ls.Change.Handler = "applyFilter(this);";
+                        ls.Change.Buffer = 100;
+                    })
+            .Plugins(Html.X().ClearButton()
+            )
+            ), 
+Html.X().Column()
+        .Width(25)
+        .DataIndex("Name")
+        .Sortable(false)
+        .MenuDisabled(true)
+        .Text("&nbsp;")
+        .Resizable(false)
+        .Renderer("return '';")
+        .HeaderItems(
+        Html.X().Container()
+        .Items(
+            Html.X().Button()
+                    .ID("ClearFilterButton")
+                    .Icon(Icon.Cancel)
+                    .ToolTip("Loại bỏ tất cả điều kiện tìm kiếm")
+                    .Handler("clearFilter();")
+                    )
+            ),    
+Html.X().CommandColumn()
+        .Text("Chức năng")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Commands(
+            Html.X().GridCommand()
+                    .CommandName("save")
+                    .Icon(Icon.Disk)
+                    .ToolTip(tt => tt.Text = "Lưu"),
+                    
+            Html.X().GridCommand()
+                    .CommandName("reject")
+                    .Icon(Icon.ArrowUndo)
+                    .ToolTip(tt => tt.Text = "Hủy")
+        )
+            .Listeners(ls => ls.Command.Handler = "handlecmd(command, this.up('grid'), record.data.ID, record.data.Name, record.data.Description, record.data.IsUse);")
+        )
+        .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                        l.Select.Handler = "checkStatus();";
+                        })
+                        )
+                            .Plugins(item => { item.Add(Html.X().CellEditing()); })
+                        .BottomBar
+                        (
+                                   Html.X().CustomPagingToolbar()
+        )             
+     )
+   )

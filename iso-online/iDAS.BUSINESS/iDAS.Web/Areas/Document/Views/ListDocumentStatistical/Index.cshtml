@@ -1,0 +1,664 @@
+﻿@using iDAS.Web.ExtExtend
+@using Ext.Net
+@using Ext.Net.MVC
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+    .Items(
+        Html.X().Panel()
+                .MarginSpec("1 0 1 1")
+                .Region(Region.West)
+                .Title("XEM THỐNG KÊ DƯỚI DẠNG DỮ LIỆU")
+                .TitleAlign(TitleAlign.Center)
+                .Icon(Icon.ApplicationViewDetail)
+                .Collapsible(true)
+                .Split(true)
+                .Header(false)
+                .Border(true)
+                .Layout(LayoutType.Border)
+                .Width(700)
+                .Items(
+        Html.X().Hidden().ID("hdfDepartmentID").Value(0),
+        Html.X().GridPanel()
+            .ID("grDocumentCateStatistical")
+            .Title("Danh mục tài liệu")
+            .Header(false)
+            .MarginSpec("1 1 1 1")
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                                   Html.X().SearchByDate("App.stDocumentCateStatistical.reload();").FromDateID("dfFromDate").ToDateID("dfToDate"),
+                    Html.X().ToolbarSeparator(),
+                                                                        Html.X().ButtonExportExcelFile().GridIDGetFile("grDocumentCateStatistical"),
+                                   
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button()
+                                            .Text("In báo cáo")
+                                                .Hidden(false)
+                                                    .Handler("this.up('grid').print();")
+                                            .Icon(Icon.Printer),
+                        Html.X().ToolbarFill()
+                                    )
+                            )
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(true)
+                    .ID("stDocumentCateStatistical")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("GetData", "ListDocumentStatistical"))
+                    .Reader(Html.X().JsonReader().Root("data"))
+                    .IDParam("ID"))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("departmentId", "App.hdfDepartmentID.getValue() > 0 ? App.hdfDepartmentID.getValue():0", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                    })
+                    .Model(
+                            Html.X().Model().IDProperty("CateID").Fields(
+                            Html.X().ModelField().Name("CateID"),
+                            Html.X().ModelField().Name("CateName"),
+                            Html.X().ModelField().Name("TotalDocument"),
+                            Html.X().ModelField().Name("TotalDocumentIssued"),
+                            Html.X().ModelField().Name("TotalDocumentObsolete"),
+                            Html.X().ModelField().Name("TotalDocumentIn"),
+                            Html.X().ModelField().Name("TotalDocumentInIssued"),
+                            Html.X().ModelField().Name("TotalDocumentInObsolete"),
+                            Html.X().ModelField().Name("TotalDocumentOut"),
+                            Html.X().ModelField().Name("TotalDocumentOutIssued"),
+                            Html.X().ModelField().Name("TotalDocumentOutObsolete"),
+                            Html.X().ModelField().Name("NumberDistribution"),
+                            Html.X().ModelField().Name("NumberOfThuhoi")
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                    .Text("STT")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(30)
+                    .Align(Alignment.Center),
+                 Html.X().Column()
+                        .DataIndex("CateName")
+                        .Text("Danh mục")
+                        .Width(250)
+                        .Locked(true),
+                           Html.X().Column()
+                                            .DataIndex("TotalDocument")
+                                            .Text("Tổng số")
+                                            .Renderer("renderTotalDocument")
+                                            .Width(70)
+                                            .Filterable(false)
+                                            .Align(Alignment.Right),
+                                        Html.X().Column()
+                                            .DataIndex("TotalDocumentIssued")
+                                            .Text("Ban hành")
+                                            .Renderer("renderDocumentIssued")
+                                            .Width(70)
+                                                 .Filterable(false)
+                                            .Align(Alignment.Right),
+                                        Html.X().Column()
+                                            .DataIndex("TotalDocumentObsolete")
+                                            .Text("Lỗi thời")
+                                            .Renderer("renderDocumentObsolete")
+                                            .Width(70)
+                                                 .Filterable(false)
+                                            .Align(Alignment.Right),
+                                        Html.X().ComponentColumn()
+                                            .Text("Tài liệu nội bộ")
+                                            .Columns(
+                                            Html.X().Column()
+                                                    .DataIndex("TotalDocumentIn")
+                                                    .Text("Tổng số")
+                                                    .Renderer("renderDocumentIn")
+                                                    .Width(70)
+                                                    .Align(Alignment.Right),
+                                            Html.X().Column()
+                                                    .DataIndex("TotalDocumentInIssued")
+                                                    .Renderer("renderDocumentInIssued")
+                                                    .Text("Ban hành")
+                                                    .Width(80)
+                                                    .Align(Alignment.Right),
+                                            Html.X().Column()
+                                                    .DataIndex("TotalDocumentInObsolete")
+                                                    .Text("Lỗi thời")
+                                                    .Renderer("renderDocumentInObsolete")
+                                                    .Width(70)
+                                                    .Align(Alignment.Right)
+                                                    ),
+                                        Html.X().ComponentColumn()
+                                                .Text("Tài liệu bên ngoài")
+                                                .Columns(
+                                            Html.X().Column()
+                                                    .DataIndex("TotalDocumentOut")
+                                                    .Text("Tổng số")
+                                                    .Renderer("renderDocumentOut")
+                                                    .Width(70)
+                                                    .Align(Alignment.Right),
+                                            Html.X().Column()
+                                                    .DataIndex("TotalDocumentOutIssued")
+                                                    .Renderer("renderDocumentOutIssued")
+                                                    .Text("Ban hành")
+                                                    .Width(80)
+                                                    .Align(Alignment.Right),
+                                            Html.X().Column()
+                                                    .DataIndex("TotalDocumentOutObsolete")
+                                                    .Text("Lỗi thời")
+                                                    .Renderer("renderDocumentOutObsolete")
+                                                    .Width(70)
+                                                    .Align(Alignment.Right)
+                                                    ),
+                                        Html.X().ComponentColumn()
+                                                .Text("Phân phối tài liệu")
+                                                .Columns(
+                                                Html.X().Column()
+                                                        .DataIndex("NumberDistribution")
+                                                        .Text("Phân phối")
+                                                        .Width(70)
+                                                        .Align(Alignment.Right),
+                                                Html.X().Column()
+                                                        .DataIndex("NumberOfThuhoi")
+                                                        .Text("Thu hồi")
+                                                        .Width(70)
+                                                        .Align(Alignment.Right)
+                                                        )
+                                                )
+                                .Plugins(
+                                    Html.X().FilterHeader()
+                                            .Remote(true)
+                                    )
+                            .SelectionModel(
+                            Html.X().RowSelectionModel()
+                                    .Mode(SelectionMode.Single)
+                                    .SelectedIndex(0)
+                                        .Listeners(ls => ls.SelectionChange.Handler = "onSelect();")
+                                    )
+                            .BottomBar(Html.X().CustomPagingToolbar()),
+                         Html.X().DepartmentPanel().Handler("onDepartmentReady").Collapsed(true).Margin(1)
+                            ),
+                         Html.X().Panel()
+                            .Layout(LayoutType.Fit)
+                            .MarginSpec("1 1 1 0")
+                            .Region(Region.Center)
+                            .AutoScroll(false)
+                            .Header(false)
+                            .Border(true)
+                            .TopBar(
+                        Html.X().Toolbar()
+                            .Items(
+                            Html.X().ComboBox()
+                                    .FieldLabel("Biểu đồ")
+                                    .Width(300)
+                                    .MarginSpec("0 0 0 5")
+                                    .LabelWidth(50)
+                                    .SelectedItems("0")
+                                    .ID("cbSelectChart")
+                                    .Items(
+                                    new ListItem() { Value = "0", Text = "Biểu đồ hình tròn thống kê tài liệu theo phòng ban(%)", },
+                                    new ListItem() { Value = "1", Text = "Biểu đồ cột thống kê tài liệu theo phòng ban(SL)" },
+                                    new ListItem() { Value = "2", Text = "Biểu đồ cột thống kê tài liệu theo danh mục(SL)" }
+                                    )
+                                    .Listeners(ls => ls.Select.Handler = "onSelectCombobox(this);"),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                            )
+                            )
+                        .Items(
+                        Html.X().Panel()
+                            .Layout(LayoutType.Fit)
+                            .ID("pChart0")
+                            .Title("<b>Biểu đồ hình tròn kết quả thực hiện(%)</b>")
+                            .Header(false)
+                            .Border(false)
+                            .TopBar(Html.X().Toolbar()
+                            .Items(
+                                Html.X().Button()
+                                    .Text("Tải lại dữ liệu")
+                                    .Icon(Icon.ArrowRefresh)
+                                    .Handler("#{Chart0}.getStore().reload()"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button()
+                                    .Icon(Icon.Style)
+                                    .Text("Kiểu vành khăn")
+                                    .EnableToggle(true)
+                                    .Listeners(l => l.Toggle.Handler = "#{Chart0}.series.first().donut = pressed ? 35 : false;#{Chart0}.refresh();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button()
+                                    .Text("Lưu biểu đồ")
+                                    .Icon(Icon.Disk)
+                                    .Handler("saveChart")
+                            )
+                        )
+                    .Items(
+                        Html.X().Chart()
+                            .ID("Chart0")
+                            .Animate(true)
+                            .Shadow(true)
+                            .InsetPadding(30)
+                            .Theme("Base:gradients")
+                            .StandardTheme(StandardChartTheme.Base)
+                            .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Float).LabelFont("9px Helvetica,sans-serif"))
+                            .StyleSpec("background:#fff;")
+                            .Store(
+                            Html.X().Store()
+                            .ID("stChart0")
+                            .AutoLoad(true)
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("id", "App.hdfDepartmentID.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                            })
+                            .Model(Html.X().Model()
+                            .Fields(
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Data1")
+                                )
+                                )
+                                .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataPie"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            )
+                        .Series(
+                    Html.X().PieSeries()
+                        .AngleField("Data1")
+                        .ShowInLegend(true)
+                        .Donut(0)
+                        .Highlight(true)
+                        .HighlightSegmentMargin(20)
+                            .Label(Html.X().SeriesLabel()
+                            .Display(SeriesLabelDisplay.Rotate)
+                            .Field(new[] { "Name" })
+                            .Contrast(true)
+                            .Font("10px Helvetica,sans-serif")
+                            .Orientation(Orientation.Horizontal)
+                            )
+                            .Tips(Html.X().ChartTip()
+                            .TrackMouse(true)
+                            .Width(170)
+                            .Height(28)
+                            .Renderer(r => r.Fn = "tipRenderer")
+                             )
+                            )
+                         ),
+                        Html.X().Panel()
+                            .Layout(LayoutType.Fit)
+                            .ID("pChart1")
+                            .Title("<b>Biểu đồ cột kết quả thực hiện(SL)</b>")
+                            .Hidden(true)
+                            .Border(false)
+                            .Header(false)
+                            .TopBar(Html.X().Toolbar()
+                            .Items(
+                        Html.X().Button()
+                            .Text("Tải lại")
+                            .Icon(Icon.ArrowRefresh)
+                            .Handler("#{Chart1}.getStore().reload()"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Lưu biểu đồ")
+                            .Icon(Icon.Disk)
+                            .Handler("saveChart")
+                                 )
+                            )
+                            .Items(
+                        Html.X().Chart()
+                            .ID("Chart1")
+                                    .Shadow(true)
+                            .StandardTheme(StandardChartTheme.Base)
+                            .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right)
+                            .LabelFont("9px Tahoma")
+                            .BoxStroke("#084594")
+                                )
+                        .Animate(true)
+                            .Store(Html.X().Store()
+                                 .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("id", "App.hdfDepartmentID.getValue()", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                })
+                                .Model(Html.X().Model()
+                                .Fields(
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Data1"),
+                                        Html.X().ModelField().Name("Data2"),
+                                        Html.X().ModelField().Name("Data3"),
+                                        Html.X().ModelField().Name("Data4"),
+                                        Html.X().ModelField().Name("Data5"),
+                                        Html.X().ModelField().Name("Data6"),
+                                        Html.X().ModelField().Name("Data7"),
+                                        Html.X().ModelField().Name("Data8"),
+                                        Html.X().ModelField().Name("Data9")
+                                )
+                            )
+                                .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetDataColumn"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        )
+                        .Axes(
+                            Html.X().NumericAxis()
+                                    .Fields(new string[] { "Data1", "Data2", "Data3", "Data4", "Data5", "Data6", "Data7", "Data8", "Data9" })
+                                    .Grid(true)
+                                    .Title("Đơn vị: tài liệu")
+                                    .Minimum(0)
+                                    .Label(Html.X().AxisLabel()
+                                    .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                                ),
+                               Html.X().CategoryAxis()
+                                    .Position(Position.Bottom)
+                                    .Fields("Name")
+                                    .Width(400)
+                                    .Label(Html.X().AxisLabel()
+                                    .Font("9px Arial")
+                                    .Rotate(Html.X().RotateAttribute().Degrees(270))
+                                    .Renderer(r => r.Handler = "return Ext.String.ellipsis(value, 15, false);")
+                                )
+                              .Title("Biểu đồ thống kê tài liệu")
+                            )
+                            .Series(
+                            Html.X().ColumnSeries()
+                                .SeriesID("serDocument")
+                                .ShowInLegend(true)
+                                .Axis(Position.Bottom)
+                                .Highlight(true)
+                                .XField("Name")
+                                .YField(new string[] { "Data1", "Data2", "Data3" })
+                                .Titles(new string[] { "Tổng tài liệu", "Tài liệu ban hành", "Tài liệu lỗi thời" })
+                                .Tips(Html.X().ChartTip()
+                                .TrackMouse(true)
+                                .Width(150)
+                                .Height(58)
+                                    .Renderer(r => r.Handler = "this.setTitle('Tổng tài liệu: ' + storeItem.get('Data1') + '<br/> Tài liệu ban hành: '+storeItem.get('Data2')+'<br/>Tài liệu lỗi thời: '+storeItem.get('Data3'));")
+                                 ),
+                                Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                        .Smooth(3).Fill(true)
+                                        .XField("Name")
+                                        .YField("Data4")
+                                        .Title("Tổng tài liệu nội bộ")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                              .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data4') + ' tài liệu');")
+                                         )
+                                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Diamond, Size = 3, Radius = 3, StrokeWidth = 0 }),
+                                Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                        .Smooth(3)
+                                        .Fill(true)
+                                        .XField("Name")
+                                        .YField("Data7")
+                                        .Title("Tổng tài liệu bên ngoài")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data7') + ' tài liệu');")
+                                            )
+                                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Diamond, Size = 3, Radius = 3, StrokeWidth = 0 }),
+                                Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                        .Smooth(3)
+                                        .Fill(true)
+                                        .XField("Name")
+                                        .YField("Data5")
+                                        .Title("Tổng tài liệu nội bộ ban hành")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data5') + ' tài liệu');")
+                                            )
+                                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Arrow, Size = 6, Radius = 6, StrokeWidth = 0 }),
+                                Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                        .Smooth(3)
+                                        .Fill(true)
+                                        .XField("Name")
+                                        .YField("Data8")
+                                        .Title("Tổng tài liệu bên ngoài ban hành")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data8') + ' tài liệu');")
+                                            )
+                                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Arrow, Size = 6, Radius = 6, StrokeWidth = 0 }),
+                                Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                        .Smooth(3)
+                                        .Fill(true)
+                                        .XField("Name")
+                                        .YField("Data6")
+                                        .Title("Tổng tài liệu nội bộ lỗi thời")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data6') + ' tài liệu');")
+                                            )
+                                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Triangle, Size = 6, Radius = 6, StrokeWidth = 0 }),
+                                Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                        .Smooth(3)
+                                        .Fill(true)
+                                        .XField("Name")
+                                        .YField("Data9")
+                                        .Title("Tổng tài liệu bên ngoài lỗi thời")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data9') + ' tài liệu');")
+                                            )
+                                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Triangle, Size = 6, Radius = 6, StrokeWidth = 0 })
+                                )           
+                           ),
+                        Html.X().Panel()
+                            .Layout(LayoutType.Fit)
+                                .Title("<b>Biểu đồ cột kết quả đánh giá(SL)</b>")
+                                .Hidden(true)
+                                .ID("pChart2")
+                                .Border(false)
+                                .Header(false)
+                                .TopBar(
+                            Html.X().Toolbar()
+                                .Items(
+                            Html.X().Button()
+                                .Text("Tải lại")
+                                .Icon(Icon.ArrowRefresh)
+                                .Handler("#{Chart2}.getStore().reload()"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Text("Lưu biểu đồ")
+                                .Icon(Icon.Disk)
+                                .Handler("saveChart")
+                                     )
+                                    )
+                                .Items(
+                        Html.X().Chart()
+                                .ID("Chart2")
+                                .Shadow(true) 
+                                .InsetPadding(30)                   
+                    .StandardTheme(StandardChartTheme.Category1)
+                            .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right)
+                        .LabelFont("9px Tahoma")
+                        .BoxStroke("#084594")
+                            )
+                    .Animate(true)
+                        .Store(Html.X().Store()
+                             .Parameters(ps =>
+                             {
+                                ps.Add(new StoreParameter("id", "App.grDocumentCateStatistical.selModel.getSelection().length>0?App.grDocumentCateStatistical.selModel.getSelection()[0].get('CateID'):0", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                            })
+                            .Model(Html.X().Model()
+                            .Fields(
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Data1"),
+                                    Html.X().ModelField().Name("Data2"),
+                                    Html.X().ModelField().Name("Data3")                               
+                                          
+                            )
+                        )
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataCateColumn"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                    )
+                    .Axes(
+                            Html.X().NumericAxis()
+                            .Fields(new string[] { "Data1", "Data2", "Data3"})                            
+                            .Grid(true)
+                            .Title("Đơn vị: tài liệu")
+                            .Minimum(0)
+                                .Label(Html.X().AxisLabel()
+                                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                            ),
+                           Html.X().CategoryAxis()
+                            .Position(Position.Bottom)
+                                .Fields("Name")
+                                .Width(400)
+                                     .Label(Html.X().AxisLabel()
+                                    .Font("10px Tahoma") 
+                                )
+                                .Title("Biểu đồ thống kê tài liệu")
+                            )
+                        .Series(
+                        Html.X().ColumnSeries()
+                        .ShowInLegend(true)
+                        .Axis(Position.Bottom)
+                        .Highlight(true)
+                            .XField("Name")
+                            .YField(new string[] { "Data1", "Data2", "Data3" })
+                            .Titles(new string[] { "Tổng số tài liệu", "Tài liệu ban hành","Tài liệu lỗi thời"})                                   
+                            .Tips(Html.X().ChartTip()
+                            .TrackMouse(true)
+                            .Width(200)
+                            .Height(58)
+                                .Renderer(r => r.Handler = "this.setTitle('Tổng tài liệu: ' + storeItem.get('Data1') + '<br/> Tài liệu ban hành: '+storeItem.get('Data2')+'<br/>Tài liệu lỗi thời: '+storeItem.get('Data3'));")
+                             )                              
+                            )
+                           )
+                         )
+                    )
+)
+<script>
+    var onSelect = function () {
+        var charId = "Chart" + App.cbSelectChart.getValue();
+        Ext.getCmp(charId).getStore().reload();
+    };
+    var onSelectCombobox = function (obj) {
+        var records = obj.store.getAllRange();
+        for (var i = 0; i < records.length; i++) {
+            var pcharId = "pChart" + records[i].data.field1;
+            Ext.getCmp(pcharId).hide();
+    };
+        Ext.getCmp("pChart" + obj.value).show();
+        Ext.getCmp("Chart" + obj.value).getStore().reload();
+    };
+    var tipRenderer = function (storeItem, item) {
+        this.setTitle(storeItem.get('Name'));
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+            });
+                }
+            });
+    };
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    function onDepartmentReady(records) {
+        App.hdfDepartmentID.setValue(records[0].get('id'));       
+        App.grDocumentCateStatistical.getStore().reload();
+        onSelect();
+    };
+    var showDocumentStatiscal = function (storeUrl) {
+        var records = App.grDocumentCateStatistical.selModel.getSelection();
+        var cateId = 0;
+        if (records.length > 0) {
+            cateId = records[0].get('CateID');
+        }
+        var url = '@(Url.Action("DocumentViewStatistical", "DepartmentStatisticalDocument", new { Area = "Document" }))';
+        var params = {
+            urlStore: storeUrl,
+            Name: 'cateId',
+            Value: cateId,
+            Mode: '@(ParameterMode.Value)',
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+        };
+        onDirectMethod(url, params);
+    };
+    var renderTotalDocument = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadTotalDocument", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDocumentIssued = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadTotalDocumentIssued", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDocumentObsolete = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadTotalDocumentObsolete", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDocumentIn = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadTotalDocumentIn", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDocumentInIssued = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadTotalDocumentInIssued", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDocumentInObsolete = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadTotalDocumentInObsolete", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDocumentOut = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadTotalDocumentOut", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDocumentOutIssued = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadTotalDocumentOutIssued", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDocumentOutObsolete = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadTotalDocumentOutObsolete", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderNumberDistribution = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadNumberDistribution", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+    var renderNumberOfThuhoi = function (value) {
+        var urlStoreDocument = '@(Url.Action("LoadNumberOfThuhoi", "ListDocumentStatistical", new { Area = "Document" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDocumentStatiscal(\'" + urlStoreDocument.toString() + "\')\">" + value + "</a>";
+    };
+</script>

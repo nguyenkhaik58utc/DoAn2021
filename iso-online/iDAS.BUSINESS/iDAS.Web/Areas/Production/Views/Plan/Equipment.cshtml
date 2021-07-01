@@ -1,0 +1,48 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductionPlanEquipmentItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    bool isAdd = false;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật thiết bị sản xuất";
+    }
+    else
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới thiết bị sản xuất";
+    }
+}
+@(Html.X().CustomWindow()
+    .Title(title)
+    .Icon(IconView)
+    .Items(
+            Html.X().CustomFormPanel().ID("frmEquipmentUpdate")
+                        .Items(
+                                Html.X().HiddenFor(i => i.ID),
+                                Html.X().HiddenFor(m=>m.ProductionPlanID),
+                                Html.X().EquipmentProductionFieldFor(m => m.EquipmentProduction).FieldLabel("Thiết bị" + Html.Required()).Height(24),
+                                Html.X().NumberFieldFor(m => m.Quantity).MinValue(1).FieldLabel("Số lượng" + Html.Required())
+                                            .EmptyText("Nhập số lượng cần")
+                                            .AllowBlank(false).BlankText("Bắt buộc nhập số lượng thiết bị"),
+                                Html.X().TextAreaFor(m=>m.Note).FieldLabel("Ghi chú").MinHeight(100).Flex(1)
+                        )
+    )
+    .Buttons(
+                Html.X().ButtonSave()
+                            .DirectEvents(de =>
+                                            {
+                                                de.Click.Before = @"if (!App.frmEquipmentUpdate.getForm().isValid()) { return false; };";
+                                                de.Click.Url = Url.Action("Equipment");
+                                                de.Click.FormID = "frmEquipmentUpdate";
+                                                de.Click.Success = "this.up('window').close();";
+                                            }),
+                Html.X().ButtonExit()
+    )
+)

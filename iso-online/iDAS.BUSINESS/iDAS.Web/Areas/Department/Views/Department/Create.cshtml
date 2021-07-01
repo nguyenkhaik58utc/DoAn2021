@@ -1,0 +1,184 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@using iDAS.Utilities
+@model iDAS.Items.HumanDepartmentItem
+@(Html.X().Window()
+    .ID("CreateDepartmentWindow")
+    .Title("Thêm mới thông tin tổ chức")
+    .Icon(Icon.Add)
+    .Width(600)
+    .Height(350)
+    .Maximizable(true)
+    .Constrain(true)
+    .BodyPadding(0)
+    .Border(false)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Fit)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .ID("CreateDepartmentForm")
+            .Items(
+                Html.X().TabPanel().ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch }).Title("Thông tin")
+                            .Frame(true)
+                            .BodyPadding(5)
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().HiddenFor(m => m.ParentID).Value(ViewData["DepartmentID"]),
+                                Html.X().TextFieldFor(m => m.Name)
+                                    .EmptyText("Nhập tên phòng ban hoặc đơn vị")
+                                    .BlankText("Bạn phải nhập tên phòng ban hoặc đơn vị!")
+                                    .FieldLabel("Tên phòng ban" + Html.Required())
+                                    .TabIndex(1)
+                                    .AllowBlank(false),
+                                Html.X().TextFieldFor(m => m.Code)
+                                    .FieldLabel("Tên viết tắt")
+                                    .TabIndex(2)
+                                    .ColumnWidth(0.5),
+                                Html.X().TextFieldFor(m => m.NameE)
+                                    .FieldLabel("Tên tiếng anh")
+                                    .TabIndex(3)
+                                    .ColumnWidth(0.5),
+                                Html.X().TextFieldFor(m => m.Address)
+                                    .EmptyText("Địa chỉ của phòng ban hoặc đơn vị")
+                                    .FieldLabel("Địa chỉ")
+                                    .TabIndex(4),
+                                Html.X().Container()
+                                    .Layout(LayoutType.Column)
+                                    .MarginSpec("-3 0 0 0")
+                                    .Items(
+                                        Html.X().Container()
+                                            .ColumnWidth(0.5)
+                                            .Layout(LayoutType.Form)
+                                            .Items(
+                                                Html.X().TextFieldFor(m => m.Email)
+                                                    .FieldLabel("Email")
+                                                    .EmptyText("example@gmail.com")
+                                                    .StandardVtype(ValidationType.Email)
+                                                    .RegexText("Email không đúng định dạng!")
+                                                    .ColumnWidth(0.5)
+                                                    .TabIndex(5),
+                                                Html.X().TextFieldFor(m => m.Fax)
+                                                    .FieldLabel("Fax")
+                                                    .Regex("/\\(?([0-9]{3})\\)?([ .-]?)([0-9]{3})\\2([0-9]{4})/")
+                                                    .RegexText("Nhập sai định dạng số fax ((084)987789456 / 0987789456)")
+                                                    .ColumnWidth(0.5)
+                                                    .TabIndex(6),
+                                                Html.X().TextFieldFor(m => m.Website)
+                                                    .ColumnWidth(0.5)
+                                                    .FieldLabel("Website")
+                                                    .TabIndex(7)
+                                            ),
+                                        Html.X().Container()
+                                            .ColumnWidth(0.5)
+                                            .Layout(LayoutType.Form)
+                                            .MarginSpec("0 0 0 5")
+                                            .Items(
+                                                Html.X().TextFieldFor(m => m.Phone)
+                                                    .FieldLabel("Điện thoại")
+                                                    .Regex("/\\(?([0-9]{3})\\)?([ .-]?)([0-9]{3})\\2([0-9]{4})/")
+                                                    .RegexText("Nhập sai định dạng số điện thoại ((084)987789456 / 0987789456)")
+                                                    .ColumnWidth(0.5)
+                                                    .TabIndex(8),
+                                                Html.X().TextFieldFor(m => m.Tax)
+                                                    .FieldLabel("Mã số thuế")
+                                                    .Regex("/\\(?([0-9]{3})\\)?([ .-]?)([0-9]{3})\\2([0-9]{4})/")
+                                                    .RegexText("Nhập sai định dạng mã số thuế ((084)987789456 / 0987789456)")
+                                                    .ColumnWidth(0.5)
+                                                    .TabIndex(9),
+                                                Html.X().DateFieldFor(m => m.EstablishedDate)
+                                                    .FieldLabel("Ngày thành lập")
+                                                    .ColumnWidth(0.5)
+                                                    .TabIndex(10)
+                                                    .Format("dd/MM/yyyy")
+                                            ),
+                                        Html.X().Checkbox().ID("IsDeactive").FieldLabel("Tình trạng").BoxLabel("Dừng hoạt động").ColumnWidth(1).Listeners(ls => ls.Change.Handler = "statusDepartmentChange(this);"),
+                                        Html.X().CheckboxFor(m => m.IsActive).Checked(true).ID("IsActive").BoxLabel("Hoạt động").FieldLabel(" ").LabelSeparator("").ColumnWidth(0.5).Listeners(ls => ls.Change.Handler = "statusDepartmentChange(this);"),
+                                        Html.X().CheckboxFor(m => m.IsCancel).ID("IsCancel").BoxLabel("Giải thể").HideLabel(true).ColumnWidth(0.25).Listeners(ls => ls.Change.Handler = "statusDepartmentChange(this);"),
+                                        Html.X().CheckboxFor(m => m.IsMerge).ID("IsMerge").BoxLabel("Sát nhập").HideLabel(true).ColumnWidth(0.25).Listeners(ls => ls.Change.Handler = "statusDepartmentChange(this);")
+                                    )
+                            ),
+                        Html.X().Panel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Chức năng")
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .Items(Html.X().TextAreaFor(m => m.Resposibility).EmptyText("Thông tin chức năng của phòng ban hoặc đơn vị").Flex(1).HideLabel(true)),
+                        Html.X().Panel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Nhiệm vụ")
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .Items(Html.X().TextAreaFor(m => m.Authorize).EmptyText("Thông tin nhiệm vụ của phòng ban hoặc đơn vị").HideLabel(true).Flex(1)),
+                        Html.X().Panel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Lịch sử phát triển")
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .Items(Html.X().TextAreaFor(m => m.History).EmptyText("Thông tin lịch sử phát triển của phòng ban hoặc đơn vị").HideLabel(true).Flex(1))
+                    )
+                )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createDepartmentSubmit()"),
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var createDepartmentSubmit = function () {
+        App.CreateDepartmentForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadDepartmentNode();
+                    App.CreateDepartmentWindow.close();
+                }
+            }
+        });
+    };
+    var statusDepartmentChange = function (obj) {
+        if (obj.value == true) {
+            switch (obj) {
+                case App.IsActive:
+                    App.IsDeactive.setValue(false);
+                    App.IsMerge.setValue(false);
+                    App.IsCancel.setValue(false);
+                    break;
+                case App.IsMerge:
+                    App.IsDeactive.setValue(false);
+                    App.IsActive.setValue(false);
+                    App.IsCancel.setValue(false);
+                    break;
+                case App.IsCancel:
+                    App.IsDeactive.setValue(false);
+                    App.IsActive.setValue(false);
+                    App.IsMerge.setValue(false);
+                    break;
+                case App.IsDeactive:
+                    App.IsActive.setValue(false);
+                    App.IsMerge.setValue(false);
+                    App.IsCancel.setValue(false);
+                    break;
+                default:
+            }
+        }
+        else {
+            if (obj.hasFocus && obj.value == false) {
+                obj.setValue(true);
+            }
+        }
+    };
+</script>

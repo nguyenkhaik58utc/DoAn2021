@@ -1,0 +1,59 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+
+@(Html.X().CustomWindow()
+    .ID("winMaterialSelect")
+    .Height(400)
+    .Title("Danh sách nhóm nguyên vật liệu")
+    .Items(
+            Html.X().GridPanel().ItemID("GrMaterialSelect")
+                        .Header(false)
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .Store(
+                            Html.X().Store()
+                                    .RemotePaging(true)
+                                    .PageSize(20)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMaterial", "Stage", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                    .Model(
+                                        Html.X().Model().Fields(
+                                            Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("MaterialName")
+                                        )
+                                    )
+                    )
+                    .ColumnModel(
+                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                Html.X().Column().DataIndex("MaterialName").Text("Tên nguyên liệu").Flex(1)
+                        )
+                    .Features(
+                            Html.X().GridFilters()
+                                .MenuFilterText("Tìm kiếm")
+                                .Filters(
+                                    Html.X().StringFilter().DataIndex("MaterialName")
+                                )
+                        )
+                    .Listeners(ls =>
+                        {
+                            ls.ItemClick.Handler = "onSelectMaterial(this)";
+                        })
+                    .BottomBar(Html.X().CustomPagingToolbar())
+                             
+    )
+)
+<script>
+    var onSelectMaterial = function (grid)
+    {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            SelectMaterial(records);
+            App.winMaterialSelect.close();
+        }
+        else {
+            MessageBox();
+        };
+    }
+</script>

@@ -1,0 +1,147 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@{
+    var build_id = ViewData["build_id"] != null ? Convert.ToInt16(ViewData["build_id"]) : 0;
+}
+  @(Html.X().Window()
+            .ID("wdStructure")
+            .Title("Danh sách vật tư hàng hóa cấu thành sản phẩm")
+            .Width(850)
+            .Height(500)
+            .Constrain(true)        
+            .Closable(true)
+            .Modal(true)
+            .Icon(Icon.ApplicationCascade)
+            .Resizable(true)
+            .Layout(LayoutType.Fit)
+            .Items(            
+            Html.X().GridPanel()            
+            .ID("gpStructure")
+                .Title("Danh sách vật tư cấu tạo thành")  
+                    .Header(false)
+                    .ColumnLines(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .ResizableConfig(new Resizer { Handles = ResizeHandle.East }) 
+                     .TopBar(
+                             Html.X().Toolbar()
+                                     .Items(
+                                        Html.X().ButtonCreate()
+                                                .ID("btnAddStructure")
+                                                .Handler("ShowAddStructure("+build_id+")"),
+                                        Html.X().ToolbarSeparator(),                                               
+                                        Html.X().ButtonUpdate()
+                                                .ID("btnEditStructure")
+                                                .Disabled(true)                                               
+                                              .Handler("ShowEditStructure("+build_id+")"),
+                                        Html.X().ToolbarSeparator(),                                                
+                                        Html.X().ButtonDelete()
+                                                .ID("btnDeleteStructure")
+                                                .Disabled(true)
+                                                .Handler("deleteRecordStructure();")
+                                                                                       
+                                       )
+                                )                   
+                      .Store(Html.X().Store()
+                    .ID("stStructure")                   
+                   .Proxy(Html.X().AjaxProxy()
+                   .Url(Url.Action("GetDataOfStructure")).ExtraParams(p => p.Add(new { build_Id = build_id }))
+                   .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .GroupField("Group_Name")
+                    .Sorters(Html.X().DataSorter().Property("Group_Name").Direction(Ext.Net.SortDirection.ASC))                 
+                    .Model(
+                        Html.X().Model()
+                            .IDProperty("ID")
+                            .Fields(
+                             new ModelField("Build_ID", ModelFieldType.Int),
+                             new ModelField("Code", ModelFieldType.String),
+                             new ModelField("Product_Name", ModelFieldType.String),
+                             new ModelField("Group_Name", ModelFieldType.String),
+                             new ModelField("Unit", ModelFieldType.String),
+                             new ModelField("Price", ModelFieldType.Float),
+                             new ModelField("Quantity", ModelFieldType.Float),
+                             new ModelField("Amount", ModelFieldType.Float)                     
+                            )
+                     )
+                    
+                )
+                .Plugins( Html.X().CellEditing().ClicksToEdit(1))
+                .ColumnModel(
+        Html.X().RowNumbererColumn()
+                .Text("STT")
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(33),
+                Html.X().Column()
+                .Width(100)
+                .Text("Mã")
+                .Wrap(true)
+                .DataIndex("Code")
+                .Align(Alignment.Center)
+                .StyleSpec("font-weight: bold; text-align: center;"),
+        Html.X().Column()
+                .Text("Tên vật tư")
+                .DataIndex("Product_Name")
+                .Flex(1)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;"),
+        Html.X().Column()
+                .Text("Đơn vị tính")
+                .DataIndex("Unit")
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(80),
+                   Html.X().Column()
+                .Text("Số lượng")
+                .DataIndex("Quantity")
+                .Align(Alignment.Right)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(100),
+            Html.X().Column()
+                .Text("Đơn giá")
+                .Renderer("RenderVND")
+                .DataIndex("Price")
+                .Align(Alignment.Right)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(100),                 
+            Html.X().Column()
+                .Text("Thành tiền")
+                .Renderer("RenderVND")
+                .DataIndex("Amount")
+                .Wrap(true)
+                .Align(Alignment.Right)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(100)     
+                )        
+        .SelectionModel(
+        Html.X().RowSelectionModel().Mode(SelectionMode.Multi).Listeners(ls =>
+        ls.Select.Handler = "checkStatusBuild();"
+        )
+        )
+        .View(
+        Html.X().GridView().MarkDirty(false)
+        )
+        .BottomBar
+                (
+                Html.X().CustomPagingToolbar()
+            )
+        .Features(
+        Html.X().GroupingSummary()
+        .ID("GroupingSummaryStruct")
+        .GroupHeaderTplString("{name}")
+        .HideGroupedHeader(true)
+        .EnableGroupingMenu(false)
+        )
+      
+   )   
+.Buttons(
+Html.X().ButtonExit()
+    )     
+)

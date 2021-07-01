@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateFamilyRelationShip = '@(Url.Action("Create", "V3_FamilyRelationShip", new { area = "Human" }))';
+    var urlUpdateFamilyRelationShip = '@(Url.Action("Update", "V3_FamilyRelationShip", new { area = "Human" }))';
+    var urlDeleteFamilyRelationShip = '@(Url.Action("Delete", "V3_FamilyRelationShip", new { Area = "Human" }))';
+    var urlDetailFamilyRelationShip = '@(Url.Action("ShowFrmDetail", "V3_FamilyRelationShip", new { Area = "Human" }))';
+    var sortFamilyRelationShipIndex = null;
+    var showCreateFamilyRelationShip = function () {
+        var url = urlCreateFamilyRelationShip;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateFamilyRelationShip = function () {
+        var url = urlUpdateFamilyRelationShip;
+        var record = getFamilyRelationShipSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getFamilyRelationShipSelection = function () {
+        var records = App.FamilyRelationShipPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setFamilyRelationShipSelection = function () {
+        if (sortFamilyRelationShipIndex != null) {
+            App.FamilyRelationShipPanel.selModel.select(sortFamilyRelationShipIndex);
+        }
+    };
+
+    var showDeleteFamilyRelationShip = function () {
+        var url = urlDeleteFamilyRelationShip;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ loại quan hệ gia đình này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getFamilyRelationShipSelection();
+                            var FamilyRelationShipId = record == null ? 0 : record.data.ID;
+                            var params = { FamilyRelationShipId: FamilyRelationShipId };
+                            onDirectMethod(url, params, 'post', reloadFamilyRelationShip);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailFamilyRelationShip = function () {
+        var url = urlDetailFamilyRelationShip;
+        var record = getFamilyRelationShipSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadFamilyRelationShip = function () {
+        App.FamilyRelationShipPanel.store.reload();
+    };
+
+    var selectionChangeFamilyRelationShip = function () {
+        var record = getFamilyRelationShipSelection();
+        var isDisabled = record == null;
+        App.btnUpdateFamilyRelationShip.setDisabled(isDisabled);
+        App.btnDeleteFamilyRelationShip.setDisabled(isDisabled);
+        App.btnDetailFamilyRelationShip.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý loại quan hệ gia đình").Header(false)
+                    .ID("FamilyRelationShipPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateFamilyRelationShip").ID("btnCreateFamilyRelationShip()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateFamilyRelationShip").Handler("showUpdateFamilyRelationShip();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteFamilyRelationShip").Handler("showDeleteFamilyRelationShip()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailFamilyRelationShip").Handler("showDetailFamilyRelationShip();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreFamilyRelationShip")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setFamilyRelationShipSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên loại quan hệ gia đình").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeFamilyRelationShip();")
+    )
+    )

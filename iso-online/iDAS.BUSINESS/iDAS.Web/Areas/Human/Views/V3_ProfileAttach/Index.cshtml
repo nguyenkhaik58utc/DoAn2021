@@ -1,0 +1,146 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanEmployeeItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var checkPermission = ViewData["CheckPermission"];
+}
+<script>
+       var checkPermission= @Html.Raw(checkPermission);
+    var deleteUrl = '@(Url.Action("DeleteProfileAttach"))';
+    function CheckStatus() {
+        var records = App.GrProfileAttach.selModel.getSelection();
+        if (records.length == 1) {
+            switch (checkPermission) {
+                case 1:
+                    //quyen xem
+                    SetEnabled(App.btnDetail);
+                    break;
+                case 2:
+                    //quyen sua
+                    SetEnabled(App.btnUpdate, App.btnDelete);
+                    break;
+                case 3:
+                    //full quyen
+                    SetEnabled(App.btnUpdate, App.btnDelete, App.btnDetail);
+                    break;
+                default:
+                    //mac dinh an
+                    SetDisabled(App.btnUpdate, App.btnDelete, App.btnDetail);
+            }
+        }
+        else {
+            SetDisabled(App.btnUpdate, App.btnDelete, App.btnDetail);
+        };
+    };
+
+    var AddNew = function () {
+        var url ='@(Url.Action("UpdateForm", "V3_ProfileAttach", new { Area = "Human" }, null))';
+        var params = {
+            EmployeeID: App.hdfEmployeeID.value
+        };
+        onDirectMethod(url, params);
+    };
+    var UpdateItem = function () {
+        var records = App.GrProfileAttach.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "V3_ProfileAttach", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID'),
+                EmployeeID: App.hdfEmployeeID.value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrProfileAttach.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "V3_ProfileAttach", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID'),
+                EmployeeID: App.hdfEmployeeID.value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+    Ext.onReady(function () {
+        //hien thi button them
+        if (checkPermission == 2 || checkPermission == 3) {
+            SetEnabled(App.btnCreate);
+        }
+    });
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false)
+.Items(
+    Html.X().FormPanel()
+    .Layout(LayoutType.Fit)
+    .Frame(true)
+    .Border(false)
+    .StyleSpec("border: none;")
+        .FieldDefaults(df => df.LabelWidth = 100).Padding(0)
+    .DefaultAnchor("100%")
+    .Items(
+
+           Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrProfileAttach")
+                            .ColumnLines(true)
+                             .Border(false)
+                            .ForceFit(true)
+                            .Icon(Icon.TextListBullets)
+                    .TopBar(
+                        Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                             X.HiddenFor(m => m.ID).ID("hdfEmployeeID"),
+                            Html.X().ButtonCreate().ID("btnCreate").Handler("AddNew();").Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                            Html.X().ToolbarSeparator(),
+                             Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrProfileAttach.selModel.getSelection()[0].get('ID'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreProfileAttach")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProfileAttach")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("EmployeeID", "App.hdfEmployeeID.value", ParameterMode.Raw));
+                                    })
+                        .Model(
+                            Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Size"),
+                                    Html.X().ModelField().Name("Note")
+                            )
+                          )
+                )
+                .ColumnModel(
+                        Html.X().RowNumbererColumn().DataIndex("ID").Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                        Html.X().Column().DataIndex("Name").Text("Tên tài liệu").Width(350).StyleSpec("font-weight: bold;text-align: center"),
+                        Html.X().Column().DataIndex("Note").Text("Ghi chú").Flex(1).Wrap(true).StyleSpec("font-weight: bold;text-align: center")
+                    )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(X.CustomPagingToolbar())
+        )
+    )
+)

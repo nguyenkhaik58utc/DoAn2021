@@ -1,0 +1,216 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@model iDAS.Items.ISOMeetingItem
+@{
+    ViewBag.Title = "DS Hop xem xet theo ISo";
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+    int detail = (int)Common.FormName.Detail;
+    int edit = (int)Common.FormName.Edit;
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border).Padding(1)
+    .Items(
+            Html.X().Hidden().ID("hdfISOStandardID"),
+            Html.X().GridPanel().Region(Region.West).Width(300)
+                        .Title("Tiêu chuẩn ISO").TitleAlign(TitleAlign.Center)
+                        .ID("GrISOStandard")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Collapsible(true).Split(true)
+                        .Store(
+                            Html.X().Store()
+                                    .ID("StoreISOStandard")
+                                    .PageSize(1000)
+                                    .RemotePaging(true)
+                                    .AutoLoad(true)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "ISOStandard")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                    .Model(Html.X().Model()
+                                            .Fields(
+                                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                        Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                                    )
+                                            )
+                        )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .Width(33)
+                                    .Align(Alignment.Center)
+                                    .StyleSpec("font-weight: bold; text-align: center;"),
+                            Html.X().Column()
+                                        .DataIndex("Code")
+                                    .Text("Mã")
+                                    .Width(120)
+                                    .StyleSpec("font-weight: bold; text-align: center;"),
+                            Html.X().Column()
+                                    .DataIndex("Name")
+                                    .Text("Tiêu chuẩn ISO")
+                                    .Flex(1)
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+
+                        )
+                    .Listeners(ls=>ls.SelectionChange.Handler="onSelectISOStandard(this);"),
+                Html.X().GridPanel().Region(Region.Center)
+                            .Header(false)
+                            .ID("grIsoMeeting")
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .TopBar(Html.X().Toolbar()
+                                        .Layout(LayoutType.HBox)
+                                        .Items(
+                                                    Html.X().Button().Text("Thêm mới").Icon(Icon.Add).ID("btnInsert").Handler("ShowFrmInsert();"),
+                                                    Html.X().ToolbarSeparator(),
+                                                    Html.X().Button().Text("Sửa").Icon(Icon.Pencil).ID("btnEdit").Disabled(true).Handler("showForm(" + edit + ");"),
+                                                    Html.X().ToolbarSeparator(),
+                                                    Html.X().Button().Text("Xóa").Icon(Icon.Delete).Disabled(true).ID("btnDelete").Handler("deleteRecord();"),
+                                                    Html.X().ToolbarSeparator(),
+                                                    Html.X().Button().Text("Xem chi tiết").Icon(Icon.Zoom).Disabled(true).ID("btnDetail").Handler("showForm(" + detail + ");")
+                                            )
+                            )
+                            .Store(
+                                    Html.X().StoreForModel()
+                                            .ID("stIsoMeeting")
+                                            .PageSize(10)
+                                            .RemotePaging(true)
+                                            .AutoLoad(false)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                            .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("isoStandardId", "App.hdfISOStandardID.getValue()", ParameterMode.Raw));
+
+                                                })
+                                )
+                            .ColumnModel(
+                                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                                Html.X().Column().DataIndex(Model, m => m.ID).Text("ID").Hidden(true),
+                                Html.X().Column().DataIndex(Model, m => m.Name).Text("Tiêu đề").Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+                                Html.X().Column().DataIndex(Model, m => m.Note).Text("Ghi chú").Flex(2).StyleSpec("font-weight: bold; text-align: center;"),
+                                Html.X().CheckColumn().DataIndex(Model, m => m.IsUse).Text("Kích hoạt").Width(100).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;")
+                            )
+                            .BottomBar(
+                                        Html.X().PagingToolbar()
+                                                .EmptyMsg("Hiện không có dữ liệu")
+                                                .NextText("Trang kế tiếp")
+                                                .PrevText("Trang trước")
+                                                .LastText("Trang cuối cùng")
+                                                .FirstText("Trang đầu tiên")
+                                                .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                                                .BeforePageText("Trang")
+                                                .AfterPageText("của {0}")
+                                                .RefreshText("Tải lại Dữ liệu")
+                                                .Items(
+                                                        Html.X().Label("Số bản ghi trên 1 trang"),
+                                                        Html.X().ToolbarSpacer(10),
+                                                        Html.X().ComboBox()
+                                                            .Width(50)
+                                                            .Items("10", "20", "30", "50", "100")
+                                                            .SelectedItems("10")
+                                                            .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                                                    )
+                                            .Plugins(Html.X().ProgressBarPager())
+                                        )
+                                .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Single).ShowHeaderCheckbox(false)
+                                                                .Listeners(ls => ls.SelectionChange.Handler = "checkStatus(); ")
+                                                )
+    )
+)
+
+<script type="text/javascript">
+    var onSelectISOStandard = function (obj) {
+        var records = obj.selModel.getSelection();
+        if (records.length > 0) {
+            App.hdfISOStandardID.setValue(records[0].data.ID);
+            App.stIsoMeeting.reload();
+        };
+    };
+    var showForm = function (cmd) {
+        var records = App.grIsoMeeting.selModel.getSelection();
+        if (records.length <= 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn phải chọn Bản ghi!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation'
+            });
+        }
+        else {
+
+            var isoid = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmEdit", "Meeting", new { Area = "ISO" }, null))',
+                params: { id: isoid, type: cmd }
+            });
+        }
+    };
+
+
+    //Ham hien thi form them moi
+    var ShowFrmInsert = function () {
+
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmEdit", "Meeting", new { Area = "ISO" }, null))',
+
+            });
+
+    };
+    var checkStatus = function () {
+        var records = App.grIsoMeeting.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnEdit.setDisabled(false);
+            App.btnDelete.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+
+        } else {
+            App.btnEdit.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+        }
+
+    };
+
+    var deleteRecord = function () {
+        var records = App.grIsoMeeting.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận',
+                msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Help',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "Meeting", new { Area = "ISO" }, null))', params: { ID: id },
+                            success: function (result) {
+                                if (result == 'Error') {
+                                    Ext.MessageBox.show({
+                                        title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa Dữ liệu phát sinh lỗi. Đề nghị liên hệ với Admin!',
+                                        buttons: { yes: 'Đồng ý' },
+                                        iconCls: '#Cancel',
+                                        fn: function (btn) {
+                                            records[0].reject();
+                                            return false;
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn chưa chọn bản ghi cần xóa!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclution',
+                fn: function (btn) {
+                    App.btnDelete.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+
+    };
+</script>
+

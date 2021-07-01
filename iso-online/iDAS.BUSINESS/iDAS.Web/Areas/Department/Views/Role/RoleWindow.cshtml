@@ -1,0 +1,49 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@model string
+@{
+    var X = Html.X();
+}
+@(
+ Html.X().Window()
+    .Title("Danh sách chức danh")
+    .Icon(Icon.House)
+    .Height(450)
+    .Width(800)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(1)
+    .Listeners(ls => ls.Close.Handler = "this.destroy();")
+    .Border(true)
+    .Center()
+    .ItemsFromAction("RoleView", "Role", new { Area = "Department" })
+        .Buttons(
+            Html.X().Button()
+                    .Icon(Icon.Accept)
+                    .Text("Chọn")
+                    .Handler("onRoleWindowClose(this.up('window')," + ViewData["HandleClose"] + ")"),
+            Html.X().Button()
+                    .Icon(Icon.Cancel)
+                    .Text("Thoát")
+                    .Handler("this.up('window').close();")
+        )
+)
+<script>
+    var onRoleWindowClose = function (window, fn) {
+        var grid = window.down('gridpanel');
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            fn(records);
+            window.close();
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Chưa lựa chọn chức danh nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+</script>

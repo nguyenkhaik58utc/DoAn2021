@@ -1,0 +1,108 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentProfileInterviewItem
+@{
+    var title = "Kết quả xét tuyển của: " + Model.ProfileName;
+}
+@(Html.X().Window()
+.ID("winRequirement")
+.Title(title)
+.Icon(Icon.ServerEdit)
+.Width(800)
+.Height(450)
+.BodyPadding(0)
+.AutoScroll(true)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Items(
+        Html.X().HiddenFor(m => m.RequirementID).ID("hdfRequirementID"),
+        Html.X().HiddenFor(m => m.ID).ID("hdfPofileInterviewID"),
+        Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrCriteria").Margin(0).Padding(0)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreCriteria").AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCriteria", "RecruitmentReview", new { Area = "Human" }, null)).Reader(Html.X().JsonReader().Root("data")))
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("ProfileInterviewID", "App.hdfPofileInterviewID.value", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("RequirementID", "App.hdfRequirementID.getValue()", ParameterMode.Raw));
+                                })
+                            .Model(
+                                    Html.X().Model().IDProperty("CriteriaID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("CriteriaID"),
+                                    Html.X().ModelField().Name("CriteriaName"),
+                                    Html.X().ModelField().Name("ProfileID"),
+                                    Html.X().ModelField().Name("Point"),
+                                    Html.X().ModelField().Name("Time"),
+                                    Html.X().ModelField().Name("Note")
+                                )
+                                )
+                    )
+                .ColumnModel(
+                       Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                       Html.X().Column().DataIndex("CriteriaName").Text("Tiêu chí").Flex(1),
+                        Html.X().Column().DataIndex("Point").Text("Điểm").Align(Alignment.Right)
+                                    .Editor(Html.X().NumberField().AllowBlank(false)),
+                       Html.X().DateColumnExtend().DataIndex("Time").Text("Thời gian").Format("dd/MM/yyyy").Align(Alignment.Center)
+                                .Editor(Html.X().DateField().EmptyDate(DateTime.Now).AllowBlank(false)),
+                       Html.X().Column().Width(300).DataIndex("Note").Text("Nhận xét")
+                                    .Editor(Html.X().TextField())
+                    ).Plugins(Html.X().CellEditing().ClicksToEdit(1)
+                    .Listeners(ls => ls.Edit.Fn = "SaveReview")
+                    )
+
+    )
+    .Buttons(Html.X().ButtonExit())
+)
+
+<script>
+    var SaveReview = function (editor, e) {
+        if (!(e.value === e.originalValue) && e.record.data.Point != null) {
+            var url = '@(Url.Action("UpdateReview"))';
+            var params = {
+                ReviewItem: e.record.data
+            };
+            onDirectMethod(url, params);
+        };
+    };
+    var SendApprove = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("SendApproveForm", "RecruitmentReview", new { Area = "Human" }, null))';
+            var params = {
+                ProfileInterviewID: records[0].get('ID'),
+                RequirementID: App.cbxRequirement.getValue(),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var Approve = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ApproveForm", "RecruitmentReview", new { Area = "Human" }, null))';
+            var params = {
+                ProfileInterviewID: records[0].get('ID'),
+                RequirementID: App.cbxRequirement.getValue(),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

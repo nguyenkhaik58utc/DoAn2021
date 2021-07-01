@@ -1,0 +1,69 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+<script type="text/javascript">
+    var CategoryCustomerSelectChange = function () {
+        var component = App.treeCustomerCateID;
+        var records = component.selModel.getSelection();
+        if (records.length == 1) {
+            if (records[0].get('IsParent').toLowerCase() == 'true') {
+                OnSelectChangeGroupCustomer(records,false)
+            }
+            else {
+                OnSelectChangeGroupCustomer(records,true);
+            };
+        };
+    };
+    var expandCustomerCategory = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 3 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+    };
+</script>
+<style>
+    .NotAllow {
+        opacity: 0.5;
+    }
+
+    .ForEmployee {
+        font-weight: bold;
+    }
+</style>
+@(
+ Html.X().TreePanel().Margin(0).Padding(0)
+                .Tools(
+                        Html.X().Tool().Type(ToolType.Plus).Handler("App.treeCustomerCateID.expandAll();").ToolTip("Mở rộng"),
+                        Html.X().Tool().Type(ToolType.Minus).Handler("App.treeCustomerCateID.collapseAll();").ToolTip("Thu gọn"),
+                        Html.X().Tool().Type(ToolType.Refresh).Handler("App.treeCustomerCateID.store.reload();").ToolTip("Tải lại")
+                       )
+                .Title("NHÓM KHÁCH HÀNG")
+                .ID("treeCustomerCateID")
+                .TitleAlign(TitleAlign.Center)
+                .Border(false)
+                .AutoScroll(true)
+                .Expand(false)
+                .Region(Region.West)
+                .HideHeaders(true)
+                .RootVisible(false)
+                .Store(
+                        Html.X().TreeStore().ID("StoreGroupCustomer")
+                            .AutoDataBind(true)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadTreeData", "GroupCustomer", new { Area = "Customer" }))
+                            .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Model(
+                                    Html.X().Model().Fields(Html.X().ModelField().Name("id"),
+                                                            Html.X().ModelField().Name("text"),
+                                                            Html.X().ModelField().Name("ParentID"),
+                                                            Html.X().ModelField().Name("IsParent")
+                                                            ))
+                    )
+                 .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "CategoryCustomerSelectChange();";
+                        ls.Load.Handler = "expandCustomerCategory(records);";
+                    })
+)

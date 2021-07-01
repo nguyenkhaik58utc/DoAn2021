@@ -1,0 +1,112 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductDevelopmentRequirementItem
+@{
+    var X = Html.X();
+    Icon ic = Icon.Add;
+    string _title = "Thêm mới thông tin phiếu yêu cầu phát triển sản phẩm";
+    if (Model.ID > 0)
+    {
+        ic = Icon.Pencil;
+        _title = "Cập nhật thông tin phiếu yêu cầu phát triển sản phẩm";
+    }
+
+}
+
+@(Html.X().Window()
+.ID("winNewProcDev")
+.Title(_title)
+.Icon(ic)
+.Width(650)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frProcDev")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+        .Layout(LayoutType.Form)
+        .Items(
+        Html.X().HiddenFor(m => m.ID).ID("hdfId"),
+              Html.X().ComboBoxFor(m => m.StockProductID).ID("cbStockProductID").QueryMode(DataLoadMode.Local).Editable(false).FieldLabel("Sản phẩm"+Html.Required()).AllowBlank(false)
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                .Store(Html.X().Store().AutoLoad(true)
+                .Model(Html.X().Model()
+                        .IDProperty("ID")
+                    .Fields(
+                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                    )
+                )
+                .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetStockProductNotDev"))
+                    .Reader(Html.X().JsonReader().Root("data"))
+                )),
+                            Html.X().ComboBoxFor(m => m.DevelopmentFromProduct).ID("cbDevelopmentFromProduct").QueryMode(DataLoadMode.Local).Editable(false).FieldLabel("Phát triển từ")
+
+                .DisplayField("Name")
+                .ValueField("ID")
+            .Store(Html.X().Store().AutoLoad(true)
+            .Model(Html.X().Model()
+                    .IDProperty("ID")
+                .Fields(
+                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                )
+            )
+            .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("GetStockProduct"))
+                .Reader(Html.X().JsonReader().Root("data"))
+            )),       
+   
+        Html.X().TextAreaFor(m => m.Reason)
+                .FieldLabel("Lý do")
+                .ID("txtReason")
+                  
+                .Height(80)
+                .AnchorHorizontal("100%")
+                .TabIndex(5)
+                ),
+                Html.X().FileUploadFieldFor(m => m.AttachmentFiles),
+                Html.X().TextAreaFor(m => m.Contents)
+                .FieldLabel("Nội dung")
+                .ID("txtContents")
+                .Height(120)
+                .AnchorHorizontal("100%")
+                .TabIndex(6)                     
+             )
+        )
+        .Buttons(
+        Html.X().ButtonSave()
+        .ID("btnSave")
+        .DirectEvents(de =>
+        {
+            de.Click.ExtraParams.Add(new { val = Model.ID>0 });
+            de.Click.Before = @"if (!App.frProcDev.getForm().isValid()) { return false; } ";
+            de.Click.Action = "Update";
+            de.Click.FormID = "frProcDev";
+            de.Click.Success = "App.frProcDev.reset()";
+        }),
+            Html.X().ButtonSaveAndExit().Hidden(Model.ID > 0)
+        .ID("btnSaves")
+        .DirectEvents(de =>
+        {
+            de.Click.ExtraParams.Add(new { val = true });
+            de.Click.Before = @"if (!App.frProcDev.getForm().isValid()) { return false; } ";
+            de.Click.Action = "Update";
+            de.Click.FormID = "frProcDev";
+        }),
+            Html.X().ButtonReset().Hidden(Model.ID > 0)
+        .Handler("App.frProcDev.reset();"),
+        Html.X().ButtonExit()
+        )
+)

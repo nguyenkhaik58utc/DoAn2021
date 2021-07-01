@@ -1,0 +1,85 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    string ID = Model.ID.ToString();
+}
+@(
+ Html.X().Viewport().Border(false).Layout(LayoutType.Fit).Items(
+X.HiddenFor(i => i.ID).ID("hdfCustomerID"),
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerOrder")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar().Hidden(true)
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().Button()
+                                        .Text("Xem chi tiết")
+                                        .ToolTip("Xem chi tiết").ID("btnDetailOrder").Icon(Icon.Zoom).Handler("ViewDetailOrder();")
+                            ))
+                            .Store(
+                            Html.X().Store().ID("StoreCustomerOrder")
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerOrder", "CustomerOrder", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("customerID", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                            })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("ProductName"),
+                                        Html.X().ModelField().Name("Quantity"),
+                                        Html.X().ModelField().Name("Time"),
+                                            Html.X().ModelField().Name("CustomerID"),
+                                                Html.X().ModelField().Name("Status")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                X.Column().DataIndex("ProductName").Text("Sản phẩm").Flex(1),
+                                X.NumberColumn().DataIndex("Quantity").Text("Số lượng").Width(80).Align(Alignment.Right),
+                                X.DateColumnExtend().DataIndex("Time").Text("Thời gian").Width(100).Align(Alignment.Center),
+                                X.Column().DataIndex("Status").Text("Trạng thái").Width(120).Align(Alignment.Center),
+                                Html.X().ImageCommandColumn()
+                                    .Width(14).Align(Alignment.Center)
+                                    .Commands(
+                                        Html.X().ImageCommand()
+                                            .Icon(Icon.Zoom)
+                                            .ToolTip(t =>
+                                            {
+                                                t.Text = "Xem chi tiết";
+                                            })
+                                            .CommandName("Detail")
+                                    )
+                                    .Listeners(l =>
+                                    {
+                                        l.Command.Handler = "ViewDetailOrder(record.data.ID);";
+                                    })
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+        //.Listeners(ls => ls.SelectionChange.Fn = "CheckStatus")
+                                    )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+<script>
+    var ViewDetailOrder = function (id) {
+        var url = '@(Url.Action("DetailForm", "CustomerOrder", new { Area = "Customer" }, null))';
+        var params = {
+            ID: id
+        };
+        onDirectMethod(url, params);
+    };
+</script>

@@ -1,0 +1,145 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model iDAS.Core.SystemFunctionItem
+
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@section headtag
+{
+    <script>
+        var updateUrl = '@(Url.Action("UpdateFunction"))';
+        var deleteUrl = '@(Url.Action("DeleteFunction"))';
+        var restoreUrl = '@(Url.Action("RestoreFunction"))';
+    </script>
+}
+
+@(Html.X().Store()
+    .ID("StoreIcons")
+    .AutoLoad(false)
+    .PageSize(100)
+    .Proxy(Html.X().AjaxProxy()
+        .Url(Url.Action("LoadIcons"))
+        .ActionMethods(am => am.Read = HttpMethod.POST)
+        .Reader(Html.X().JsonReader().Root("data"))
+    )
+    .Model(Html.X().Model()
+        .Fields(
+            new ModelField("IconName"),
+            new ModelField("IconUrl")
+        )
+    )
+)
+
+@(Html.X().Store()
+    .ID("StoreModules")
+    .AutoLoad(true)
+    .Proxy(Html.X().AjaxProxy()
+        .Url(Url.Action("LoadModules"))
+        .ActionMethods(am => am.Read = HttpMethod.POST)
+        .Reader(Html.X().JsonReader().Root("data"))
+    )
+    .Listeners(ls=>ls.Load.Handler="App.ComboboxModules.select(App.ComboboxModules.store.getAt(0))")
+    .Model(Html.X().Model()
+        .Fields(
+            new ModelField("Name"),
+            new ModelField("Code")
+        )
+    )
+)
+
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+            .ID("GridPanelFunctions")
+            .Title("Danh sách nhóm chức năng hệ thống")
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Label().Text("Module: ").Icon(Icon.Find).StyleSpec("padding-left:3px"),
+                        Html.X().ComboBox().Editable(false).Width(300).ID("ComboboxModules")
+                            .StoreID("StoreModules").DisplayField("Name").ValueField("Code")
+                            .Listeners(ls=>ls.Change.Handler = "App.GridPanelFunctions.getStore().load()"),
+                        Html.X().ToolbarFill(),
+                        Html.X().Button()
+                            .Text("Phục hồi dữ liệu")
+                            .Icon(Icon.DatabaseRefresh)
+                            .Handler("onRestore")
+                    )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                    .ID("StoreFunctions")
+                    .AutoLoad(false)
+                    .PageSize(10)
+                    .Parameters(ps =>
+                        ps.Add(new StoreParameter("moduleCode", "App.ComboboxModules.getValue()", ParameterMode.Raw))
+                    )
+                    .Proxy(
+                        Html.X().AjaxProxy()
+                            .Url(Url.Action("LoadFunctions"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            .IDParam("ID")
+                    )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column().DataIndex(Model,m=>m.Name).Text("Nhóm chức năng").Align(Alignment.Center).Editor(Html.X().TextField()).Flex(1),
+                Html.X().CheckColumn().DataIndex(Model,m=>m.IsActive).Text("Kích hoạt").Width(120).Align(Alignment.Center).Editable(true),
+                Html.X().CheckColumn().DataIndex(Model,m=>m.IsShow).Text("Hiển thị trên Menu").Width(120).Align(Alignment.Center).Editable(true),
+                Html.X().Column().DataIndex(Model,m=>m.IconUrl).Renderer("iConRenderer").Text("Icon").Width(120).Align(Alignment.Center)
+                    .Editor(
+                        Html.X().ComboBox().Editable(false).StoreID("StoreIcons")
+                            .DisplayTpl(Html.X().XTemplate().Html("<tpl for='.'>{IconName}</tpl>"))
+                            .ValueField("IconUrl")
+                            .PageSize(100)
+                            .MatchFieldWidth(false)
+                            .ListConfig(
+                                Html.X().BoundList().StyleSpec("width:245px")
+                                    .ItemTpl(Html.X().XTemplate()
+                                        .Html(@<text>
+                                            <div>
+							                    <img src='{IconUrl}' style="vertical-align:middle" />
+                                                <span style="vertical-align:middle;padding-left:5px">{IconName}</span>
+						                    </div>
+                                        </text>)
+                                    )
+                            )
+                    ),
+                Html.X().NumberColumn().DataIndex(Model, m => m.Position).Format(string.Format("0")).Text("Vị trí hiển thị").Width(120).Align(Alignment.Center).Editor(Html.X().NumberField()),
+                Html.X().Column().DataIndex(Model,m=>m.StatusView).Text("Trạng thái").Width(120).Align(Alignment.Center),
+                Html.X().CommandColumn().Width(25).Align(Alignment.Center)
+                    .Commands(Html.X().GridCommand().CommandName("Delete").Icon(Icon.Delete).ToolTip(tt => tt.Text = "Xóa"))
+                    .Listeners(ls => ls.Command.Handler = "onDelete(record.data.ID);")
+                )
+                .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEdit"))
+                .BottomBar(
+                    Html.X().PagingToolbar()
+                        .EmptyMsg("Hiện không có dữ liệu")
+                        .NextText("Trang kế tiếp")
+                        .PrevText("Trang trước")
+                        .LastText("Trang cuối cùng")
+                        .FirstText("Trang đầu tiên")
+                        .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                        .BeforePageText("Trang")
+                        .AfterPageText("của {0}")
+                        .RefreshText("Tải lại Dữ liệu")
+                        .Items(
+                            Html.X().Label("Số bản ghi trên 1 trang"),
+                            Html.X().ToolbarSpacer(10),
+                            Html.X().ComboBox()
+                                .Width(50)
+                                .Items("10", "20", "30", "50", "100")
+                                .SelectedItems("10")
+                                .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                        )
+                        .Plugins(Html.X().ProgressBarPager())
+                )
+    )
+)

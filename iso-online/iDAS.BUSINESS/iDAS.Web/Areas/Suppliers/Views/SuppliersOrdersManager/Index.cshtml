@@ -1,0 +1,232 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SuppliersOrderItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrOrder")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                            Html.X().ButtonCreate().DirectClickAction("ShowFrmAdd"),                                
+                                Html.X().Button().Text("Sửa").Icon(Icon.Pencil).ID("btnUpdateOrder").Handler("UpdateItem();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete().ID("btnDeleteOrder").Handler("onDelete();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView().ID("btnDetailOrder").Handler("ViewDetail();"),
+                                Html.X().ToolbarSeparator(),
+                                    Html.X().Button().Text("Chọn nhà cung cấp").ToolTip("Chọn nhà cung cấp").ID("btnObject").Icon(Icon.User).Handler("ObjectItem();").Disabled(true),
+
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonApproval().Text("Tạo hợp đồng").Icon(Icon.PageEdit).ID("btnApprove").Handler("Approve();"),
+                                        Html.X().ToolbarSeparator(),
+                                                    //Html.X().ButtonExportExcel().ID("btnGetFile").Handler("ShowFrmExport();"),  
+                                                                    Html.X().ButtonExportExcelFile().GridIDGetFile("GrOrder").TitleFile("Báo cáo").isTree(false).ID("btnEx"),
+                                    Html.X().ToolbarFill(), Html.X().ButtonTutorial()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreOrder")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadOrder")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Model(
+                                Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("CODE"),
+                                                    Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("StatusDisp"),
+                                                Html.X().ModelField().Name("Status"),
+                                                Html.X().ModelField().Name("OrderDate"),
+                                                Html.X().ModelField().Name("ShipDate"),
+                                                Html.X().ModelField().Name("ReciepDate"),
+                                                    Html.X().ModelField().Name("ReciepDateDisp")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("CODE").Text("Mã đơn hàng").Width(100),
+                                    Html.X().Column().DataIndex("Name").Text("Tên đơn hàng").Flex(1),
+                                        Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                                             .Columns(
+                                                        Html.X().DateColumnExtend().DataIndex("OrderDate").Text("Ngày đặt").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                            Html.X().DateColumnExtend().DataIndex("ShipDate").Text("Ngày nhận").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                                    Html.X().Column().DataIndex("ReciepDateDisp").Text("Thực tế").Width(80).Align(Alignment.Center),
+                                                                                Html.X().Column().DataIndex("ReciepDate").Text("Thực tế").Hidden(true)
+                                                ),
+                                        Html.X().Column().DataIndex("StatusDisp").Text("Trạng thái").Width(120).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("Status").Text("Trạng thái").Hidden(true)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+
+            )
+)
+<script>
+    var deleteUrl = '@(Url.Action("DeleteOrder"))';
+    var ExportExcel = function () {
+        var url = '@(Url.Action("ExportExcel", "SuppliersOrdersManager", new { Area = "Suppliers" }, null))';        
+        var params = {
+            currentPage: App.StoreOrder.currentPage,
+            pageSize: App.StoreOrder.pageSize
+        };
+        Ext.net.DirectMethod.request({
+            url: url,
+            isUpload: true,
+            params: params
+        });
+    };
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.GrOrder.columns.length; i++) {
+            if (App.GrOrder.columns[i].dataIndex == 'ID')
+                arr.push({ dataIndex: App.GrOrder.columns[i].dataIndex, text: 'ID', hidden: App.GrOrder.columns[i].hidden, position: i + 1 });
+            else
+                arr.push({ dataIndex: App.GrOrder.columns[i].dataIndex,text:App.GrOrder.columns[i].text,hidden:App.GrOrder.columns[i].hidden,position:i+1});
+        }
+        return arr;
+    };
+    var ShowFrmExport = function () {
+        var url = '@(Url.Action("ShowFrmExport", "SuppliersOrdersManager", new { Area = "Suppliers" }, null))';
+        var params = {
+            currentPage: App.StoreOrder.currentPage,
+            pageSize: App.StoreOrder.pageSize,
+            arrObject : JSON.stringify(getObjectPartial())
+        };        
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: params
+        });
+    };
+    
+    function CheckStatus() {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length == 1) {
+            var _status = records[0].get('Status');
+            if (_status == 4 || _status == 6) {
+                App.btnDeleteOrder.setDisabled(false);
+                App.btnUpdateOrder.setDisabled(false);
+                App.btnObject.setDisabled(false);
+                App.btnApprove.setDisabled(true);
+            }
+            else {
+                SetDisabled(App.btnDeleteOrder, App.btnUpdateOrder, App.btnObject, App.btnApprove);
+                if (_status == 7)
+                {
+                    App.btnApprove.setDisabled(false);
+                }
+            }
+            App.btnDetailOrder.setDisabled(false);
+        }
+        else {
+            SetDisabled(App.btnDetailOrder, App.btnDeleteOrder, App.btnUpdateOrder, App.btnObject, App.btnApprove);
+        };
+    };
+    
+    var UpdateItem = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "SuppliersOrdersManager", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url ='@(Url.Action("ShowDetail", "SuppliersOrdersManager", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ObjectItem = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("SuppliersList", "SuppliersOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var Approve = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("CreateContract", "SuppliersOrdersManager", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var onDelete = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            //var aId = new Array();
+                            var strId = records[0].get('ID');
+                            //for (var i = 0, r; r = records[i]; i++) {
+                            //    aId[i] = records[i].get('ID');
+                            //}
+                            //strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "SuppliersOrdersManager", new { Area = "Suppliers" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+</script>

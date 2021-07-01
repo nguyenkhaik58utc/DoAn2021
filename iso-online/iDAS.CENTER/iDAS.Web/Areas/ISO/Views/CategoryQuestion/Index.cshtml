@@ -1,0 +1,378 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().Hidden().ID("hdfLsCateId"),
+        Html.X().Panel().Header(false).Border(false).StyleSpec("border: none;").BodyPadding(2)
+                .Layout(LayoutType.Border)
+                .TopBar(
+                          Html.X().Toolbar()
+                                    .Items(
+                                            Html.X().ComboBox().FieldLabel("<b >Lựa chọn lĩnh vực </b>" + Html.Required())
+                                                    .LabelWidth(165).ID("cbxNaceCode")
+                                                    .InputWidth(300)
+                                                    .DisplayField("Name")
+                                                    .ValueField("ID")
+                                                    .Editable(false)
+                                                    .Store(
+                                                             Html.X().Store().AutoLoad(true)
+                                                                        .Model(
+                                                                            Html.X().Model().IDProperty("ID")
+                                                                            .Fields(
+                                                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                            )
+                                                                        )
+                                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadISONaceCodeActive", "ISONaceCode")).Reader(Html.X().JsonReader().Root("data")))
+                                                          )
+                                                            .Listeners(ls => ls.Change.Handler = "App.stCategoryQuestion.read();hideShowAdd();")
+                                        )
+                        )
+                .Items(
+                        Html.X().TreePanel()
+                                .Header(false)
+                                .Title("Bộ câu hỏi đánh giá")
+                                .Region(Region.West)
+                                .ID("trCategoryQuestion")
+                                .Width(350)
+                                .TitleAlign(TitleAlign.Center)
+                                .Collapsible(true)
+                                .Split(true)
+                                .Border(true).AutoScroll(true)
+                                .RowLines(true)
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .Root(Html.X().Node().NodeID("0").Expanded(true)
+                                                .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "Name", Value = "Bộ câu hỏi đánh giá", Mode = ParameterMode.Value }))
+                                                .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "ParentID", Value = "0", Mode = ParameterMode.Value }))
+                                                      .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "IsUse", Value = "1", Mode = ParameterMode.Value }))
+                                      )
+                                .SingleExpand(false)
+                                .TopBar(
+                                    Html.X().Toolbar()
+                                            .Items(
+                                                Html.X().Button().ID("btnInsertNews").Disabled(true).Icon(Icon.Add).ToolTip("Thêm mới bộ tiêu chí đánh giá")
+                                                        .Handler("AddCategoryQuestion();"),
+                                                Html.X().ToolbarSeparator(),
+                                                Html.X().Button().ID("btnEdit").Icon(Icon.Pencil).ToolTip("Sửa bộ tiêu chí đánh giá").Disabled(true)
+                                                        .Handler("updateCategoryQuestion();"),
+                                                Html.X().ToolbarSeparator(),
+                                                Html.X().Button().ID("btnDelete").Icon(Icon.Delete).ToolTip("Xóa bộ tiêu chí đánh giá")
+                                                        .Handler("deleteRecord();")
+                                                        .Disabled(true),
+                                               Html.X().ToolbarSeparator(),
+                                                    Html.X().Button().ID("btnDetail").Disabled(true).ToolTip("Xem chi tiết").Icon(Icon.Zoom)
+                                                            .Handler("showFormDetail();"),
+                                                Html.X().ToolbarSeparator(),
+                                                Html.X().Button().Icon(Icon.ArrowRefresh).Handler("App.trCategoryQuestion.store.reload();").Disabled(false),
+                                                Html.X().ToolbarFill(),
+                                                Html.X().ToolbarSeparator(),
+                                                Html.X().DisplayField().Text("<b>Sử dụng&nbsp;&nbsp;&nbsp;&nbsp;</b>")
+
+
+                                            )
+                                         )
+                                .Store(Html.X().TreeStore().AutoLoad(false)
+                                        .ID("stCategoryQuestion")
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "CategoryQuestion")))
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("naceCodeID", "getNaceCodeValue()", ParameterMode.Raw));
+                                            })
+                                        .Model(
+                                        Html.X().Model()
+                                                .Fields(
+                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                                                    Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean)
+                                                )
+                                              )
+                                          )
+                                    .HideHeaders(true)
+                                    .ColumnModel(
+                                        Html.X().TreeColumn()
+                                            .Align(Alignment.Left)
+                                            .DataIndex("Name")
+                                            .Flex(1),
+                                            Html.X().CheckColumn().DataIndex("IsUse").Text("Sử dụng").Width(70)
+                                )
+                            .Listeners(ls => { ls.SelectionChange.Handler = "categoryQuestionSelect();"; })
+                        ,
+                    Html.X().GridPanel()
+                    .Region(Region.Center)
+                    .ID("grQuestion")
+                    .Border(true)
+                    .RowLines(true)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .TopBar(
+                                Html.X().Toolbar()
+                                        .Items(
+                                                Html.X().ButtonCreate().ID("btnAddQuestion").Disabled(true)
+                                                        .Handler("showFormAddQuestion(true);"),
+                                                Html.X().ToolbarSeparator(),
+                                                Html.X().ButtonUpdate()
+                                                        .ID("btnEditQuestion")
+                                                        .Handler("updateFormQuestion();"),
+                                                Html.X().ToolbarSeparator(),
+                                                Html.X().ButtonDelete()
+                                                        .ID("btnDeleteQuestion")
+                                                        .Handler("deleteQuestion();"),
+                                                Html.X().ToolbarSeparator(),
+                                                Html.X().ButtonView()
+                                                        .ID("btnDetailQuestion")
+                                                            .Handler("showDetailQuestion();"),
+                                                                Html.X().ToolbarSeparator(),
+                                                                Html.X().Button().Text("Thiết lập câu trả lời").Icon(Icon.Comments).Handler("showAnswers();"),
+                                                Html.X().ToolbarFill(),
+                                                Html.X().ButtonTutorial()
+                                              )
+                                          )
+                        .Store(Html.X().Store().ID("stQuestion")
+                                .AutoLoad(false)
+                                .RemotePaging(true)
+                                .PageSize(10)
+                                .Proxy(Html.X().AjaxProxy()
+                                                    .Url(Url.Action("GetQuestion", "CategoryQuestion"))
+                                               .Reader(Html.X().JsonReader()
+                                               .Root("data")
+                                               )
+                                )
+                                .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("cateId", "App.hdfLsCateId.value", ParameterMode.Raw));
+                                    })
+                                .Model(
+                                    Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean)
+                                     )
+                                 )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        Html.X().Column()
+                                .Text("Câu hỏi")
+                                .Align(Alignment.Left)
+                                .DataIndex("Name")
+                                .Flex(1),
+                        Html.X().CheckColumn()
+                                .Text("Sử dụng")
+                                .DataIndex("IsUse")
+                                .Width(100)
+                                .Align(Alignment.Center)
+                            )
+                        .Listeners(lS => lS.SelectionChange.Handler = "checkStatusQuestion()")
+                        .Plugins(
+                            Html.X().CellEditing()
+                                .ClicksToEdit(1)
+                                .Listeners(ls =>
+                                {
+                                })
+                            )
+                        .BottomBar(Html.X().CustomPagingToolbar("10", "20", "30", "50", "100"))
+                 )
+         )
+)
+<script type="text/javascript">
+    var categoryQuestionSelect = function () {
+        var records = App.trCategoryQuestion.selModel.getSelection();
+        if (records.length == 1) {
+            App.hdfLsCateId.setValue(records[0].get('ID'));
+            App.grQuestion.store.reload();
+            if (records[0].get('ID') == 0) {
+                App.btnEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.btnDetail.setDisabled(true);
+                App.btnAddQuestion.setDisabled(true);
+            }
+            else {
+                App.btnEdit.setDisabled(false);
+                App.btnDelete.setDisabled(false);
+                App.btnDetail.setDisabled(false);
+                App.btnAddQuestion.setDisabled(false);
+                var nodeSelect = App.stCategoryQuestion.getNodeById(records[0].get('ID'));
+                if (nodeSelect.isLeaf() == false) {
+                    nodeSelect.reload();
+                }
+            };
+        }
+        else {
+            App.btnEdit.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+        };
+    };
+    var hideShowAdd = function () {
+        if (getNaceCodeValue() > 0) {
+            App.btnInsertNews.setDisabled(false);
+        }
+        else {
+            App.btnInsertNews.setDisabled(true);
+        }
+    };
+    var AddCategoryQuestion = function () {
+        var url = '@(Url.Action("FormAdd", "CategoryQuestion", null))';
+        var records = App.trCategoryQuestion.selModel.getSelection();
+        if (records.length == 1) {
+            var parentId = records[0].get('ID');
+            var params = {
+                parentId: parentId,
+                nacodeId: getNaceCodeValue()
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            var params = {
+                parentId: 0,
+                nacodeId: getNaceCodeValue()
+            };
+            onDirectMethod(url, params);
+        };
+    };
+    function updateCategoryQuestion() {
+        var records = App.trCategoryQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowUpdate", "CategoryQuestion", null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function showAnswers() {
+        var records = App.grQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowAnswer", "CategoryQuestion", null))';
+            var params = {
+                questionId: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteRecord = function () {
+        var records = App.trCategoryQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+                    mask.show();
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "CategoryQuestion", null))',
+                        params: {
+                            id: records[0].get('ID'),
+                        },
+                        success: function (result) {
+                            mask.hide();
+                            if (handle) handle(result);
+                        },
+                    });
+                };
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showFormDetail = function () {
+        var records = App.trCategoryQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetail", "CategoryQuestion", null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var checkStatusQuestion = function () {
+        var records = App.grQuestion.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnEditQuestion.setDisabled(false);
+            App.btnDeleteQuestion.setDisabled(false);
+            App.btnDetailQuestion.setDisabled(false);
+        }
+        else {
+            App.btnEditQuestion.setDisabled(true);
+            App.btnDeleteQuestion.setDisabled(true);
+            App.btnDetailQuestion.setDisabled(true);
+        };
+    };
+    var showFormAddQuestion = function () {
+        var records = App.trCategoryQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("FormAddQuestion", "CategoryQuestion", null))';
+            var params = {
+                cateId: records[0].get('ID'),
+                cateName: records[0].get('Name')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function updateFormQuestion() {
+        var records = App.grQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowUpdateQuestion", "CategoryQuestion", null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteUrl = '@(Url.Action("DeleteQuestion", "CategoryQuestion", null))';
+    var deleteQuestion = function () {
+        var records = App.grQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            onDelete(records[0].get('ID'));
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showDetailQuestion = function () {
+        var records = App.grQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetailQuestion", "CategoryQuestion", null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var getNaceCodeValue = function () {
+        if (App.cbxNaceCode) {
+            if (App.cbxNaceCode.value) {
+                return App.cbxNaceCode.value;
+            }
+            return 0;
+        }
+        return 0;
+    };
+</script>

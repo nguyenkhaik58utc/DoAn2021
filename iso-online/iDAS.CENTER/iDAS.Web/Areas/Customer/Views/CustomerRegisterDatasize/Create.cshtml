@@ -1,0 +1,108 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerRegisterDatasizeItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin đăng ký dung lượng")
+    .Icon(Icon.Add)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().ComboBoxFor(m => m.CustomerID).FieldLabel("Khách hàng")
+                    .ID("cboCustomer")
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Editable(false)
+                    .Store(
+                        Html.X().Store().AutoLoad(true)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                            )
+                        )
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomers")).Reader(Html.X().JsonReader().Root("data")))
+                        .Listeners(ls => ls.Load.Handler = "App.cboCustomer.select(App.cboCustomer.store.getAt(0))")
+                    ),
+                    Html.X().ComboBoxFor(m => m.CenterSystemID).FieldLabel("Hệ thống").ColumnWidth(1)
+                    .ID("cboSystem")
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Editable(false)
+                    .Store(
+                        Html.X().Store().AutoLoad(true)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                            )
+                        )
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadSystems")).Reader(Html.X().JsonReader().Root("data")))
+                        .Listeners(ls => ls.Load.Handler = "App.cboSystem.select(App.cboSystem.store.getAt(0))")
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.DataSize).BlankText("Bắt buộc nhập !").FieldLabel("Dung lượng *").Value(1),
+                        Html.X().Container().ColumnWidth(0.03),
+                        Html.X().Label().Text("GB")
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().DateFieldFor(m => m.RequireAt).FieldLabel("Ngày yêu cầu").ColumnWidth(0.45).Value(DateTime.Now),
+                        Html.X().Container().ColumnWidth(0.1),
+                        Html.X().DateFieldFor(m => m.CompleteAt).FieldLabel("Ngày hoàn thành").ColumnWidth(0.45)
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().DateFieldFor(m => m.ContactAt).FieldLabel("Ngày xác nhận").ColumnWidth(0.45)
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().CheckboxFor(m => m.IsNew).FieldLabel("Trạng thái").BoxLabel("Mới").ColumnWidth(0.3).Value(true),
+                        Html.X().CheckboxFor(m => m.IsContact).HideLabel(true).BoxLabel("Đã liên hệ").ColumnWidth(0.2),
+                        Html.X().CheckboxFor(m => m.IsAccept).HideLabel(true).BoxLabel("Đã xác nhận").ColumnWidth(0.2),
+                        Html.X().CheckboxFor(m => m.IsActive).HideLabel(true).BoxLabel("Kích hoạt").ColumnWidth(0.2)
+                    ),
+                    Html.X().TextAreaFor(m => m.Note).Height(55).FieldLabel("Ghi chú")
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if (result.result) {this.up('window').close(); reloadCustomerRegisterDatasize();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+

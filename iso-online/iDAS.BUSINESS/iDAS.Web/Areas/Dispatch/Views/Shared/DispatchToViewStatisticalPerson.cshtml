@@ -1,0 +1,139 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    var StoreParamDispatch = ViewData["StoreParamDispatchStatiscal"] as StoreParameter;
+    int detail = (int)iDAS.Items.DispatchForm.Detail;
+}
+@(Html.X().Hidden().ID("refID"))
+@(Html.X().Window()
+            .ID("StatisticalDispatch")
+            .Title("Danh sách công văn đến")
+            .StyleSpec("-webkit-border-radius:0")
+            .Icon(Icon.ApplicationSideList)
+            .Height(1)
+            .Maximized(true)
+            .Constrain(true)
+            .Layout(LayoutType.Fit)
+            .Modal(true)
+            .Resizable(false)
+            .Margin(0)
+            .BodyPadding(0)
+            .Border(true)
+            .Items(            
+             Html.X().GridPanel()
+                        .ID("grDispatchInfo")
+                    .ColumnLines(true)
+                    .Border(false)
+                        .TopBar(
+                    Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                        Html.X().ButtonView()
+                            .ID("btnDetail")
+                            .Handler("ShowFrm(" + detail + ");")
+                            .Disabled(true),
+                                    Html.X().ToolbarFill(),
+                                 Html.X().ButtonTutorial()
+                            
+                          )
+                       )
+                      .Store(
+                    Html.X().Store()
+                        .ID("stDispatchInfo")
+                         .AutoLoad(true)
+                    .Proxy(
+                        Html.X().AjaxProxy().Url(ViewData["StoreUrlDispatch"].ToString()).Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(a =>
+                    {
+                        a.Add(StoreParamDispatch);
+                        a.Add(new { securityLevelId = ViewData["securityLevelId"] });
+                        a.Add(new { urgencyId = ViewData["urgencyId"] });
+                        a.Add(new { categoryId = ViewData["categoryId"] });
+                        a.Add(new { methodId = ViewData["methodId"] });
+                        a.Add(new { fromDate = ViewData["FromDate"] });
+                        a.Add(new { toDate = ViewData["ToDate"] });
+                    })
+                    .RemoteSort(false).RemotePaging(true).PageSize(20)
+                    .Model(Html.X().Model()
+                        .Fields(
+                                      Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("Code"),
+                            Html.X().ModelField().Name("NumberTo"),
+                            Html.X().ModelField().Name("FormH"),
+                            Html.X().ModelField().Name("FormS"),
+                            Html.X().ModelField().Name("Date"),
+                            Html.X().ModelField().Name("FormH"),
+                            Html.X().ModelField().Name("FormS"),
+                            Html.X().ModelField().Name("SendFrom"),
+                            Html.X().ModelField().Name("SendTo"),
+                            Html.X().ModelField().Name("Security"),
+                            Html.X().ModelField().Name("SecurityColor"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("IsMoved"),
+                            Html.X().ModelField().Name("FlagVerify"),
+                            Html.X().ModelField().Name("IsVerify")
+                                )
+                        )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                            Html.X().DateColumnExtend().DataIndex("Date").Text("Ngày đến").Width(100).StyleSpec("font-weight: bold;text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center).Filterable(false),
+                        Html.X().Column().DataIndex("NumberTo").Text("Số đến").Width(80).StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center),
+                        Html.X().Column().DataIndex("SendFrom").Text("Nơi gửi công văn").Width(110).StyleSpec("font-weight: bold;text-align: center"),
+                        Html.X().Column().DataIndex("Code").Text("Số, ký hiệu").Width(110).StyleSpec("font-weight: bold;text-align: center"),
+                        Html.X().Column().DataIndex("Name").Text("Tên công văn").Width(110).StyleSpec("font-weight: bold;text-align: center"),
+                        Html.X().Column().DataIndex("SendTo").Text("Nơi nhận").Flex(1).StyleSpec("font-weight: bold;text-align: center"),
+                            Html.X().ComponentColumn().Text("Hình thức lưu CV").Filterable(false).Columns(
+                        Html.X().CheckColumn().DataIndex("FormH").Text("Bản cứng").Width(80).StyleSpec("font-weight: bold;text-align: center"),
+                        Html.X().CheckColumn().DataIndex("FormS").Text("Bản mềm").Width(80).StyleSpec("font-weight: bold;text-align: center")
+                               ),
+                        Html.X().Column().DataIndex("Security").Text("Mức độ mật").Width(100).StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center)
+                                    .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('SecurityColor') + ';'; return value; }" }).Filterable(false),
+                        Html.X().Column().DataIndex("Status").Text("Trạng thái").Width(100).StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center).Filterable(false)
+                        )
+                .Plugins(
+                            Html.X().FilterHeader().Remote(true)
+                    )
+            .SelectionModel(
+                Html.X().CheckboxSelectionModel()
+                    .ShowHeaderCheckbox(false)
+                    .Mode(SelectionMode.Single)
+                    .Listeners(l => l.SelectionChange.Handler = "checkStatus();")
+            )
+            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+ <script>
+      var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+      var checkStatus = function () {
+          var record = App.grDispatchInfo.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnDetail.setDisabled(false);
+        } else {
+            App.btnDetail.setDisabled(true);
+        }
+    };
+    var ShowFrm = function (cmd) {
+        var record = App.grDispatchInfo.selModel.getSelection();
+        var employeeId = App.grStatisticalDispatchEmployee.selModel.getSelection()[0].get('EmployeeID');
+            if (record.length > 0) {
+                var id = record[0].get('ID');
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("ShowFrmDetail", "PersonStatisticalDispatch", new { Area = "Dispatch" }, null))', params: { id: id, employeeId: employeeId }
+                });
+        }
+    };
+</script>       

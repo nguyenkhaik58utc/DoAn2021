@@ -1,0 +1,135 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.SupplierAuditItem
+@{
+    var X = Html.X();
+}
+
+@(Html.X().Window()
+            .ID("frmAuditResult")
+            .Title("Danh sách đánh giá của nhà cung cấp")
+                    .Layout(LayoutType.Border).Maximized(true)        
+        .Icon(Icon.User)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+        Html.X().HiddenFor(m=>m.SupplierID).ID("hdfSuppID"),
+            Html.X().GridPanel()
+                       .Region(Region.West)
+                        .Width(390)
+                        .Header(false)
+                        .ID("grSuppAuditPlan").Layout(LayoutType.Fit)
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                    .Store(
+                        Html.X().Store()
+                                .ID("StorePlan")
+                                .RemotePaging(true)
+                                .AutoLoad(true)
+                                .PageSize(20)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetListSuppAudit", "SuppliersAudit", new { Area = "Suppliers" }))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                .IDParam("ID"))
+                                .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("suppID", "App.hdfSuppID.getValue()", ParameterMode.Raw));
+                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("SupplierAuditPlan.Name"),
+                                    Html.X().ModelField().Name("SupplierAuditPlan.StartTime"),
+                                    Html.X().ModelField().Name("SupplierAuditPlan.EndTime")
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                    X.Column().DataIndex("ID").Hidden(true),
+                                    Html.X().Column().DataIndex("SupplierAuditPlan.Name").Text("Tên kế hoạch").Width(200).Flex(1).StyleSpec("font-weight: bold;text-align: center"),
+                                    X.ComponentColumn().Text("Thời gian thực hiện").StyleSpec("font-weight: bold;text-align: center").Columns(
+                                X.DateColumnExtend().DataIndex("SupplierAuditPlan.StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").StyleSpec("font-weight: bold;text-align: center").Width(80).Align(Alignment.Center),
+                                X.DateColumnExtend().DataIndex("SupplierAuditPlan.EndTime").Format("dd/MM/yyyy").Text("Kết thúc").StyleSpec("font-weight: bold;text-align: center").Width(80).Align(Alignment.Center))
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.Select.Handler = "App.grAuditResult.getStore().reload({ page: 1 })"))
+                    .BottomBar(
+                           Html.X().CustomPagingToolbar()
+                ),
+        Html.X().GridPanel()
+                       .Region(Region.Center)
+                        .Margin(1)
+                        .Header(false)
+                        .ID("grAuditResult")
+
+                        .ColumnLines(true)
+                        .ForceFit(true)
+
+                    .Store(
+                        Html.X().Store()
+                                .ID("StoreAditResult")
+                                .RemotePaging(true)
+                                .AutoLoad(false)
+                                                    .PageSize(20).GroupField("QualityCriteria1.CategoryName")
+                                                    .Sorters(Html.X().DataSorter().Property("QualityCriteria1.CategoryName").Direction(Ext.Net.SortDirection.ASC))
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetSuppAuditResult", "SuppliersAudit", new { Area = "Suppliers" }))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                .IDParam("ID"))
+                                .Parameters(ps =>
+                                {
+                                    //ps.Add(new StoreParameter("categoryID", "App.cbGroupQuantity.getValue()", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("supplierAuditID", "App.grSuppAuditPlan.selModel.getSelection().length>0?App.grSuppAuditPlan.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("QualityCriteria1.Name"),
+                                    Html.X().ModelField().Name("Point"),
+                                        Html.X().ModelField().Name("Factory"),
+                                        Html.X().ModelField().Name("QualityCriteria1.CategoryName"),
+                                        Html.X().ModelField().Name("QualityCriteria1.AvgPoint"),
+                                    Html.X().ModelField().Name("TotalPoint")
+
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                        Html.X().Column().DataIndex("QualityCriteria1.Name").Text("Tiêu chí").Flex(1).StyleSpec("font-weight: bold;text-align: center"),
+                                    Html.X().Column().Text("Điểm").Align(Alignment.Right).DataIndex("Point"),
+                                        Html.X().Column().DataIndex("Factory").Text("Hệ số").Width(50).StyleSpec("font-weight: bold;text-align: center"),
+                                            Html.X().Column().DataIndex("TotalPoint").Text("Tổng điểm").Width(100).StyleSpec("font-weight: bold;text-align: center")
+                                                , X.Column().DataIndex("QualityCriteria1.AvgPoint").Text("Đánh giá").Renderer("RenderRate").Width(100).StyleSpec("font-weight: bold;text-align: center")       
+                        )
+
+                     .Features(
+                                        Html.X().GroupingSummary()
+                                        .ID("GroupingSummarySupplier")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                )
+
+                    .BottomBar(
+                           Html.X().CustomPagingToolbar()
+                )
+                 )
+.Buttons(
+
+X.ButtonExit()
+    )
+)
+
+<script type="text/javascript">
+    var RenderRate = function (value, p, record) {
+        var value1 = record.get('TotalPoint') > record.get('QualityCriteria1.AvgPoint');
+        if (value1) {
+            return "<span style=\"color:green\">Đạt</span>";
+        } else
+            return "<span style=\"color:red\">Ko Đạt</span>";
+    };
+</script>

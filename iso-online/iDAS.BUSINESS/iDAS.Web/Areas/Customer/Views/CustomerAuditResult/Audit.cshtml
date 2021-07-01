@@ -1,0 +1,111 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.CustomerItem
+@{
+    var X = Html.X();
+}
+@(X.Window()
+.Title("Đánh giá thỏa mãn khách hàng")
+.Icon(Icon.Comment)
+.Maximized(true)
+.Height(1)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+        X.HiddenFor(m => m.ID).ID("hdfCustomerId"),
+       X.HiddenFor(m => m.CustomerCategory.GroupIds).ID("hdfCategoryId"),
+        X.GridPanel().Layout(LayoutType.Fit)
+            .ID("grCustomerAudit")
+            .Header(false)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                       X.Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                           X.ButtonView().ToolTip("Xem chi tiết đợt đánh giá").ID("btnDetailAudit").Icon(Icon.Zoom).Handler("ViewDetailAudit();").Disabled(true),
+                           X.ToolbarSeparator(),
+                           X.Button().Text("Kết quả đánh giá").ID("btnAuditResult").Icon(Icon.Comment).Handler("AuditResult();").Disabled(true)
+                        )
+                )
+            .Store(
+                   X.Store().ID("stCustomerAuditResult")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadAudit", "CustomerAuditResult", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")))
+                            .Parameters(ps => ps.Add(new StoreParameter("id", "App.hdfCustomerId.getValue()", ParameterMode.Raw)))
+                        .Model(
+                                   X.Model().Fields(
+                                   X.ModelField().Name("ID"),
+                                   X.ModelField().Name("Name"),
+                                   X.ModelField().Name("CriteriaCategoryID"),
+                                   X.ModelField().Name("StartTime"),
+                                   X.ModelField().Name("EndTime"),
+                                   X.ModelField().Name("IsActive")
+                            )
+                        )
+                    )
+            .ColumnModel(
+                   X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                   X.Column().DataIndex("Name").Text("Đợt đánh giá").Flex(1),
+                   X.ComponentColumn().Text("Thời gian thực hiện")
+                            .Columns(
+                                       X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                                   X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").MinWidth(120).Align(Alignment.Center)
+                            ),
+                   X.CheckColumn().DataIndex("IsActive").Text("Kích hoạt").MinWidth(120)
+            )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Handler = "CheckStatus();"))
+            .BottomBar(X.CustomPagingToolbar())
+      )
+.Buttons(Html.X().ButtonExit())
+)
+<script>
+    function CheckStatus() {
+        var records = App.grCustomerAudit.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetailAudit, App.btnAuditResult);
+        }
+        else {
+            SetDisabled(App.btnDetailAudit,App.btnAuditResult);
+        };
+    };
+    var ViewDetailAudit = function () {
+        var records = App.grCustomerAudit.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerAudit", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var AuditResult = function () {
+        var records = App.grCustomerAudit.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("AuditResultForm"))';
+            var params = {
+                id: App.hdfCustomerId.getValue(),
+                auditID: records[0].get('ID'),
+                categoryID: records[0].get('CriteriaCategoryID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>

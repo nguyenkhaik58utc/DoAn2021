@@ -1,0 +1,70 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int userID = ViewData["UserLogOn"] != null ? (int)ViewData["UserLogOn"] : 0;
+}
+
+@(Html.X().Viewport().AutoScroll(false)
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        Html.X().GridPanel()
+            .ID("GrDocument")
+            .Title("Danh sách tài liệu")
+            .Header(false)
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+
+                        //Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+                        Html.X().ButtonCreate(),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnEdit").Handler(""),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDelete").Handler(""),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetail").Handler(""),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Thiết lập").Icon(Icon.Cog).Handler(""),
+                        Html.X().ToolbarSeparator()
+
+                        //Html.X().ToolbarFill(),
+        //Html.X().ButtonTutorial()
+                      )
+                   )
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(false)
+                    .ID("StDocument")
+                    .RemotePaging(true)
+                  .PageSize(10)
+        //.Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Document")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("groupId", "App.hdfDepartmentID.getValue() > 0 ? App.hdfDepartmentID.getValue():0", ParameterMode.Raw));
+                    })
+        //.Model(
+
+                    //)
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().DateColumnExtend().DataIndex("IssuedDate").Text("Ngày cập nhật").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center).Filterable(false),
+                Html.X().Column().DataIndex("Name").Text("Loại đối tượng").Width(80),
+                    Html.X().Column().DataIndex("Name").Text("Đối tượng báo cáo").Width(180),
+                    Html.X().Column().DataIndex("Name").Text("Đối tượng dữ liệu").Width(180),
+                    Html.X().Column().DataIndex("Name").Text("Sử dụng").Width(60)
+                
+                )
+            .BottomBar(Html.X().CustomPagingToolbar("10", "20", "30", "50", "100"))
+    )
+)

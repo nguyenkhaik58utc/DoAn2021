@@ -1,0 +1,50 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanUserItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+    .ID("WindowAdd")
+    .Title("Tạo mới tài khoản nhân sự")
+    .Icon(Icon.UserAdd)
+    .Width(550)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel().ID("frmAddAccount")
+                    .Layout(LayoutType.Form)
+                    .Frame(true)
+                    .Border(false)
+                    .MarginSpec("0 -4 -3 -4")
+                    .StyleSpec("border: none;")
+                    .FieldDefaults(df => df.LabelWidth = 120)
+                .Items(
+                    Html.X().HiddenFor(m => m.EmployeeID),
+                    Html.X().TextFieldFor(m => m.Account).FieldLabel("Tài khoản*:").MarginSpec("0 8 0 10").Width(450),
+                    Html.X().TextFieldFor(m => m.Password).FieldLabel("Mật khẩu*:").MarginSpec("0 8 0 10").Width(450),
+                    Html.X().TextFieldFor(m => m.ConfirmPassword).FieldLabel("Xác nhận mật khẩu:").MarginSpec("0 8 0 10").Width(450),
+                    Html.X().CheckboxFor(m => m.IsActive).Checked(true).BoxLabel("Kích hoạt").HideLabel(true).MarginSpec("0 0 0 140"),
+                    Html.X().CheckboxFor(m => m.IsLocked).BoxLabel("Khóa tài khoản").HideLabel(true).MarginSpec("0 0 0 140"),
+                    Html.X().CheckboxFor(m => m.IsProtected).ReadOnly(true).Checked(false).HideLabel(true).BoxLabel("Quản trị").MarginSpec("0 0 0 140"),
+                    Html.X().CheckboxFor(m => m.IsChangePass).Checked(true).HideLabel(true).BoxLabel("Thay đổi mật khẩu khi lần đầu đăng nhập").MarginSpec("0 0 0 140")
+                )
+    )
+
+    .Buttons(
+             Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                    {
+                        de.Click.Before = @"if (!App.frmAddAccount.getForm().isValid()) { return false; } ";
+                        de.Click.Url = Url.Action("InsertAccount");
+                        de.Click.FormID = "frmAddAccount";
+                        de.Click.Success = "this.up('window').close();";
+                    }),
+        Html.X().ButtonExit()
+    )
+)

@@ -1,0 +1,169 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@(Html.X().Window()
+            .ID("frmAuditResult")
+            .Title("Chi tiết thống kê ")
+                    .Layout(LayoutType.Fit).Height(400).Width(800)
+        .Icon(Icon.Zoom)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+           Html.X().GridPanel()
+                .Region(Region.Center)
+                .Margin(1)
+                .Title("DANH SÁCH NHÂN VIÊN BỊ ĐÁNH GIÁ")
+                .Header(true)
+                .Icon(Icon.ApplicationViewDetail)
+                .ID("grMnEmployeeAudits")
+                .ColumnLines(true)
+                .ForceFit(true)               
+            .Store(
+                Html.X().Store()
+                    .ID("StoreEmployeeAudtitResults")
+                    .RemotePaging(true)
+                    .AutoLoad(true)
+                    .PageSize(20)
+                    .GroupField("RoleName")
+                    .Sorters(Html.X().DataSorter().Property("RoleName").Direction(Ext.Net.SortDirection.ASC))
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetListData", "AuditKPIStatistical", new { Area = "Human" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new { HumanAuditGradationRoleID = ViewData["HumanAuditGradationRoleID"] });
+                            ps.Add(new { AuditLevelID = ViewData["AuditLevelID"] });
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("EmployeeName"),
+                            Html.X().ModelField().Name("RoleName"),
+                            Html.X().ModelField().Name("TotalEmployeeAuditResult"),
+                            Html.X().ModelField().Name("TotalManagementAuditResult"),
+                            Html.X().ModelField().Name("FileName"),
+                            Html.X().ModelField().Name("TotalLeaderAuditResult"),
+                                    Html.X().ModelField().Name("TotalPointBonus"),
+                                        Html.X().ModelField().Name("TotalPoint"),
+                            Html.X().ModelField().Name("FileID"),
+                            Html.X().ModelField().Name("IsSave"),
+                            Html.X().ModelField().Name("LevelName")
+                        )
+                     )
+            )
+             .ColumnModel(
+                Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Center)
+                        .Width(33),
+                Html.X().Column()
+                        .Text("ID")
+                        .DataIndex("ID")
+                        .Hidden(true),                         
+                Html.X().TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+                              Html.X().XTemplate().Html(@<text>
+                            <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                 style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                        </text>)
+                        ),
+                Html.X().Column()
+                        .Text("Họ tên")
+                        .StyleSpec("font-weight: bold;text-align: center")
+                        .DataIndex("EmployeeName")
+                        .Flex(1)
+                        .Wrap(true),
+                    Html.X().ComponentColumn().Text("Tổng điểm đánh giá").Columns(
+                    Html.X().Column()
+                            .Text("Tự đánh giá")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("TotalEmployeeAuditResult")
+                            .Width(80)
+                            .Align(Alignment.Right)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Quản lý")
+                            .Align(Alignment.Right)
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("TotalManagementAuditResult")
+                            .Width(80)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Lãnh đạo")
+                            .Align(Alignment.Right)
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("TotalLeaderAuditResult")
+                            .Width(80)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Điểm cộng/trừ")
+                            .Align(Alignment.Right)
+                            .Renderer("renderTotal")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("TotalPointBonus")
+                            .Width(100)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Tổng")
+                            .Align(Alignment.Right)
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("TotalPoint")
+                            .Width(60)
+                            .Wrap(true)
+                            ),
+                    Html.X().Column()
+                            .Text("Xếp loại")
+                            .Align(Alignment.Left)
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("LevelName")
+                            .Width(70)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Lưu hồ sơ")
+                            .Align(Alignment.Center)
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("IsSave")
+                            .Renderer("if(value){return '<span style=\"color:blue;\">Đã lưu</span>'} else{return '<span style=\"color:red;\">Chưa lưu</span>'};")
+                            .Width(70)
+                            .Wrap(true)
+                            )
+                            .SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            )
+                            .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                            .Features(
+                            Html.X().GroupingSummary()
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                        .ShowSummaryRow(false),
+                            Html.X().RowWrap()
+                            )
+                            .Plugins(Html.X().CellEditing())
+                            .BottomBar
+                            (
+                            Html.X().CustomPagingToolbar()
+                            )
+
+                ).Buttons(
+
+        Html.X().ButtonExit()
+        )
+
+)
+<script>
+    var renderTotal = function (value) {
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"LoadBonusPoint()\">" + value + "</a>";
+    };
+    var LoadBonusPoint = function () {
+        var records = App.grMnEmployeeAudits.selModel.getSelection();
+        var url = '@(Url.Action("BonusPointForm", "AuditTickResult", new { Area = "Human" }, null))';
+        var params = { id: records[0].get('ID') };
+        onDirectMethod(url, params);
+    };
+</script>

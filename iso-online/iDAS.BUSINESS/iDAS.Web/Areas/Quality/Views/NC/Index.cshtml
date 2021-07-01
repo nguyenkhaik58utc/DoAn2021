@@ -1,0 +1,34 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitNC = Url.Action("Insert");
+    var urlStoreNC = Url.Action("LoadNCs");
+    var paramStoreNC = new StoreParameter() { Name = "departmentId", Value = "App.NC_DepartmentID.value", Mode = ParameterMode.Raw };
+}
+@(Html.X().Viewport().Layout(LayoutType.Border).ID("vpIncorret").Padding(2)
+    .Items(
+        Html.X().Hidden().ID("NC_DepartmentID"),
+        Html.X().DepartmentPanel().Handler("onDepartmentReady"),
+        Html.X().Panel()
+            .ID("NCPanel")
+            .Region(Region.Center)
+            .Split(true)
+            .Border(true)
+            .TitleAlign(TitleAlign.Center)
+            .Layout(LayoutType.Fit)
+            .Collapsible(true)
+            .Header(false)
+            .ItemsFromAction("ListByIndex", "NC", new { area = "Quality", urlSubmit = urlSubmitNC, urlStore = urlStoreNC, paramStore = paramStoreNC })
+            
+    )
+)
+
+<script>
+    function onDepartmentReady(records) {
+        App.NC_DepartmentID.setValue(records[0].get('id'));
+        App.NCPanel.down('gridpanel').getStore().reload();
+    };
+</script>

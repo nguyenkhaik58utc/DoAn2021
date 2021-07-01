@@ -1,0 +1,342 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+@(Html.X().Viewport()
+     .Layout(LayoutType.Border).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+        .Items
+        (
+             X.Hidden().ID("hdfGroupSupplierID"),
+                 X.Panel().ID("frGroupSupp")
+                    .Title("NHÓM NHÀ CUNG CẤP").TitleAlign(TitleAlign.Center)
+                    .Header(false)
+                    .Collapsible(true)
+                    .Region(Region.West).Width(300)
+                    .MarginSpec("-1 0 -1 -1")
+                    .Split(true)
+                    .Layout(LayoutType.Fit)
+                            .ItemsFromAction("List", "GroupSuppliers", new { area = "Suppliers" }),
+             Html.X().Menu()
+                    .ID("cmMenu")
+                    .Items(
+                                    new MenuItem { Text = "Xem chi tiết", ID = "cmDetail", Icon = Icon.Zoom, Handler = "viewRecord();" },
+                            Html.X().MenuSeparator(),
+                                new MenuItem { Text = "Thêm mới", ID = "cmAdd", Icon = Icon.Add, Handler = "ShowFrmAdd();" },
+                                new MenuItem { Text = "Sửa", ID = "cmEdit", Disabled = true, Icon = Icon.Pencil, Handler = "showFrmEdit();" },
+                                new MenuItem { Text = "Xóa", ID = "cmDelete", Disabled = true, Icon = Icon.Delete, Handler = "deleteRecord();" }
+                        ),
+
+        Html.X().GridPanel()
+                    .ID("gpSupplier")
+                    .Region(Region.Center).ColumnLines(true)
+                    .RowLines(true)
+                .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                .TopBar(
+                    Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                        .Items(
+                            Html.X().ButtonCreate().ID("btnInsertNews").Handler("ShowFrmAdd();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnEdit").Handler("showFrmEdit();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ID("btnDelete").Handler("deleteRecord();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ID("btnDetail").Handler("viewRecord();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnViewRate").Icon(Icon.Comments).Text("Xem đánh giá NCC").ToolTip("Xem các đánh giá gần đây về NCC").Handler("ViewRate();").Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnViewDeal").Text("Lịch giao hàng NCC").Icon(Icon.Comment).Handler("ViewDeal").Disabled(true),
+                              Html.X().ToolbarFill(), Html.X().ButtonTutorial()
+                        )
+                     )
+            .Store(Html.X().Store()
+                        .ID("stSupplier")
+                    .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("GetData"))
+                    .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("groupSupplierID", "App.hdfGroupSupplierID.getValue()", ParameterMode.Raw));
+
+                                    })
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Model(
+                    Html.X().Model()
+                            .Fields(
+                                    new ModelField("ID", ModelFieldType.Int),
+                                                    new ModelField("Code", ModelFieldType.String),
+                                                    new ModelField("Name", ModelFieldType.String),
+                                                    new ModelField("BrandName", ModelFieldType.String),
+                                                    new ModelField("Email", ModelFieldType.String),
+                                                    new ModelField("Website", ModelFieldType.String),
+                                                    new ModelField("Phone", ModelFieldType.String),
+                                                    new ModelField("Fax", ModelFieldType.String),
+                                                    new ModelField("Address", ModelFieldType.String),
+                                                    new ModelField("ProvinceId", ModelFieldType.Int),
+                                                    new ModelField("ProvinceName", ModelFieldType.String),
+                                                    new ModelField("CountryName", ModelFieldType.String),
+                                                    new ModelField("Representative", ModelFieldType.String),
+                                                    new ModelField("IsCustomer", ModelFieldType.Boolean),
+                                                    new ModelField("Position", ModelFieldType.String),
+                                                    new ModelField("Description", ModelFieldType.String),
+                                                        new ModelField("AttachmentFileID",ModelFieldType.Auto),
+                                                                new ModelField("FileName", ModelFieldType.String),
+                                                                        new ModelField("Commodity", ModelFieldType.String)
+                            )
+                          )
+                      )
+                    .ColumnModel(
+                                            Html.X().RowNumbererColumn()
+                                                    .Text("STT")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(33)
+                                                    .Align(Alignment.Center),
+    Html.X().TemplateColumn().DataIndex("AttachmentFileID").Text("Logo").Width(40).TdCls("AvatarColumn").Tpl(
+                          X.XTemplate().Html(@<text>
+        <img id="{AttachmentFileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={AttachmentFileID}&fileName={FileName}"
+     style='width:40px;height:40px;' />
+                        </text>)
+                        ).Locked(true),
+                                            Html.X().Column()
+                                                    .DataIndex("Code")
+                                                    .Text("Mã nhà cung cấp")
+                                                    .Align(Alignment.Center)
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(120)
+                                                    .Locked(true),
+                                            Html.X().Column()
+                                                    .DataIndex("Name")
+                                                    .Text("Tên nhà cung cấp")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(230)
+                                                    .Locked(true),
+                                                    Html.X().Column()
+                                                       .DataIndex("Commodity")
+                                                        .Text("Mặt hàng CC")
+                                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                                            .Width(180).Locked(true),
+                                                                   
+                                                              Html.X().Column()
+                                                                    .DataIndex("Website")
+                                                            .Text("Website")
+                                                               // .Renderer("renderWebsite")
+                                                            //.StyleSpec("font-weight: bold; text-align: center;")
+                                                            .Width(100),
+                                                                  Html.X().Column()
+                                                                            .DataIndex("Email")
+                                                            .Text("Email")
+                                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                                            .Width(100),
+                                                                    Html.X().Column()
+                                                                                .DataIndex("Phone")
+                                                                .Text("Điện thoại")
+                                                                .StyleSpec("font-weight: bold; text-align: center;")
+                                                                .Width(80),
+                                                                Html.X().Column()
+                                                                            .DataIndex("Address")
+                                                                    .Text("Địa chỉ")
+                                                                .StyleSpec("font-weight: bold; text-align: center;")
+                                                                    .Width(200),
+                                                                    Html.X().CheckColumn()
+                                                                    .Width(100)
+                                                                    .Text("Là khách hàng")
+                                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                                    .Align(Alignment.Center)
+                                                                    .DataIndex("IsCustomer").Width(100)
+                                                            )
+.SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Single)
+                        .Listeners(l =>
+                        {
+                            l.Select.Handler = "checkStatus()";
+                        })
+                        )
+                          .View(
+                        Html.X().GridView().MarkDirty(false)
+                        )
+                        .Plugins(Html.X().CellEditing())
+                        .BottomBar
+                        (
+                    Html.X().CustomPagingToolbar())
+
+     )
+)
+
+
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+
+    function OnSelectChangeGroupCustomer(records, value) {
+        if (value) {
+            App.hdfGroupSupplierID.setValue(records[0].get('id'));
+            App.gpSupplier.store.reload({ page: 1 });
+            App.btnInsertNews.setDisabled(false);
+            App.cmDelete.setDisabled(true);
+            App.cmDetail.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+            App.cmEdit.setDisabled(true);
+            App.btnViewRate.setDisabled(true);
+            App.btnViewDeal.setDisabled(true);
+        }
+        else {
+           // App.btnInsert.setDisabled(true);
+        }
+    };
+    var viewRecord = function () {
+        var records = App.gpSupplier.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "Suppliers", new { Area = "Suppliers" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var checkStatus = function () {
+        var records = App.gpSupplier.selModel.getSelection();       
+        if (records.length > 0) {
+            App.btnDelete.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+            App.cmDelete.setDisabled(false);
+            App.cmDetail.setDisabled(false);
+            App.btnEdit.setDisabled(false);
+            App.cmEdit.setDisabled(false);
+            App.btnViewRate.setDisabled(false);
+            App.btnViewDeal.setDisabled(false);
+        }
+        else {
+            App.cmDelete.setDisabled(true);
+            App.cmDetail.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+            App.cmEdit.setDisabled(true);
+            App.btnViewRate.setDisabled(true);
+            App.btnViewDeal.setDisabled(true);
+        }
+    };
+    
+    function ShowFrmAdd() {
+        var component = App.treeGroupSupplierID;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+
+            var url = '@(Url.Action("ShowFrmAdd", "Suppliers", new { Area = "Suppliers" }, null))';
+            var params = {
+                groupID: records[0].get('id')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+
+    function showFrmEdit() {
+        var records = App.gpSupplier.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "Suppliers", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewRate = function () {
+        var records = App.gpSupplier.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ViewRate", "SuppliersBidOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDeal = function () {
+
+        var records = App.gpSupplier.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowFrmDeal", "SuppliersAudit", new { Area = "Suppliers" }, null))';
+            var params = {
+                suppid: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    //Xóa bản ghi khỏi CSDL
+    var deleteRecord = function () {
+        var records = App.gpSupplier.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnEdit.setDisabled(true);
+                        App.btnDelete.setDisabled(true);
+                        App.btnDetail.setDisabled(true);                       
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            //var aId = new Array();
+                            var strId = records[0].get('ID');
+                            //for (var i = 0, r; r = records[i]; i++) {
+                            //    aId[i] = records[i].get('ID');
+                            //}
+                            //strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "Suppliers", new { Area = "Suppliers" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+</script>

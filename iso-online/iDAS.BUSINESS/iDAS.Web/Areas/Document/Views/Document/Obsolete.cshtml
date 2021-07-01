@@ -1,0 +1,152 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DocumentDistributionItem
+@(
+ Html.X().Window()
+    .ID("winAddDocument")
+    .Title("Thu hồi tài liệu lỗi thời")
+    .Icon(Icon.PageRed)
+    .Layout(LayoutType.Border)
+    .Height(520)
+    .Width(870)
+    .BodyPadding(0).Border(false)
+    .Modal(true)
+    .Constrain(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("frIssueDocument")
+                 .Layout(LayoutType.Fit)
+            .Header(false)
+            .Region(Region.Center)
+            .Frame(true)
+            .Items(
+                 Html.X().FieldSet()
+                     .Padding(6)
+                     .MarginSpec("0 0 0 0")
+                    .Title("Thông tin thu hồi Tài liệu tại từng phòng ban")
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .Defaults(d =>
+                    {
+                        d.Add(new Parameter("LabelWidth", "115"));
+                    })
+                    .Items(
+                        Html.X().HiddenFor(m => m.DocumentDistributionID).ID("hrID"),
+                        Html.X().HiddenFor(m => m.DocumentID).ID("hrDocID"),
+                        Html.X().HiddenFor(m => m.DepartmentID).ID("hrDepartment"),
+                        Html.X().NumberFieldFor(m => m.Number)
+                            .ID("txtNumber")
+                            .FieldLabel("Số lượng phân phối")
+                            .ReadOnly(true),
+                        Html.X().NumberFieldFor(m => m.NumberObsolete)
+                            .ID("txtNumberObs").FieldLabel("Số lượng thu hồi" + Html.Required())
+                            .AllowBlank(false).BlankText("Số lượng thu hồi bắt buộc nhập!")
+                            .MinValue(0).MinText("Số lượng tối thiểu là 0").NegativeText("Sổ lượng thu hồi phải lớn hơn hoặc bằng 0!")
+                            .AllowDecimals(false)
+                            .Value(1),
+                            Html.X().DateFieldFor(m => m.DistributionDate)
+                            .ID("EffectiveDate")
+                            .FieldLabel("Ngày phân phối").ReadOnly(true)
+                            .Format("dd/MM/yyyy"),
+                        Html.X().DateFieldFor(m => m.ObsoleteDate)
+                            .ID("ObsoleteDate")
+                            .FieldLabel("Ngày thu hồi" + Html.Required())
+                            .Value(DateTime.Now)
+                            .AllowBlank(false).BlankText("Ngày thu hồi bắt buộc nhập!")
+                            .Format("dd/MM/yyyy"),
+                        Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().CheckboxFor(m => m.FormHO).FieldLabel("Đã thu hồi" + Html.Required()).BoxLabel("Bản cứng").ColumnWidth(0.5).ID("ckHard")
+                            .LabelWidth(115),
+                        Html.X().CheckboxFor(m => m.FormSO).FieldLabel("").BoxLabel("Bản mềm").ColumnWidth(0.5).MarginSpec("0 0 0 5").ID("ckSoft")
+                         ),
+                        Html.X().TextAreaFor(m => m.NoteObs).ID("Note").Flex(1).FieldLabel("Ghi chú").MinHeight(100),
+                            Html.X().EmployeeFieldFor(m => m.EmployeeInfo).AllowBlank(false).Title("Người thu hồi" + Html.Required()).MarginSpec("0 0 0 120").ID("fsEmployee")
+                )
+
+            ).Buttons(
+                    Html.X().Button()
+                        .ID("btnSaves")
+                        .Text("Thu hồi")
+                        .MarginSpec("0 4 0 0")
+                        .Icon(Icon.Disk)
+                        .DirectEvents(de =>
+                        {
+                            de.Click.FormID = "frIssueDocument";
+                            de.Click.ExtraParams.Add(new { isExit = false });
+                            de.Click.Url = Url.Action("UpdateObs");
+                            de.Click.Before = @"if (!#{frIssueDocument}.getForm().isValid()) { return false; }";
+                        })
+                     ),
+        Html.X().DepartmentPanel().Handler("onDepartmentReady")
+        )
+        .Buttons(
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    function onDepartmentReady(records) {
+        if (records.length > 0) {
+            var id = records[0].get('id');
+            App.hrDepartment.setValue(records[0].get('id'));
+            var docID = App.hrDocID.getValue();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("GetObjObsoleteByDepartment", "Document", new { Area = "Document" }, null))', params: { id: id, docID: docID },
+                success: function (response) {
+                    var frm = Ext.getCmp('frIssueDocument').getForm();
+                    if (response.ID == 0) {
+                        App.ckHard.setValue(true);
+                        App.ckSoft.setValue(false);
+                        App.txtNumber.setDisabled(true);
+                        App.txtNumberObs.setDisabled(true);
+                        App.EffectiveDate.setDisabled(true);
+                        App.ObsoleteDate.setDisabled(true);
+                        App.ckHard.setDisabled(true);
+                        App.ckSoft.setDisabled(true);
+                        App.Note.setDisabled(true);
+                        App.fsEmployee.setDisabled(true);
+                        App.btnSaves.setDisabled(true);
+                        frm.reset();
+                    }
+                    else {
+                        App.hrDocID.setValue(response.ParentID);
+                        var strDate = new Date(parseInt(response.DistributionDate.replace('/Date(', '')));
+                        var date = Ext.Date.format(strDate, 'd/m/Y');
+                        response.DistributionDate = date;
+                        if (response.ObsoleteDate != null) {
+                            var strDateEff = new Date(parseInt(response.ObsoleteDate.replace('/Date(', '')));
+                            var dateEff = Ext.Date.format(strDateEff, 'd/m/Y');
+                            response.ObsoleteDate = dateEff;
+                        }
+                        App.txtNumber.setValue(response.Number);
+                        if (response.NumberObsolete <= 0)
+                            response.NumberObsolete = response.Number;
+                        frm.setValues(response);
+                        frm.findField('EmployeeInfo.ID').setValue(response.EmployeeInfo.ID);
+                        frm.findField('EmployeeInfo.Name').setValue(response.EmployeeInfo.Name);
+                        frm.findField('EmployeeInfo.Department').setValue(response.EmployeeInfo.Department);
+                        frm.findField('EmployeeInfo.Role').setValue(response.EmployeeInfo.Role);
+                        App.fsEmployee.setDisabled(false);
+                        App.txtNumber.setDisabled(false);
+                        App.txtNumberObs.setDisabled(false);
+                        App.EffectiveDate.setDisabled(false);
+                        App.ObsoleteDate.setDisabled(false);
+                        if (response.FormH)
+                            App.ckHard.setDisabled(false);
+                        else
+                            App.ckHard.setDisabled(true);
+                        if (response.FormS)
+                            App.ckSoft.setDisabled(false);
+                        else
+                            App.ckSoft.setDisabled(true);
+                        App.Note.setDisabled(false);
+                        App.btnSaves.setDisabled(false);
+                    }
+                }
+            });
+        };
+    };
+</script>

@@ -1,0 +1,78 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityAuditProgramISOIndexItem
+@(Html.X().FormPanel()
+    .Layout(LayoutType.Fit)
+    .Border(false)
+    .ID("frAudit")
+    .Padding(0)
+    .Title("KẾT QUẢ ĐÁNH GIÁ")
+    .Header(false)
+    .TitleAlign(TitleAlign.Center)
+    .Margin(0)
+    .BodyBorder(0)
+    .FieldDefaults(fs => fs.LabelWidth = 90)
+    .StyleSpec("border: none;")
+    .Frame(true)
+    .Items(
+        Html.X().Container()
+        .Padding(10)
+        .Layout(LayoutType.VBox)
+        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+        .Items(
+                Html.X().HiddenFor(m => m.ID)
+                    .ID("hdfqualityAuditProgramIsoId")
+                    .ReadOnly(true),
+                    Html.X().HiddenFor(m => m.ISOIndexID).ID("hdfISOIndexID"),
+                Html.X().HiddenFor(m => m.QualityAuditProgramID).ID("hdfqualityAuditProgramId"),
+                Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 5 0").Items(
+                     Html.X().TextFieldFor(m => m.IsoIndexCode).FieldLabel("Điều khoản").ColumnWidth(0.4).ReadOnly(true).MarginSpec("0 2 0 0"),
+                    Html.X().TextFieldFor(m => m.IsoIndexName).ColumnWidth(0.6).HideLabel(true).ReadOnly(true)),
+            Html.X().ComboBoxFor(m => m.AuditBy).AllowBlank(false)
+                            .FieldLabel("Chuyên viên" ).ReadOnly(true)
+                    .QueryMode(DataLoadMode.Local)
+                        .DisplayField("EmployeeName")
+                        .ValueField("EmployeeID")
+                    .Store(
+                            Html.X().Store()
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .AutoLoad(true)
+                        .AutoDataBind(true)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "AuditEmployee", new { Area = "Quality", auditProgramId = Model.QualityAuditProgramID }, null))
+                        .Reader(Html.X().JsonReader().Root("data")).IDParam("EmployeeID"))
+                        .Model(
+                            Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("EmployeeID"),
+                                        Html.X().ModelField().Name("EmployeeName")
+                                )
+                            )
+                    ),
+                Html.X().Container()
+                        .Layout(LayoutType.Column).MarginSpec("0 0 5 0")
+                    .Items(
+                Html.X().DateFieldFor(m => m.AuditAt)
+                    .ColumnWidth(0.6)
+                        .FieldLabel("Thời gian" ).ReadOnly(true)
+                    .Format("dd/MM/yyyy"),
+                             Html.X().ComboBoxFor(m => m.IsPass).ReadOnly(true)
+                         .MarginSpec("0 0 0 5")
+                        .ColumnWidth(0.4)
+                        .LabelWidth(60)
+                            .FieldLabel("Kết quả" ).ReadOnly(true)
+                        .Editable(false)
+                        .Items(
+                            new ListItem("Đạt", true),
+                            new ListItem("Không đạt", false)
+                        )
+                    ),
+                    Html.X().TextAreaFor(m => m.AuditNote).ReadOnly(true)
+                    .Flex(1)
+                    .FieldLabel("Nhận xét")
+                    .EmptyText("Nhận xét đánh giá chung")
+            )
+        )
+
+)

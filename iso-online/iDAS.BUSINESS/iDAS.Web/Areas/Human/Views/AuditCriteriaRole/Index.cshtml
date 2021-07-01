@@ -1,0 +1,246 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Hidden().ID("Code").Value("root"))
+@(Html.X().Hidden().ID("IsModule").Value(false))
+@(Html.X().Hidden().ID("IsGroup").Value(false))
+@(Html.X().Hidden().ID("IsFunction").Value(false))
+@(Html.X().Hidden().ID("IsPermission").Value(false))
+@(Html.X().Hidden().ID("SelectedRoleID"))
+@(Html.X().Hidden().ID("DeptID").Value("1"))
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Border(false)
+    .AutoScroll(false)
+    .Items(
+        Html.X().GridPanel()
+            .ID("PermissionPanel")
+                .Region(Region.West)
+                .Width(360)
+                .Header(false)
+                .Border(true)
+                .RowLines(true)
+                .Icon(Icon.TextListBullets)
+                .ForceFit(true)
+                .Split(true)
+                .Collapsible(true)
+                .MarginSpec("1 0 1 1")
+                    .TopBar(
+                                    Html.X().Toolbar()
+                                    .Layout(LayoutType.HBox)
+                                    .Items(
+                                            Html.X().Button().Text("Chọn phòng ban").Handler("showDepartment").Icon(Icon.GroupAdd).ID("btnChoseDept")
+                                    )
+                            )   
+            .Store(
+                Html.X().Store()
+                    .ID("StorePermissions")
+                    .RemoteSort(true)
+                    .Model(Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("RoleID"),
+                            Html.X().ModelField().Name("RoleName"),
+                            Html.X().ModelField().Name("DepartmentName")
+                        )
+                    )
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Permission", new { area = "Department" })).Reader(Html.X().JsonReader().Root("data")))
+                    .GroupField("DepartmentName")
+                    .SortOnLoad(false)
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("code", "App.Code.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("departmentId", "App.DeptID.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("isModule", "App.IsModule.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("isGroup", "App.IsGroup.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("isFunction", "App.IsFunction.getValue()", ParameterMode.Raw));
+                    })
+            )
+            .Listeners(ls =>
+            {
+                ls.Select.Handler = "showListCriterial()";
+            })
+            .ColumnModel(
+                Html.X().Column().DataIndex("RoleID").Hidden(true),
+                Html.X().Column().DataIndex("RoleName").Text("Chức danh").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("DepartmentName")
+            )
+            .Features(Html.X().Grouping().GroupHeaderTplString("{name}").HideGroupedHeader(true))
+            .Plugins(Html.X().CellEditing())
+    ,
+    Html.X().GridPanel()
+                            .ID("GrOrder")
+                                .ColumnLines(true)
+                .MarginSpec("1 1 1 0")
+                .Icon(Icon.TextListBullets)
+                .Region(Region.Center)
+                .Header(false)
+                .Border(true)
+                .Collapsible(true)
+                .ForceFit(true)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Text("Thêm tiêu chí đánh giá").Handler("showCreateRole").ID("btnCreateRole"),
+                                    Html.X().ToolbarSeparator(),                                    
+                                    Html.X().ButtonDelete().Handler("showDeleteRole").ID("btnDeleteRole"),                                    
+                                    Html.X().ToolbarFill()
+                                )
+                        )
+                        .Store(
+                            Html.X().Store()
+                                .ID("StoreOrder")
+                                .RemotePaging(true).AutoLoad(false)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadListCrite", "AuditCriteriaRole", new { area = "Human" })).Reader(Html.X().JsonReader().Root("data")))
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("roleID", "App.SelectedRoleID.getValue()", ParameterMode.Raw));
+                                        })
+                                                .GroupField("HumanAuditCriteriaGroupName")
+                                .Model(
+                                    Html.X().Model().Fields(
+                                                    Html.X().ModelField().Name("ID"),
+                                                                Html.X().ModelField().Name("HumanRoleID"),
+                                                            Html.X().ModelField().Name("HumanAuditCriteriaID"),
+                                                        Html.X().ModelField().Name("Factory"),
+                                                        Html.X().ModelField().Name("HumanAuditCriteriaName"),
+                                                        Html.X().ModelField().Name("HumanAuditCriteriaGroupName")
+                                    )
+                                )
+                        )
+                        .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("HumanAuditCriteriaName").Text("Tên tiêu chí").Flex(1),
+                                                    Html.X().Column().DataIndex("Factory").Text("Hệ số").Width(120).Align(Alignment.Center).Editor(Html.X().NumberField())
+                            )
+                            .Features(Html.X().Grouping().GroupHeaderTplString("{name}").HideGroupedHeader(true))
+                                .Plugins(
+                    Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "edit")
+                )
+                            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single).Listeners(l =>
+                            {
+                                l.Select.Handler = "checkStatus()";
+                            })
+                                        )
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar()
+                    )
+        
+)
+)
+
+<script>
+    var urlListCrite = '@Url.Action("LoadListCrite", "AuditCriteriaRole", new { area = "Human" })';
+    var urlCreateRole = '@Url.Action("showFormCreate", "AuditCriteriaRole", new { area = "Human" })';
+    var urlDeleteRole = '@Url.Action("Delete", "AuditCriteriaRole", new { area = "Human" })';
+    function onDepartmentReady(strID) {
+        if (strID != '') {
+            App.DeptID.setValue(strID);
+            App.StorePermissions.reload();
+        }
+    };
+    var edit = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("HandleChanges"))',
+                params: {
+                    id: e.record.data.ID,
+                    factory: e.record.data.Factory
+                }
+            });
+        }
+    };
+    var expandDepartment = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+        var count = App.DepartmentPanel.selModel.getCount();
+        if (count <= 0) {
+            App.DepartmentPanel.selModel.select(0);
+        }
+    };
+    var reloadPermissionStore = function () {
+        App.PermissionPanel.store.reload();
+        App.PermissionPanel.selModel.deselectAll();
+    };
+    var showListCriterial = function () {
+        //var url = urlListCrite;
+        var record = App.PermissionPanel.selModel.getSelection()[0];
+        var roleID = record == null ? 0 : record.data.RoleID;
+        App.SelectedRoleID.setValue(roleID);
+        App.StoreOrder.reload();
+        
+    };
+    var showCreateRole = function () {
+        var roleID = App.PermissionPanel.selModel.getSelection()[0].data.RoleID;
+        var url = urlCreateRole;
+        var params = { roleID: roleID };
+        onDirectMethod(url, params);
+    };
+    var showDeleteRole = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnDeleteRole.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            //var aId = new Array();
+                            var strId = records[0].data.ID;
+                            //for (var i = 0, r; r = records[i]; i++) {
+                            //    aId[i] = records[i].get('ID');
+                            //}
+                            //strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: urlDeleteRole,
+                                params: { id: strId },
+                                success: function (result) {
+                                    App.StoreOrder.reload();                                    
+                                }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var checkStatus = function () {
+        var records = App.PermissionPanel.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDeleteRole.setDisabled(false);
+        }
+        else
+        {
+            App.btnDeleteRole.setDisabled(true);
+        }
+    }
+    var showDepartment = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Department", "AuditCriteriaRole", new { Area = "Human" }))',
+        });
+    };
+    //Url.Action("Department", "AuditCriteriaRole", new { Area = "Human" })
+</script>

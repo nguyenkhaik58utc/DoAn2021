@@ -1,0 +1,139 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceStageItem
+@(Html.X().Window()
+          .ID("winNewStage")
+          .Title("Thêm mới công đoạn cung cấp dịch vụ")
+          .Icon(Icon.Add)       
+          .Width(700)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().FormPanel()
+                .ID("frStage")
+                .Layout(LayoutType.Form)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+        .Items(
+                Html.X().ComboBoxFor(m => m.ServiceID).AllowBlank(false)
+                                    .FieldLabel("Dịch vụ" + Html.Required())
+                                .QueryMode(DataLoadMode.Local)
+                                .ReadOnly(true)                                
+                                .DisplayField("Name")
+                                       .LabelWidth(120)
+                                .ValueField("ID")
+                                .Store(
+                                        Html.X().Store()
+                                    .RemotePaging(true)
+                                    .PageSize(20)
+                                    .AutoDataBind(true)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataCombo", "Service", new { Area = "Service" }, null))
+                                    .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                    .Model(
+                                        Html.X().Model().Fields(
+                                            Html.X().ModelField().Name("ID"),
+                                            Html.X().ModelField().Name("Name")
+                                            )
+                                        )
+                                ),
+                                     
+                                Html.X().TextFieldFor(m => m.Name)
+                .FieldLabel("Tên công đoạn" + Html.Required())
+                .ID("txtName")
+                .AllowBlank(false)
+                .LabelWidth(120)
+                .MaxLength(200)
+                .BlankText("Tên công đoạn không được trống")
+                .AllowOnlyWhitespace(false)
+                .TabIndex(2),
+                Html.X().Container().Layout(LayoutType.Column).ColSpan(3).Items(                
+                 Html.X().NumberFieldFor(m => m.Time)
+                .FieldLabel("Thời gian")
+                .ColumnWidth(0.4)
+                    .ID("txtTime")
+                .AllowBlank(false)
+                .LabelWidth(120)
+                .AllowOnlyWhitespace(false)
+                .Value(0)
+                .MinValue(0)
+                .MarginSpec("0 5 0 0")
+                .AllowDecimals(true)
+                .TabIndex(2),
+                 Html.X().ComboBoxFor(m => m.TimeUnitID)
+                .FieldLabel("Đơn vị"+Html.Required())
+                .AllowBlank(false)
+                     .ColumnWidth(0.3)
+                .LabelWidth(60)
+                .AllowOnlyWhitespace(false)                
+                .TabIndex(2)
+                .Items(
+                    new ListItem("Tháng", 1),
+                    new ListItem("Ngày",2),                    
+                    new ListItem("Giờ", 3),
+                    new ListItem("Phút", 4)
+                ),
+                Html.X().NumberFieldFor(m => m.Order)
+                .FieldLabel("Thứ tự")
+                     .ColumnWidth(0.3)
+                .AllowBlank(false)
+                .LabelWidth(40)
+                .AllowOnlyWhitespace(false)
+                .Value(0)
+                .MinValue(0)
+                .MarginSpec("0 0 0 5")
+                .AllowDecimals(true)
+                .TabIndex(2)
+                ),
+        Html.X().ComboBoxFor(m => m.IsUse)
+                .TabIndex(4)
+                .LabelWidth(120)
+                .Editable(false)                    
+                .FieldLabel("Tình trạng" + Html.Required())                
+                .ID("cbIsUse")
+                .Items(
+                    new ListItem("Sử dụng", true),
+                    new ListItem("Không sử dụng", false)
+                 ),
+         Html.X().TextAreaFor(m=>m.Note)
+                 .FieldLabel("Diễn giải")
+                 .Height(150)
+                 .LabelWidth(120)
+             )
+            )
+            .Buttons(
+            Html.X().ButtonSave()
+            .ID("btnSave")
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { val = false });
+                de.Click.Before = @"if (!App.frStage.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "Insert";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frStage";
+            }),
+            Html.X().ButtonSaveAndExit()
+            .ID("btnSaves")
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { val = true });
+                de.Click.Before = @"if (!App.frStage.getForm().isValid()) { return false; } ";
+                de.Click.Action = "Insert";
+                de.Click.FormID = "frStage";
+                de.Click.Success = "this.up('window').close();";
+            }),
+            Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var showFrmListCate = function () { 
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmListCriteriaCategory", "Stage", new { Area = "Service" }, null))'             
+            });       
+    };
+</script>

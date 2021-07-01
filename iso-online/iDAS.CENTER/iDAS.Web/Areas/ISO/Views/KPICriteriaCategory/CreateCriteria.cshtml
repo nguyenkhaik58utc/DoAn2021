@@ -1,0 +1,231 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CenterKPICriteriaItem
+@(Html.X().Window()
+          .ID("winNewCriteria")
+          .Title("Thêm mới thông tin tiêu chí đánh giá")
+          .Icon(Icon.Add)
+          .Width(650)
+          .BodyPadding(0)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Auto)
+          .Items(
+        Html.X().FormPanel()
+                .ID("frCriteria")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                    Html.X().HiddenFor(m => m.CenterKPICriteriaCategoryID),
+                    Html.X().TextFieldFor(m=>m.Name).FieldLabel("Tên tiêu chí"+Html.Required())
+                            .BlankText("Tên tiêu chí không được trống!").AllowOnlyWhitespace(false),
+                    Html.X().NumberFieldFor(m=>m.Factory).FieldLabel("Hệ số"+Html.Required())
+                                .InputWidth(100).Value(1).MinValue(1).AllowBlank(false),
+                    Html.X().TextAreaFor(m => m.Note).FieldLabel("Diễn giải").MaxLength(500).Flex(1)
+                   ),
+            Html.X().GridPanel().Title("Gợi ý chấm điểm").Height(250).Icon(Icon.ApplicationViewDetail)
+                    .ID("GridPoint")
+                    .Border(false)
+                    .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonCreate()
+                                .ID("btnAddPoint")
+                                .Handler("addRecordPoint(this.up('grid'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                .ID("butDeletePoint")
+                                    .Handler("this.up('grid').deleteSelected();"),
+                                Html.X().ToolbarFill()
+                        )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("stPoint")
+                            .Proxy(
+                                Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataPoint"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("criteriaId", Model.ID.ToString(), ParameterMode.Value));
+                            })
+                            .RemoteSort(false)
+                            .RemotePaging(true)
+                            .PageSize(10)
+                            .Model(
+                                Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Point").Type(ModelFieldType.Float)
+                                    )
+                            )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                            .Text("STT")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(33)
+                            .Align(Alignment.Center),
+                        Html.X().Column()
+                            .Text("Tên điểm")
+                            .DataIndex("Name")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(250)
+                            .Wrap(true)
+                            .Editor(
+                        Html.X().TextField()
+                                .MaxLength(200)
+                                .AllowOnlyWhitespace(false)
+                                .AllowBlank(false)
+                                .BlankText("Tên nhóm dịch vụ không được để trống")
+                                ),
+                        Html.X().Column()
+                                .Text("Điểm")
+                                .Align(Alignment.Right)
+                                .DataIndex("Point")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(100)
+                                .Wrap(true)
+                                .Editor(
+                            Html.X().NumberField()
+                                    .AllowOnlyWhitespace(false)
+                                    .AllowBlank(false)
+                                    .MinValue(0)
+                                    .AllowDecimals(true)
+                                ),
+                        Html.X().Column()
+                            .Text("Mô tả")
+                            .DataIndex("Note")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Flex(1)
+                            .Wrap(true)
+                            .Editor(
+                                Html.X().TextField()
+                                    .TabIndex(4)
+                                    .MaxLength(100)
+                                    .MaxLength(300)
+                            )
+                    )
+                    .SelectionModel(
+                   Html.X().RowSelectionModel()
+                               .Mode(SelectionMode.Multi).Listeners(ls => ls.SelectionChange.Handler = "checkPointStatus();")
+                    )
+                    .Plugins(Html.X().CellEditing())
+                    .BottomBar(
+                         Html.X().CustomPagingToolbar("10", "20", "30", "50", "100"))
+            )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnSave")
+            .Text("Lưu lại")
+            .Icon(Icon.DiskMultiple)
+            .TabIndex(17)
+            .DirectEvents(de =>
+            {             
+                de.Click.ExtraParams.Add(new { val = false });
+                de.Click.Before = @"if (!App.frCriteria.getForm().isValid()) { return false; } ";
+                de.Click.ExtraParams.Add(new { strPoint = new JRawValue("getPoint()") });
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "InsertCriteria";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frCriteria";
+                de.Click.Success = "App.stPoint.reload(); App.stCategoryCriteria.reload();";          
+            }),
+            Html.X().Button()
+            .ID("btnSaves")
+            .Text("Lưu và thoát")
+            .Icon(Icon.Disk)
+            .TabIndex(18)
+            .DirectEvents(de =>
+            {               
+                de.Click.ExtraParams.Add(new { val = true });
+                de.Click.Before = @"if (!App.frCriteria.getForm().isValid()) { return false; } ";
+                de.Click.ExtraParams.Add(new { strPoint = new JRawValue("getPoint()") });
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "InsertCriteria";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frCriteria";
+                de.Click.Success = "if(result.result){this.up('window').close(); App.stPoint.reload();}App.stCategoryCriteria.reload();";
+            }),
+            Html.X().Button()
+            .ID("btnReset")
+            .Text("Nhập lại")
+            .Icon(Icon.ArrowRefresh)
+            .TabIndex(19)
+            .Handler("App.frCriteria.reset();"),
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+            .Handler("App.frCriteria.reset(); this.up('window').close();")
+            )
+)
+<script type="text/javascript">
+    var getPoint = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.stPoint.data.length; i++) {
+            arr.push(App.stPoint.data.items[i].data);
+        }
+        return JSON.stringify(arr);
+    };
+    function addRecordPoint(grid) {
+        grid.store.insert(0, { Name: '', Point: 0 });
+        grid.editingPlugin.startEditByPosition({ row: 0, column: 0 });
+    };
+    var checkPointStatus = function () {
+        var records = App.GridPoint.selModel.getSelection();
+        if (records.length > 0) {
+            App.butDeletePoint.setDisabled(false);
+        }
+        else {
+            App.butDeletePoint.setDisabled(true);
+        };
+    };
+    var deleteRecordPoint = function () {
+        var records = App.GridPoint.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Thông báo',
+                    msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) {
+                    label = ' các ';
+                } else {
+                    label = ' ';
+                }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            for (var i = 0, r; r = records[i]; i++) {
+                                records[i].reject();
+                            }
+                        }
+                    }
+                });
+                break;
+        }
+    };
+</script>

@@ -1,0 +1,272 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model iDAS.Items.ModuleItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+
+
+@(Html.X().Store()
+    .ID("StoreIcons")
+    .AutoLoad(false)
+    .PageSize(100)
+    .Proxy(Html.X().AjaxProxy()
+        .Url(Url.Action("LoadIcons"))
+        .ActionMethods(am => am.Read = HttpMethod.POST)
+        .Reader(Html.X().JsonReader().Root("data"))
+    )
+    .Model(Html.X().Model()
+        .Fields(
+            new ModelField("IconName"),
+            new ModelField("IconUrl")
+        )
+    )
+)
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel().ID("grMnModule")          
+            .ColumnLines(true)
+            .Border(false)
+            .ForceFit(true)         
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                         
+                        Html.X().Button()
+                                .Text("Xem chi tiết")
+                                .Icon(Icon.Zoom)
+                                .ID("btnDetail")
+                                .Disabled(true)
+                                .Handler("showFrmDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .Text("Xóa")
+                                .Icon(Icon.Delete)
+                                .ID("btnDel")
+                                .Disabled(true)
+                                .Handler("deleteRecord();"),                    
+                        Html.X().ToolbarFill(),
+                        Html.X().ComboBox().ID("cboSystem")                           
+                                .QueryMode(DataLoadMode.Local)
+                                .TriggerAction(TriggerAction.All)
+                                .SelectOnFocus(true)
+                                .Width(400)                           
+                                .EmptyText("Chọn hệ thống ...")
+                                .DisplayField("Name")
+                                .ValueField("Code")
+                                .FieldLabel("<b>Hệ thống</b>")
+                                .StyleSpec("0 0 0 10")
+                                .LabelWidth(70)
+                                .Store(
+                                Html.X().Store()
+                                        .AutoLoad(true)
+                                        .Model(
+                                        Html.X().Model()
+                                        .IDProperty("Code")
+                                            .Fields(
+                                                new ModelField("Code", ModelFieldType.String) { Mapping = "Code" },
+                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                    )
+                                                )
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataSystem"))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                         )  
+                                            .Listeners(ls => ls.Load.Handler = "App.cboSystem.select(App.cboSystem.store.getAt(0))") 
+                                    )
+                                .Listeners(ls => ls.Change.Handler = "App.grMnModule.getStore().load()"),                   
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .Text("Cập nhật")
+                                .Icon(Icon.DatabaseRefresh)
+                                .Handler("updateSystem();")
+                    )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                    .ID("StoreModules")
+                    .PageSize(10)
+                    .Proxy(
+                        Html.X().AjaxProxy()
+                            .Url(Url.Action("LoadModules"))
+                            .ActionMethods(actions => {
+                                actions.Read = HttpMethod.POST;
+                            })
+                            .Reader(
+                                Html.X().JsonReader().Root("data")
+                            )
+                            )                       
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("systemCode", "App.cboSystem.getValue()", ParameterMode.Raw));
+                            }
+                            )
+                    )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column().DataIndex(Model, m => m.Name).Text("Module").Align(Alignment.Left).Editor(Html.X().TextField()).Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+                //Html.X().NumberColumn().DataIndex(Model, m => m.Price).Text("Giá (VNĐ)").Width(120).Align(Alignment.Right)
+                //    .Editor(Html.X().NumberField().MinValue(0))
+                //    .StyleSpec("font-weight: bold; text-align: center;"),
+               
+                Html.X().CheckColumn().DataIndex(Model, m => m.IsActive).Text("Kích hoạt").Width(120).Align(Alignment.Center)
+                    .Editable(true).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().CheckColumn().DataIndex(Model, m => m.IsShow).Editable(false).Text("Hiển thị trên Menu").Width(120).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column().DataIndex(Model, m => m.IconUrl).Text("Icon").Width(120).Renderer("iConRenderer").Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;")
+                    .Editor(
+                        Html.X().ComboBox().Editable(false).StoreID("StoreIcons")
+                            .DisplayTpl(Html.X().XTemplate().Html("<tpl for='.'>{IconName}</tpl>"))
+                            .ValueField("IconUrl")
+                            .PageSize(100)
+                            .MatchFieldWidth(false)
+                            .ListConfig(
+                                Html.X().BoundList().StyleSpec("width:245px")
+                                    .ItemTpl(Html.X().XTemplate()
+                                        .Html(@<text>
+                                        <div>
+                                            <img src='{IconUrl}' style="vertical-align:middle" />
+                                            <span style="vertical-align:middle;padding-left:5px">{IconName}</span>
+                                        </div>
+                                        </text>)
+                                    )
+                            )
+                    ),
+                Html.X().NumberColumn().DataIndex(Model, m => m.Position).Width(100).Format(string.Format("0")).Text("Vị trí hiển thị").Align(Alignment.Center).Editor(Html.X().NumberField()).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().CheckColumn().DataIndex(Model, m => m.IsDeleted).Text("Không sử dụng").Width(100).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;")    
+            )
+            .View(Html.X().GridView().TrackOver(false))
+            .SelectionModel(
+               Html. X().CheckboxSelectionModel()
+                    .Mode(SelectionMode.Single)
+                        .Listeners(
+                        ls => ls.Select.Handler = "checkStatusModule();"
+                        )
+                )
+            .Features(
+                    Html.X().GridFilters()
+                        .Filters(
+                            Html.X().StringFilter().DataIndex("Name"),
+                            Html.X().BooleanFilter().DataIndex("IsActive")
+                                .YesText("<span style='color:blue'>Kích hoạt</span>")
+                                .NoText("Ngừng kích hoạt"),
+                            Html.X().BooleanFilter().DataIndex("IsShow")
+                                .YesText("<span style='color:blue'>Có</span>")
+                                .NoText("Không"),
+                            Html.X().StringFilter().DataIndex("IconUrl"),
+                            Html.X().NumericFilter().DataIndex("Position")
+
+                        )
+                )
+            .BottomBar(
+                Html.X().PagingToolbar()
+                    .EmptyMsg("Hiện không có dữ liệu")
+                    .NextText("Trang kế tiếp")
+                    .PrevText("Trang trước")
+                    .LastText("Trang cuối cùng")
+                    .FirstText("Trang đầu tiên")
+                    .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                    .BeforePageText("Trang")
+                    .AfterPageText("của {0}")
+                    .RefreshText("Tải lại Dữ liệu")
+                    .Items(
+                        Html.X().Label("Số bản ghi trên 1 trang"),
+                        Html.X().ToolbarSpacer(10),
+                        Html.X().ComboBox()
+                            .Width(50)
+                            .Items("10", "20", "30", "50", "100")
+                            .SelectedItems("10")
+                            .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                    )
+                    .Plugins(Html.X().ProgressBarPager())
+            )
+            .Plugins(
+                Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEdit")
+            )
+    )
+)
+<script type="text/javascript">
+    var checkStatusModule = function () {
+        var records = App.grMnModule.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnDetail.setDisabled(true);
+                App.btnDel.setDisabled(true);
+                break;
+            case 1:
+                App.btnDetail.setDisabled(false);
+                if (records[0].get('IsDeleted') == true) {
+                    App.btnDel.setDisabled(false);
+                }
+                else {
+                    App.btnDel.setDisabled(true);
+                }
+                break;
+            default:
+                App.btnDetail.setDisabled(true);
+                App.btnDel.setDisabled(true);
+                break;
+        }
+    };
+    var updateUrl = '@(Url.Action("UpdateModule"))';
+    var deleteUrl = '@(Url.Action("DeleteModule"))';
+
+    var updateSystem = function () {
+        Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn khôi phục dữ liệu ?', function (btn) {
+            if (btn == 'yes')
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("UpdateSystem"))',
+                    params: {
+                        systemCode: App.cboSystem.getValue()
+                    }
+                });
+        })
+    };
+    var deleteRecord = function () {
+        var records = App.grMnModule.selModel.getSelection();
+        if (records.length > 0) {
+            onDelete(records[0].get('ID'));
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDel.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+
+    var showFrmDetail = function () {
+        var records = App.grMnModule.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("Detail", "Module", new { Area = "Systems" }, null))',
+                params: { ID: id }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+   
+   
+</script>
+
+
+
+
+
+
+

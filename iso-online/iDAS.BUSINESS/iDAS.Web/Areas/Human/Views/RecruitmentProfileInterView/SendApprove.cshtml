@@ -1,0 +1,130 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.HumanRecruitmentResultItem
+@{
+    bool IsEdit = Model.IsEdit;
+}
+@(
+Html.X().ApprovalSendWindow(true)
+    .UrlSubmit(Url.Action("SendApprove"))
+    .ItemsExtend(
+           Html.X().TabPanel()
+            .ActiveTabIndex(0)
+            .Border(true)
+            .Items(
+                  Html.X().FormPanel().Title("Thông tin đề xuất phê duyệt")
+                        .MarginSpec("0 0 0 0").PaddingSpec("5 5 5 5")
+                        .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 125; df.LabelStyle = "padding: 5px 8px 5px 8px;"; })
+                        .Frame(true)
+                        .StyleSpec("border: none;")
+                        .Layout(LayoutType.Column)
+                        .Items(
+                                     Html.X().HiddenFor(m => m.ID),
+                                     Html.X().HiddenFor(m => m.IsEdit).ID("hdfIsEdit"),
+                                     Html.X().HiddenFor(m => m.ProfileInterviewID).ID("hdfProfileInterviewID"),
+                                     Html.X().TextFieldFor(m => m.ProfileName).FieldLabel("Họ tên").ReadOnly(true).ColumnWidth(1),
+                                     Html.X().TextFieldFor(m => m.PlanName).FieldLabel("Kế hoạch").ReadOnly(true).ColumnWidth(1),
+                                     Html.X().TextFieldFor(m => m.RoleName).FieldLabel("Vị trí").ReadOnly(true).ColumnWidth(1),
+                                     Html.X().TextFieldFor(m => m.TotalPoint).FieldLabel("Kết quả xét tuyển").ReadOnly(true).ColumnWidth(1),
+                                     Html.X().TextFieldFor(m => m.CriteriaMinPoint).FieldLabel("Điểm tối thiểu").ReadOnly(true).ColumnWidth(0.5),
+                                     Html.X().TextFieldFor(m => m.CriteriaMaxPoint).FieldLabel("Điểm tối đa").ReadOnly(true).ColumnWidth(0.5),
+                                     Html.X().DateFieldFor(m => m.StartTime).FieldLabel("Thời gian bắt đầu" + Html.Required()).AllowBlank(false).ColumnWidth(0.5),
+                                     Html.X().NumberFieldFor(m => m.Salary).MinValue(0).FieldLabel("Đề xuất thu nhập" + Html.Required()).AllowBlank(false).ColumnWidth(0.5)   
+                        ),
+                     Html.X().FormPanel()
+                        .Title("Kết quả thi tuyển")
+                        .Layout(LayoutType.Form)
+                        .Border(false).Padding(0)
+                        .StyleSpec("border: none;")
+                        .FieldDefaults(df => df.LabelWidth = 150)
+                        .DefaultAnchor("100%")
+                        .Items(
+                             Html.X().HiddenFor(m => m.PlanID).ID("hdfPlanID"),
+                             Html.X().HiddenFor(m=>m.ProfileInterviewID).ID("hdfPofileInterviewID"),
+                                    Html.X().GridPanel().Height(200)
+                                    .Header(false)
+                                    .ID("GrInterview").Margin(0).Padding(0)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Border(false)
+                                    .Icon(Icon.TextListBullets)
+                                .Store(
+                                    Html.X().Store()
+                                        .ID("StoreInterview")
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadInterview", "RecruitmentInterview", new { Area = "Human" }, null)).Reader(Html.X().JsonReader().Root("data")))
+                                        .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("ProfileInterviewID", "App.hdfPofileInterviewID.value", ParameterMode.Raw));
+                                                    ps.Add(new StoreParameter("PlanID", "App.hdfPlanID.value", ParameterMode.Raw));
+                                                })
+                                        .Model(
+                                                Html.X().Model().IDProperty("TaskID")
+                                            .Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("PlanInterviewName"),
+                                                Html.X().ModelField().Name("TaskID"),
+                                                Html.X().ModelField().Name("PorfileInterviewID"),
+                                                Html.X().ModelField().Name("Result"),
+                                                Html.X().ModelField().Name("Note"),
+                                                Html.X().ModelField().Name("Time")
+                                            )
+                                         )
+                                )
+                                .ColumnModel(
+                                            Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("PlanInterviewName").Text("Vòng thi tuyển").Flex(1),
+                                            Html.X().Column().DataIndex("Result").Text("Kết quả").Width(100).Align(Alignment.Right),
+                                            Html.X().DateColumnExtend().DataIndex("Time").Text("Thời gian").Width(100).Align(Alignment.Center),
+                                            Html.X().Column().Width(300).DataIndex("Note").Text("Nhận xét")
+                                        )
+                           )
+                       ,
+                       Html.X().FormPanel().Title("Thông tin xét tuyển")
+                      .Items(
+                                Html.X().HiddenFor(m => m.RequirementID).ID("hdfRequirementID"),
+                               Html.X().GridPanel()
+                                            .Header(false)
+                                            .ID("GrCriteria").Margin(0).Padding(0)
+                                            .ColumnLines(true)
+                                            .ForceFit(true)
+                                            .Border(false)
+                                            .Icon(Icon.TextListBullets)
+                                            .Store(
+                                                Html.X().Store()
+                                                    .ID("StoreCriteria").AutoLoad(true)
+                                                    .RemotePaging(true)
+                                                    .PageSize(20)
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCriteria", "RecruitmentReview", new { Area = "Human" }, null)).Reader(Html.X().JsonReader().Root("data")))
+                                                    .Parameters(ps =>
+                                                        {
+                                                            ps.Add(new StoreParameter("ProfileInterviewID", "App.hdfPofileInterviewID.value", ParameterMode.Raw));
+                                                            ps.Add(new StoreParameter("RequirementID", "App.hdfRequirementID.getValue()", ParameterMode.Raw));
+                                                        })
+                                                    .Model(
+                                                            Html.X().Model().IDProperty("CriteriaID")
+                                                        .Fields(
+                                                            Html.X().ModelField().Name("ID"),
+                                                            Html.X().ModelField().Name("CriteriaID"),
+                                                            Html.X().ModelField().Name("CriteriaName"),
+                                                            Html.X().ModelField().Name("ProfileInterviewID"),
+                                                            Html.X().ModelField().Name("Point"),
+                                                            Html.X().ModelField().Name("Time"),
+                                                            Html.X().ModelField().Name("Note")
+                                                        )
+                                                     )
+                                            )
+                                        .ColumnModel(
+                                                 Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                 Html.X().Column().DataIndex("CriteriaName").Text("Tiêu chí").Flex(1),
+                                                         Html.X().Column().DataIndex("Point").Text("Điểm").Align(Alignment.Right),
+                                                 Html.X().DateColumnExtend().DataIndex("Time").Text("Thời gian").Align(Alignment.Center),
+                                                 Html.X().Column().Width(300).DataIndex("Note").Text("Nhận xét")
+                                            )  
+                        )
+              ) 
+        )
+)

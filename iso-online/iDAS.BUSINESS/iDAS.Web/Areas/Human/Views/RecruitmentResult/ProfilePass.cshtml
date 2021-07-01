@@ -1,0 +1,161 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentPlanItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Store().ID("RequirementStore").Listeners(ls => ls.Load.Handler = "if(App.RequirementStore.data.items.length>0) {App.cbxRequirement.select(App.RequirementStore.data.items[0].get('ID'));}")
+        .Model(
+            Html.X().Model()
+                .IDProperty("ID")
+                .Fields(
+                    new ModelField("ID", ModelFieldType.String) { Mapping = "RequiredID" },
+                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                    new ModelField("RoleName", ModelFieldType.String) { Mapping = "RoleName" }
+                )
+        )
+        .Parameters(ps =>
+        {
+            ps.Add(new StoreParameter("PlanID", "App.hdfPlanID.value", ParameterMode.Raw));
+        })
+        .Proxy(
+            Html.X().AjaxProxy()
+                            .Url(Url.Action("GetRequirement", "RecruitmentInterview", new { Area = "Human" }, null))
+                .Reader(Html.X().JsonReader().Root("data")
+                )
+        )
+)
+@(Html.X().Window()
+.ID("winRequirement")
+.Title("Danh sách hồ sơ trúng tuyển")
+.Icon(Icon.Add)
+.Width(800)
+.BodyPadding(0)
+.AutoScroll(true)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Form)
+    .Frame(true)
+    .Border(false)
+    .Margin(0)
+    .Padding(0)
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => df.LabelWidth = 150)
+    .DefaultAnchor("100%")
+    .Items(
+        X.HiddenFor(m => m.ID).ID("hdfPlanID"),
+        Html.X().GridPanel()
+                .Header(false)
+                .ID("GrProfile").Height(270)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .Border(false)
+                .Icon(Icon.TextListBullets)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                                 Html.X().Button().Text("Xem chi tiết").ToolTip("Xem chi tiết hồ sơ").ID("btnDetailProfile").Icon(Icon.Zoom).Handler("ViewDetailProfile();").Disabled(true),
+                                Html.X().ToolbarSeparator(),
+                                X.Button().ID("btnAddUser").Text("Tạo thành viên").Handler("addUser();").Icon(Icon.UserAdd).Disabled(true),
+                                Html.X().ToolbarSeparator(),
+                              Html.X().ToolbarFill(),
+                             X.Label().ID("lblRoleName")
+                              ,
+                                  Html.X().ToolbarSeparator(),
+                                Html.X().ComboBox().ID("cbxRequirement")
+                                            .Text("--Lựa chọn yêu cầu tuyển dụng--")
+                                            .QueryMode(DataLoadMode.Local)
+                                            .TriggerAction(TriggerAction.All)
+                                            .DisplayField("Name")
+                                            .ValueField("ID")
+                                            .StoreID("RequirementStore")
+                                                    .Listeners(ls =>
+                                                    {
+                                                        ls.Change.Handler = "App.StoreProfile.reload();ProfileSelect();App.lblRoleName.setText('Chức danh: '+App.RequirementStore.getById(App.cbxRequirement.getValue()).get('RoleName'))";
+                                                    })
+                    )
+                ).Store(
+                            Html.X().Store().Listeners(ls => ls.Load.Handler = " if(App.StoreProfile.data.items.length>0) {App.GrProfile.selModel.doSelect(0);}")
+                        .ID("StoreProfile").AutoLoad(false)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProfilePass", "RecruitmentResult", new { Area = "Human" }, null)).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("PlanID", "App.hdfPlanID.value", ParameterMode.Raw));
+                                            ps.Add(new StoreParameter("RequirementID", "App.cbxRequirement.getValue()", ParameterMode.Raw));
+                                        }
+                                    )
+                        .Model(
+                                Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Avatar"),
+                                        Html.X().ModelField().Name("RequirementName"),
+                                        Html.X().ModelField().Name("ProfileID") ,
+                                        Html.X().ModelField().Name("IsSend") 
+                            )
+                         )
+                )
+                .ColumnModel(
+                            X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                X.ImageColumn().DataIndex("Avatar"),
+                                X.Column().DataIndex("Name").Text("Họ tên").Flex(1)
+                    )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "ProfileSelect"))
+                .BottomBar(
+                            X.CustomPagingToolbar()
+                     )
+                )
+
+
+    )
+    .Buttons(Html.X().ButtonExit())
+)
+
+<script>
+    var ProfileSelect = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailProfile.setDisabled(false);
+            App.btnAddUser.setDisabled(false);
+        }
+        else {
+            App.btnDetailProfile.setDisabled(true);
+            App.btnAddUser.setDisabled(true);
+        };
+    };
+    var ViewDetailProfile = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "RecruitmentProfile", new { Area = "Human" }, null))',
+                params: { ID: records[0].get('ProfileID') }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var addUser = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AddFormFromRecruitment", "Employee", new { Area = "Human" }, null))',
+                params: {
+                    ProfileID: records[0].get('ProfileID')
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>

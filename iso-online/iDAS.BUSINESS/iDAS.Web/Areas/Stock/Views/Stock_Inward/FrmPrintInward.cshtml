@@ -1,0 +1,125 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Core
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/Content/iDASReport.css" rel="stylesheet" />
+@(Html.X().Toolbar()
+        .ID("tbReportOrder")
+        .MarginSpec("1 1 1 1")
+        .Items(
+            Html.X().Button()
+                .Text("Print")
+                .Icon(Icon.Printer)
+                .Handler("window.print();")
+        )
+    )
+@(Html.X().DataView()
+            .DisableSelection(true)
+            .ID("dataReport")
+            .Frame(false)
+            .ItemSelector("td.letter-row")
+            .EmptyText("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Không có dữ liệu!")
+            .Store(
+                Html.X().Store()
+                    .DataSource(Model)
+                    .Model(
+                        Html.X().Model()
+                            .Fields(
+                            new ModelField("ID", ModelFieldType.Int),
+                            new ModelField("NumberOrder", ModelFieldType.Int),
+                            new ModelField("SupplierName", ModelFieldType.String),
+                            new ModelField("SupplierAddress", ModelFieldType.String),
+                            new ModelField("Amount", ModelFieldType.Float),
+                            new ModelField("FAmount", ModelFieldType.Float),
+                            new ModelField("Discount", ModelFieldType.Float),
+                            new ModelField("Reason", ModelFieldType.String),
+                            new ModelField("Description", ModelFieldType.String),
+                            new ModelField("Barcode", ModelFieldType.String),
+                            new ModelField("Contact", ModelFieldType.String),
+                            new ModelField("RefDate", ModelFieldType.String),
+                            new ModelField("ContractCode", ModelFieldType.String),
+                            new ModelField("CustomerName", ModelFieldType.String),
+                            new ModelField("DateReport", ModelFieldType.String),
+                            new ModelField("Items", ModelFieldType.Object)
+                            )
+                    )
+            )
+            .Tpl(@<text>
+        <div class="idasClass">
+            <tpl for=".">
+               <div class="header clear_l">
+                   <div class ="left-header"><span style=" display: block; line-height: 25px;  width:100%">{CustomerName}</span><img id="logo" src="@Url.Action("LoadLogoFile", "File", new { area = "Generic", code = (User as UserPrincipal).Code })"></img></div>
+                   <div class ="right-header">
+                       <div class ="title">PHIẾU NHẬP KHO</div>
+                       <div class="title-items">
+                           <div class="item">Số phiếu: <b>{Barcode}</b></div>   
+                           <div class="item">Ngày lập: <b>{DateReport}</b></div>
+                           <div class="item">Theo hóa đơn đặt hàng số: <b>{ContractCode}</b></div>           
+                       </div>
+               
+                   </div>
+                   <div class ="title-items" style="padding-left:10px;  padding-top:40px">
+                       <div class="item_clearl"><b>Nhà cung cấp: </b>{SupplierName} <b> &nbsp;&nbsp;&nbsp;&nbsp; Địa chỉ: </b>{SupplierAddress}</div>              
+                       <div class="item_clearl"><b>Người giao hàng:</b> {Contact}</div>
+                       <div class="item_clearl"><b>Lý do nhập:</b> {Reason} </div>
+                       <div class="item_clearl"><b>Ngày nhập kho:</b> {RefDate}</div>
+                       <div class="item_clearl"><b>Ghi chú: </b> {Description}</div>
+                       <div class="item_clearl"><b>Danh sách vật tư hàng hóa nhập</b></div>
+                       </div>
+               </div>
+            </tpl>
+        </div>
+        <div id="maintenace-plan" class="clear_l">
+            <table class="idas-table">
+                <tr>
+                    <td class="idas-table-header-row" width="3%">STT</td>
+                    <td class="idas-table-header-row" width="32%">Tên mặt hàng</td>
+                    <td class="idas-table-header-row" width="10%">Đơn vị tính</td>
+                    <td class="idas-table-header-row" width="20%">Kho lưu trữ</td>
+                    <td class="idas-table-header-row" width="10%">Số lượng</td>
+                    <td class="idas-table-header-row" width="10%">Đơn giá (VNĐ)</td>
+                    <td class="idas-table-header-row" width="15%">Thành tiền (VNĐ)</td>
+                </tr>
+                <tpl for=".">                                     
+                    <tpl for="Items"> 			            
+                            <tr>                 
+						        <td class="idas-table-detail-row idas-table-td-center">{NumberOrder}</td>	
+                                <td class="idas-table-detail-row">{ProductName}</td>                       
+                                <td class="idas-table-detail-row">{Unit}</td>
+                                <td class="idas-table-detail-row">{Stock_Name}</td>
+                                <td class="idas-table-detail-row idas-table-td-right">{Quantity}</td>
+                                <td class="idas-table-detail-row idas-table-td-right">{UnitPrice}</td>
+                                <td class="idas-table-detail-row idas-table-td-right">{Amount}</td>
+					        </tr>
+		        </tpl>
+		        <tr class ="myTR">                                   
+                    <td class="idas-table-title-row idas-table-td-right" colspan="7">Tổng tiền: <b>{FAmount}</b>
+                </tr> 			
+        </tpl>
+            </table>
+        </div>
+        <div class="footerClass clear_l">
+            <tpl for=".">
+                <div class="footer">
+                    <div class="left-footer">
+                         <div style="font-weight: bold;">Người lập</div><div style="font-weight: bold; text-transform: uppercase; padding-top: 50px;"></div><div style="padding-top: 10px;">Ngày xác nhận: ___/___/______</div>
+                    </div>
+                    <div class="center-footer">&nbsp;</div>
+                    <div class="right-footer">
+                        <div style="font-weight: bold;">Giám đốc</div><div style="font-weight: bold; text-transform: uppercase; padding-top: 50px;"></div><div style="padding-top: 10px;">Ngày xác nhận: ___/___/______</div>
+                    </div>
+                </div>
+
+            </tpl>
+        </div>
+</text>)
+ )
+
+
+
+
+

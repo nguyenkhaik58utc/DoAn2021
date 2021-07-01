@@ -1,0 +1,68 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.WebCustomerContactItem
+
+@(Html.X().Window()
+    .Title("Cập nhật thông tin liên hệ khách hàng")
+    .Icon(Icon.Pencil)
+    .Height(300)
+    .Constrain(true)
+    .Width(500)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmUpdate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .FieldDefaults(f => f.LabelWidth = 120)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(1).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).EmptyText("Tên khách hàng").AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Tên khách hàng *"),
+                            Html.X().TextFieldFor(m => m.Email).FieldLabel("Email liên hệ"),
+                            Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung liên hệ").Height(100)
+                        )
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().CheckboxFor(m => m.IsRead).ColumnWidth(0.4).HideLabel(false).BoxLabel("Đã đọc").FieldLabel("Liên hệ"),
+                        Html.X().Container().ColumnWidth(0.1),
+                        Html.X().CheckboxFor(m => m.IsSent).ColumnWidth(0.4).HideLabel(true).BoxLabel("Đã liên hệ lại")
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmUpdate";
+            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Update");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if(result.result){this.up('window').close(); reloadWebCustomerContact();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+

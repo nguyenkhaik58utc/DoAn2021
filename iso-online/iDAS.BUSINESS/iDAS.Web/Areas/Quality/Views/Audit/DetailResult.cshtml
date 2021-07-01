@@ -1,0 +1,183 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@(Html.X().GridPanel()
+    .Header(false)
+    .Split(true)
+    .Border(false)
+    .ID("grResult")
+    .TitleAlign(TitleAlign.Center)
+    .Layout(LayoutType.Fit)
+    .Collapsible(true)
+    .ForceFit(true)
+    .ColumnLines(true)
+    .RowLines(true)
+    .TopBar(
+        Html.X().Toolbar()
+            .Items(           
+            Html.X().ButtonView()
+                .ID("btnDetailPoint")
+                .Handler("detailForm(this.up('gridpanel'));")
+                .Disabled(true),
+                Html.X().ToolbarSeparator(),
+            Html.X().ButtonNC()
+                .ID("btnNC")
+                .Disabled(true)
+                .Handler("NCShow(this.up('gridpanel'));")
+        )
+    )
+  .Store(Html.X().Store().ID("StoreTreeCriteria")
+        .AutoLoad(true)
+        .PageSize(20)
+        .GroupField("DepartmentName")
+        .Sorters(Html.X().DataSorter().Property("ISOIndexName").Direction(Ext.Net.SortDirection.ASC))
+        .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("LoadResult_Q", "QualityAuditResult", new { area = "Quality" }))
+                    .Reader(Html.X().JsonReader()
+                    .Root("data"))
+                )
+              .Parameters(ps =>
+              {
+                    ps.Add(new StoreParameter("qualityAuditProgramId", "App.hdfqualityAuditProgramId.getValue()!=null? App.hdfqualityAuditProgramId.getValue():0", ParameterMode.Raw));
+                    ps.Add(new StoreParameter("cateId", "App.hdfISOIndexID.getValue()!=null? App.hdfISOIndexID.getValue():0", ParameterMode.Raw));
+                    ps.Add(new StoreParameter("qualityAuditProgramIsoId", "App.hdfqualityAuditProgramIsoId.getValue()!=null? App.hdfqualityAuditProgramIsoId.getValue():0", ParameterMode.Raw));
+                })
+        .Model(
+            Html.X().Model()
+            .Fields(
+                    Html.X().ModelField().Name("ID"),
+                    Html.X().ModelField().Name("ISOIndexCriteriaID"),
+                    Html.X().ModelField().Name("ISOIndexCriteriaName"),
+                    Html.X().ModelField().Name("DepartmentID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("DepartmentName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("AuditNote").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("AuditAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("IsCategory").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("ResultPass").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("ResultNotPass").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("Result").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsPass").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsObs").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsMaximum").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsMedium").Type(ModelFieldType.Boolean)
+
+            )
+        )
+    )
+    .ColumnModel(
+        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+        Html.X().Column()
+            .Text("Tiêu chí đánh giá")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Align(Alignment.Left)
+            .DataIndex("ISOIndexCriteriaName")
+            .Flex(1),
+        Html.X().DateColumnExtend()
+            .Text("Thời gian")
+            .Width(70)
+            .Format("dd/MM/yyyy")
+            .Align(Alignment.Center)
+            .DataIndex("AuditAt"),
+       Html.X().ComponentColumn().Text("Kết quả").Columns(
+            Html.X().CheckColumn()
+            .Text("Đạt")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(70)
+            .DataIndex("ResultPass")
+            .Align(Alignment.Center),
+             Html.X().CheckColumn()
+            .Text("Không đạt")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(70)
+            .DataIndex("ResultNotPass")
+            .Align(Alignment.Center)
+            ),
+             Html.X().ComponentColumn().Text("Loại điểm không phù hợp").Columns(
+            Html.X().CheckColumn().Text("Obs")
+            .Width(50)
+            .DataIndex("IsObs")
+            .Align(Alignment.Right),
+            Html.X().CheckColumn()
+            .Text("M")
+            .Width(50)
+            .DataIndex("IsMaximum")
+            .Align(Alignment.Right),
+            Html.X().CheckColumn()
+            .Text("m")
+            .Width(50)
+            .DataIndex("IsMedium")
+            .Align(Alignment.Right)
+            )
+    )
+        .Listeners(lS => lS.SelectionChange.Handler = "checkStatus(this);")
+             .Features(
+                                            Html.X().GroupingSummary()
+                                                    .ID("GroupingSummary")
+                                                    .GroupHeaderTplString("{name}")
+                                                    .HideGroupedHeader(true)
+                                                    .EnableGroupingMenu(false),
+                                        Html.X().Summary().Dock(SummaryDock.Bottom)
+                                        )
+             .BottomBar(
+                      Html.X().CustomPagingToolbar()
+        )
+)
+<script type="text/javascript">
+     var detailForm = function (tree) {
+        var record = tree.selModel.getSelection();
+        if (record.length > 0) {
+            var qualityAuditProgramIsoId = App.hdfqualityAuditProgramIsoId.getValue();
+            var qualityAuditProgramId = App.hdfqualityAuditProgramId.getValue();
+            var criteriaId = record[0].get('ISOIndexCriteriaID');
+            var departmentId = record[0].get('DepartmentID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("FrmDetail_Q", "QualityAuditResult", new { Area = "Quality" }, null))',
+                params: { departmentId: departmentId, qualityAuditProgramId: qualityAuditProgramId, qualityAuditProgramIsoId: qualityAuditProgramIsoId, criteriaId: criteriaId }
+            });
+        }
+    };
+    var NCShow = function (grid) {
+        NCGridPanel = grid;
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("NCShowDetailQuality", "NC", new { Area = "Quality" }, null))';
+            var params = {
+                auditId: App.hdfqualityAuditProgramIsoId.getValue(),
+                criteriaId: records[0].get('ISOIndexCriteriaID'),
+                departmentId: records[0].get('DepartmentID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+        onDirectMethod(url, params);
+    };
+    var checkStatus = function (tree) {
+        var records = tree.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnDetailPoint.setDisabled(true);
+                App.btnNC.setDisabled(true);
+                break;
+            case 1:
+                if (!records[0].get('IsCategory') && App.hdfqualityAuditProgramIsoId.getValue() != 0) {
+                    App.btnDetailPoint.setDisabled(false);
+                }
+                else {
+                    App.btnDetailPoint.setDisabled(true);
+                };
+                if (records[0].get('ResultNotPass') == true) {
+                    App.btnNC.setDisabled(false);
+                }
+                else {
+                    App.btnNC.setDisabled(true);
+                };
+                break;
+            default:
+                App.btnDetailPoint.setDisabled(true);
+                App.btnNC.setDisabled(true);
+
+        }
+    };
+</script>

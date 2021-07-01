@@ -1,0 +1,124 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@using iDAS.Utilities
+@model iDAS.Items.ProfileBorrowItem
+@{
+    var idDepartment = ViewData["DepartmentID"] != null ? (int)ViewData["DepartmentID"] : 0;
+}
+@(Html.X().Window()
+    .ID("winEditBorrowProfile")
+    .Title("Thêm mới thông tin mượn hồ sơ ")
+    .Icon(Icon.PageWhiteGo)
+    .Width(600)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("frEditBorrowProfile")
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .FieldDefaults(f => f.LabelWidth = 100)
+            .Items(
+                Html.X().HiddenFor(m => m.ID).Hidden(true),
+                Html.X().HiddenFor(m => m.ProfileID).Hidden(true),
+                Html.X().ComboBoxFor(m => m.CategoryID)
+                    .ID("cbCate")
+                    .ColumnWidth(0.5)
+                    .FieldLabel("Sổ mượn hồ sơ" + Html.Required())
+                    .TabIndex(4)
+                    .EmptyText("Chọn sổ mượn hồ sơ...")
+                    .AllowBlank(false)
+                    .BlankText("Sổ mượn hồ sơ bắt buộc chọn!")
+                    .QueryMode(DataLoadMode.Local)
+                    .ForceSelection(true)
+                    .TriggerAction(TriggerAction.All)
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Store(
+                        Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                    )
+                                    )
+                            .Proxy(
+                                Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataCboCate", "ProfileBorrowCategory"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Parameters(ps =>
+                                ps.Add(new StoreParameter("depID", Model.DepartmentID.ToString(), ParameterMode.Raw))
+                            )
+                            ),
+                Html.X().TextFieldFor(m => m.Name)
+                    .ID("cbProfile")
+                    .ColumnWidth(0.5)
+                    .FieldLabel("Hồ sơ mượn")
+                    .ReadOnly(true)
+                    .TabIndex(4),
+                Html.X().EmployeeFieldFor(m => m.EmployeeInfo).AllowBlank(false).Title("Người mượn" + Html.Required()).ID("fsEmployee").MarginSpec("-3 0 5 105"),
+                Html.X().Container()
+                    .Layout(LayoutType.Column)
+                    .MarginSpec("0 0 5 0")
+                    .Items(
+                        Html.X().DateFieldFor(m => m.BorrowAt)
+                            .ColumnWidth(0.5)
+                            .FieldLabel("Ngày mượn" + Html.Required())
+                            .TabIndex(2)
+                            .AllowBlank(false)
+                            .BlankText("Ngày mượn bắt buộc nhập/chọn !")
+                            .Format("dd/MM/yyyy")
+                            .EmptyText("dd/MM/yyyy")
+                            .MaxDate(DateTime.Now).MaxText("Ngày mượn không được lớn hơn ngày hiện tại!"),
+                        Html.X().DateFieldFor(m => m.LimitAt)
+                            .ID("dt")
+                            .TabIndex(4)
+                            .ColumnWidth(0.5)
+                            .FieldLabel("Ngày hẹn trả" + Html.Required())
+                            .MarginSpec("0 0 0 10")
+                            .Format("dd/MM/yyyy")
+                            .EmptyText("dd/mm/YYYY")
+                            .AllowBlank(false)
+                            .BlankText("Ngày hẹn trả bắt buộc nhập/chọn !")
+                            ),
+                  Html.X().TextAreaFor(m => m.Note)
+                    .ID("txtResultNote")
+                    .TabIndex(6)
+                    .MarginSpec("0 0 10 0")
+                    .FieldLabel("Ghi chú")
+               )
+    )
+    .Buttons(
+        Html.X().Button()
+            .ID("btnSaves")
+            .Icon(Icon.Disk)
+            .Text("Lưu lại")
+            .TabIndex(7)
+            .DirectEvents(de =>
+            {
+                de.Click.FormID = "frEditBorrowProfile";
+                de.Click.Url = Url.Action("InsertProfileBorrow");
+                de.Click.Before = @"if (!#{frEditBorrowProfile}.getForm().isValid() ) { return false; }";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+            }),
+        Html.X().ButtonExit()
+    )
+)
+<script type="text/javascript">
+    function onSelectEmployee(records) {
+        if (records.length == 1) {
+            App.nameApproval.setValue(records[0].get('Name'));
+            App.hdfEmployeeApproveId.setValue(records[0].get('ID'));
+            App.avatarApproval.setImageUrl(records[0].get('Avatar'));
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

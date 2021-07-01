@@ -1,0 +1,135 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditDepartmentItem
+@(  
+        Html.X().GridPanel()
+                    .ID("grMnObject")
+                    .Border(false)
+                    .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                    .TopBar(
+                    Html.X().Toolbar()
+                            .Items(
+                                Html.X().Button()
+                                        .Text("Lựa chọn phòng ban đánh giá")
+                                        .ID("btnChoice")
+                                        .Icon(Icon.UserAdd)
+                                        .Handler("showDepartment"),
+                                Html.X().ToolbarSeparator(), 
+                                Html.X().ButtonDelete()
+                                        .Disabled(false)
+                                        .ID("btnDeleteObject")
+                                        .Handler("this.up('grid').deleteSelected();")                          
+                            )
+                         )               
+                     .Store(
+                Html.X().StoreForModel()
+                   .ID("stM")
+                    .AutoLoad(false)
+                    .ShowWarningOnFailure(false)                 
+                   
+            )
+             .ColumnModel(
+                Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Center)
+                        .Width(33),
+                Html.X().Column()
+                        .Text("ID")
+                        .DataIndex("ID")
+                        .Hidden(true),
+                Html.X().Column()
+                        .Text("Phòng ban")
+                        .StyleSpec("font-weight: bold;text-align: center")
+                        .DataIndex("HumanDepartmentName")
+                        .Flex(1)
+                        .Wrap(true),
+                   Html.X().Column()
+                            .Text("Người quản lý")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("EmployeeAuditManagementName")
+                                .Width(160)
+                                .Wrap(true)
+                                .Commands(Html.X().ImageCommand()
+                                            .CommandName("Managerment")
+                                    .Icon(Icon.User)
+                                    .ToolTip(tt => tt.Text = "Chọn người quản lý")
+                                    )
+                                .Listeners(ls =>
+                                    ls.Command.Fn = "onCommand"
+                                ),
+                            Html.X().Column()
+                                .Text("Lãnh đạo")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("EmployeeAuditLeaderName")
+                                .Width(160)
+                                .Wrap(true)
+                                .Commands(Html.X().ImageCommand()
+                                        .CommandName("Leader")
+                                .Icon(Icon.User)
+                                .ToolTip(tt => tt.Text = "Chọn lãnh đạo")
+                                )
+                                .Listeners(ls =>
+                                    ls.Command.Fn = "onCommand"
+                                )
+                                              
+                   
+                ).SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "";
+                            })
+                            )
+                            .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                            .Plugins(Html.X().CellEditing())
+                            .BottomBar
+                            (
+                                     Html.X().CustomPagingToolbar()
+                            )
+                       )
+   
+<script type="text/javascript"> 
+    var getDepartments = function (idD) {
+        for (var i = 0; i < App.stM.data.length; i++) {
+            if (App.stM.data.items[i].data.HumanDepartmentID == idD) {
+                return true;
+            }
+        }
+        return false;
+    };
+    var fillDepartent = function (id, name) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            var idD = parseInt(id);
+            if (!getDepartments(idD)) {
+                App.grMnObject.store.insert(0, { ID: 0, HumanDepartmentID: idD, HumanDepartmentName: name });
+                App.winChoiceDepartment.close();
+            }
+        }
+    };
+    var onCommand = function (column, command, record, recordIndex, cellIndex) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ChoiceObjectAdd", "AuditGradation", new { Area = "Human" }, null))',
+            params: { recordIndex: recordIndex, commandName: command },
+            success: function () {
+
+            }
+        });
+    };
+    </script>

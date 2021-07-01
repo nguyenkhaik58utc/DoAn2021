@@ -1,0 +1,238 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Items;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitTask = Url.Action("InsertTask", "Request", new { area = "Document" });
+    var urlStoreTask = Url.Action("LoadTasks", "Request", new { area = "Document" });
+    var paramStoreTask = Html.X().StoreParameter().Name("requestID").Value("getRequestId()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Hidden().ID("refID"))
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        Html.X().Hidden().ID("hdfDepartmentID"),
+        Html.X().DepartmentPanel().Handler("onDepartmentReady"),
+        Html.X().GridPanel()
+            .ID("GrRequest")
+            .Border(true)
+            .Title("Danh sách yêu cầu")
+            .Header(false)
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                    Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+                    Html.X().ButtonCreate().Disabled(false).Handler("ShowInsert"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonUpdate().Disabled(true).ID("btnEdit").Handler("ShowEdit"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonDelete().ID("btnDelete").Handler("deleteRecord();").Disabled(true),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonApproval().ID("btnApproveReq").Handler("ShowApprove").Disabled(true),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonView().ToolTip("Xem chi tiết").ID("btnDetail").Handler("ShowView").Disabled(true),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask().ID("btnTask").Disabled(true),
+                            Html.X().ToolbarFill(),
+                                 Html.X().ButtonTutorial()
+                        )
+                    )
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(true)
+                    .ID("StRequest")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Request")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("groupId", "App.hdfDepartmentID.getValue() > 0 ? App.hdfDepartmentID.getValue():0", ParameterMode.Raw));
+                    })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("TypeID"),
+                            Html.X().ModelField().Name("StrType"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("IsApproval"),
+                            Html.X().ModelField().Name("IsAccept"),
+                            Html.X().ModelField().Name("Document"),
+                            Html.X().ModelField().Name("ReasonChange"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("AttachmentFileIDs")   
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column().DataIndex("Name").Text("Tên yêu cầu").StyleSpec("font-weight: bold;text-align: center").Flex(1),
+                Html.X().Column().DataIndex("StrType").Text("Loại yêu cầu").StyleSpec("font-weight: bold;text-align: center").Width(100).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Document").Text("Tài liệu").Width(200).StyleSpec("font-weight: bold;text-align: center"),
+                Html.X().Column().DataIndex("ReasonChange").Text("Lý do thay đổi").Width(200).StyleSpec("font-weight: bold;text-align: center"),
+                Html.X().Column().DataIndex("Status").Text("Trạng thái").Width(100).StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center),
+                Html.X().ColumnFileExtend("AttachmentFileIDs")
+                 )
+                .SelectionModel(
+                Html.X().CheckboxSelectionModel()
+                .ShowHeaderCheckbox(false)
+                        .Mode(SelectionMode.Single).Listeners(l => l.SelectionChange.Handler = "checkStatus();")
+
+                        )
+
+                .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+                         .Plugins(
+                                    Html.X().FilterHeader().Remote(true)
+                            )
+                        .BottomBar(
+
+                         Html.X().CustomPagingToolbar()
+             )
+)
+)
+<script>
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var getRequestId = function () {
+        var planId = App.refID.getValue();
+        return planId;
+    }
+    function onDepartmentReady(records) {
+        App.hdfDepartmentID.setValue(records[0].get('id'));
+        App.GrRequest.getStore().reload();
+    };
+    var ShowInsert = function () {
+        var url = '@(Url.Action("Insert", "Request", new { Area = "Document" }, null))';
+        var params = { departmentId: App.hdfDepartmentID.value };
+        onDirectMethod(url, null, 'get');
+    };
+    var ShowEdit = function (cmd) {
+        var record = App.GrRequest.selModel.getSelection();
+        if (record.length > 0) {
+            var params = { id: record[0].get('ID') };
+            var url = '@(Url.Action("Update", "Request", new { Area = "Document" }, null))';
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowView = function (cmd) {
+        var record = App.GrRequest.selModel.getSelection();
+        if (record.length > 0) {
+            var params = { id: record[0].get('ID') };
+            var url = '@(Url.Action("Detail", "Request", new { Area = "Document" }, null))';
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowApprove = function () {
+        var record = App.GrRequest.selModel.getSelection();
+        if (record.length > 0) {
+            var params = { id: record[0].get('ID') };
+            var url = '@(Url.Action("Approve", "Request", new { Area = "Document" }, null))';
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var checkStatus = function () {
+        var record = App.GrRequest.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnDetail.setDisabled(false);
+            App.refID.setValue(App.GrRequest.selModel.getSelection()[0].get('ID'));
+            if (record[0].get('IsEdit')) {
+                App.btnEdit.setDisabled(false);
+            }
+            else {
+                App.btnEdit.setDisabled(true);
+                App.btnApproveReq.setDisabled(true);
+            }
+            if ((!record[0].get('IsEdit') && !record[0].get('IsApproval')) || (record[0].get('IsApproval') && record[0].get('IsAccept')) || (record[0].get('IsApproval') && !record[0].get('IsAccept') && !record[0].get('IsEdit'))) {
+                App.btnApproveReq.setDisabled(false);
+            } else {
+                App.btnApproveReq.setDisabled(true);
+            }
+            if (record[0].get('IsApproval') && record[0].get('IsAccept')) {
+                App.btnTask.setDisabled(false);
+            } else
+                App.btnTask.setDisabled(true);
+            if (!record[0].get('IsApproval') && record[0].get('IsEdit'))
+                App.btnDelete.setDisabled(false);
+            else
+                App.btnDelete.setDisabled(true);
+
+        } else {
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+            App.btnApproveReq.setDisabled(true);
+            App.btnTask.setDisabled(true);
+        }
+    };
+    var deleteRecord = function () {
+        var record = App.GrRequest.selModel.getSelection();
+        var id = record[0].get('ID');
+        Ext.MessageBox.show({
+            title: 'Xác nhận',
+            msg: 'Bạn có chắc chắn muốn xóa đề nghị đã chọn không?',
+            buttons: { yes: 'Đồng ý', no: 'Không' },
+            iconCls: '#Help',
+            fn: function (btn) {
+                if (btn == 'yes') {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "Request", new { Area = "Document" }, null))',
+                        params: { id: id }
+                    });
+                }
+            }
+        });
+    };
+    var showControlByType = function () {
+        if (App.cbType.getValue() == 0) {
+            App.cbDocument.setDisabled(true);
+            App.cbDocument.allowBlank = true;
+            App.txtContentOld.setDisabled(true);
+            App.txtContentOld.allowBlank = true;
+            App.txtContentChange.setDisabled(true);
+            App.txtContentChange.allowBlank = true;
+            App.txtVersion.setDisabled(true);
+            App.txtTimes.setDisabled(true);
+
+        } else {
+            App.cbDocument.setDisabled(false);
+            App.cbDocument.allowBlank = false;
+            App.txtContentOld.setDisabled(false);
+            App.txtContentOld.allowBlank = false;
+            App.txtContentChange.setDisabled(false);
+            App.txtContentChange.allowBlank = false;
+            App.txtVersion.setDisabled(false);
+            App.txtTimes.setDisabled(false);
+        }
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+</script>

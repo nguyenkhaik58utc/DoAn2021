@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateAwardCategory = '@(Url.Action("Create", "v3_AwardCategory", new { area = "Human" }))';
+    var urlUpdateAwardCategory = '@(Url.Action("Update", "v3_AwardCategory", new { area = "Human" }))';
+    var urlDeleteAwardCategory = '@(Url.Action("Delete", "v3_AwardCategory", new { Area = "Human" }))';
+    var urlDetailAwardCategory = '@(Url.Action("ShowFrmDetail", "v3_AwardCategory", new { Area = "Human" }))';
+    var sortAwardCategoryIndex = null;
+    var showCreateAwardCategory = function () {
+        var url = urlCreateAwardCategory;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateAwardCategory = function () {
+        var url = urlUpdateAwardCategory;
+        var record = getAwardCategorySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getAwardCategorySelection = function () {
+        var records = App.AwardCategoryPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setAwardCategorySelection = function () {
+        if (sortAwardCategoryIndex != null) {
+            App.AwardCategoryPanel.selModel.select(sortAwardCategoryIndex);
+        }
+    };
+
+    var showDeleteAwardCategory = function () {
+        var url = urlDeleteAwardCategory;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ hình thức khen thưởng này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getAwardCategorySelection();
+                            var AwardCategoryId = record == null ? 0 : record.data.ID;
+                            var params = { ID: AwardCategoryId };
+                            onDirectMethod(url, params, 'post', reloadAwardCategory);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailAwardCategory = function () {
+        var url = urlDetailAwardCategory;
+        var record = getAwardCategorySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadAwardCategory = function () {
+        App.AwardCategoryPanel.store.reload();
+    };
+
+    var selectionChangeAwardCategory = function () {
+        var record = getAwardCategorySelection();
+        var isDisabled = record == null;
+        App.btnUpdateAwardCategory.setDisabled(isDisabled);
+        App.btnDeleteAwardCategory.setDisabled(isDisabled);
+        App.btnDetailAwardCategory.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý hình thức khen thưởng").Header(false)
+                    .ID("AwardCategoryPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateAwardCategory").ID("btnCreateAwardCategory()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateAwardCategory").Handler("showUpdateAwardCategory();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteAwardCategory").Handler("showDeleteAwardCategory()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailAwardCategory").Handler("showDetailAwardCategory();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreAwardCategory")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setAwardCategorySelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên hình thức khen thưởng").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeAwardCategory();")
+    )
+    )

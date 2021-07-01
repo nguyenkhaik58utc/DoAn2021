@@ -1,0 +1,173 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var strId = ViewData["ID"].ToString();
+    var startTime = ViewData["StartTime"].ToString();
+    var endTime = ViewData["EndTime"].ToString();
+    var urlStore = ViewData["StoreUrl"].ToString();
+}
+@(Html.X().Window().ID("WinCustomerStatisDetail")
+.BodyPadding(0)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Maximized(true)
+.Height(1)
+.Icon(Icon.ChartBar)
+.Items(
+     Html.X().GridPanel()
+            .Header(false)
+            .ID("GrCustomerStatisDetail")
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .TopBar(
+                    Html.X().Toolbar().ID("GrCustomerStatisDetailToolbar")
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                                Html.X().ButtonView().ID("btnDetailCustomer").Handler("ShowViewCustomer();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().Icon(Icon.Phone).ID("btnContactCustomer").Text("Liên hệ").Handler("ShowContactHistory();").Disabled(true),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().Text("Hợp đồng").ID("btnSetContract").Icon(Icon.PageWhiteStack).Handler("ShowContract();").Disabled(true),
+                                Html.X().Button().ID("btnNotContract").Text("Không ký hợp đồng").Icon(Icon.PageWhiteDelete).Handler("NotContract();").Hidden(true),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().Text("Lý lịch khách hàng").ID("btnProfile").Icon(Icon.User).Handler("ShowProfile();").Disabled(true)
+                    )
+                    )
+            .Store(
+                Html.X().Store()
+                    .ID("storeCustomerDetail")
+                    .PageSize(20)
+                    .AutoLoad(true)
+                    .RemotePaging(true)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action(urlStore)).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("groupId", strId, ParameterMode.Value));
+                            ps.Add(new StoreParameter("startTime", startTime, ParameterMode.Value));
+                            ps.Add(new StoreParameter("endTime", endTime, ParameterMode.Value));
+                        })
+                    .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("AttachmentFileID"),
+                                Html.X().ModelField().Name("FileName"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("Email"),
+                                Html.X().ModelField().Name("Phone"),
+                                Html.X().ModelField().Name("TypeName"),
+                                Html.X().ModelField().Name("IsBackContact"),
+                                Html.X().ModelField().Name("IsNotContract"),
+                                Html.X().ModelField().Name("LastContact"),
+                                Html.X().ModelField().Name("Address")
+                            )
+                    )
+            )
+            .ColumnModel(
+                          Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                          Html.X().TemplateColumn().DataIndex("AttachmentFileID").Width(30).TdCls("AvatarColumn").Tpl(
+                              Html.X().XTemplate().Html(@<text>
+                            <img src="@Url.Action("LoadImage", "File", new { area = "Generic"})?fileId={AttachmentFileID}&fileName={FileName}"
+                                 style='width:30px;height:40px;' />
+                            </text>)
+                                                    ).Locked(true).Filterable(false),
+                          Html.X().Column().DataIndex("Name").Text("Khách hàng").Width(250).Locked(true),
+                          Html.X().Column().DataIndex("TypeName").Text("Loại").Width(120).Align(Alignment.Center),
+                          Html.X().Column().DataIndex("Phone").Text("Số điện thoại").Width(100).Align(Alignment.Right),
+                          Html.X().Column().DataIndex("Email").Text("Email").Width(150),
+                          Html.X().Column().DataIndex("Address").Text("Địa chỉ").Wrap(true).MinWidth(200).Flex(1),
+                          Html.X().DateColumnExtend().DataIndex("LastContact").Text("Liên hệ gần nhất").Width(120).Align(Alignment.Center).Filterable(false)
+                        )
+            .Plugins(
+                        Html.X().FilterHeader().Remote(true)
+                        )
+            .SelectionModel(Html.X().RowSelectionModel().Listeners(ls => ls.SelectionChange.Handler = "onSelectCustomer();"))
+            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script>
+    function onSelectCustomer() {
+        var records = App.GrCustomerStatisDetail.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetailCustomer, App.btnContactCustomer, App.btnSetContract, App.btnProfile);
+            if (records[0].data.IsNotContract == true) {
+                App.btnNotContract.show();
+            }
+            else {
+                App.btnNotContract.hide();
+            };
+        }
+        else {
+            App.btnNotContract.hide();
+            SetDisabled(App.btnDetailCustomer, App.btnContactCustomer, App.btnSetContract, App.btnProfile);
+        };
+    };
+    var ShowViewCustomer = function () {
+        var records = App.GrCustomerStatisDetail.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerNormal", new { Area = "Customer" }, null))';
+            var params = {
+                normalCustomerID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowContactHistory = function () {
+        var records = App.GrCustomerStatisDetail.selModel.getSelection();
+        if (records.length == 1) {
+            var url = '@(Url.Action("Contact", "CustomerNormal", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowContract = function () {
+        var records = App.GrCustomerStatisDetail.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Contract", "CustomerPotential", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var NotContract = function () {
+        var records = App.GrCustomerStatisDetail.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("NotContract", "CustomerPotential", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID'),
+                readOnly:true
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowProfile = function () {
+        var records = App.GrCustomerStatisDetail.selModel.getSelection();
+        if (records.length == 1) {
+            var url = '@(Url.Action("ProfileCustomerForm", "CustomerProfile"))';
+            var params = {
+                id: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

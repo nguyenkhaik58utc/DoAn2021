@@ -1,0 +1,68 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerCategoryItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+
+        IconView = Icon.Add;
+        title = "Thêm mới nhóm khách hàng";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật nhóm khách hàng";
+    }
+}
+@(Html.X().CustomWindow()
+.ID("winGroupCustomer")
+.Title(title)
+.Icon(IconView)
+.Items(
+    Html.X().CustomFormPanel()
+    .FieldDefaults(df => { df.LabelWidth = 110; })
+    .ID("frmUpdate")
+    .Items(
+            X.HiddenFor(m => m.ID).ID("hdfCustomerCategory"),
+            X.HiddenFor(m => m.ParentID).ID("hdfCustomeParentID"),
+            X.TextFieldFor(m => m.Name)
+                .FieldLabel("Nhóm khách hàng" + Html.Required())
+                .EmptyText("Nhập tên nhóm khách hàng...")
+                .BlankText("Tên nhóm khách hàng không được bỏ trống!")
+                .AllowOnlyWhitespace(false),
+            X.DepartmentFieldFor(m => m.Departments).AllowBlank(false).FieldLabel("Phòng ban" + Html.Required()).MarginSpec("0 1 0 0"),
+            X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú").Flex(1).Height(150).EmptyText("Nhập ghi chú nhóm khách hàng..")
+                   )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                de.Click.Url = Url.Action("Update");
+                                de.Click.Success = "this.up('window').close(); ReLoadNode(result.result);";
+                                de.Click.FormID = "frmUpdate";
+                            })
+        , Html.X().ButtonExit())
+)
+<script>
+    var ReLoadNode = function (id) {
+        var nodeSelected = App.treeCustomerCateID.selModel.getSelection()[0];
+        var oldId = App.hdfCustomerCategory.value;
+        if (oldId == "0") {
+            App.treeCustomerCateID.store.reload({ node: nodeSelected });
+            nodeSelected.data.expanded = true;
+            nodeSelected.expand();
+        }
+        else {
+            nodeSelected.parentNode.reload();
+        };
+    };
+</script>

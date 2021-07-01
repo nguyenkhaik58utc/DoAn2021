@@ -1,0 +1,539 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitAudit = Url.Action("Insert", "TargetAudit", new { area = "Quality" });
+}
+@(Html.X().Menu()
+        .ID("cmMenu")
+        .Items(
+        new MenuItem { Text = "Xem chi tiết mục tiêu", ID = "cmView", Icon = Icon.Zoom, Handler = "showDetailTarget();" },
+        Html.X().MenuSeparator(),
+        new MenuItem { Text = "Phê duyệt", ID = "cmApprove", Disabled = true, Icon = Icon.Tick, Handler = "showApprove();" }
+        )
+)
+@(Html.X().Hidden().ID("hdfDepartmentID").Value(ViewBag.DepartmentId))
+@(Html.X().Hidden()
+    .ID("hdfrdChoice")
+    .Value("App.Time")
+    .Listeners(ls => ls.Change.Handler = "App.stTarget.load();")
+)
+@(Html.X().DateField()
+    .ID("hdfdfFromDate")
+    .Hidden(true)
+)
+@(Html.X().DateField()
+    .ID("hdfdfToDate")
+    .Hidden(true)
+)
+@(Html.X().Hidden()
+    .ID("hdfCateTarget")
+    .Value(0)
+    .Hidden(true)
+)
+@(Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"))
+@(Html.X().Viewport()
+        .Layout(LayoutType.Border)
+        .Items
+        (
+         Html.X().Panel()
+                .ID("TargetListPanel")
+                .Region(Region.Center)
+                .Split(true)
+                .Border(true)
+                .MarginSpec("1 1 1 0")
+                .TitleAlign(TitleAlign.Center)
+                .Layout(LayoutType.Fit)
+                .Collapsible(true)
+                .Header(false)
+                .Items(
+                Html.X().TreePanel()
+                        .AutoScroll(true)
+                        .RootVisible(false)
+                        .Collapsible(true)
+                        .UseArrows(true)
+                        .MultiSelect(true)
+                        .SingleExpand(true)
+                        .FolderSort(true)
+                        .Header(false)
+                        .RowLines(true)
+                        .ColumnLines(true)
+                        .SyncFx()
+                        .ID("gpTarget")
+                        .Listeners(ls => ls.BeforeItemContextMenu.Handler = "itemcontextmenu(e)")
+                        .Border(false)
+                        .TopBarItem(
+                    Html.X().Container().Flex(1)
+                            .Items(
+                    Html.X().Toolbar()
+                            .MarginSpec("0 0 1 0")
+                            .ID("bbGridTaskView")
+                            .Items(
+                        Html.X().RadioGroup()
+                                 .ID("rdChoice")
+                                 .Width(150)
+                                 .Items(
+                         Html.X().Radio()
+                                 .BoxLabel("Tất cả")
+                                 .ID("All"),
+                         Html.X().Radio()
+                                 .BoxLabel("Thời gian")
+                                 .Checked(true)
+                                 .ID("Time")
+                                 )
+                                .Listeners(ls => ls.Change.Handler = "var idradio = Ext.getCmp('rdChoice').items.get(0).getGroupValue();if(idradio=='App.All'){App.Year.setReadOnly(true); App.dfFromDate.setReadOnly(true); App.dfToDate.setReadOnly(true);}else{App.Year.setReadOnly(false); App.dfFromDate.setReadOnly(false); App.dfToDate.setReadOnly(false);}; App.hdfrdChoice.setValue(idradio);"),
+                            Html.X().ComboBox()
+                                    .ID("Year")
+                                    .MarginSpec("0 5 0 5")
+                                    .LabelWidth(30)
+                                    .DisplayField("Name")
+                                    .Editable(false)
+                                    .SelectedItems(new ListItem("Tháng này", 1))
+                                    .FieldLabel("Năm")
+                                    .HideLabel(true)
+                                    .ValueField("ID")
+                                    .Listeners(l =>
+                                        {
+                                            l.Select.Handler = "optionTime();";
+                                        })
+                                    .Store(
+                            Html.X().Store()
+                                    .AutoLoad(true)
+                                    .Model(
+                                    Html.X().Model()
+                                            .IDProperty("ID")
+                                                    .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                            )
+                                                            )
+                                                    .Proxy(
+                                                        Html.X().AjaxProxy()
+                                                            .Url(Url.Action("GetYear"))
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                               )
+                                                       .Listeners(ls => ls.Load.Handler = "var date = new Date(); App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));App.hdfdfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1)); App.hdfdfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));")),
+                                           Html.X().DateField()
+                                                   .FieldLabel("Từ")
+                                                   .ID("dfFromDate")
+                                                   .Editable(false)
+                                                   .MarginSpec("0 5 0 5")
+                                                   .Width(120)
+                                                   .MaxDate(DateTime.Now)
+                                                   .LabelWidth(30)
+                                                   .Listeners(l =>
+                                                   {
+                                                       l.Select.Handler = "App.hdfdfFromDate.setValue(this.value); App.stTarget.load();";
+                                                       l.SpecialKey.Fn = "onSpecialKey";
+                                                   })
+                                                   .Format("dd/MM/yyyy"),
+                                           Html.X().DateField()
+                                                   .FieldLabel("Đến")
+                                                   .LabelWidth(30)
+                                                   .Editable(false)
+                                                   .Width(120)
+                                                   .ID("dfToDate")
+                                                   .Listeners(l =>
+                                                       {
+                                                           l.Select.Handler = "App.hdfdfToDate.setValue(this.value);App.stTarget.load();";
+                                                           l.SpecialKey.Fn = "onSpecialKey";
+                                                       })
+                                                   .Format("dd/MM/yyyy"),
+                                                Html.X().ComboBox()
+                                                .MarginSpec("0 0 0 5")
+                                                .FieldLabel("Nhóm mục tiêu")
+                                                .EmptyText("Chọn nhóm mục tiêu")
+                                                .AllowBlank(false)
+                                                .ID("cbCateTarget")
+                                                    .Listeners(ls => ls.Select.Handler = "App.hdfCateTarget.setValue(this.value); App.gpTarget.getStore().load();")
+                                                .Editable(false)
+                                                .LabelWidth(80)
+                                                .Width(200)
+                                                .Items(new ListItem("Tất cả", 0))
+                                                .SelectedItems(new ListItem("Tất cả", 0))
+                                                .BlankText("Nhóm mục tiêu không được bỏ trống!")
+                                                .DisplayField("Name")
+                                                .ValueField("ID")
+                                                .Store(
+                                                    Html.X().Store()
+                                                        .AutoLoad(true)
+                                                        .Proxy(Html.X().AjaxProxy()
+                                                                    .Url(Url.Action("GetDataActive", "TargetCategory", new { area = "Quality" }))
+                                                            .Reader(Html.X().JsonReader().Root("data"))
+                                                        )
+                                                        .Model(Html.X().Model()
+                                                            .Fields(
+                                                                new ModelField("ID"),
+                                                                new ModelField("Name")
+                                                            )
+                                                        )
+                                                ),
+                                            Html.X().ToolbarFill()
+                                        ),
+                Html.X().Toolbar()
+                    .ID("tbGridTaskView")
+                    .Items(
+                    Html.X().ButtonCreate()
+                            .ID("btnAddTarget")
+                            .Handler("showFormAddTarget();"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonUpdate()
+                            .ID("btnEditTarget")
+                            .Disabled(true)
+                            .Handler("showEditTarget();"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonDelete()
+                            .ID("btnDeleteTargetNew")
+                            .Disabled(false)
+                            .Handler("deleteTarget();"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonView()
+                            .ID("btnTargetView")
+                            .Disabled(true)
+                            .Handler("showDetailTarget();"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonApproval()
+                            .ID("btnApprove")
+                            .Disabled(true)
+                            .Handler("showApprove();"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().Button().Icon(Icon.TagPurple)
+                            .ID("btnFollowTarget").Text("Kiểm soát")
+                            .Disabled(true)
+                            .Handler("showFollowTarget();"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().Button().Icon(Icon.FlagBlack)
+                            .ID("btnEndTarget").Text("Kết thúc")
+                            .Disabled(true)
+                            .Handler("showEndTarget();"),
+                    Html.X().ToolbarFill()
+                    )
+                  )
+                )
+              .Store(
+                    Html.X().TreeStore()
+                        .ID("stTarget")
+                        .AutoSync(false)
+                        .AutoLoad(false)
+                          .Proxy(
+                        Html.X().AjaxProxy()
+                                .Url(Url.Action("LoadTreeTargets"))
+                        .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                        .Parameters(a =>
+                        {
+                            a.Add(new StoreParameter("cateId", "App.hdfCateTarget.getValue()", ParameterMode.Raw));
+                            a.Add(new StoreParameter("choise", "App.hdfrdChoice.getValue()", ParameterMode.Raw));
+                            a.Add(new StoreParameter("fromdate", "App.hdfdfFromDate.getValue()", ParameterMode.Raw));
+                            a.Add(new StoreParameter("todate", "App.hdfdfToDate.getValue()", ParameterMode.Raw));
+                            a.Add(new StoreParameter("dpId", "App.hdfDepartmentID.getValue()", ParameterMode.Raw));
+                            a.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                        })
+                        .Model(
+                        Html.X().Model().Fields(
+                            new ModelField("id"),
+                            new ModelField("text", ModelFieldType.String),
+                            new ModelField("ParentID", ModelFieldType.Int),
+                            new ModelField("CategoryName", ModelFieldType.String),
+                            new ModelField("LevelID", ModelFieldType.Int),
+                            new ModelField("LevelName", ModelFieldType.String),
+                            new ModelField("LevelColor", ModelFieldType.String),
+                            new ModelField("CompleteAt", ModelFieldType.Date),
+                            new ModelField("IsNew", ModelFieldType.Boolean),
+                            new ModelField("IsEdit", ModelFieldType.Boolean),
+                            new ModelField("IsComplete", ModelFieldType.Boolean),
+                            new ModelField("IsAudit", ModelFieldType.Boolean),
+                            new ModelField("IsPass", ModelFieldType.Boolean),
+                            new ModelField("IsApproval", ModelFieldType.Boolean),
+                            new ModelField("IsPause", ModelFieldType.Boolean),
+                            new ModelField("PerformBy", ModelFieldType.Int),
+                            new ModelField("Status", ModelFieldType.String),
+                            new ModelField("Note", ModelFieldType.String)
+                        )
+                    )
+                )
+    .ColumnModel(
+        Html.X().RowNumbererColumn()
+            .Text("STT")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(35)
+            .Align(Alignment.Center),
+            Html.X().TreeColumn()
+            .Text("Tên mục tiêu")
+            .Wrap(true)
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .DataIndex("text")
+            .Flex(1)
+            .HeaderItems(
+                Html.X().TriggerField()
+                    .EnableKeyEvents(true)
+                    .Triggers(
+                        Html.X().FieldTrigger().Icon(TriggerIcon.Clear)
+                    )
+                    .Listeners(l =>
+                    {
+                        l.KeyUp.Fn = "filterTree";
+                        l.KeyUp.Buffer = 250;
+                        l.TriggerClick.Fn = "clearFilter";
+                    })
+                    ),
+            Html.X().Column()
+                    .Width(100)
+                    .Text("Mức độ")
+                    .Filterable(false)
+                    .DataIndex("LevelName")
+                    .Align(Alignment.Center)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('LevelColor') + ';'; return value; }" }),
+                     Html.X().Column()
+                    .Width(100)
+                    .Text("Trạng thái")
+                    .Filterable(false)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Align(Alignment.Center)
+                    .DataIndex("Status")
+                    )
+                .Listeners(ls => ls.SelectionChange.Handler = "checkStatusTarget(this);")
+                .SelectionModel(
+             Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+        )
+        ),
+         Html.X().DepartmentPanel().Handler("onDepartmentReady").Margin(1)
+        )
+)
+<style>
+    .clsUnView {
+        color: #ccc;
+    }
+
+    .idas-focus {
+        background-color: darkkhaki !important;
+        opacity: 0.8;
+    }
+</style>
+<script type="text/javascript">
+    var getColorLevel = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var optionTime = function () {
+        var date = new Date();
+        var option = App.Year.getValue();
+        if (option == 0) {
+            var startDay = 1;
+            var d = date.getDay();
+            var weekStart = new Date(date.valueOf() - (d <= 0 ? 7 - startDay : d - startDay) * 86400000);
+            var weekEnd = new Date(weekStart.valueOf() + 6 * 86400000);
+            App.dfFromDate.setValue(weekStart);
+            App.dfToDate.setValue(weekEnd);
+            App.hdfdfFromDate.setValue(weekStart);
+            App.hdfdfToDate.setValue(weekEnd);
+        }
+        else if (option == 1) {
+            App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+            App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+            App.hdfdfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+            App.hdfdfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+        } else {
+            App.dfFromDate.setValue(new Date(App.Year.getValue(), 0, 1));
+            App.dfToDate.setValue(new Date(App.Year.getValue(), 11, 31));
+            App.hdfdfFromDate.setValue(new Date(App.Year.getValue(), 0, 1));
+            App.hdfdfToDate.setValue(new Date(App.Year.getValue(), 11, 31));
+        }
+        App.stTarget.load();
+    };
+    var onSpecialKey = function (field, e) {
+        if (e.getKey() === e.ENTER) {
+            App.stTarget.reload();
+            e.stopEvent();
+        }
+    };
+    var filterTree = function (tf, e) {
+        var tree = this.up("treepanel"),
+            text = tf.getRawValue();
+        tree.clearFilter();
+        if (Ext.isEmpty(text, false)) {
+            return;
+        }
+        if (e.getKey() === Ext.EventObject.ESC) {
+            clearFilter();
+        } else {
+            var re = new RegExp(".*" + text + ".*", "i");
+            tree.filterBy(function (node) {
+                return re.test(node.data.text);
+            });
+        }
+    };
+    var clearFilter = function () {
+        var field = this,
+            tree = this.up("treepanel");
+        field.setValue("");
+        tree.clearFilter(true);
+        tree.getView().focus();
+    };
+    var deleteTarget = function (grid) {
+        var record = App.gpTarget.selModel.getSelection();
+        if (record.length > 0) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa mục tiêu đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("DeleteTarget", "Target", new { Area = "Quality" }, null))',
+                            params: { id: record[0].get('id') }
+                        });
+                    }
+                }
+            });
+        }
+    };
+    var checkStatusTarget = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            if (records[0].get('IsEdit')) {
+                App.btnEditTarget.setDisabled(false);
+                App.btnApprove.setDisabled(true);
+                App.btnEndTarget.setDisabled(true);
+            }
+            else if (records[0].get('IsAccept')) {
+                App.btnEditTarget.setDisabled(true);
+            }
+            else {
+                App.btnEditTarget.setDisabled(true);
+            }
+            if (!records[0].get('IsEdit')) {
+                App.btnApprove.setDisabled(false);
+                App.btnEndTarget.setDisabled(false);
+            }
+            if (records[0].get('Status') == "<span style=\"color:green\">Mới</span>") {
+                App.btnDeleteTargetNew.setDisabled(false);
+                App.btnApprove.setDisabled(true);
+                App.btnEndTarget.setDisabled(true);
+            }
+            else {
+                App.btnDeleteTargetNew.setDisabled(true);
+            }
+            if (records[0].get('IsApproval')) {
+                App.btnApprove.setDisabled(true);
+            }
+            App.btnFollowTarget.setDisabled(false);
+            App.btnTargetView.setDisabled(false);
+        }
+        else {
+            App.btnDeleteTargetNew.setDisabled(true);
+            App.btnEditTarget.setDisabled(true);
+            App.btnApprove.setDisabled(true);
+            App.btnEndTarget.setDisabled(true);
+            App.btnFollowTarget.setDisabled(true);
+            App.btnTargetView.setDisabled(true);
+        }
+    };
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    function onDepartmentReady(records) {
+        App.hdfDepartmentID.setValue(records[0].get('id'));
+        App.gpTarget.getStore().load();
+    };
+    var showDepartment = function () {
+        var postUrl = '/Task/Task/ShowDepartment/';
+        Ext.net.DirectMethod.request({
+            url: postUrl
+        });
+    };
+    var showFormAddTarget = function () {
+        var records = App.gpTarget.selModel.getSelection();
+        var parentId = 0;
+        if (records.length > 0) {
+            parentId = records[0].get('id');
+        }
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "Target", new { Area = "Quality" }, null))',
+            params: { targetId: parentId, departId: App.hdfDepartmentID.value}
+        });
+    };
+    var fillDepartent = function (id) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            App.cbDepartment.setValue(parseInt(id));
+            App.winChoiceDepartment.close();
+        }
+    };
+    var showDetailTarget = function () {
+        var records = App.gpTarget.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetail", "Target", new { Area = "Quality" }, null))',
+                params: { id: records[0].get('id') }
+            });
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có mục tiêu nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+    var showEditTarget = function () {
+        var records = App.gpTarget.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "Target", new { Area = "Quality" }, null))',
+                params: {
+                    id: records[0].get('id')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var showApprove = function () {
+        var records = App.gpTarget.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmApproval", "Target", new { Area = "Quality" }, null))',
+                params: { id: records[0].get('id') }
+            });
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có mục tiêu nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+    var showEndTarget = function () {
+        var records = App.gpTarget.selModel.getSelection();
+        if (records.length == 1) {
+            var url = '@(Url.Action("TargetEnd", "Target", new { Area = "Quality" }, null))';
+            var params = { id: records[0].get('id') }
+            onDirectMethod(url, params, 'get');
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có mục tiêu nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+    var showFollowTarget = function () {
+        var records = App.gpTarget.selModel.getSelection();
+        if (records.length == 1) {
+            var url = '@(Url.Action("Follow", "Target", new { Area = "Quality" }, null))';
+            var params = { id: records[0].get('id') }
+            onDirectMethod(url, params);
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có mục tiêu nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+</script>

@@ -1,0 +1,73 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerOrderSelected
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+.ID("winCustomerOrderforContract")
+.Title("Thiết lập đơn hàng cho hợp đồng")
+.Icon(Icon.PageWhiteText)
+.Width(800)
+.Height(400)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+            X.HiddenFor(i => i.CustomerID).ID("hdfCustomerID"),
+            X.HiddenFor(i=>i.ContractID).ID("hdfContractID"),
+            Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerOrder")
+                    .Header(false)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .Store(
+                        Html.X().Store().ID("StoreCustomerOrder")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerOrder", "CustomerContract", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("customerId", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                            ps.Add(new StoreParameter("contractId", "App.hdfContractID.getValue()", ParameterMode.Raw));
+                                        })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("ProductName"),
+                                    Html.X().ModelField().Name("Quantity"),
+                                    Html.X().ModelField().Name("Time"),
+                                    Html.X().ModelField().Name("IsSelect")
+                                )
+                            )
+                            )
+                .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.Column().DataIndex("ProductName").Text("Sản phẩm").Flex(1),
+                        X.NumberColumn().DataIndex("Quantity").Text("Số lượng").Width(80).Align(Alignment.Right),
+                        X.DateColumnExtend().DataIndex("Time").Text("Thời gian").Width(100).Align(Alignment.Center),
+                        X.CheckColumn().DataIndex("IsSelect").Text("Chọn").Width(80).Editable(true)
+                    )
+                .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditOrder"))
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single))
+                .BottomBar(Html.X().CustomPagingToolbar())
+    )
+.Buttons(Html.X().ButtonExit())
+)
+ <script>
+    var onEditOrder = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            var url = '@(Url.Action("UpdateOrder", "CustomerContract" ,new { Area = "Customer" }, null))';
+            var params = {
+                data: e.record.data,
+                contractId: App.hdfContractID.getValue(),
+            };
+            onDirectMethod(url,params);
+        }
+    };
+</script>

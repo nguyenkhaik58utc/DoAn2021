@@ -1,0 +1,39 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerCriteriaCategoryItem
+@(Html.X().CustomWindow()
+            .ID("winEditCriteriaCategory")
+            .Title("Sửa thông tin bộ tiêu chí đánh giá")
+            .Icon(Icon.Pencil)
+            .Items(
+                    Html.X().CustomFormPanel().ID("frCriteriaCategory")
+                            .Items(
+                                    Html.X().HiddenFor(m => m.ID),
+                                    Html.X().HiddenFor(m=>m.ParentID),
+                                    Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên bộ tiêu chí" + Html.Required())
+                                        .BlankText("Tên bộ tiêu chí không được trống!").AllowOnlyWhitespace(false),
+                                    Html.X().TextAreaFor(m => m.Note).MinHeight(100).Flex(1).FieldLabel("Ghi chú").LabelAlign(LabelAlign.Top),
+                                    Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Sử dụng").BoxLabel("Có")
+
+                            )
+            )
+            .Buttons(
+                        Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frCriteriaCategory.getForm().isValid()) { return false; } ";
+                            de.Click.Action = "UpdateCategory";
+                            de.Click.FormID = "frCriteriaCategory";
+                            de.Click.Success = " this.up('window').close();refreshTree();";
+                        }),
+                        Html.X().ButtonExit()
+            )
+    )
+<script>
+    function refreshTree() {
+        var updateRow = App.trCriteriaCategory.selModel.getLastSelected();
+        updateRow.parentNode.reload();
+    };
+</script>

@@ -1,0 +1,88 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var strId = ViewData["ID"].ToString();
+    var startTime = ViewData["StartTime"].ToString();
+    var endTime = ViewData["EndTime"].ToString();
+    var urlStore = ViewData["StoreUrl"].ToString();
+}
+@(Html.X().Window().ID("WinContractStatisDetail")
+.BodyPadding(0)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Maximized(true)
+.Height(1)
+.Icon(Icon.ChartBar)
+.Items(
+     Html.X().GridPanel()
+            .Header(false)
+            .ID("GrContractStatisDetail")
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Store(
+                Html.X().Store().ID("StoreCustomerContract")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .GroupField("CustomerName")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action(urlStore)).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("groupId", strId, ParameterMode.Value));
+                            ps.Add(new StoreParameter("startTime", startTime, ParameterMode.Value));
+                            ps.Add(new StoreParameter("endTime", endTime, ParameterMode.Value));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("Code"),
+                            Html.X().ModelField().Name("CustomerID"),
+                            Html.X().ModelField().Name("CustomerName"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("Total"),
+                            Html.X().ModelField().Name("FinishDate"),
+                            Html.X().ModelField().Name("IsSignCustomer").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsSend").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsEdit").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsApproval").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsAccept").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("RateFinish").Type(ModelFieldType.Float),
+                            Html.X().ModelField().Name("IsPause").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                        )
+                    )
+            )
+            .ColumnModel(
+                   Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                   Html.X().Column().DataIndex("Code").Text("Mã hợp đồng").Width(150),
+                   Html.X().Column().DataIndex("Name").Text("Tên hợp đồng").Flex(1),
+                   Html.X().DateColumnExtend().DataIndex("FinishDate").Text("Thời hạn").Format("dd/MM/yyyy").Width(120).Align(Alignment.Center),
+                   Html.X().NumberColumn().DataIndex("Total").Text("Tổng giá trị").Width(120).Align(Alignment.Right),
+                     Html.X().ComponentColumn()
+                    .Text("Tiến độ")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Component(Html.X().ProgressBar().Text("%"))
+                        .Listeners(ls => ls.Bind.Handler = "cmp.updateProgress(record.get('RateFinish')/100, record.get('RateFinish') + '%');"),
+                   Html.X().Column().DataIndex("Status").Text("Trạng thái").Wrap(true).Width(100).Align(Alignment.Center)
+                )
+            .Features(
+                        Html.X().GroupingSummary()
+                                .ID("GroupingSummaryContract")
+                                .GroupHeaderTplString("{name}")
+                                .HideGroupedHeader(true)
+                                .EnableGroupingMenu(false).ShowSummaryRow(false),
+                        Html.X().GridFilters()
+                                .MenuFilterText("Tìm kiếm")
+                                .Filters(
+                                        Html.X().StringFilter().DataIndex("Code"),
+                                        Html.X().StringFilter().DataIndex("Name"),
+                                        Html.X().DateFilter().DataIndex("FinishDate").AfterText("Sau").BeforeText("Trước").OnText("Tại"),
+                                        Html.X().NumericFilter().DataIndex("Total").EmptyText("Nhập giá trị so sánh")
+                                        )
+                    )
+            .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)

@@ -1,0 +1,140 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerCareResultItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+.ID("WinCare")
+.Title("Kết quả chăm sóc khách hàng")
+.Icon(Icon.CartMagnify)
+        //.Width(900)
+.Maximized(true)
+.Height(500)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+X.HiddenFor(m => m.CustomerID).ID("hdfCustomerID"),
+X.HiddenFor(m => m.GroupCustomerID).ID("hdfGroupCustomerID"),
+Html.X().GridPanel().ID("grCustomerCare")
+                        .Region(Region.Center)
+                        .Layout(LayoutType.Fit)
+                        .Header(false)
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .MarginSpec("-1 0 -1 -1")
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                  Html.X().ButtonCreate()
+                                             .ToolTip("Thêm mới chăm sóc khách hàng").ID("btnAddCustomerCareResult").Handler("AddCareCustomer();"),
+                                  Html.X().ToolbarSeparator(),
+                                  Html.X().ButtonUpdate()
+                                            .ToolTip("Cập nhật chăm sóc khách hàng").ID("btnEditCustomerCareResult").Handler("EditCareCustomer();"),
+                                  Html.X().ToolbarSeparator(),
+                                  Html.X().ButtonDelete().ToolTip("Xóa kết quả chăm sóc").ID("btnDeleteCustomerCareResult").Handler("onDelete(App.grCustomerCare.selModel.getSelection()[0].get('ID'));"),
+                                  Html.X().ToolbarSeparator(),
+                                  Html.X().ButtonView().ToolTip("Xem chi tiết Kết quả chăm sóc").ID("btnDetailCustomerCareResult").Handler("ViewCareCustomer();")
+                                )
+                            )
+                        .Store(
+                            Html.X().Store().AutoLoad(true)
+                            .ID("StoreCustomerCare")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerCare")).Reader(Html.X().JsonReader().Root("data")))
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("customerID", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Note"),
+                                    Html.X().ModelField().Name("CreateAt"),
+                                    Html.X().ModelField().Name("CareName"),
+                                    Html.X().ModelField().Name("CustomerID"),
+                                    Html.X().ModelField().Name("StartTime"),
+                                    Html.X().ModelField().Name("EndTime"),
+                                         Html.X().ModelField().Name("Status"),
+                                     Html.X().ModelField().Name("IsSuccess").Type(ModelFieldType.Boolean)
+                                )
+                          )
+                    )
+                    .ColumnModel(
+                            X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            X.Column().DataIndex("CareName").Text("Chương trình chăm sóc").Width(200),
+                            X.ComponentColumn().Text("Thời gian áp dụng").Columns(
+                            X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                            X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(120).Align(Alignment.Center)),
+                            X.Column().DataIndex("Status").Text("Trạng thái").Width(100),
+                            X.DateColumnExtend().DataIndex("CreateAt").Format("dd/MM/yyyy").Text("Thời gian").Width(120).Align(Alignment.Center),
+                            X.Column().DataIndex("IsSuccess").Renderer("ResultRender").Text("Kết quả").Width(100).Align(Alignment.Center)
+
+
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusCare();"))
+                    .BottomBar(Html.X().CustomPagingToolbar())
+ )
+.Buttons(Html.X().ButtonExit())
+)
+<script>
+    var deleteUrl = '@(Url.Action("DeleteCare"))';
+    var CheckStatusCare = function () {
+        var records = App.grCustomerCare.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDeleteCustomerCareResult, App.btnEditCustomerCareResult, App.btnDetailCustomerCareResult);
+        }
+        else {
+            SetDisabled(App.btnDeleteCustomerCareResult, App.btnEditCustomerCareResult, App.btnDetailCustomerCareResult);
+        };
+    };
+    var AddCareCustomer = function () {
+        var url = '@(Url.Action("CareUpdateForm", "CustomerCareResult", new { Area = "Customer" }, null))';
+        var params = {
+            customerID: App.hdfCustomerID.getValue(),
+            groupCustomerID: App.hdfGroupCustomerID.getValue(),
+            careResultID: 0
+        };
+        onDirectMethod(url, params);
+    };
+    var EditCareCustomer = function () {
+        var records = App.grCustomerCare.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("CareUpdateForm", "CustomerCareResult", new { Area = "Customer" }, null))';
+            var params = {
+                careResultID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewCareCustomer = function () {
+        var records = App.grCustomerCare.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("CareDetailForm", "CustomerCareResult", new { Area = "Customer" }, null))';
+            var params = {
+                careResultID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var template = '<span style="color:{0};">{1}</span>';
+    var ResultRender = function (value) {
+        return Ext.String.format(template, (value == true ? "blue" : "red"), (value == true ? "Thành công" : "Thất bại"));
+    };
+</script>

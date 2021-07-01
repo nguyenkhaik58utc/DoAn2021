@@ -1,0 +1,153 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityTargetItem
+
+@{
+    ////--------------------------   Cây mục tiêu     --------------------------
+    var targetTree = Html.X().TreePanel().ColumnLines(true).RowLines(true)
+                                .RootVisible(false)
+                                .Store(
+                                        Html.X().TreeStore()
+                                                .AutoLoad(false)
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadTarget")).Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                                .Parameters(a => a.Add(Html.X().StoreParameter().Name("targetId").Value("App.hdfParentTargetID.value").Mode(ParameterMode.Raw)))
+                                                .Model(Html.X().Model().IDProperty("id").Fields("id", "text", "CompleteAt"))
+                                      )
+                                .ColumnModel(
+                                            Html.X().Column().Width(150).Text("Ngày hoàn thành")
+                                                                .DataIndex("CompleteAt"),
+                                           Html.X().TreeColumn().Text("Mục tiêu").Wrap(true).DataIndex("text")
+                                                .Width(200)
+                                    );
+    ////--------------------------   Cây kế hoạch     --------------------------
+    var planTree = Html.X().TreePanel().ColumnLines(true).RootVisible(false)
+                      .Store(
+                                        Html.X().TreeStore()
+                                                .AutoLoad(false)
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlan")).Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                                .Parameters(a => a.Add(Html.X().StoreParameter().Name("targetId").Value("App.hdfTarget.value").Mode(ParameterMode.Raw)))
+                                                .Model(Html.X().Model().IDProperty("id").Fields("id", "text", "Status"))
+                                )
+                        .ColumnModel(
+
+                                    Html.X().TreeColumn().Text("Kế hoạch").Wrap(true).DataIndex("text")
+                                            .Width(200),
+                                    Html.X().Column().Width(120).Text("Trạng thái")
+                                            .Align(Alignment.Center).DataIndex("Status")
+                            );
+    ////--------------------------  Cây công việc   --------------------------
+    var urlStoreTask = Url.Action("LoadTasks", "PlanTask", new { area = "Quality" });
+    var paramStoreTask = Html.X().StoreParameter().Name("planId").Value("getPlanId()").Mode(ParameterMode.Raw);
+    var taskTree = Html.X().TreePanel()
+                .Split(true)
+                .AutoScroll(true)
+                .RootVisible(false)
+                .RowLines(true).ColumnLines(true)
+                .SyncFx()
+                .ColumnLines(true)
+                .Store(
+                        Html.X().TreeStore().ID("StoreTask")
+                            .AutoLoad(false)
+                            .Proxy(Html.X().AjaxProxy().Url(urlStoreTask).Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                            .Parameters(a => a.Add(paramStoreTask))
+                            .Model(
+                                    Html.X().Model().IDProperty("id")
+                                            .Fields(
+                                                    "id", "text", "ParentID", "CategoryName", "LevelID", "LevelName", "LevelColor", "StartTime", "EndTime", "TotalTime",
+                                                    "CompleteTime", "IsNew", "IsEdit", "IsComplete", "IsAudit", "IsPass", "IsPause", "IsOverTime", "PerformBy", "CheckBy",
+                                                    "AuditBy", "Status", "Rate", "Cost", "Content", "Note"
+                                                  )
+                                )
+                        )
+    .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(35).Align(Alignment.Center),
+                    Html.X().TreeColumn().Text("Tên công việc").Wrap(true).DataIndex("text")
+                                .Width(200),
+                    Html.X().ComponentColumn().Text("Thời gian thực hiện").Filterable(false)
+                                .Columns(
+                                            Html.X().Column().Width(120).Text("Bắt đầu").Align(Alignment.Center).DataIndex("StartTime"),
+                                            Html.X().Column().Width(120).Text("Kết thúc").Align(Alignment.Center).DataIndex("EndTime")
+                                        ),
+                    Html.X().ComponentColumn().Text("Tiến độ").Filterable(false).Component(Html.X().ProgressBar().Text("%"))
+                            .Listeners(ls => ls.Bind.Handler = "cmp.updateProgress(record.get('Rate')/100, record.get('Rate') + '%');"),
+                    Html.X().Column().Width(100).Text("Trạng thái").Filterable(false).Align(Alignment.Center).DataIndex("Status"),
+                    Html.X().Column().Width(100).Text("Mức độ").Filterable(false).DataIndex("LevelName").Align(Alignment.Center)
+                            .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('LevelColor') + ';'; return value; }" }),
+                    Html.X().Column().Text("Danh mục").Filterable(false)
+                            .DataIndex("CategoryName").Align(Alignment.Left).Width(200)
+             );
+
+}
+@(
+ Html.X().CustomWindow().ID("winTargetFollow").Height(500)
+    .Title("Kiểm soát quá trình thực hiện mục tiêu").Icon(Icon.TagPurple)
+    .Maximized(true).Maximizable(false)
+    .Items(
+            Html.X().Container().Layout(LayoutType.Border).Padding(1)
+                .Items(
+                        Html.X().Hidden().ID("hdfParentTargetID").Value(Model.ID),
+                        targetTree.ID("grTargetFollow").Region(Region.West).Header(false).Width(300).Split(true).Collapsible(true)
+                                        .Listeners(ls =>
+                                    {
+                                        ls.Load.Handler = "expandFollow(this,records);";
+                                        ls.Select.Handler = "onSelectTargetChange();";
+                                    }),
+                        Html.X().Hidden().ID("hdfTarget"),
+                        planTree.ID("grPlanFollow").Region(Region.West).Header(false).Width(300).Split(true).Collapsible(true)
+                                        .Listeners(ls =>
+                                        {
+                                            ls.Load.Handler = "expandFollow(this,records);";
+                                            ls.SelectionChange.Handler = "onSelectPlanChange();";
+                                        }),
+                        Html.X().Hidden().ID("hdfPlan"),
+                        taskTree.ID("grTask").Region(Region.Center)
+                                     .Listeners(ls =>
+                                     {
+                                         ls.Load.Handler = "expandFollow(this,records);";
+                                     })
+                      )
+      )
+.Buttons(Html.X().ButtonExit())
+)
+<script>
+    var expandFollow = function (obj, records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                var node = records[i];
+                if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+                    node.expand();
+                }
+            }
+        };
+        if (!obj.selModel.getCount()) {
+            obj.selModel.select(0);
+        };
+    };
+    var getPlanId = function () {
+        planId = App.hdfPlan.value;
+        return planId;
+    };
+    var onSelectTargetChange = function () {
+        var records = App.grTargetFollow.selModel.getSelection();
+        if (records.length == 1) {
+            App.hdfTarget.setValue(records[0].data.id);
+            App.grPlanFollow.getStore().load();
+        }
+        else {
+            App.hdfTarget.setValue(0);
+        };
+    };
+    var onSelectPlanChange = function () {
+        var records = App.grPlanFollow.selModel.getSelection();
+        if (records.length == 1) {
+            App.hdfPlan.setValue(records[0].data.id);
+            App.grTask.getStore().load();
+        }
+        else {
+            App.hdfPlan.setValue(0);
+        };
+    };
+</script>

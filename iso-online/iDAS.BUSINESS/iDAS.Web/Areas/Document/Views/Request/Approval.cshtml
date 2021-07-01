@@ -1,0 +1,105 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@{
+    string doc = Model.Document;
+    string version = Model.Version;
+    string times = Model.Times;
+}
+@model iDAS.Items.DocumentRequirementItem
+@(Html.X().ApprovalWindow()
+    
+.UrlSubmit(Url.Action("Approve"))
+
+.ItemsExtend(
+        Html.X().FormPanel().Layout(LayoutType.Fit)
+                    .Border(false)
+                    .ID("frmApproveRequest")
+                    .Items(
+                        Html.X().TabPanel()
+                            .ID("TabApproval")
+                            .ActiveTabIndex(0)
+                            .Border(true)
+                            .Items(
+                                    Html.X().CustomFormPanel()
+                                        .Icon(Icon.ApplicationViewDetail)
+                                        .Title("Thông tin đề nghị")
+                                        .Items(
+                                                    Html.X().HiddenFor(m => m.ID),
+                                                        Html.X().HiddenFor(m => m.EmployeesCreateID),
+                                                    Html.X().TextFieldFor(m => m.Name)
+                                                        .FieldLabel("Tên đề nghị")
+                                                        .TabIndex(1)
+                                                        .ReadOnly(true),
+                                                    Html.X().TextFieldFor(m => m.Department.Name)
+                                                        .FieldLabel("Phòng ban")
+                                                        .ReadOnly(true),
+                                                    Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 5 0")
+                                                        .Items(
+                                                                Html.X().ComboBoxFor(m => m.TypeID).ColumnWidth(0.5)
+                                                                    .ID("cbType")
+                                                                    .FieldLabel("Loại đề nghị")
+                                                                    .AllowBlank(false).BlankText("Loại đề nghị bắt buộc chọn!")
+                                                                    .QueryMode(DataLoadMode.Local)
+                                                                    .ForceSelection(true)
+                                                                    .TriggerAction(TriggerAction.All)
+                                                                    .DisplayField("Name")
+                                                                    .ValueField("ID")
+                                                                    .ReadOnly(true)
+                                                                    .Store(
+                                                                            Html.X().Store()
+                                                                                .AutoLoad(true)
+                                                                                .Model(Html.X().Model()
+                                                                                            .IDProperty("ID")
+                                                                                            .Fields(
+                                                                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                                        )
+                                                                                )
+                                                                                .Proxy(Html.X().AjaxProxy()
+                                                                                        .Url(Url.Action("FillRequestType"))
+                                                                                        .Reader(Html.X().JsonReader().Root("data"))
+                                                                                       )
+                                                                        ).Listeners(p => p.Change.Handler = "showControlByType();"),
+                                                                Html.X().DateFieldFor(m => m.FinishDateExpected)
+                                                                    .FieldLabel("Ngày hoàn thành").ReadOnly(true)
+                                                                    .ColumnWidth(0.5).MarginSpec("0 0 0 5")
+                                                                    .Format("dd/MM/yyyy")
+                                                            ),
+                                                    Html.X().TextAreaFor(m => m.Content)
+                                                        .ID("txtContent")
+                                                        .FieldLabel("Nội dung")
+                                                        .ReadOnly(true).MinHeight(250),
+                                                    Html.X().TextAreaFor(m => m.ReasonChange).ID("txtReasonRequest")
+                                                        .FieldLabel("Lý do đề nghị")
+                                                        .ReadOnly(true)
+                                                        .MinHeight(50).Flex(1)
+                                               ),
+                                    Html.X().CustomFormPanel()
+                                            .ItemID("fsPerform")
+                                            .Icon(Icon.Comment)
+                                            .Title("Nội dung sửa đổi")
+                                            .Items(
+                                                    Html.X().TextField().ID("cbDocument").FieldLabel("Tài liệu").Text(doc).ReadOnly(true),
+                                                    Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 5 0")
+                                                        .Items(
+                                                                Html.X().TextField().ID("txtVersion").ColumnWidth(0.5)
+                                                                        .Text(version).FieldLabel("Phiên bản").ReadOnly(true),
+                                                                Html.X().TextField().ID("txtTimes").Text(times).ColumnWidth(0.5)
+                                                                        .MarginSpec("0 0 0 10").FieldLabel("Lần ban hành").ReadOnly(true)
+                                                               ),
+                                                    Html.X().TextAreaFor(m => m.ContentOld).ID("txtContentOld").FieldLabel("Nội dung cũ").ReadOnly(true)
+                                                            .MinHeight(180),
+                                                    Html.X().TextAreaFor(m => m.ContentChange).ID("txtContentChange")
+                                                            .FieldLabel("Nội dung thay đổi").ReadOnly(true)
+                                                            .MinHeight(180).Flex(1)
+                                                 )
+                        )
+                )
+     )
+        .ID("winApproveRequest")
+                .Title("Phê duyệt đề nghị viết mới/sửa đổi tài liệu")
+                .Header(true)
+                .Icon(Icon.Tick)
+)

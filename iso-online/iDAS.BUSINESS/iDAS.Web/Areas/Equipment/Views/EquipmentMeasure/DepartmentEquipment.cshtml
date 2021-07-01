@@ -1,0 +1,198 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.EquipmentMeasureItem
+@(Html.X().Window()
+    .ID("WinDepartmentEquipment")
+    .Title("Thông tin phòng ban quản lý thiết bị: " + Model.Name)
+    .Icon(Icon.Door)
+    .Height(450)
+    .Width(700)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .AutoScroll(true)
+    .Items(
+            Html.X().HiddenFor(m => m.ID).ID("hdfEquipmentMeasureID"),
+            Html.X().GridPanel()
+                .Header(false)
+                .ID("GrDepartmentEquipment")
+                .ColumnLines(true)
+                .Layout(LayoutType.Fit)
+                .ForceFit(true)
+                .StyleSpec("border: none;")
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().Text("Phân phối thiết bị").ToolTip("Thêm mới phân phối thiết bị đến phòng ban")
+                                .ID("btnAddDepartmentEquipment").Icon(Icon.PageGo).Disabled(false).Handler("AddDepartmentEquipment();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnUpdateDepartment")
+                                .Handler("UpdateDepartmentEquipment();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDeleteDepartment")
+                                .Handler("DeleteDepartmentEquipment();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetailDepartment")
+                                .Handler("DetailDepartmentEquipment();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                            Html.X().Button().Icon(Icon.PageBack).Text("Thu hồi thiết bị").Disabled(true).ID("btnDestroyEquipment").Handler("Destroy();")
+                    )
+            )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreDepartmentEquipment")
+                            .AutoLoad(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDepartmentByProduct", "EquipmentMeasureDepartment")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("id", "App.hdfEquipmentMeasureID.value", ParameterMode.Raw));
+                                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("HumanDepartment.Name"),
+                                        Html.X().ModelField().Name("StartTime"),
+                                        Html.X().ModelField().Name("EndTime"),
+                                        Html.X().ModelField().Name("IsUsing")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("HumanDepartment.Name").Text("Đơn vị").Flex(1),
+                                    Html.X().ComponentColumn().Text("Thời gian sử dụng")
+                                            .Columns(
+                                                    Html.X().DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy HH:mm A").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                                                    Html.X().DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy HH:mm A").Text("Kết thúc").Width(120).Align(Alignment.Center)
+                                                    ),
+                                    Html.X().CheckColumn().DataIndex("IsUsing").Text("Đang phân phối").Width(100)
+                        )
+                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusContact()"))
+                    .BottomBar(Html.X().CustomPagingToolbar())
+    )
+    .Buttons(
+            Html.X().Button()
+                    .ID("btnDepartmentEquipmentCancel")
+                    .Text("Đóng")
+                    .Icon(Icon.Cancel)
+                    .Handler("this.up('window').close();")
+                )
+)
+<script>
+    function CheckStatusContact() {
+        var records = App.GrDepartmentEquipment.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailDepartment.setDisabled(false);
+            if (records[0].data.IsUsing == true) {
+                App.btnUpdateDepartment.setDisabled(false);
+                App.btnDeleteDepartment.setDisabled(false);
+                App.btnDestroyEquipment.setDisabled(false);
+            }
+            else {
+                App.btnUpdateDepartment.setDisabled(true);
+                App.btnDeleteDepartment.setDisabled(true);
+                App.btnDestroyEquipment.setDisabled(true);
+            };
+        }
+        else {
+            App.btnUpdateDepartment.setDisabled(true);
+            App.btnDetailDepartment.setDisabled(true);
+            App.btnDeleteDepartment.setDisabled(true);
+        };
+    };
+    function Destroy() {
+        var records = App.GrDepartmentEquipment.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn thu hồi thiết bị này?', function (btn) {
+                if (btn == 'yes') {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Destroy", "EquipmentMeasureDepartment", new { Area = "Equipment" }, null))',
+                        params: {
+                            MeasureId: App.hdfEquipmentMeasureID.value
+                        }
+                    });
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var AddDepartmentEquipment = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "EquipmentMeasureDepartment", new { Area = "Equipment" }))',
+            params: {
+                MeasureId: App.hdfEquipmentMeasureID.value
+            }
+        });
+    };
+    var UpdateDepartmentEquipment = function () {
+        var records = App.GrDepartmentEquipment.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "EquipmentMeasureDepartment", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DetailDepartmentEquipment = function () {
+        var records = App.GrDepartmentEquipment.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "EquipmentMeasureDepartment", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DeleteDepartmentEquipment = function () {
+        var records = App.GrDepartmentEquipment.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var id = records[0].get('ID');
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "EquipmentMeasureDepartment", new { Area = "Equipment" }, null))',
+                        params: {
+                            id: id,
+                        }
+                    });
+                }
+            })
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+</script>

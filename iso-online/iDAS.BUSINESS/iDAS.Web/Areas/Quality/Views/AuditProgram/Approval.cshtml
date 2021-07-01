@@ -1,0 +1,371 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityAuditProgramItem
+@(Html.X().Window()
+        .ID("winApproveAuditProgram")
+        .Title("Phê duyệt")
+        .Icon(Icon.Tick)
+        .Height(500)
+        .Width(1000)
+        .Maximizable(true)
+        .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(false)
+        .Center()
+        .Items(
+            Html.X().FormPanel()
+                .Layout(LayoutType.Border)
+                .StyleSpec("border: none;")
+                .ID("frmAudit")
+                .Border(false)
+                .Items(Html.X().TabPanel()
+                .ActiveTabIndex(0)
+                .Border(true)
+                .Region(Region.Center)
+                .Items(
+                Html.X().Panel()
+                    .BodyPadding(6)
+                    .Icon(Icon.ApplicationViewDetail)
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .StyleSpec("border: none;")
+                    .Title("Nội dung chương trình")
+                    .Frame(true)
+                    .Items(
+                    Html.X().HiddenFor(m => m.ID),           
+                    Html.X().HiddenFor(m=>m.CreateByEmployeeID),
+                    Html.X().TextFieldFor(m => m.Name)
+                                .FieldLabel("Tên chương trình")
+                                .LabelWidth(120)
+                                .ReadOnly(true)
+                                .AllowBlank(false)
+                                .BlankText("Tên chương trình không được trống!")
+                                .AllowOnlyWhitespace(false),
+                                Html.X().Container()
+                                        .Layout(LayoutType.Column)
+                                        .ColSpan(2)
+                                        .MarginSpec("0 0 5 0")
+                                        .Items(
+                                            Html.X().DateTimeFieldFor(m => m.StartTime).ReadOnly(true)
+                                                    .FieldLabel("Bắt đầu").LabelWidth(120)
+                                                    .ColumnWidth(0.55).MarginSpec("0 5 0 0"),
+                                            Html.X().DateTimeFieldFor(m => m.EndTime).LabelWidth(70).ReadOnly(true)
+                                                    .FieldLabel("Kết thúc")
+                                                    .ColumnWidth(0.45)
+                                                ),
+                                Html.X().TextAreaFor(m => m.Content).ReadOnly(true)
+                                        .FieldLabel("Nội dung")
+                                        .Flex(1)
+                                        .LabelWidth(120),
+                                Html.X().TextFieldFor(m => m.Address).ReadOnly(true)
+                                        .FieldLabel("Địa điểm")
+                                        .LabelWidth(120),                                            
+                                 Html.X().TextAreaFor(m => m.Note)
+                                        .Height(185)
+                                        .ReadOnly(true)      
+                                        .FieldLabel("Ghi chú")
+                                        .LabelWidth(120),
+                        Html.X().EmployeeFieldFor(m=>m.Create).Hidden(true)             
+                    ),
+              Html.X().Panel()
+                        .Icon(Icon.UserTick)
+                        .Height(380)
+                        .Border(false)
+                        .BodyPadding(0)
+                        .Margin(0)
+                        .Flex(1)
+                        .Padding(0)
+                        .AutoScroll(true)
+                        .Title("Yêu cầu được đánh giá")
+                        .Layout(LayoutType.Fit)
+                        .Items(
+                Html.X().GridPanel()
+                        .ID("grStandard")
+                        .Header(false)
+                        .Title("Lựa chọn điều khoản đánh giá")
+                        .Region(Region.Center)
+                        .Split(true)
+                        .Border(false)
+                        .Margin(0)
+                        .TitleAlign(TitleAlign.Center)
+                        .Layout(LayoutType.Fit)
+                        .ForceFit(true)
+                        .ColumnLines(true)
+                        .RowLines(true)
+                        .Store(
+                    Html.X().Store()
+                        .ID("StoreStandard")
+                        .AutoLoad(true)
+                        .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetDataISOIndexEdit", "AuditProgram", new { area = "Quality" }))
+                            .Reader(Html.X().JsonReader()
+                            .Root("data"))
+                            )
+                         .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("isoId", "App.grQualityAuditPlan.selModel.getSelection().length > 0 ? App.grQualityAuditPlan.getSelectionModel().getLastSelected().data.ISOID:0", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("programId", Model.ID.ToString(), ParameterMode.Value));
+                            })
+                        .Model(
+                            Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("ListModuleName").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Clause"),
+                                Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                             )
+                        )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column()
+                        .Text("Điều")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Left)
+                        .DataIndex("Clause")
+                        .Width(110),
+                Html.X().Column()
+                        .Text("Yêu cầu tiêu chuẩn")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Left)
+                        .DataIndex("Name")
+                        .Flex(1),
+                   Html.X().Column()
+                        .Text("Module tham chiếu")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .DataIndex("ListModuleName")
+                        .Width(170)
+                        .Align(Alignment.Left),
+                    Html.X().CheckColumn().DataIndex("IsSelected").Width(40).Editable(false)
+                         )
+                        .View(
+                        Html.X().GridView().MarkDirty(false)
+                        )
+                        .Plugins(Html.X().CellEditing())
+                        ),
+                Html.X().Panel()
+                    .Icon(Icon.House)
+                    .Border(false)
+                    .BodyPadding(0)
+                    .Margin(0)
+                    .Padding(0)
+                    .AutoScroll(true)
+                    .Title("Phòng ban tham gia")
+                    .Layout(LayoutType.Fit)
+                    .Items(
+                Html.X().TreePanel()
+                .Title("SƠ ĐỒ TỔ CHỨC")
+                .Header(false)
+                .BodyPadding(0)
+                .MarginSpec("1 0 0 0")
+                .Padding(0)
+                .TitleAlign(TitleAlign.Center)
+                .Layout(LayoutType.Fit)
+                .Icon(Icon.TextListBullets)
+                .ForceFit(true)
+                .RootVisible(false)
+                .RowLines(true)
+                .Root(Html.X().Node().NodeID("0"))
+                .SingleExpand(false)
+                .Border(false)
+                .Region(Region.West)
+                .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                )
+                    .TopBar(
+                            Html.X().Toolbar()
+                                    .Items(
+                                    Html.X().Button()
+                                     .Text("Mở rộng")
+                                     .Icon(Icon.ControlAddBlue)
+                                     .Handler("this.up('treepanel').expandAll();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button()
+                                     .Text("Thu gọn")
+                                               .Icon(Icon.ControlRemoveBlue)
+                                     .Handler("this.up('treepanel').collapseAll();")
+                                                    )
+                                            )
+                .Store(
+                    Html.X().TreeStore()
+                    .ID("stDepartmetChoice")
+                         .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("auditProgramId", Model.ID.ToString(), ParameterMode.Value));
+                                }
+                            )
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDepartments", "AuditDepartment", new { Area = "Quality" }, null)).Reader(Html.X().JsonReader().Root("data")))
+                    .Model(
+                        Html.X().Model().Fields(
+                        Html.X().ModelField().Name("id"),
+                        Html.X().ModelField().Name("text"),
+                        Html.X().ModelField().Name("ParentID"),
+                        Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                        Html.X().ModelField().Name("IsDeleted").Type(ModelFieldType.Boolean),
+                             Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean),
+                        Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                        )
+
+                    )
+                )
+                .ColumnModel(
+                    Html.X().TreeColumn()
+                        .Text("SƠ ĐỒ TỔ CHỨC")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Left)
+                        .DataIndex("text")
+                        .Flex(1),
+                                Html.X().CheckColumn().DataIndex("IsSelected")
+                                                                           .Text("Chọn").Align(Alignment.Center).Editable(false)
+                                                                           .Width(60)
+                                            )
+                                               
+                    .HideHeaders(true)
+            
+                         ),
+                    Html.X().Panel()
+                        .Icon(Icon.UserTick)
+                        .Border(false)
+                             .BodyPadding(0)
+                                .Margin(0)
+                                .Padding(0)
+                        .AutoScroll(true)
+                        .Title("Thành phần tham gia")
+                        .Layout(LayoutType.Fit)
+                       .Items(
+                       Html.X().GridPanel()
+                        .ID("grMnObject")
+                        .Border(false)
+                    .Store(Html.X().Store()
+                            .ID("stMnObject")
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetData", "AuditEmployee"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                                     .Parameters(ps => ps.Add(new StoreParameter("auditProgramId", Model.ID.ToString(), ParameterMode.Value)))
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                            Html.X().Model()
+                                    .Fields(
+
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("AuditID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("EmployeeName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("FileID").Type(ModelFieldType.Auto),
+                                                Html.X().ModelField().Name("FileName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Email").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("EmployeeID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("IsAuditor").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("IsCaptain").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("Phone").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Role").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Type").Type(ModelFieldType.Boolean)
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Center)
+                                    .Width(33),
+                            Html.X().Column()
+                                    .Text("ID")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                                           Html.X().TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+                              Html.X().XTemplate().Html(@<text>
+                            <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                 style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                        </text>)
+                        ),
+                            Html.X().Column()
+                                    .Text("Họ tên")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("EmployeeName")
+                                   .Flex(1)
+                                    .Wrap(true),
+                               Html.X().Column()
+                                        .Text("Chức vụ")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("Role")
+                                       .Width(100)
+                                        .Wrap(true),
+                                             Html.X().Column()
+                                            .Text("Số điện thoại")
+                                            .StyleSpec("font-weight: bold;text-align: center")
+                                                .DataIndex("Phone")
+                                           .Width(100)
+                                            .Wrap(true),
+                                                 Html.X().Column()
+                                            .Text("Email")
+                                            .StyleSpec("font-weight: bold;text-align: center")
+                                                .DataIndex("Email")
+                                           .Width(130)
+                                            .Wrap(true),
+                                                   Html.X().CheckColumn()
+                                                .Text("Trưởng nhóm")
+                                                .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("IsCaptain")
+                                               .Width(100)
+                                                .Wrap(true),
+                                                       Html.X().CheckColumn()
+                                                .Text("Thành viên")
+                                                .StyleSpec("font-weight: bold;text-align: center")
+                                                .DataIndex("IsAuditor")
+                                                   .Width(100)
+                                                    .Wrap(true)
+                    ).SelectionModel(
+                        Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                )
+
+                                  .View(
+                                Html.X().GridView().MarkDirty(false)
+                                )
+                                .Plugins(Html.X().CellEditing())
+                                .BottomBar
+                                (
+                                Html.X().CustomPagingToolbar()
+                             )
+
+                          )
+                          
+
+
+                ),
+               Html.X().ApprovalPanelFor(m => m)
+
+        )
+                                         
+             
+)
+            .Buttons(
+                 Html.X().Button()
+                            .ID("btnAccept")
+                            .TabIndex(17)
+                            .Icon(Icon.Accept)
+                            .Text("Lưu phê duyệt")
+                            .DirectEvents(de =>
+                                {
+                                    de.Click.FormID = "frmAudit";
+                                    de.Click.Url = Url.Action("ApproveProgram");
+                                    de.Click.Before = @"if (!#{frmAudit}.getForm().isValid()) {Ext.MessageBox.show({ title: 'Thông báo', msg: 'Kiểm tra các thông tin cần nhập!', buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation' }); return false; }";
+                                    de.Click.EventMask.ShowMask = true;
+                                    de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+                                    de.Click.Success = "this.up('window').close();";
+                                }),   
+                Html.X().ButtonExit()
+            )
+
+)

@@ -1,0 +1,287 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceCommandItem
+@( Html.X().Window()
+    .Title("Thêm mới lệnh cung cấp dịch vụ")
+    .Icon(Icon.Add)
+    .ID("winNewCommand")
+    .Width(800)
+    .Height(460)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Constrain(true)
+    .Modal(true)
+    .BodyPadding(0)
+         .Border(false)
+    .Items(
+   Html.X().TabPanel()
+            .ActiveTabIndex(0)
+            .Border(true)
+            .Items(Html.X().Panel()
+                .BodyPadding(6)
+                .Icon(Icon.ApplicationViewDetail)
+                .Layout(LayoutType.Fit)
+                .StyleSpec("border: none;")
+                .Title("Thông tin chi tiết")
+                .Frame(true)
+                .Items(
+    Html.X().FormPanel()
+            .ID("frmCommand")
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .Frame(true)
+                    .StyleSpec("border: none;")
+                    .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                        .Items(
+                                    Html.X().TextFieldFor(m => m.Name)
+                                    .ID("txtNameCommand")
+                                    .FieldLabel("Tên lệnh" + Html.Required())
+                                    .AllowOnlyWhitespace(false)
+                                    .TabIndex(2)
+                                    .AllowBlank(false)
+                                        .BlankText("Tên lệnh cung cấp dịch vụ không được để trống!"),
+                                          Html.X().Container()
+                                                .Layout(LayoutType.Column)
+                                                .ColSpan(2)
+                                                .MarginSpec("0 0 5 0")
+                                                .Items(
+                                                Html.X().DateTimeFieldFor(m => m.StartTime)
+                                                .AllowBlank(false)
+                                                .FieldLabel("Bắt đầu" + Html.Required())
+                                                .ColumnWidth(0.5).MarginSpec("0 5 0 0"),
+                                                Html.X().DateTimeFieldFor(m => m.EndTime)
+                                                .FieldLabel("Kết thúc" + Html.Required()).AllowBlank(false)
+                                                .ColumnWidth(0.5)),
+                                                Html.X().TextAreaFor(m => m.Note)
+                                                        .TabIndex(3)
+                                                        .AllowOnlyWhitespace(false)
+                                                        .AllowBlank(false)
+                                                        .FieldLabel("Yêu cầu" + Html.Required())
+                                                        .BlankText("Yêu cầu không được bỏ trống!")
+                                                        .Flex(1),
+                                                  Html.X().Container().Layout(LayoutType.Column)
+                                                                .ColSpan(2)
+                                                                .Items(
+                                                        Html.X().Container()
+                                                                .ColumnWidth(0.5)    
+                                                                .MarginSpec("0 5 0 0")
+                                                                .Items(
+                                                        Html.X().EmployeeFieldFor(m => m.Perform)
+                                                                .Title("Người kiểm soát và thực hiện"+Html.Required())
+                                                                .ID("txtPerform")
+                                                                ),
+                                                        Html.X().Container()
+                                                                .ColumnWidth(0.5)
+                                                                .Items(
+                                                            Html.X().EmployeeFieldFor(m => m.Approval)
+                                                                .Title("Người phê duyệt")                                                                
+                                                                    .ID("txtApproval")
+                                                            )
+                                                      )
+                                                      )
+                                                      ),
+                    Html.X().Panel()
+                            .Icon(Icon.Page)
+                        .Border(false)
+                        .BodyPadding(0)
+                        .ID("panelContract")
+                        .Padding(0)
+                        .Margin(0)
+                        .StyleSpec("border:none")
+                        .Frame(true)
+                        .AutoScroll(true)
+                        .Title("Theo hợp đồng")
+                        .Layout(LayoutType.Fit)
+                        .Items(
+                    Html.X().GridPanel()
+                            .ID("grMnCommandContract")
+                            .Border(false)
+                            .TopBar(
+                    Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                                Html.X().Button().Text("Xem chi tiết").ToolTip("Xem chi tiết").ID("btnDetailContractCreate")
+                                       .Icon(Icon.Zoom).Handler("ViewDetailContractAdd();").Disabled(true)
+                             )
+                          )
+                        .Store(Html.X().Store()
+                                    .ID("stMnCommandContract")
+                                .Proxy(Html.X().AjaxProxy()
+                                         .Url(Url.Action("GetDataContract", "Command"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                    .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("commandId", "0", ParameterMode.Value));
+
+                                    })
+                                .RemoteSort(true)
+                                .AutoLoad(true)
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Model(
+                                Html.X().Model()
+                                        .Fields(
+
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("CustomerID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("CustomerName").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+
+                                        )
+                                      )
+                                  )
+                            .ColumnModel(
+                                Html.X().RowNumbererColumn()
+                                        .Text("STT")
+                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                        .Align(Alignment.Center)
+                                        .Width(33),
+                                Html.X().Column()
+                                        .Text("ID")
+                                        .DataIndex("ID")
+                                        .Hidden(true),
+                                         Html.X().Column()
+                                        .Text("Mã")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("Code")
+                                       .Width(69),
+                                Html.X().Column()
+                                        .Text("Tên hợp đồng")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("Name")
+                                       .Flex(1)
+
+                                        .Wrap(true),
+                                        Html.X().Column()
+                                        .Text("Khách hàng")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("CustomerName")
+                                        .Width(270)
+                                             .Wrap(true),
+                                                  Html.X().CheckColumn()
+                                                       .DataIndex("IsSelected")
+                                                       .Text("Chọn")
+                                                       .Align(Alignment.Center)
+                                                       .Editable(true)
+                                                       .Width(60)
+                                    )
+                                    .SelectionModel(
+                                        Html.X().RowSelectionModel()
+                                                .Mode(SelectionMode.Single)
+                                                .Listeners(l =>
+                                                {
+                                                    l.Select.Handler = "App.btnDetailContractCreate.setDisabled(false);";
+                                                })
+                                                )
+                                   .View(
+                                    Html.X().GridView().MarkDirty(false)
+                                    )
+                                    .BottomBar
+                                    (
+                                                   Html.X().CustomPagingToolbar()
+                                     )
+
+                                      )
+
+                        )
+
+
+                                            )
+                                .Buttons(
+                                          Html.X().ButtonSendWindow()
+                                                    .ID("btnSendApprove")
+                                                         .DirectEvents(de =>
+                                                        {
+                                                            de.Click.ExtraParams.Add(new { val = true });
+                                                            de.Click.Before = @"if (!App.frmCommand.getForm().isValid()) { return false; } ";
+                                                            de.Click.ExtraParams.Add(new { strContractID = new JRawValue("getContractID()") });
+                                                            de.Click.Action = "Insert";
+                                                            de.Click.ExtraParams.Add(new { IsEdit = false });
+                                                            de.Click.FormID = "frmCommand";
+                                                            de.Click.EventMask.ShowMask = true;
+                                                            de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+
+                                                        }),
+                                    Html.X().ButtonSave()
+                                        .ID("btnSaves")
+                                            .DirectEvents(de =>
+                                                    {
+                                                        de.Click.ExtraParams.Add(new { val = false });
+                                                        de.Click.Before = @"if (!App.frmCommand.getForm().isValid()) { return false; } ";
+                                                        de.Click.ExtraParams.Add(new { strContractID = new JRawValue("getContractID()") });
+                                                        de.Click.Action = "Insert";
+                                                        de.Click.ExtraParams.Add(new { IsEdit = true });
+                                                        de.Click.FormID = "frmCommand";
+
+                                                    }),
+                                        Html.X().ButtonSaveAndExit()
+                                            .ID("btnSave")
+                                            .DirectEvents(de =>
+                                                        {
+                                                            de.Click.ExtraParams.Add(new { val = true });
+                                                            de.Click.Before = @"if (!App.frmCommand.getForm().isValid()) { return false; } ";
+                                                            de.Click.ExtraParams.Add(new { strContractID = new JRawValue("getContractID()") });
+                                                            de.Click.Action = "Insert";
+                                                            de.Click.ExtraParams.Add(new { IsEdit = true });
+                                                            de.Click.FormID = "frmCommand";
+                                                        }),
+                                    Html.X().ButtonExit()
+                                )
+
+)
+<script type="text/javascript">
+    var ViewDetailContractAdd = function () {
+        var records = App.grMnCommandContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var getContractID = function () {
+        var prKeys = '';
+        var records = App.stMnCommandContract.getCount();
+        if (records > 0) {
+            var arrPrKey = new Array();
+            for (var i = 0; i < records; i++) {
+                var rec = App.grMnCommandContract.getStore().getAt(i);
+                if (rec.get('IsSelected')) {
+                    arrPrKey[i] = rec.get('ID');
+                }
+            }
+            prKeys = arrPrKey.filter(String).join(",");
+        }
+        return prKeys;
+    };
+    function onSelectEmployee(records) {
+        if (records.length == 1) {
+            App.nameApproval.setValue(records[0].get('Name'));
+            App.hdfEmployeeApproveId.setValue(records[0].get('ID'));
+            App.avatarApproval.setImageUrl(records[0].get('Avatar'));
+            var RoleName = records[0].get('Role');
+            if (RoleName == null) {
+                RoleName = "N/A";
+            };
+            var DepartmentName = records[0].get('DepartmentName');
+            if (DepartmentName == null) {
+                DepartmentName = "N/A";
+            };
+            App.displayApproval.setValue("Đơn vị: " + DepartmentName + "</br> Chức danh: " + RoleName);
+        }
+        else {
+            Ext.Msg.alert("", "Bạn chưa lựa chọn bản ghi nào!");
+        };
+
+    };
+</script>

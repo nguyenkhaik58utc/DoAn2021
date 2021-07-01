@@ -1,0 +1,321 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    bool IsAdd = true;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới khách hàng";
+        IsAdd = true;
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật khách hàng";
+        IsAdd = false;
+    }
+}
+@(Html.X().Window()
+.ID("winNormalCustomer")
+.Title(title)
+.Icon(IconView)
+.Height(500)
+.Maximized(true)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(false)
+.Modal(true)
+.Resizable(false)
+.AutoScroll(true)
+.Items(
+     X.FormPanel().ID("frmUpdate")
+    .Layout(LayoutType.Fit)
+    .Border(false)
+    .AutoScroll(true)
+    .Items(X.TabPanel()
+                .ID("TabPanelCustomer")
+                .ActiveTabIndex(0)
+                .Border(true)
+                .Items(
+                        X.CustomFormPanel().ID("frmCustomer")
+                        .StyleSpec("border: none;")
+                        .Title("Thông tin khách hàng")
+                        .Icon(Icon.User)
+                        .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 110; })
+                        .Items(
+                                X.FormPanel().ColumnWidth(1)
+                                .Layout(LayoutType.HBox)
+                                .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Top, Pack = BoxPack.Start })
+                                .StyleSpec("border: none;")
+                                .Margin(0).BodyPadding(0).Frame(true)
+                                .Items(
+                                            X.Panel().Frame(true)
+                                                    .Layout(LayoutType.Column)
+                                                    .Padding(0).Margin(0)
+                                                    .Border(false)
+                                                    .StyleSpec("border: none;").Flex(1)
+                                                    .Items(
+                                                                X.HiddenFor(m => m.ID).ID("hdfCustomerID"),
+                                                                X.TextFieldFor(m => m.Name).ID("txtCustomerName")
+                                                                        .FieldLabel("Khách hàng" + Html.Required())
+                                                                        .EmptyText("Nhập tên khách hàng ...")
+                                                                        .BlankText("Tên khách hàng không được bỏ trống!")
+                                                                        .MaxLength(200)
+                                                                        .AllowOnlyWhitespace(false)
+                                                                        .ColumnWidth(1)
+                                                                        .MarginSpec("0 8 0 8"),
+                                                                X.TextFieldFor(m => m.RepresentName).ColumnWidth(0.5).FieldLabel("Người đại điện")
+                                                                            .MarginSpec("5 8 0 8"),
+                                                                X.TextFieldFor(m => m.RepresentRole).ColumnWidth(0.5).FieldLabel("Chức danh")
+                                                                            .MarginSpec("5 8 0 0"),
+                                                                X.ComboBoxFor(m => m.CustomerTypeID).ID("CustomerUpdatecbxType")
+                                                                                .QueryMode(DataLoadMode.Local)
+                                                                                .DisplayField("Name")
+                                                                                .ValueField("ID")
+                                                                                .Store(
+                                                                                    Html.X().Store()
+                                                                                    .RemotePaging(true)
+                                                                                    .PageSize(20)
+                                                                                    .AutoDataBind(true)
+                                                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDataActived", "CustomerType", new { Area = "Customer" }, null))
+                                                                                    .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                                                    .Model(
+                                                                                        Html.X().Model().Fields(
+                                                                                            Html.X().ModelField().Name("ID"),
+                                                                                            Html.X().ModelField().Name("Name")
+                                                                                            )
+                                                                                        )
+                                                                                )
+                                                                                .AllowBlank(false)
+                                                                                .FieldLabel("Loại khách hàng" + Html.Required()).ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                                                                X.TextFieldFor(m => m.TaxCode).FieldLabel("Mã số thuế").ColumnWidth(0.5).MarginSpec("5 8 0 0"),                
+                                                                X.RadioGroupFor(m => m.Status, new List<Radio.Config>() {
+                                                                        new Radio.Config{BoxLabel = "Khách hàng tiếp cận", InputValue = "IsNew",Checked=true,ColumnWidth=0.25,ReadOnly=true},
+                                                                        new Radio.Config{BoxLabel = "Khách hàng tiềm năng", InputValue = "IsPotential",ColumnWidth=0.32,ReadOnly=true},
+                                                                        new Radio.Config{BoxLabel = "Khách hàng thực tế", InputValue = "IsOfficial",ColumnWidth=0.3,ReadOnly=true}})
+                                                                    .ID("CustomerStatus").Layout(LayoutType.Column)
+                                                                    .FieldLabel("Phân loại KH" + Html.Required()).AllowBlank(false)
+                                                                    .ColumnWidth(1)
+                                                                    .MarginSpec("5 8 0 8"),
+                                                                X.CustomerCategoryFieldFor(m => m.CustomerCategory).AllowBlank(false).FieldLabel("Nhóm khách hàng" + Html.Required())
+                                                                    .ColumnWidth(1).ID("CustomerUpdateCategory")
+                                                                    .MarginSpec("5 9 0 8"),
+                                                                X.DateFieldFor(m => m.EstablishDate).FieldLabel("Ngày thành lập").EmptyText(DateTime.Now.ToString("dd/MM/yyyy")).ID("txtCustomerBirthday")
+                                                                    .ColumnWidth(0.5)
+                                                                    .MarginSpec("5 8 0 8"),
+                                                                X.TextFieldFor(m => m.Phone).FieldLabel("Điện thoại" + Html.Required()).EmptyText("0989.999.999")
+                                                                    .AllowOnlyWhitespace(false).ID("CustomerUpdatePhone")
+                                                                    .ColumnWidth(0.5)
+                                                                    .MarginSpec("5 8 0 8"),
+                                                                X.TextFieldFor(m => m.Email).FieldLabel("Email").EmptyText("email@idas.com")
+                                                                    .ID("CustomerUpdateEmail")
+                                                                    .ColumnWidth(1)
+                                                                    .MarginSpec("5 8 0 8"),
+                                                                X.TextAreaFor(m => m.Address).FieldLabel("Địa chỉ" + Html.Required()).EmptyText("Nhập địa chỉ")
+                                                                        .Height(42).ID("CustomerUpdateAddress")
+                                                                        .AllowOnlyWhitespace(false)
+                                                                        .ColumnWidth(1)
+                                                                        .MarginSpec("5 8 0 8")),
+                                            X.FieldSet().Layout(LayoutType.Form)
+                                                            .Width(140).Height(205)
+                                                            .PaddingSpec("3 5 5 5")
+                                                            .Items(
+                                                                X.ImageButton().Height(160).Text("Ảnh đại diện").ID("ImageAvatar")
+                                                                    .ImageUrl(Url.Action("LoadImage", "File", new { area = "Generic", fileId = Model.AttachmentFileID, fileName = Model.FileName }))
+                                                                    .ToolTip("Ảnh đại diện").StyleSpec("border: 0.5px solid #b5b8c8; width:98%;"),
+                                                                X.FileUploadField().ID("FileUploadFieldId").ButtonText("").Icon(Icon.ImageAdd)
+                                                                    .Listeners(ls => ls.AfterRender.Fn = "function(cmp){cmp.fileInputEl.set({ accept:'image/*' });}")
+                                                                    .Listeners(ls => ls.Change.Handler = "AvatarChange(this);")
+                                                            )
+                                      ),
+                            X.CustomFormPanel().ColumnWidth(1).Flex(1).Padding(0).MarginSpec("-3 0 0 3")
+                                .Items(
+                                        X.TextFieldFor(m => m.Scope)
+                                            .FieldLabel("Lĩnh vực").EmptyText("Lĩnh vực hoạt động"),
+                                        X.Container().Layout(LayoutType.Column).Items(
+                                                    X.DateFieldFor(m => m.RequireTime).EmptyText(DateTime.Now.ToString("dd/MM/yyy"))
+                                                        .FieldLabel("Thời gian yêu cầu").ColumnWidth(0.43).MarginSpec("0 8 0 0"),
+                                                    X.NumberFieldFor(m => m.SuccessRate).MaxValue(100).MinValue(0).FieldLabel("Tỉ lệ thành công (%)").Icon(Icon.ChartBar).ColumnWidth(0.2),
+                                                    X.Label().Text("Tỉ lệ sửa đổi: ~" + Model.EditDataRate + "(%)").MarginSpec("0 0 0 8").StyleSpec("float: right;").Icon(Icon.ChartBar).ColumnWidth(0.2)
+                                                ).Height(26),
+                                        X.TextAreaFor(m => m.RequireContent).EmptyText("Nhập nội dung yêu cầu")
+                                            .FieldLabel("Nội dung yêu cầu")
+                                            .Height(60),
+                                        X.TextAreaFor(m => m.Note).ID("CustomerUpdateNote")
+                                            .FieldLabel("Ghi chú")
+                                            .MinHeight(66).Flex(1)
+                                            .EmptyText("Nhập ghi chú...")
+                                      )
+                            ),
+                    X.Panel().ID("frmCustomerContact")
+                        .Layout(LayoutType.Fit)
+                        .Frame(true)
+                        .Disabled(IsAdd)
+                        .Title("Thông tin liên hệ")
+                        .Icon(Icon.UserRed)
+                        .Border(false)
+                        .StyleSpec("border: none;")
+                        .Padding(0)
+                        .Items(
+                                Html.X().GridPanel()
+                                    .Header(false)
+                                    .ID("GrCustomerContact")
+                                    .ColumnLines(true)
+                                    .Layout(LayoutType.Fit)
+                                    .ForceFit(true)
+                                    .Border(false)
+                                    .TopBar(
+                                        Html.X().Toolbar()
+                                        .Layout(LayoutType.HBox)
+                                        .Items(
+                                            Html.X().ButtonCreate().ToolTip("Thêm mới liên hệ").ID("btnAddContact").Handler("ShowAddContact();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonUpdate().ID("btnUpdateContact").ToolTip("Cập nhật Liên hệ").Handler("ShowUpdateContact();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonDelete().ToolTip("Xóa Liên hệ").ID("btnDeleteCustomerContact").Handler("DeleteContact();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonView().ToolTip("Xem chi tiết").ID("btnDetailCustomerContact").Handler("ViewContact();")
+                                        )
+                                )
+                                .Store(
+                                    Html.X().Store()
+                                        .ID("StoreCustomerContact")
+                                        .AutoLoad(true)
+                                        .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadContactInfo", "CustomerContact")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("customerId", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                            })
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("AttachmentFileID"),
+                                                Html.X().ModelField().Name("FileName"),
+                                                Html.X().ModelField().Name("Role"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("Email"),
+                                                Html.X().ModelField().Name("Phone")
+                                            )
+                                      )
+                                )
+                                .ColumnModel(
+                                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                X.TemplateColumn().DataIndex("AttachmentFileID").Width(31).Tpl(
+                                                    X.XTemplate().Html(@<text>
+                                                    <img src="@Url.Action("LoadImage", "File", new { area = "Generic"})?fileId={AttachmentFileID}&fileName={FileName}"
+                                                         style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                                                    </text>)
+                                                ),
+                                                X.Column().DataIndex("Name").Text("Người liên hệ").Flex(1),
+                                                X.Column().DataIndex("Role").Text("Chức danh").Width(250),
+                                                X.Column().DataIndex("Phone").Text("Số điện thoại").Width(100).Align(Alignment.Right),
+                                                X.Column().DataIndex("Email").Text("Email").Width(100)
+                                    )
+                                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                                .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusContact()"))
+                                .BottomBar(Html.X().CustomPagingToolbar())
+                              )
+                )
+    )
+)
+    .Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                    {
+                        de.Click.Before = @"if (!App.frmCustomer.getForm().isValid()) { return false; }; ";
+                        de.Click.ExtraParams.Add(new { exit = true });
+                        de.Click.Url = Url.Action("Update");
+                        de.Click.FormID = "frmCustomer";
+                        de.Click.Success = "App.frmCustomerContact.setDisabled(false); App.GrCustomer.store.reload();";
+                    }),
+            Html.X().ButtonSaveAndExit()
+                    .DirectEvents(de =>
+                    {
+                        de.Click.Before = @"if (!App.frmCustomer.getForm().isValid()) { return false; } ";
+                        de.Click.Url = Url.Action("Update");
+                        de.Click.FormID = "frmCustomer";
+                        de.Click.Success = "this.up('window').close(); App.GrCustomer.store.reload();";
+                    }),
+            Html.X().ButtonReset()
+                    .Handler("App.frmUpdate.reset();"),
+            Html.X().ButtonExit()
+                )
+)
+<script>
+    function CheckStatusContact() {
+        var records = App.GrCustomerContact.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateContact, App.btnDetailCustomerContact, App.btnDeleteCustomerContact);
+        }
+        else {
+            SetDisabled(App.btnUpdateContact, App.btnDetailCustomerContact, App.btnDeleteCustomerContact);
+        };
+    };
+    var ShowAddContact = function () {
+        var url = '@(Url.Action("UpdateContactForm", "CustomerContact", new { Area = "Customer" }))';
+        var params = {
+            customerId: App.hdfCustomerID.getValue()
+        };
+        onDirectMethod(url, params)
+    };
+    var ShowUpdateContact = function () {
+        var records = App.GrCustomerContact.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateContactForm", "CustomerContact", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewContact = function () {
+        var records = App.GrCustomerContact.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailContactForm", "CustomerContact", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var DeleteContact = function () {
+        var records = App.GrCustomerContact.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var id = records[0].get('ID');
+                    var url = '@(Url.Action("DeleteContact", "CustomerContact", new { Area = "Customer" }, null))';
+                    var params = {
+                        id: id
+                    };
+                    onDirectMethod(url, params);
+                }
+            })
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AvatarChange = function (obj) {
+        var file = obj.fileInputEl.dom.files[0];
+        var url = URL.createObjectURL(file);
+        App.ImageAvatar.setImageUrl(url);
+    };
+</script>

@@ -1,0 +1,51 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Utilities;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanProfileAssessItem
+    @{
+        var X = Html.X();
+    }
+@(Html.X().Window()
+.ID("WinAssess")
+.Title("Hồ sơ đánh giá")
+.Icon(Icon.Pencil)
+.Width(500)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Form)
+    .Frame(true)
+    .Border(false)
+    .MarginSpec("0 -4 -3 -4")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => df.LabelWidth = 150)
+    .DefaultAnchor("100%")
+    .Items(
+                X.HiddenFor(m => m.ID),
+                X.HiddenFor(m => m.EmployeeID),
+                X.DateFieldFor(m => m.StartDate).FieldLabel("Ngày bắt đầu đánh giá").MarginSpec("0 8 0 8").Width(450),
+                X.DateFieldFor(m => m.EndDate).FieldLabel("Ngày kết thúc đánh giá").MarginSpec("0 8 0 8").Width(450),
+                X.TextFieldFor(m => m.Name).FieldLabel("Đợt đánh giá"+Html.Required()).MaxLength(199).AllowOnlyWhitespace(false).MarginSpec("0 8 0 8").Width(450),
+                X.TextFieldFor(m => m.Score).FieldLabel("Điểm đánh giá").MarginSpec("0 8 0 8").Width(450),
+                X.TextFieldFor(m => m.Result).FieldLabel("Kết quả đánh giá").MarginSpec("0 8 0 8").Width(450),
+                X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú").MarginSpec("0 8 0 8").Width(450)
+           )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.FormID = "frmUpdate";
+                                })
+            , Html.X().ButtonExit())
+)
+

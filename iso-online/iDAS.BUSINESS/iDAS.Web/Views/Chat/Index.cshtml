@@ -1,0 +1,259 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@{Layout = null;}
+<script>
+    function chat(id) {
+        chatHighlight();
+        var employeeId = App.EmployeeID.getValue();
+        if (employeeId == id) {
+            var status = App.ChatStatus.getValue();
+            chatEmployeeUpdate(employeeId, status);
+        }
+        else {
+            App.ChatEmployeeStores.reload();
+        }
+    }
+    function chatOnline() {       
+        App.ChatEmployeeStores.reload();       
+    }
+    function chatOffline() {       
+        App.ChatEmployeeStores.reload();
+    }
+</script>
+<style>
+    .chatEmployee {
+        cursor: pointer;
+    }
+
+    .active {
+        width: 100%;
+        clear: left;
+        margin-bottom: 10px;
+        background-color: #fff;
+        padding: 5px 0px 10px 10px;
+        border-top: #c4c4c4 1px solid;
+        border-bottom: #c4c4c4 1px solid;
+        border-left: #c4c4c4 1px solid;
+        border-bottom-left-radius: 4px;
+        border-top-left-radius: 4px;
+    }
+
+    .offline {
+        width: 100%;
+        clear: left;
+        margin-bottom: 10px;
+        color: grey;
+        opacity: 0.8;
+    }
+
+    .online {
+        width: 100%;
+        clear: left;
+        margin-bottom: 10px;
+        color: blue;
+    }
+</style>
+@(Html.X().Hidden().ID("ChatStatus").Value("online"))
+@(Html.X().Panel().Width(240)
+    .Padding(0)
+    .Margin(0)
+    .Region(Region.West)
+    .Layout(LayoutType.Fit)
+    .BodyStyle("border-right:0px ")
+    .TopBar(
+        Html.X().Toolbar().StyleSpec("border-right: 0px;").Items(
+            Html.X().DisplayField().Text("Online: ").Margins("0 0 0 5"),
+            Html.X().DisplayField().ID("ChatOnlineTotal").Value("0"),
+            Html.X().ToolbarFill(),
+            Html.X().Button()
+                .Margins("0 0 0 0")
+                .StyleHtmlCls("background-image:none")
+                .Icon(Icon.StatusOnline)
+                .Listeners(ls => ls.Click.Handler = "App.ChatStatus.setValue('online'); App.ChatEmployeeStores.reload()"),
+            Html.X().ToolbarSeparator(),
+            Html.X().Button()
+                .Margins("0 5 0 0")
+                .StyleHtmlCls("background-image:none")
+                .Icon(Icon.StatusOffline)
+                .Listeners(ls => ls.Click.Handler = "App.ChatStatus.setValue('offline'); App.ChatEmployeeStores.reload()")
+          )
+    )
+    .Items(
+        Html.X().DataView()
+        .ID("ChatEmployeeView")
+        .Border(false)
+        .SingleSelect(true)
+        .ItemSelector(".chatEmployee")
+        .AutoScroll(true)
+        .TrackOver(true)
+        .Store(
+            Html.X().Store()
+            .ID("ChatEmployeeStores")
+            .AutoLoad(false)
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetEmployees"))
+                .Reader(Html.X().JsonReader().Root("data").IDProperty("ID"))
+            )
+            .Parameters(ps =>
+            {
+                ps.Add(new StoreParameter { Name = "employeeID", Value = "App.EmployeeID.value", Mode = ParameterMode.Raw });
+                ps.Add(new StoreParameter { Name = "status", Value = "App.ChatStatus.value", Mode = ParameterMode.Raw });
+            })
+            .Listeners(ls => ls.Load.Handler = "chatEmployeeActive();chatTotalOnline(); ")
+            .Model(
+                Html.X().Model()
+                    .IDProperty("ID")
+                    .Fields(
+                        Html.X().ModelField().Name("ID"),
+                        Html.X().ModelField().Name("Name"),
+                        Html.X().ModelField().Name("Avatar"),
+                        Html.X().ModelField().Name("Role"),
+                        Html.X().ModelField().Name("TotalNotRead"),
+                        Html.X().ModelField().Name("Department"),
+                        Html.X().ModelField().Name("Status")
+                    )
+            )
+        )
+        .Tpl(@<text>
+            <div id="discussion" style="width: 100%;  height: 100%; display: inline-block; padding-top: 5px; padding-bottom: 5px; padding-left: 5px; background-color: #eeeeee; float: left;">
+                <tpl for=".">
+                    <div class="chatEmployee {Status}" id="{ID}" onclick="chatEmployeeChange('{ID}','{TotalNotRead}');" style="width: 100%; clear:left; margin-bottom: 10px;">
+                        <img src="{Avatar}" width="25" height="35" style="border: #99bce8 1px solid; padding: 1px; border-radius: 2px;float:left;margin:5px 5px 0px 0px;" />
+                        <p style="font-weight:bold;font-size:8pt;padding:0px 0px 0px 0px;margin:0px;">{Name} {TotalNotRead}</p>
+                        <p style="font-size: 7pt; padding: 2px 0px 0px 0px;margin:0px;color:#000;">{Role}</p>
+                        <p style="font-size: 8pt; padding: 2px 0px 0px 0px;margin:0px;color:#000;">{Department}</p>
+                    </div>
+                </tpl>
+            </div>
+        </text>)
+    )
+)
+@(Html.X().Panel()
+    .Region(Region.Center)
+    .Layout(LayoutType.Border)
+    .Border(false)
+    .Items(
+        Html.X().Panel()
+        .ID("ChatPanel")
+        .Region(Region.Center)
+        .BodyStyle("border-bottom:0px")
+        .AutoScroll(true)
+        .Items(
+            Html.X().DataView()
+            .DeferInitialRefresh(false)
+            .ItemSelector("div.b")  
+            .MultiSelect(true)
+            .AutoScroll(true)           
+            .Store(
+                Html.X().Store()
+                .ID("ChatStores")
+                .AutoLoad(false)
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Chat", new { Area = "" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                .Parameters(ps =>
+                {
+                    ps.Add(new StoreParameter("employeeID", "App.EmployeeID.getValue()", ParameterMode.Raw));
+                })
+                .Listeners(ls => ls.Load.Handler = "App.ChatPanel.body.scroll('b', 1000000);")
+                .Model(
+                    Html.X().Model()
+                    .IDProperty("ID")
+                    .Fields(
+                        Html.X().ModelField().Name("ID"),
+                        Html.X().ModelField().Name("Sender")
+                    )
+                )
+            )
+            .Tpl(@<text>
+                <div style="width: 100%; clear: left; margin-bottom: 10px; background-color: #fff; padding: 6px 10px 10px 10px;">
+                    <tpl for=".">
+                        <tpl for="Sender">
+                            <div style="width:100%; display: inline-block; margin-bottom: 5px; align-content:center">
+                                <div style="float:{Display}">
+                                    <img src="{Avatar}" width="25" height="33" style="border: #99bce8 1px solid; padding: 1px; border-radius: 2px;margin:0px 6px 0px 0px;" />
+                                </div>
+                                <div style="width: 88%; float: left; padding: 5px 5px 5px 5px; margin: 0px; border: #c4c4c4 1px solid; border-radius: 4px; line-height: 15px; ">
+                                    <p style="font-size: 7pt; padding: 0px 0px 0px 0px; margin: 0px; color: #000;">{Time}</p>
+                                    <p style="font-size: 8pt; padding: 1px 0px 0px 5px; margin: 0px; color: #3C2727;">{Content}</p>
+                                </div>
+                            </div>
+                        </tpl>
+                    </tpl>
+                </div>
+            </text>)
+        ),
+        Html.X().FormPanel().Region(Region.South)
+            .Layout(LayoutType.Fit)
+            .Height(35)
+            .BodyStyle("background:#fff;")
+            .ID("ChatForm")
+            .Url(Url.Action("Chat", "Chat", new { area = ""}))
+            .Padding(0)
+            .Margin(0)
+            .Border(false)
+            .KeyMap(Html.X().KeyMap().Binding(b => { b.Add(Html.X().KeyBinding().Handler("chatKeyEnter();").KeysString("13")); }))
+            .Items(
+                Html.X().Hidden().ID("EmployeeID").Name("EmployeeID").Value(0),
+                Html.X().TextField().ID("ChatContent").Name("Content").EmptyText("Nhập nội dung trao đổi").HideLabel(true).Border(false)
+            )
+    )
+)
+
+<script type="text/javascript">
+    var urlUpdateChat = '@Url.Action("Update")';
+    var urlTotalOnline = '@Url.Action("SetTotalOnline")';
+    var chatKeyEnter = function () {
+        var body = App.ChatForm.getBody();
+        var mask = new Ext.LoadMask(body, { msg: "Đang thực hiện ...." });
+        mask.show();
+        App.ChatForm.submit({ success: function (result) { mask.hide();}});
+    };
+    var chatEmployeeChange = function (employeeId, totalNotRead) {
+        App.EmployeeID.setValue(employeeId);
+        if (totalNotRead != "") {
+            chatEmployeeUpdate(employeeId, App.ChatStatus.getValue());
+        } else {
+            chatEmployeeActive();
+            App.ChatStores.reload();
+        }
+    };
+    var chatEmployeeUpdate = function (employeeId, status) {
+        Ext.net.DirectMethod.request({
+            url: urlUpdateChat,
+            params: {
+                employeeID: employeeId,
+                status: status,
+            },
+            success: function () {
+                chatEmployeeActive();
+                App.ChatStores.reload();
+            },
+        });
+    }
+    var chatEmployeeActive = function () {
+        var employeeId = App.EmployeeID.getValue();
+        $(".chatEmployee").removeClass("active");
+        $("#" + employeeId).addClass("active");
+    }
+    var chatTotalOnline = function () {
+        var url = urlTotalOnline;
+        Ext.net.DirectMethod.request({
+            url: url,
+        });
+    }
+    var chatHighlight = function () {
+        var btnChat = App.btnChat.btnEl;
+        var highlight = setInterval(function () {
+            if (btnChat.getStyle("background-color") == "rgb(255, 255, 0)") {
+                btnChat.setStyle("background-color", "");
+                btnChat.setStyle("border-radius", "");
+            }
+            else {
+                btnChat.setStyle("background-color", "rgb(255, 255, 0)");
+                btnChat.setStyle("border-radius", "3px");
+            }
+        }, 300);
+        App.btnChat.on("click", function () {
+            btnChat.setStyle("background-color", "");
+            clearInterval(highlight);
+        });
+    }
+</script>

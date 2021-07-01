@@ -1,0 +1,82 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(
+ Html.X().Viewport().Border(false).Layout(LayoutType.Fit).Items(
+    X.HiddenFor(i => i.ID).ID("hdfContactHistoryCustomerID"),
+                        Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerContactHistory")
+                                .Header(false)
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .Border(false)
+                                .Icon(Icon.TextListBullets)
+                                .TopBar(
+                                    Html.X().Toolbar().Hidden(true)
+                                    .Layout(LayoutType.HBox)
+                                    .Items(
+                                            Html.X().ButtonView().Disabled(false)
+                                                .ToolTip("Xem chi tiết").ID("btnDetailOrder").Handler("ViewDetailContactHistory();")
+                                ))
+                                .Store(
+                                    Html.X().Store().ID("StoreCustomerContactHistory")
+                                            .RemotePaging(true)
+                                            .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerContactHistory", "CustomerContactHistory", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                            .Parameters(ps =>
+                                                        {
+                                                            ps.Add(new StoreParameter("customerID", "App.hdfContactHistoryCustomerID.getValue()", ParameterMode.Raw));
+                                                        })
+                                            .Model(
+                                                Html.X().Model().Fields(
+                                                    Html.X().ModelField().Name("ID"),
+                                                    Html.X().ModelField().Name("Employee.Name"),
+                                                    Html.X().ModelField().Name("Time"),
+                                                        Html.X().ModelField().Name("FormName"),
+                                                    Html.X().ModelField().Name("SuccessStatus")
+                                                )
+                                  )
+                            )
+                            .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    X.Column().DataIndex("Employee.Name").Text("Người liên hệ").Flex(1),
+                                    X.DateColumnExtend().DataIndex("Time").Text("Thời gian").Width(100).Align(Alignment.Center),
+                                    X.Column().DataIndex("FormName").Text("Hình thức").Width(120).Align(Alignment.Center),
+                                    X.Column().DataIndex("SuccessStatus").Text("Kết quả").Width(120).Align(Alignment.Center),
+                                    Html.X().ImageCommandColumn()
+                                    .Width(14).Align(Alignment.Center)
+                                    .Commands(
+                                        Html.X().ImageCommand()
+                                            .Icon(Icon.Zoom)
+                                            .ToolTip(t =>
+                                            {
+                                                t.Text = "Xem chi tiết";
+                                            })
+                                            .CommandName("Detail")
+                                    )
+                                    .Listeners(l =>
+                                    {
+                                        l.Command.Handler = "ViewDetailContactHistory(record.data.ID);";
+                                    })
+                                )
+                            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+        //.Listeners(ls => ls.SelectionChange.Fn = "CheckStatusContactHistory")
+                                        )
+                            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script>
+    var ViewDetailContactHistory = function (id) {
+        var url = '@(Url.Action("DetailForm", "CustomerContactHistory", new { Area = "Customer" }, null))';
+        var params = {
+            ID: id
+        };
+        onDirectMethod(url, params);
+    }
+</script>

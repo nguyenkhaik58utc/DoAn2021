@@ -1,0 +1,55 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.DepartmentRequirmentItem
+@{
+    var X = Html.X();
+}
+@(Html.X().CustomWindow()
+    .Title("Chi tiết yêu cầu")
+    .Icon(Icon.Zoom)
+    .Border(false)
+    .Items(
+           X.Panel().Layout(LayoutType.Fit)
+                    .StyleSpec("border: none;")
+                    .Border(false).BodyPadding(0)
+                    .Items(
+                            X.TabPanel()
+                                .Items(
+                                    X.CustomFormPanel().Title("Thông tin yêu cầu")
+                                    .Items(
+                                            X.HiddenFor(m => m.ID),
+                                            X.TextFieldFor(m => m.Name).FieldLabel("Tên yêu cầu").ReadOnly(true),
+                                                 Html.X().ComboBoxFor(m => m.ISOID).FieldLabel("Tên ISO").ReadOnly(true)
+                                                                    .QueryMode(DataLoadMode.Local).Editable(false)
+                                                                    .EmptyText("Tiêu chuẩn ISO ....")
+                                                                    .ForceSelection(true)
+                                                                    .DisplayField("Name")
+                                                                    .ValueField("ID")
+                                                                    .Store(Html.X().Store()
+                                                                                .AutoLoad(true)
+                                                                                .Model(Html.X().Model()
+                                                                                        .IDProperty("ID")
+                                                                                        .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                                                new ModelField("Name", ModelFieldType.String)))
+                                                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetISO"))
+                                                                                                .Reader(Html.X().JsonReader().Root("data")))
+                                                                                                ),   
+                                            X.DateFieldFor(m => m.Time).FieldLabel("Thời gian áp dụng").ReadOnly(true),
+                                            X.CheckboxFor(m => m.IsUse).FieldLabel("Sử dụng").ReadOnly(true),
+                                            X.TextAreaFor(m => m.Scope).FieldLabel("Phạm vi áp dụng").ReadOnly(true),
+                                            X.TextAreaFor(m => m.Object).FieldLabel("Đối tượng áp dụng").ReadOnly(true),
+                                            X.TextAreaFor(m => m.Description).FieldLabel("Mô tả").ReadOnly(true)
+                                                        .EmptyText("Nhập mô tả...").MinHeight(100).Flex(1),
+                                            X.FileUploadFieldFor(m => m.AttachmentFiles).ReadOnly(true)
+                                            ),
+                                    X.Panel().Title("Nội dung").Layout(LayoutType.Fit)
+                                        .Items(
+                                            X.TextAreaFor(m => m.Content).ReadOnly(true)
+                                                        .HideLabel(true).MinHeight(300)
+                                        )
+                                )
+                        )
+            )
+.Buttons( Html.X().ButtonExit())
+)

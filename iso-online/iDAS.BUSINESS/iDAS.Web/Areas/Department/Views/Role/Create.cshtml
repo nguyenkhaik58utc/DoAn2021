@@ -1,0 +1,100 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanRoleItem
+@(Html.X().Window()
+    .ID("CreateRoleWindow")
+    .Title("Thêm mới thông tin chức danh")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(650)
+    .Height(360)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Minimizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreateRoleForm")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Items(
+                Html.X().TabPanel().ID("TabMain").ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Frame(true)
+                            .BodyPadding(5)
+                            .ID("tab1")
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin chức danh")
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().HiddenFor(m => m.DepartmentID).Value(ViewData["DepartmentID"]),
+                                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên chức danh" + Html.Required())
+                                    .EmptyText("Nhập tên chức danh của phòng ban hoặc đơn vị")
+                                    .BlankText("Bạn phải nhập tên chức danh của phòng ban hoặc đơn vị!")
+                                    .AllowBlank(false).AllowOnlyWhitespace(false),
+                                Html.X().TextAreaFor(m => m.ReportTo).FieldLabel("Báo cáo tới")
+                                    .EmptyText("Báo cáo tới ai hoặc chức danh nào"),
+                                Html.X().TextAreaFor(m => m.ReplaceBy).FieldLabel("Thay thế bởi")
+                                    .EmptyText("Thay thế bởi ai hoặc chức danh nào"),
+                                Html.X().TextAreaFor(m => m.Note).FieldLabel("Ghi chú")
+                                    .EmptyText("Thông tin ghi chú thêm của chức danh"),
+                                Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Sử dụng").Checked(true)
+                            ),
+                        Html.X().Panel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Trách nhiệm")
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .Items(Html.X().TextAreaFor(m => m.Resposibility).EmptyText("Thông tin trách nhiệm của chức danh").Flex(1).HideLabel(true)),  
+                        Html.X().Panel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Quyền hạn")
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .Items(Html.X().TextAreaFor(m => m.Authorize).EmptyText("Thông tin quyền hạn của chức danh").HideLabel(true).Flex(1)),
+                        Html.X().Panel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Yêu cầu năng lực")
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .Items(Html.X().TextAreaFor(m => m.Competence).EmptyText("Thông tin yêu cầu năng lực của chức danh").Flex(1).HideLabel(true))
+                    )
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createRoleSubmit(false)"),
+        Html.X().ButtonSaveAndExit().Handler("createRoleSubmit(true)"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var createRoleSubmit = function (exit) {
+        App.CreateRoleForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadRole();
+                    if (exit) {
+                        App.CreateRoleWindow.close();
+                    }
+                    else {
+                        App.CreateRoleForm.reset();
+                        App.TabMain.setActiveTab('tab1');
+                    }
+                }
+            }
+        });
+    };
+</script>

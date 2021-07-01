@@ -1,0 +1,97 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    var windowID = "StatisticalProfile";
+    var StoreParamProfile = ViewData["StoreParamProfileStatiscal"] as StoreParameter;
+}
+@(Html.X().Window()
+            .ID(windowID)
+            .Title("Danh sách đơn hàng")
+            .StyleSpec("-webkit-border-radius:0")
+            .Icon(Icon.ApplicationSideList)
+            .Height(1)
+            .Maximized(true)
+            .Constrain(true)
+            .Layout(LayoutType.Fit)
+            .Modal(true)
+            .Resizable(false)
+            .Margin(0)
+            .BodyPadding(0)
+            .Border(true)
+            .Items(
+
+                Html.X().GridPanel()
+                            .Header(false)
+                            .ID("GrOrder")
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            
+                        
+                        .Store(
+                            Html.X().Store()
+                                .ID("StoreOrder")
+                                .RemotePaging(true)
+                                .PageSize(20).GroupField("SupplierName")
+                                .Sorters(Html.X().DataSorter().Property("SupplierName").Direction(Ext.Net.SortDirection.ASC))
+                                    .Proxy(
+                                            Html.X().AjaxProxy().Url(ViewData["StoreUrlProfile"].ToString())
+                                                .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Parameters(a =>
+                                            {
+                                                a.Add(StoreParamProfile);
+                                                a.Add(new { fromDate = ViewData["FromDate"] });
+                                                a.Add(new { toDate = ViewData["ToDate"] });
+                                            })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                                    Html.X().ModelField().Name("ID"),
+                                                    Html.X().ModelField().Name("CODE"),
+                                                    Html.X().ModelField().Name("Name"),
+                                                    Html.X().ModelField().Name("StatusDisp"),
+                                                    Html.X().ModelField().Name("Status"),
+                                                    Html.X().ModelField().Name("OrderDate"),
+                                                    Html.X().ModelField().Name("ShipDate"),
+                                                    Html.X().ModelField().Name("Amount"),
+                                                    Html.X().ModelField().Name("AmountRecive"),
+                                                    Html.X().ModelField().Name("ReciepDate"),
+                                                    Html.X().ModelField().Name("SupplierName"),
+                                                    Html.X().ModelField().Name("PaymentDisp"),
+                                                    Html.X().ModelField().Name("Payed"),
+                                                    Html.X().ModelField().Name("Owe")
+                                    )
+                                )
+                        )
+                        .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                            Html.X().SummaryColumn().SummaryType(SummaryType.Count).DataIndex("CODE").Text("Mã ĐH").Width(100)
+                                            .SummaryRenderer("return ((value != 0 || value > 1) ? '(' + value +' ĐH)' : '(1 ĐH)');"),
+                                            Html.X().Column().DataIndex("Name").Text("Tên đơn hàng").Flex(1),
+                                            Html.X().DateColumnExtend().DataIndex("OrderDate").Text("Ngày tạo").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("PaymentDisp").Text("HTTT").Width(100),
+                                            Html.X().SummaryColumn().SummaryType(SummaryType.Sum).DataIndex("Amount").Text("Tổng tiền HĐ").Width(100).Renderer("RenderVND").SummaryRenderer("RenderVND"),
+                                            Html.X().SummaryColumn().SummaryType(SummaryType.Sum).DataIndex("AmountRecive").Text("Đã nhận hàng").Width(100).Renderer("RenderVND").SummaryRenderer("RenderVND"),
+                                            Html.X().SummaryColumn().SummaryType(SummaryType.Sum).DataIndex("Payed").Text("Đã TT").Width(100).Renderer("RenderVND").SummaryRenderer("RenderVND"),
+                                            Html.X().SummaryColumn().SummaryType(SummaryType.Sum).DataIndex("Owe").Text("Còn Nợ").Width(100).Renderer("RenderVND").SummaryRenderer("RenderVND"),
+                                            Html.X().Column().DataIndex("StatusDisp").Text("Trạng thái").Width(120).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("Status").Text("Trạng thái").Hidden(true)
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                        .Features(
+                                    Html.X().GroupingSummary()
+                                    .ID("GroupingSummarySupplier")
+                                    .GroupHeaderTplString("{name}")
+                                    .HideGroupedHeader(true)
+                                    .EnableGroupingMenu(false)
+                            )
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar()
+                    )
+                         )
+
+
+)

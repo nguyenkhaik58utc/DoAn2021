@@ -1,0 +1,112 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities;
+@model iDAS.Items.ServiceVideoItem
+
+@(Html.X().Window()
+    .ID("winDetailServiceCmt")
+    .Title("Xem thông tin Đánh giá của khách hàng")
+    .Icon(Icon.Zoom)
+    .Width(800)
+    .BodyPadding(6)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+            .ID("frDetailServiceCmt")
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .StyleSpec("border: none;")
+            .FieldDefaults(d => d.ReadOnly = true)
+            .Items(
+                Html.X().HiddenFor(m => m.ID),
+                      Html.X().Container().Layout(LayoutType.Column).Items(
+            Html.X().Container().Layout(LayoutType.Form).ColumnWidth(0.82).MarginSpec("-6 0 0 0").Items(
+                Html.X().ComboBoxFor(m => m.ServiceID)
+                    .FieldLabel("Dịch vụ*")
+                    .ReadOnly(true)
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .QueryMode(DataLoadMode.Local)
+                    .ForceSelection(true)
+                    .Store(
+                        Html.X().Store()
+                            .AutoLoad(true)
+                            .Model(
+                            Html.X().Model()
+                                    .IDProperty("ID")
+                                    .Fields(
+                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                            )
+                                        )
+                                .Proxy(
+                                Html.X().AjaxProxy()
+                                        .Url(Url.Action("LoadService"))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                            )),
+
+                Html.X().TextFieldFor(m => m.Title)
+                    .ID("txtAuthor")
+                            .ReadOnly(true)
+                    .AllowBlank(false)
+                    .BlankText("Tiêu đề video không được để trống!")
+                    .FieldLabel("Tiêu đề*"),
+                Html.X().TextAreaFor(m => m.Description)
+                    .Height(100)
+                    .ID("Mô tả")
+                            .ReadOnly(true)
+                    .FieldLabel("Mô tả"),
+                          Html.X().TextFieldFor(m => m.Files).ID("Files").AllowBlank(false).BlankText("Đường dẫn video không được trống!").AllowOnlyWhitespace(false).FieldLabel("Đường dẫn video")
+                        ),
+                Html.X().Container()
+                    .Layout(LayoutType.Form)
+                    .ColumnWidth(0.18)
+                    .PaddingSpec("0 0 0 10")
+                    .Items(
+                            Html.X().ImageButton()
+                                    .ID("IconImage")
+                                    .Width(123)
+                                    .Height(150)
+                                        .ImageUrl(@Url.Content(ConstantPath.UploadImageServiceAvatar+Model.Image).ToString()),
+                            Html.X().FileUploadField()
+                                    .ButtonOnly(true)
+                                            .ReadOnly(true)
+                                    .ID("AttachFile")
+                                    .ButtonText("---Chọn ảnh đại diện---")
+                                   
+                            )
+                            ),
+                                Html.X().TextFieldFor(m => m.Author).ID("Author").FieldLabel("Tác giả").ReadOnly(true),
+                                Html.X().TextFieldFor(m => m.Keyword).ID("Keyword").FieldLabel("Từ khóa").ReadOnly(true),
+                                 Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 0 0")
+                                            .Items(
+                                                   Html.X().NumberFieldFor(m => m.Order).ReadOnly(true).MarginSpec("0 5 0 0").ID("Order")
+                                                            .FieldLabel("Thứ tự"),
+                                                            Html.X().CheckboxFor(m => m.IsShow).ID("ckvIsShow").ReadOnly(true)
+                                                    .BoxLabel("Hiển thị").HideLabel(true)
+                                                    .Value(true)
+                                                    .TabIndex(4)
+
+                                           ))
+
+                        )
+        .Buttons(
+          
+            Html.X().Button()
+                .ID("btnCancel")
+                .Text("Thoát")
+                .Icon(Icon.Decline)
+                .TabIndex(20)
+                .Handler(" this.up('window').close();")
+            )
+)
+
+<script type="text/javascript">
+    function renderEditor(htmlEditor) {
+        var toolbar = htmlEditor.getToolbar();
+        toolbar.add({ handler: function () { BrowseImage(); }, iconCls: "x-edit-image", text: "", tooltip: '<b> Insert Image</b><br>Upload a new Image</br>' });
+    };
+    
+</script>

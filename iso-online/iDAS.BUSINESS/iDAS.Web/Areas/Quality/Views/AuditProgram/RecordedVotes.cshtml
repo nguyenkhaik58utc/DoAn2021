@@ -1,0 +1,240 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityAuditProgramItem
+@{
+    var programId = ViewData["programId"].ToString();
+}
+@(Html.X().Window()
+          .ID("winNewAuditProgram")
+          .Title("Danh sách phiếu ghi chép")
+          .Icon(Icon.PageWord)
+                 .Height(450)
+              .Width(750)
+          .Maximizable(true)
+          .BodyPadding(0)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+                Html.X().GridPanel()
+                        .ID("grRecordedVote")
+                        .Header(false)
+                        .Title("Danh sách phiếu ghi chép")
+                        .Region(Region.Center)
+                        .Split(true)
+                        .Border(false)
+                        .Margin(0)
+                        .TitleAlign(TitleAlign.Center)
+                        .Layout(LayoutType.Fit)
+                        .ForceFit(true)
+                        .ColumnLines(true)
+                        .RowLines(true)
+                        .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                            Html.X().ButtonCreate()
+                                .ID("btnAddVote")
+                                .DirectEvents(de =>
+                                {
+                                    de.Click.ExtraParams.Add(new { programId = programId });
+                                    de.Click.Url = Url.Action("ShowFrmAddVote", "AuditProgram");
+                                }),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate()
+                                    .ID("btnUpdateVote")
+                                    .Disabled(true)
+                                    .Handler("updateVote();")
+                                    ,
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView()
+                                    .ID("btnDetailVote")
+                                    .Disabled(true)
+                                    .Handler("detailVote();")
+                                    ,
+                                     Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                    .ID("btnDeleteVote")
+                                    .Disabled(true)
+                                    .Handler("deleteVote();")
+                                    )
+                             )
+                        .Store(
+                    Html.X().Store()
+                        .ID("stRecordedVotes")
+                        .AutoLoad(true)
+                        .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetDataRecordVotes", "AuditProgram", new { area = "Quality" }))
+                            .Reader(Html.X().JsonReader()
+                            .Root("data"))
+                            )
+                         .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("programId", programId, ParameterMode.Value));
+                            })
+                        .Model(
+                            Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("HumanDepartmentName"),
+                                Html.X().ModelField().Name("AuditName"),
+                                Html.X().ModelField().Name("Contents"),
+                                Html.X().ModelField().Name("AuditAt")
+                             )
+                            )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column()
+                        .Text("Phiếu ghi chép thuộc")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Left)
+                        .Wrap(true)
+                        .DataIndex("HumanDepartmentName")
+                        .Width(160),
+                    Html.X().Column()
+                        .Text("Chuyên viên")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Left)
+                              .Wrap(true)
+                        .DataIndex("AuditName")
+                        .Width(110),
+                 Html.X().DateColumn()
+                        .Text("Ngày đánh giá")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Left)
+                              .Wrap(true)
+                        .DataIndex("AuditAt")
+                        .Format("dd/MM/yyyy HH:mm A ")
+                        .Width(140),
+                         Html.X().Column()
+                        .Text("Nội dung ghi chép")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Left)
+                              .Wrap(true)
+                            .DataIndex("Contents")
+                        .Flex(1)
+                        )
+                        .View(
+                        Html.X().GridView().MarkDirty(false)
+                        )
+                            .SelectionModel(
+                        Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                .Listeners(l =>
+                                {
+                                    l.Select.Handler = "checkVotesStatus()";
+                                })
+                                )
+                        .Plugins(Html.X().CellEditing())
+                    .BottomBar(Html.X().CustomPagingToolbar())
+            )
+            .Buttons(
+            Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var updateVote = function () {
+        var records = App.grRecordedVote.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetailVote.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmEditVote", "AuditProgram", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var detailVote = function () {
+        var records = App.grRecordedVote.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetailVote.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetailVote", "AuditProgram", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var checkVotesStatus = function () {
+        var records = App.grRecordedVote.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnUpdateVote.setDisabled(true);
+                App.btnDetailVote.setDisabled(true);
+                App.btnDeleteVote.setDisabled(true);
+                break;
+            case 1:
+                App.btnUpdateVote.setDisabled(false);
+                App.btnDetailVote.setDisabled(false);
+                App.btnDeleteVote.setDisabled(false);
+                break;
+            default:
+                App.btnUpdateVote.setDisabled(true);
+                App.btnDetailVote.setDisabled(true);
+                App.btnDeleteVote.setDisabled(true);
+        }
+    };
+    var deleteVote = function () {
+        var records = App.grRecordedVote.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnUpdateVote.setDisabled(true);
+                        App.btnDetailVote.setDisabled(true);
+                        App.btnDeleteVote.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var stringId = "";
+                            for (var i = 0; i < records.length; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            stringId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("DeleteVote", "AuditProgram", new { Area = "Quality" }, null))',
+                                params: { stringId: stringId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+</script>

@@ -1,0 +1,82 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.LibraryItem
+
+@(Html.X().Window()
+    .Title("Cập nhật thông tin thư viện")
+    .Icon(Icon.Pencil)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmUpdate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().ComboBoxFor(m => m.LibraryCategoryID).FieldLabel("Danh mục")
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Store(
+                        Html.X().Store().AutoLoad(true)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                            )
+                        )
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadLibraryCategories")).Reader(Html.X().JsonReader().Root("data")))
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(1).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Chủ đề *"),
+                            Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").Height(80)
+                        )
+                    ),
+                    Html.X().TextFieldFor(m => m.Tags).FieldLabel("Tags"),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().CheckboxFor(m => m.IsFirst).ColumnWidth(0.3).HideLabel(false).BoxLabel("Luôn ở đầu").FieldLabel("Hiển thị"),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.3).HideLabel(true).BoxLabel("Kích hoạt")
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().DateFieldFor(m => m.RefreshAt).FieldLabel("Ngày đăng").ColumnWidth(0.4)
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmUpdate";
+            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Update");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if (result.result) {reloadLibrary();this.up('window').close();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)

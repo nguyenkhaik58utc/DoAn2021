@@ -1,0 +1,73 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities
+@model iDAS.Items.AccountingDebtTypeItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới phân loại nợ";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật phân loại nợ";
+    }
+}
+@(Html.X().Window()
+.ID("winDebtType")
+.Title(title)
+.Icon(IconView)
+.Width(600)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+                 X.FormPanel().ID("frmUpdate")
+                .Border(false)
+                .Layout(LayoutType.Column)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                     .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 105; })
+                .Items(
+                    X.HiddenFor(m => m.ID),
+                    X.TextFieldFor(m => m.Name).FieldLabel("Phân loại nợ" + Html.Required())
+                            .EmptyText("Phân loại nợ...")
+                            .BlankText("Phân loại nợ không được bỏ trống!")
+                            .AllowOnlyWhitespace(false)
+                            .ColumnWidth(1)
+                            .MarginSpec("5 8 0 8"),
+                    X.NumberFieldFor(m => m.Day).MinValue(0).ColumnWidth(0.8).FieldLabel("Số ngày quá hạn" + Html.Required())
+                                .Icon(Icon.Calendar).AllowBlank(false).MarginSpec("5 8 0 8"), X.Label().Text("Ngày").MarginSpec("5 8 0 0").ColumnWidth(0.2),
+                        X.NumberFieldFor(m => m.Value).MinValue(0).ColumnWidth(0.8).FieldLabel("Định mức").Icon(Icon.Money).MarginSpec("5 8 0 8"), X.Label().Text("(VNĐ)").MarginSpec("5 8 0 0").ColumnWidth(0.2),
+                    X.CheckboxFor(m => m.IsActive).FieldLabel("Kích hoạt")
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("5 8 0 8"),
+                    X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú")
+                            .EmptyText("Nhập ghi chú...")
+                            .ColumnWidth(1).Height(100)
+                            .MarginSpec("5 8 0 8")
+                    )
+)
+.Buttons(
+    Html.X().Button()
+                    .Text("Lưu lại")
+                    .Icon(Icon.DatabaseSave)
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.ExtraParams.Add(new { exit = true });
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.EventMask.ShowMask = true;
+                                    de.Click.FormID = "frmUpdate";
+                                })
+    , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

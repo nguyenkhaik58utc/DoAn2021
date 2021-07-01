@@ -1,0 +1,101 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanEmployeeItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+.ID("WindowDetail")
+.Title("Xem chi tiết thông tin nhân sự")
+.Icon(Icon.Zoom)
+.Width(840)
+.Constrain(true)
+.Layout(LayoutType.VBox)
+.LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+.Modal(true)
+.Resizable(false)
+.BodyPadding(0)
+.Center()
+.AutoScroll(true)
+.Items(
+            Html.X().Container()
+                    .Layout(LayoutType.HBox)
+                    .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Top, Pack = BoxPack.End })
+                    .Items(
+                            X.FieldSet()
+                                 .Layout(LayoutType.Column)
+                                    .Frame(true)
+                                    .StyleSpec("border: 1px solid #b5b8c8;")
+                                    .MarginSpec("8 5 5 5")
+                                    .Padding(0)
+                                    .Flex(1)
+                                    .Items(
+                                        X.HiddenFor(m => m.ID).ID("hdfUserID"),
+                                        X.TextFieldFor(m => m.Name).ID("EmployeeName").FieldLabel("Họ Tên").MarginSpec("5 1 0 5").ColumnWidth(1).ReadOnly(true),
+                                        X.TextFieldFor(m => m.Code).ID("EmployeeCode").FieldLabel("Mã nhân sự").MarginSpec("5 5 0 5").ColumnWidth(0.5).ReadOnly(true),
+                                        X.DateFieldFor(m => m.Birthday).LabelWidth(70).FieldLabel("Ngày sinh").MarginSpec("5 0 0 5").ColumnWidth(0.5).ReadOnly(true),
+                                        X.TextFieldFor(m => m.Phone).FieldLabel("Số điện thoại").MarginSpec("5 5 0 5").ColumnWidth(0.5).ReadOnly(true),
+                                            X.TextFieldFor(m => m.Email).LabelWidth(70).FieldLabel("Email").MarginSpec("5 0 0 5").ColumnWidth(0.5).ReadOnly(true),
+                                        X.TextFieldFor(m => m.WeddingStatus).FieldLabel("Hôn nhân").MarginSpec("5 5 0 5").ColumnWidth(0.5).ReadOnly(true),
+                                        X.RadioGroupFor(m => m.Gender,
+                                                new List<Radio.Config> {
+                                            new Radio.Config{BoxLabel = "Nam", InputValue = true.ToString(), Checked = true,ReadOnly = true},
+                                            new Radio.Config{BoxLabel = "Nữ", InputValue = false.ToString(),ReadOnly = true}
+                                                                    }
+                                                    ).FieldLabel("Giới tính").MarginSpec("5 0 0 5").ColumnWidth(0.5).LabelWidth(70),
+
+                                        X.DateFieldFor(m => m.CreateAt).ID("EmployeeCreateAt").FieldLabel("Ngày tạo").MarginSpec("5 5 0 5").ColumnWidth(0.5).ReadOnly(true),
+                                        X.TextFieldFor(m => m.CreateName).ID("EmployeeCreateName").FieldLabel("Người tạo").LabelWidth(70).MarginSpec("5 0 0 5").ColumnWidth(0.5).ReadOnly(true),
+                                        X.TextAreaFor(m => m.Address).FieldLabel("Địa chỉ").MarginSpec("5 1 5 5").Height(67).ColumnWidth(1).ReadOnly(true)
+                                        ),
+                            X.FieldSet()
+                                .Layout(LayoutType.Form)
+                                .Width(160)
+                                .PaddingSpec("5 5 5 5")
+                                .MarginSpec("8 5 0 0")
+                                .Items(
+                                        Html.X().ImageButton().ID("imgAvatar")
+                                        .ImageUrl(Model.ImageUrl)
+                                        .ToolTip("Ảnh đại diện")
+                                        .Height(200).StyleSpec("border: 0.5px solid #b5b8c8; width:98%;"))),
+                            X.FieldSet()
+                                .Title("Thông tin chức danh")
+                                .Layout(LayoutType.Fit)
+                                .Height(200)
+                                .Padding(0)
+                                .MarginSpec("5 5 5 5")
+                                .StyleSpec("border: none; border-top: 1px solid #b5b8c8;")
+                                .Items(
+                                    Html.X().GridPanel().Header(false)
+                                            .ColumnLines(true)
+                                            .Border(false)
+                                            .ForceFit(true)
+                                            .PaddingSpec("0 0 0 0")
+                                            .StyleSpec("border: 1px solid #b5b8c8;border-top: none;")
+                                            .HideHeaders(true)
+                                            .Store(
+                                                Html.X().Store()
+                                                    .AutoLoad(true)
+                                                    .ID("StorePosition")
+                                                    .GroupField("GroupName")
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPosition", "Organization")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                    .Parameters(ps =>
+                                                                    {ps.Add(new StoreParameter("userId", "App.hdfUserID.value", ParameterMode.Raw));})
+                                                    .Model(
+                                                            Html.X().Model()
+                                                            .Fields(    Html.X().ModelField().Name("ID"),
+                                                                        Html.X().ModelField().Name("GroupName"),
+                                                                        Html.X().ModelField().Name("Name"))))
+                                            .ColumnModel(
+                                                    Html.X().Column().DataIndex("GroupName").Text("Phòng ban").Width(100),
+                                                    Html.X().Column().DataIndex("Name").Text("Chức danh").Width(330)
+                                                    )
+                                            .Features(Html.X().GroupingSummary()
+                                                    .GroupHeaderTplString("{columnName}: {name}")
+                                                    .HideGroupedHeader(true)
+                                                    .ShowSummaryRow(false)
+                                                    )))
+        .Buttons(Html.X().ButtonExit())
+)

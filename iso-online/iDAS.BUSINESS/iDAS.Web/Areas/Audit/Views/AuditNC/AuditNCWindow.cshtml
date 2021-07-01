@@ -1,0 +1,164 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.AuditNCItem
+@{
+    var urlSubmitTask = Url.Action("Insert", "NCTask", new { area = "Quality" });
+    var urlStoreTask = Url.Action("LoadTasks", "NCTask", new { area = "Quality" });
+    var paramStoreTask = Html.X().StoreParameter().Name("NCId").Value("getNCId()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Window()
+   .ID("WindowAuditNC")
+    .Title("Sự không phù hợp đánh giá")
+    .Height(1)
+    .Maximized(true)
+    .Constrain(true)
+    .Layout(LayoutType.Border)
+    .Modal(true)
+    .BodyPadding(0)
+    .Border(true)
+    .Resizable(false)
+    .Center()
+    .Items(
+        Html.X().HiddenFor(m => m.AuditID).ID("hdfAuditID"),
+        Html.X().GridPanel()
+            .Region(Region.Center)
+            .Layout(LayoutType.Fit)
+            .Header(false)
+            .Border(false)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .TopBar(
+                Html.X().Toolbar().ItemID("tbItem")
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().ItemID("btnVerify").Text("Sự không phù hợp").Icon(Icon.ApplicationOsx).Disabled(true).Handler("showIncorrecVerify(this.up('gridpanel'));"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask()
+                            .Listeners(ls => ls.Focus.Handler = "showNCTask(this.up('gridpanel'))").ItemID("btnNCTask").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Yêu cầu khắc phục phòng ngừa").ItemID("btnRequirePrevent").Disabled(true).Icon(Icon.PictureEdit)
+                            .Handler("showPreventRequire(this.up('gridpanel'));")
+                    )
+                )
+                .Store(
+                    Html.X().Store().AutoLoad(true)
+                    .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("LoadNC", "AuditNC", new { area = "Audit" })).Reader(Html.X().JsonReader().Root("data")))
+                            .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("auditId", "App.hdfAuditID.value", ParameterMode.Raw));
+                                                })
+                    .RemoteSort(false)
+                    .RemotePaging(true)
+                    .PageSize(15)
+                    .GroupField("Criteria.Category")
+                    .Model(
+                        Html.X().Model().IDProperty("ID")
+                        .Fields(
+                            new ModelField("ID"),
+                            new ModelField("Criteria.Name"),
+                                new ModelField("Criteria.Category"),
+                            new ModelField("Criteria.ID"),
+                            new ModelField("NCID"),
+                            new ModelField("Content", ModelFieldType.String),
+                            new ModelField("IsObs", ModelFieldType.Boolean),
+                            new ModelField("IsMaximum", ModelFieldType.Boolean),
+                            new ModelField("IsMedium", ModelFieldType.Boolean),
+                            new ModelField("IsVerify", ModelFieldType.Boolean),
+                            new ModelField("Time", ModelFieldType.String),
+                            new ModelField("Status", ModelFieldType.String)
+                        )
+                    )
+                )
+                .ColumnModel(
+                    Html.X().Column().DataIndex("Criteria.Category").Width(100),
+                    Html.X().RowNumbererColumn().Text("STT").Width(40).Align(Alignment.Center),
+                    Html.X().Column().DataIndex("Criteria.Name").Text("Tiêu chí").Width(150),
+                    Html.X().Column().DataIndex("Content").Text("Nội dung").Flex(1),
+                    Html.X().ComponentColumn().Text("Phân loại")
+                    .Columns(
+                            Html.X().CheckColumn().DataIndex("IsObs").Text("Obs").Width(80).Align(Alignment.Center),
+                            Html.X().CheckColumn().DataIndex("IsMedium").Text("m").Width(80).Align(Alignment.Center),
+                            Html.X().CheckColumn().DataIndex("IsMaximum").Text("M").Width(80).Align(Alignment.Center)
+                            ),
+                    Html.X().DateColumnExtend().DataIndex("Time").Format("dd/MM/yyyy").Text("Ngày phát hiện").Align(Alignment.Center).Width(100)
+                )
+                 .Features(Html.X().GroupingSummary()
+                                    .GroupHeaderTplString(" {name}")
+                                    .HideGroupedHeader(true).ShowSummaryRow(false)
+                                    )
+                .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusListIncorect(this);")
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single))
+                .BottomBar(
+                        Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var getNCId = function () {
+        var NCId = 0;
+        var records = NCGridPanel.selModel.getSelection();
+        if (records.length > 0) {
+            NCId = records[0].get('ID');
+        };
+        return NCId;
+    };
+    var showNCTask = function (grid) {
+        NCGridPanel = grid;
+    };
+    function CheckStatusListIncorect(grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length == 1) {
+            if (records[0].get('NCID') == null) {
+                grid.queryById('btnNCTask').setDisabled(true);
+                grid.queryById('btnRequirePrevent').setDisabled(true);
+            }
+            else {
+                if (records[0].get("IsObs") == true) {
+                    grid.queryById('btnNCTask').setDisabled(false);
+                    grid.queryById('btnRequirePrevent').setDisabled(true);
+                }
+                else {
+                    grid.queryById('btnNCTask').setDisabled(true);
+                    grid.queryById('btnRequirePrevent').setDisabled(false);
+                };
+            };
+            grid.queryById('btnVerify').setDisabled(false);
+        }
+        else {
+            grid.queryById('btnNCTask').setDisabled(true);
+            grid.queryById('btnRequirePrevent').setDisabled(true);
+            grid.queryById('btnVerify').setDisabled(true);
+        }
+    };
+    var showPreventRequire = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("PreventRequire", "NC", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('NCID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var showIncorrecVerify = function (grid) {
+        NCGridPanel = grid;
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("VerifyView", "AuditNC", new { Area = "Audit" }, null))';
+            var params = {
+                id: records[0].get('NCID'),
+                criteriaId: records[0].get('Criteria.ID'),
+                criteriaName: records[0].get('Criteria.Name'),
+                auditNCId: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>

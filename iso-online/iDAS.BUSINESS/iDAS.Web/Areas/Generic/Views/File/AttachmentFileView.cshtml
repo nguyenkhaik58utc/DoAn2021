@@ -1,0 +1,217 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend
+@model IEnumerable<iDAS.Items.FileItem>
+@{
+    string key = ViewData["Key"].ToString();
+}
+@(Html.X().Window().ID("wAttachment")
+    .Title("Thông tin file đính kèm").Width(550)
+    .Height(300)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Modal(true)
+    .Resizable(false).Icon(Icon.Attach)
+.Items(
+Html.X().GridPanel().Layout(LayoutType.Fit).ID("grAttachmentFile")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                    Html.X().Toolbar()
+                                        .Layout(LayoutType.HBox)
+
+                                        .Items(
+                                                Html.X().Button().ID("btnFileUploadDelete").Disabled(true)
+                                                    .Listeners(ls => ls.AfterRender.Handler = "if(App." + key + "ReadOnly.getValue()=='true'){this.hide();} else{this.show();}")
+                                                    .Text("Xóa")
+                                                    .Handler("DeleteUploadFile(this);").Icon(Icon.Delete),
+                                                Html.X().Button().ID("btnFileUploadRolBack").Disabled(true)
+                                                        .Text("Khôi phục").Hidden(true)
+                                                        .Handler("RolBackUploadFile(this);").Icon(Icon.PageBack),
+                                                Html.X().Button().ID("btnViewDetailUploadFile").Disabled(true)
+                                                        .Text("Xem").Icon(Icon.Zoom)
+                                                    .Handler("ViewFile();")
+                                            )
+                            )
+                            .Store(
+                            Html.X().StoreFor(Model).ID("storeLoadFileUpload")
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Listeners(ls => ls.DataChanged.Handler = "gridRender();")
+                        )
+                        .ColumnModel(
+                                    Html.X().Column().DataIndex("ID").Hidden(true),
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("TypeIcon").Width(30).Renderer("TypeRenderer").Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("Name").Text("Tên file").Flex(1),
+                                    Html.X().NumberColumn().DataIndex("Size").Renderer("SizeRenderer").Text("Kích thước").Width(120).Align(Alignment.Right),
+                                    Html.X().DateColumnExtend().DataIndex("CreateAt").Format("dd/MM/yyyy").Text("Ngày tạo").Width(120).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("IsDelete").Renderer("StatusRenderer").Text("Trạng thái").Width(100).Align(Alignment.Center)
+                                )
+                           .Listeners(
+                           ls => 
+                               {
+                                   ls.SelectionChange.Handler = "CheckStatusAttachmentFile();";
+                                   ls.CellDblClick.Handler = "ViewFile();";
+                               })
+                        )
+                        .Buttons(Html.X().Button().Text("Đóng").Icon(Icon.Cancel)
+                                .OnClientClick("this.up('window').close();"))
+)
+<script>
+    var configFile = function (cmp) {
+        cmp.fileInputEl.set({ accept: 'image/*' });
+        cmp.fileInputEl.set({ multiple: true });
+    };
+    var SizeRenderer = function (value) {
+        return (value / 1024 + " KB");
+    };
+    var TypeRenderer = function (value) {
+        var tpl = "<img src='" + value + "' />";
+        return tpl;
+    };
+    var template = '<span style="color:{0};">{1}</span>';
+    var StatusRenderer = function (value) {
+        var textValue = "";
+        var colorValue = "";
+        if (value) {
+            textValue = "Đã Xóa";
+            colorValue = "red";
+        }
+        else {
+            textValue = "Đính kèm";
+            colorValue = "green";
+        };
+        return Ext.String.format(template, colorValue, textValue);
+    };
+    var hdfListFileRemove = Ext.getCmp('@key' + '.ListFileRemove');
+    var hdfReadOnlyValue = Ext.getCmp('@key' + "ReadOnly").value;
+    var DeleteUploadFile = function (obj) {
+        var records = App.grAttachmentFile.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa tệp này ?', function (btn) {
+                if (btn == 'yes') {
+                    if (hdfListFileRemove.value) {
+                        var DeleteArray = hdfListFileRemove.value.split(',');
+                        var exits = false;
+                        for (var i = 0; i < DeleteArray.length; i++) {
+                            if (DeleteArray[i] == records[0].data.ID) {
+                                exits = true;
+                            };
+                        };
+                        if (!exits) {
+                            DeleteArray.push(records[0].data.ID);
+                        };
+                        hdfListFileRemove.setValue(DeleteArray.toString());
+                    }
+                    else {
+                        hdfListFileRemove.setValue(records[0].data.ID);
+                    }
+                    var textField = hdfListFileRemove.next();
+                    if (hdfListFileRemove.value) {
+                        var textFileValue = "Đã chọn: " + App.storeLoadFileUpload.count() + " tệp đính kèm (Xóa: " + hdfListFileRemove.value.split(',').length + ")";
+                        textField.setValue(textFileValue);
+                    };
+                    records[0].set({ IsDelete: true });
+                    obj.hide();
+                    App.btnFileUploadRolBack.show();
+                };
+            })
+        }
+    };
+    var RolBackUploadFile = function (obj) {
+        var records = App.grAttachmentFile.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn khôi phục tệp này ?', function (btn) {
+                if (btn == 'yes') {
+                    var DeleteArray = hdfListFileRemove.value.split(',');
+                    if (DeleteArray) {
+                        var newArray = new Array();
+                        var exits = false;
+                        for (var i = 0; i < DeleteArray.length; i++) {
+                            if (DeleteArray[i] == records[0].data.ID) {
+                                exits = true;
+                            }
+                            else {
+                                newArray.push(DeleteArray[i]);
+                            }
+                        };
+                        hdfListFileRemove.setValue(newArray.toString());
+                        var textField = hdfListFileRemove.next();
+                        if (hdfListFileRemove.value) {
+                            var textFileValue = "Đã chọn: " + App.storeLoadFileUpload.count() + " tệp đính kèm (Xóa: " + newArray.length + ")";
+                            textField.setValue(textFileValue);
+                        }
+                    }
+                    records[0].set({ IsDelete: false });
+                    obj.hide();
+                    App.btnFileUploadDelete.show();
+
+                };
+            })
+        }
+    };
+    var ViewFile = function () {
+        var records = App.grAttachmentFile.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@Url.Action("ViewFile", "File", new { Area = "Generic" }, null)',
+                params: {
+                    fileId: records[0].data.ID,
+                },
+                success: function () {
+                },
+            });
+        };
+    };
+    var CheckStatusAttachmentFile = function () {
+        var records = App.grAttachmentFile.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnFileUploadDelete.setDisabled(false);
+            App.btnFileUploadRolBack.setDisabled(false);
+            App.btnViewDetailUploadFile.setDisabled(false);
+            if (records[0].data.IsDelete) {
+                App.btnFileUploadRolBack.show();
+                App.btnFileUploadDelete.hide();
+            }
+            else {
+                App.btnFileUploadRolBack.hide();
+                App.btnFileUploadDelete.show();
+            };
+            if (hdfReadOnlyValue.toLowerCase() == "true") {
+                App.btnFileUploadRolBack.hide();
+                App.btnFileUploadDelete.hide();
+            };
+        }
+        else {
+            App.btnFileUploadDelete.setDisabled(true);
+            App.btnFileUploadRolBack.setDisabled(true);
+            App.btnViewDetailUploadFile.setDisabled(true);
+            if (hdfReadOnlyValue.toLowerCase() == "true") {
+                App.btnFileUploadRolBack.hide();
+                App.btnFileUploadDelete.hide();
+            }
+            else {
+                App.btnFileUploadRolBack.hide();
+                App.btnFileUploadDelete.show();
+            };
+        };
+    };
+    var gridRender = function () {
+        if (hdfListFileRemove.value) {
+            var store = App.storeLoadFileUpload.getRange();
+            var deleteArr = hdfListFileRemove.value.split(',');
+            for (var i = 0; i < store.length; i++) {
+                for (var j = 0; j < deleteArr.length; j++) {
+                    if (store[i].data.ID == deleteArr[j]) {
+                        store[i].set({ IsDelete: true });
+                    };
+                }
+            };
+        };
+    };
+</script>

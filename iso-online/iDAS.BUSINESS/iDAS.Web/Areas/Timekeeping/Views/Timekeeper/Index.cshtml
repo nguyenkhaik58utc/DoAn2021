@@ -1,0 +1,195 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using System.Web.Mvc;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(1)
+    .Items(
+         Html.X().GridPanel()
+            .ID("grdTimekeeper")
+            .Border(true)
+            .Header(true)
+            .MarginSpec("0 1 0 0")
+            .Title("Máy chấm công")
+            .TitleAlign(TitleAlign.Center)
+            .Region(Region.Center)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                        Html.X().ButtonCreate()
+                            .ID("btnAddDetail")
+                            .DirectEvents(de =>
+                            {
+                                de.Click.Url = Url.Action("ShowFrmAdd");
+                            }),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate()
+                            .ID("btnUpdateDetail")
+                            .Disabled(true)
+                            .Handler("updateRecordDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView()
+                            .ID("btnViewDetail")
+                            .Disabled(true)
+                            .Icon(Icon.Zoom)
+                            .Handler("detailRecord();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete()
+                            .ID("btnDeleteDetail")
+                            .Disabled(true)
+                            .Handler("deleteRecordDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Disabled(true)
+                            .ID("btnInputDataLog")
+                            .Icon(Icon.ClockGo)
+                            .Text("Lấy dữ liệu")
+                            .Handler("inputDataLog();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                        )
+                    )
+            .Store(Html.X().Store()
+                    .ID("stTimekeeper")
+                    .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetData"))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                    .RemoteSort(true)
+                    .AutoLoad(true)
+                    //.RemotePaging(true)
+                    //.PageSize(20)
+                    .Model(
+                        Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("IP").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Post").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Serial").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Status").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("StatusText").Type(ModelFieldType.String)
+                            )
+                        )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Center).Width(33),
+                        Html.X().Column().DataIndex("Name").Flex(1).Text("Tên máy"),
+                        Html.X().Column().DataIndex("IP").Width(200).Text("Địa chỉ IP"),
+                        Html.X().Column().DataIndex("Post").Width(150).Text("Cổng kết nối"),
+                        Html.X().Column().DataIndex("Serial").Width(250).Text("Serial")
+                    )
+                    .SelectionModel(
+                        Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "checkStatus();";
+                            })
+                        )
+                    .View(Html.X().GridView().MarkDirty(false))
+                    .Plugins(Html.X().CellEditing())
+                    //.BottomBar(Html.X().CustomPagingToolbar())
+     )
+)
+<script type="text/javascript">
+    var checkStatus = function () {
+        var records = App.grdTimekeeper.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                App.btnInputDataLog.setDisabled(true);
+                break;
+            case 1:
+                App.btnUpdateDetail.setDisabled(false);
+                App.btnDeleteDetail.setDisabled(false);
+                App.btnViewDetail.setDisabled(false);
+                App.btnInputDataLog.setDisabled(false);
+                break;
+            default:
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                App.btnInputDataLog.setDisabled(true);
+        }
+    };
+
+    var deleteRecordDetail = function () {
+        var record = App.grdTimekeeper.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa máy chấm công đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "Timekeeper", new { Area = "Timekeeping" }, null))',
+                            params: { id: id },
+                            success: function () {
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    };
+
+    var detailRecord = function () {
+        var record = App.grdTimekeeper.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetail", "Timekeeper", new { Area = "Timekeeping" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+
+    var updateRecordDetail = function () {
+        var record = App.grdTimekeeper.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmUpdate", "Timekeeper", new { Area = "Timekeeping" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+
+    var inputDataLog = function () {
+        var record = App.grdTimekeeper.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            var ip = record[0].get('IP');
+            var post = record[0].get('Post');
+
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn lấy dữ liệu từ máy chấm công đã chọn?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("InputDataLog", "Timekeeper", new { Area = "Timekeeping" }, null))',
+                            timeout: 500000,
+                            eventMask: { showMask: true, msg: "Vui lòng đợi..." },
+                            params: { id: id, ip: ip, post: post },
+                            success: function () {
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    };
+
+</script>

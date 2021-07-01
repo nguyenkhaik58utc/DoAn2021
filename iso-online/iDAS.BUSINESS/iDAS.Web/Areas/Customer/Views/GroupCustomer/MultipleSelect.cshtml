@@ -1,0 +1,144 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var Selecteds = ViewData["Selected"];
+}
+@(Html.X().Window()
+.ID("winMultipleSelect")
+.Title("Lựa chọn nhóm khách hàng")
+.Listeners(ls => ls.Close.Handler = "this.destroy()")
+.Icon(Icon.Group)
+.Width(500)
+.Height(500)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().Hidden().ID("hdfHiddenIdSelect").Value(Selecteds),
+    Html.X().TreePanel().Margin(0).Padding(0)
+                .Header(false)
+                .ID("trCustomerSelect")
+                .TitleAlign(TitleAlign.Center)
+                .Layout(LayoutType.Fit)
+                .Icon(Icon.TextListBullets)
+                .ForceFit(true)
+                .RowLines(true)
+        //.ColumnLines(true)
+                .SingleExpand(false)
+                .Border(false)
+                .Region(Region.West)
+                .HideHeaders(true)
+                .RootVisible(false)
+        //.MultiSelect(true)
+                .Store(
+                        Html.X().TreeStore().ID("StoreGroupCustomerSelect")
+                            .AutoDataBind(true)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCategorySelected", "GroupCustomer", new { Area = "Customer" }, null))
+                            .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                            .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("IdSelects", "App.hdfHiddenIdSelect.getValue()", ParameterMode.Raw));
+                                        })
+                            .Model(
+                                    Html.X().Model().Fields(Html.X().ModelField().Name("id"),
+                                                            Html.X().ModelField().Name("text"),
+                                                            Html.X().ModelField().Name("ParentID"),
+                                                            Html.X().ModelField().Name("IsParent"),
+                                                            Html.X().ModelField().Name("IsSelect").Type(ModelFieldType.Boolean)
+                                                            ))
+                    )
+                 .ColumnModel(
+                                Html.X().TreeColumn()
+                                        .Text("Tên nhóm")
+                                        .Flex(1)
+                                        .DataIndex("text"),
+                                Html.X().CheckColumn().Width(50).Text("Chọn")
+                                        .DataIndex("IsSelect").Renderer("checkboxrender").Editable(true)
+                            )
+    )
+    .Buttons(
+        Html.X().Button().Text("Chọn").Icon(Icon.PencilAdd).OnClientClick("SelectGroupCustomer(this.up('window'))"),
+        Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var checkboxrender = function (data, metadata, record, rowIndex, columnIndex, store) {
+        if (record.data.IsParent.toLowerCase() == "true")
+            return '';
+        else
+            return (new Ext.ux.CheckColumn()).renderer(data);
+    };
+    var SelectGroupCustomer = function (window) {
+        var dataRecords = App.StoreGroupCustomerSelect.getChangedData().Updated;
+        var ids = App.hdfHiddenIdSelect.value;
+        if (ids != "") {
+            var arrIds = ids.split(',');
+            var arrOld = new Array();
+            var selectRecords = new Array();
+            for (var i = 0; i < arrIds.length; i++) {
+                var exits = false;
+                if (dataRecords)
+                for (var j = 0; j < dataRecords.length; j++) {
+                    if (arrIds[i] == dataRecords[j].id) {
+                        exits = true;
+                    }
+                };
+                if (exits != true) {
+                    arrOld.push(arrIds[i]);
+                };
+            };
+            if (dataRecords) {
+                for (var i = 0; i < dataRecords.length; i++) {
+                    if (dataRecords[i].IsSelect == true) {
+                        selectRecords.push(dataRecords[i]);
+                    };
+                };
+            };
+            if (arrOld.length > 0) {
+                for (var i = 0; i < arrOld.length; i++) {
+                    var OldRecord = App.StoreGroupCustomerSelect.getById(arrOld[i]).data;
+                    if (OldRecord.IsSelect == true) {
+                        selectRecords.push(OldRecord);
+                    };
+                };
+            };
+            OnSelectGroupCustomer(selectRecords);
+            window.close();
+        }
+        else {
+            if (dataRecords != null) {
+                var selectRecords = new Array();
+                for (var i = 0; i < dataRecords.length; i++) {
+                    if (dataRecords[i].IsSelect == true) {
+                        selectRecords.push(dataRecords[i]);
+                    };
+                };
+                OnSelectGroupCustomer(selectRecords);
+                window.close();
+            }
+            else {
+                MessageBox();
+            };
+        }
+    };
+    function t() {
+        var component = App.trCustomerSelect;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+            var selectRecords = new Array();
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].data.IsParent.toLowerCase() == "false") {
+                    selectRecords.push(records[i]);
+                };
+            };
+            OnSelectGroupCustomer(selectRecords);
+            window.close();
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

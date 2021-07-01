@@ -1,0 +1,242 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(
+ Html.X().Viewport().Layout(LayoutType.Border).StyleSpec("border: none;").Border(false).Padding(2).Items(
+Html.X().Panel().Layout(LayoutType.Fit).Region(Region.West).Width(550).Collapsible(true).Split(true).Header(false).Border(false)
+      .Title("Thông tin thống kê kế hoạch").TitleAlign(TitleAlign.Center)
+     .Items(
+                Html.X().TreePanel()
+                                        .TopBar(
+                                                Html.X().Toolbar().ID("tbgpStatisticalTaskCate")
+                                                    .Items(
+                                                            Html.X().SearchByDate("App.TreePanelDepartmentID.store.reload();")
+                                                                        .FromDateID("dfFromDate").ToDateID("dfToDate")
+                                                          )
+                                                )
+                                         .BottomBar(
+                                                Html.X().Toolbar()
+                                                     .Items(
+                                                            Html.X().Button().Text("Mở rộng").Icon(Icon.ControlAddBlue).Handler("App.TreePanelDepartmentID.expandAll();"),
+                                                            Html.X().Button().Text("Thu gọn").Icon(Icon.ControlRemoveBlue).Handler("App.TreePanelDepartmentID.collapseAll();"),
+                                                                        Html.X().ButtonExportExcelFile().GridIDGetFile("TreePanelDepartmentID").TitleFile("Thống kê kế hoạch").isTree(true)
+                                                     )
+                                         )       
+                                         .Header(false)
+                                        .ID("TreePanelDepartmentID")
+                                        .Split(true)
+                                        .Region(Region.Center).Width(300)
+                                        .TitleAlign(TitleAlign.Center)
+                                        .Layout(LayoutType.Fit)
+                                        .ForceFit(true)
+                                        .RootVisible(false)
+                                        .RowLines(true).ColumnLines(true)
+                                        .HideCollapseTool(true)
+                                        .Listeners(ls =>
+                                        {
+                                            ls.Load.Handler = "expandDepartmentPlan(records);";
+                                        })
+                                        .Store(
+                                            Html.X().TreeStore()
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData")).Reader(Html.X().JsonReader().Root("data")))
+                                                .Model(
+                                                    Html.X().Model().Fields("id", "text", "ParentID", "IsActive", "Total", "New", "Wait", "NotApproval", "Edit", "Performing")
+                                                    )
+                                                .Parameters(
+                                                                ps =>
+                                                                {
+                                                                    ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                                    ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                                                }
+                                                            )
+                                        )
+                                        .ColumnModel(
+                                            Html.X().TreeColumn()
+                                                .Align(Alignment.Left).Text("Phòng ban")
+                                                .DataIndex("text").MinWidth(350)
+                                                    .Flex(1),
+                                        Html.X().ComponentColumn()
+                                                                .Width(22)
+                                                                //.PinAllColumns(false)
+                                                                //.AutoWidthComponent(false)
+                                                                //.OverOnly(true)
+                                                                .Component(
+                                                                         Html.X().Button().Width(20).Margin(0)
+                                                                            .StyleHtmlCls("background-image:none")
+                                                                            .Listeners(ls=>ls.Click.Handler="onRowClick(this);")
+                                                                            .MenuItem(
+                                                                               Html.X().Panel()
+                                                                                    .Height(90)
+                                                                                    .Width(200).Layout(LayoutType.Fit)
+                                                                                    .MarginSpec("0 0 0 0")
+                                                                                    .Loader(
+                                                                                            Html.X().ComponentLoader()
+                                                                                                    .Mode(LoadMode.Html)
+                                                                                                    .Url(Url.Action("getPlanDetail"))
+                                                                                                    .LoadMask(mask => mask.ShowMask = true)
+                                                                                                    .Params(
+                                                                                                        new
+                                                                                                        {
+                                                                                                            id = JRawValue.From("App.hdfPlanDetailId.getValue()"),
+                                                                                                            fromDate = JRawValue.From(" App.dfFromDate.getValue().toJSON()"),
+                                                                                                            toDate = JRawValue.From("App.dfToDate.getValue().toJSON()"),
+                                                                                                        }
+                                                                                                    )
+                                                                                    )
+                                                                                     
+                                                                        )
+                                                                ),
+                                        Html.X().Column().DataIndex("Total").Text("Tổng số kế hoạch").Filterable(false)
+                                                .Width(120).Align(Alignment.Right),
+                                        Html.X().Column().DataIndex("New").Text("kế hoạch mới").Filterable(false)
+                                                .Width(120).Align(Alignment.Right),
+                                        Html.X().Column().DataIndex("Edit").Text("Sửa đổi").Filterable(false)
+                                                    .Width(120).Align(Alignment.Right),
+                                        Html.X().Column().DataIndex("Wait").Text("Chờ duyệt").Filterable(false)
+                                                .Width(120).Align(Alignment.Right),
+                                        Html.X().Column().DataIndex("NotApproval").Text("Không duyệt").Filterable(false)
+                                                .Width(120).Align(Alignment.Right),
+                                        Html.X().Column().DataIndex("Performing").Text("Đang thực hiện").Filterable(false)
+                                                .Width(120).Align(Alignment.Right)
+                                            ).SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                                        .Listeners(ls => ls.SelectionChange.Fn = "onSelectCatePlan"))
+ )
+,
+Html.X().Hidden().ID("hdfPlanDetailId"),
+Html.X().Hidden().ID("hdfPlanCateId"),
+Html.X().Panel().Layout(LayoutType.Fit)
+        .Region(Region.Center).AutoScroll(false)
+        .Header(false).Border(true)
+        .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                                Html.X().ComboBox().SelectedItems("0").ID("abc")
+                                            .Items(new ListItem() { Value = "0", Text = "Biểu đồ quạt", },
+                                                    new ListItem() { Value = "1", Text = "Biểu đồ cột" })
+                                    .Listeners(ls => ls.Select.Handler = "onComboboxCharSelect(this);")
+                                )
+               )
+        .Items(
+                Html.X().Panel().Layout(LayoutType.Fit).ID("char0").Title("<b>Biểu đồ quạt</b>").Header(false).Border(false)
+                .Items(
+                        Html.X().CustomCharPie().Field("Data1", new[] { "Name" })
+                                        .Url(Url.Action("GetDataPie"))
+                                        .StoreField("Name", "Data1")
+                                        .Parameters(
+                                                ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("id", "App.hdfPlanCateId.value", ParameterMode.Raw));
+                                                    ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                    ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                                }
+                                          )
+                                        .AutoLoad(false).StoreControlID("storePlanID")
+                                        .ID("CharPiePlan")
+                    ),
+            Html.X().Panel().Layout(LayoutType.Fit).ID("char1").Title("<b>Biểu đồ cột</b>").Hidden(true).Border(false).Header(false)
+                .Items(
+                Html.X().CustomChar(isUseStore: false)
+                                .XAxis("Thống kê mục tiêu", "Name")
+                                .YAxis("(Đơn vị mục tiêu)", "Data1")
+                                .StoreID("storePlanID")
+                                .Series(
+                                         Html.X().CustomColumnSeries("Name", new[] { "Data1" })
+                                                    .Titles(new[] { "Mục tiêu" })
+                                                    .Tips(Html.X().ChartTip()
+                                                                    .TrackMouse(true).Width(210).Height(28)
+                                                                    .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data1') + ' kế hoạch');")
+                                                    )
+                                     ).ID("CharColumnPlan").Height(350))
+                 )
+)
+)
+<script type="text/javascript">
+    var onSelectCatePlan = function () {
+        var records = App.TreePanelDepartmentID.selModel.getSelection();
+        switch (records.length) {
+            case 1:
+                App.hdfPlanCateId.setValue(records[0].get("id"));
+                var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+                mask.show();
+                App.storePlanID.addListener('load', function () {
+                    mask.hide();
+                });
+                App.storePlanID.load();
+                mask.hide();
+                break;
+            default:
+
+        }
+    };
+    var renderTotalTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadTotalTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderPauseTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadPauseTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderOverTimeTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadOverTimeTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDoingTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadDoingTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderFinishTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadFinishTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderFinishOverTimeTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadFinishOverTimeTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderAuditNotTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadAuditNotTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderAuditGoodTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadAuditGoodTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderAuditFailTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadAuditFailTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var tipRenderer = function (storeItem, item) {
+        this.setTitle(storeItem.get('Name'));
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+    var expandDepartmentPlan = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+    };
+    var onComboboxCharSelect = function (obj) {
+        var records = obj.store.getAllRange();
+        for (var i = 0; i < records.length; i++) {
+            var charId = "char" + records[i].data.field1;
+            Ext.getCmp(charId).hide();
+        };
+        Ext.getCmp("char" + obj.value).show();
+    };
+    var onRowClick = function (o) {
+        App.hdfPlanDetailId.setValue(o.record.data.id);
+    };
+</script>

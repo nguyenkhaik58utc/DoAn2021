@@ -1,0 +1,203 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@model iDAS.Items.PriceDataSizeItem
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@{
+    int insert = (int)Common.FormName.Insert;
+    int detail = (int)Common.FormName.Detail;
+    int edit = (int)Common.FormName.Edit;
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+         Html.X().Menu()
+                    .ID("cmMenu")
+                    .Items(
+                        new MenuItem { Text = "Xem chi tiết", ID = "cmViewDetail", Icon = Icon.Zoom, Handler = "showForm('" + detail + "');" },
+                        Html.X().MenuSeparator(),
+                        new MenuItem { Text = "Thêm mới", ID = "cmInsert", Icon = Icon.Add, Handler = "showForm('" + insert + "');" },
+                        new MenuItem { Text = "Sửa", ID = "cmUpdate", Icon = Icon.Pencil, Handler = "showForm('" + edit + "');" },
+                        new MenuItem { Text = "Xóa", ID = "cmDelete", Icon = Icon.Delete, Handler = "deleteRecord();" }
+                        ),
+        Html.X().GridPanel()
+            .ID("grPriceDataSize")
+            .ColumnLines(true)
+            .Border(false)
+            .ForceFit(true)
+            .Header(false)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button()
+                            .Text("Thêm mới")
+                            .Icon(Icon.Add)
+                            .ID("btnInsert")
+                            .Handler("showForm('" + insert + "');")
+                             ,
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Sửa")
+                            .Icon(Icon.Pencil)
+                            .Disabled(true)
+                            .ID("btnEdit")
+                            .Handler("showForm('" + edit + "');"),
+                                          Html.X().ToolbarSeparator(),
+                                 Html.X().Button()
+                                .Text("Xóa")
+                                .Icon(Icon.Delete)
+                                .Disabled(true)
+                                .ID("btnDelete")
+                                    .Handler("deleteRecord();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Xem chi tiết")
+                            .Disabled(true)
+                            .Icon(Icon.Zoom)
+                            .ID("btnDetail")
+                            .Handler("showForm('" + detail + "');")
+                    )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                    .ID("stPriceDataSize")
+                    .PageSize(10)
+                    .Proxy(
+                        Html.X().AjaxProxy()
+                                            .Url(Url.Action("LoadPriceDataSize"))
+                            .ActionMethods(actions =>
+                            {
+                                actions.Read = HttpMethod.POST;
+                            })
+                            .Reader(
+                                Html.X().JsonReader().Root("data")
+                            )
+                        )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column().DataIndex(Model, m => m.Name).Text("Tên gói").Width(200).StyleSpec("font-weight: bold; text-align: center;"),
+                        Html.X().Column().Text("Giá trị(GB)").DataIndex(Model, m => m.Value).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center").Width(80).Wrap(true),
+                Html.X().NumberColumn().DataIndex(Model, m => m.Price).Text("Đơn giá(VNĐ)").Width(150).Align(Alignment.Right).StyleSpec("font-weight: bold; text-align: center;"),
+                  Html.X().Column().DataIndex(Model, m => m.Description).Text("Ghi chú").Flex(1).StyleSpec("font-weight: bold; text-align: center;")
+            )
+            .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+            .View(Html.X().GridView().TrackOver(false))
+            .BottomBar(
+                Html.X().PagingToolbar()
+                    .EmptyMsg("Hiện không có dữ liệu")
+                    .NextText("Trang kế tiếp")
+                    .PrevText("Trang trước")
+                    .LastText("Trang cuối cùng")
+                    .FirstText("Trang đầu tiên")
+                    .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                    .BeforePageText("Trang")
+                    .AfterPageText("của {0}")
+                    .RefreshText("Tải lại Dữ liệu")
+                    .Items(
+                        Html.X().Label("Số bản ghi trên 1 trang"),
+                        Html.X().ToolbarSpacer(10),
+                        Html.X().ComboBox()
+                            .Width(50)
+                            .Items("10", "20", "30", "50", "100")
+                            .SelectedItems("10")
+                           .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                    )
+                    .Plugins(Html.X().ProgressBarPager())
+            )
+                 .SelectionModel(
+                    Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Handler = "checkStatus();")
+                )
+    )
+)
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var showForm = function (cmd) {
+        var records = App.grPriceDataSize.selModel.getSelection();
+        if ((cmd == 2 || cmd == 3) && records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetail.setDisabled(true);
+                    App.btnEdit.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            if (records.length > 0) {
+                var id = records[0].get('ID');
+                var active = records[0].get('IsActive');
+            }
+            showFormInRow(cmd, id, active);
+        }
+    };
+    var showFormInRow = function (cmd, id, status) {
+        var type = 0; var store = '';
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrm", "PriceData", new { Area = "Web" }, null))',
+            params: { id: id, type: cmd }
+        });
+    };
+    var checkStatus = function () {
+        var records = App.grPriceDataSize.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDelete.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+            App.btnEdit.setDisabled(false);
+        } else {
+            App.btnDetail.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+        };
+    };
+    var deleteRecord = function () {
+        var records = App.grPriceDataSize.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận',
+                msg: 'Bạn có chắc chắn muốn xóa nhóm câu hỏi đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Help',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "PriceData", new { Area = "Web" }, null))', params: { ID: id },
+                            success: function (result) {
+                                if (result == 'Error') {
+                                    Ext.MessageBox.show({
+                                        title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa Dữ liệu phát sinh lỗi. Đề nghị liên hệ với Admin!',
+                                        buttons: { yes: 'Đồng ý' },
+                                        iconCls: '#Cancel',
+                                        fn: function (btn) {
+                                            records[0].reject();
+                                            return false;
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn chưa chọn bản ghi cần xóa!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation'
+            });
+        };
+    };
+</script>
+

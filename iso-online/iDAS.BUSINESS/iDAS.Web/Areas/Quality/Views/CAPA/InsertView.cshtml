@@ -1,0 +1,101 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@model iDAS.Items.QualityCAPAItem
+
+@( Html.X().Window()
+    .ID("WindowCAPAInsert")
+    .Title("Thêm mới hành động khắc phục phòng ngừa")
+    .Icon(Icon.Add)
+    .Width(800)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Border(true)
+    .Center()
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Padding(10)
+            .Frame(true)
+            .Border(false)
+            .FieldDefaults(lb => lb.LabelWidth = 120)
+            .Items(
+                    Html.X().HiddenFor(m => m.NCID).ID("hdfNCID_new"),
+                Html.X().TextFieldFor(m => m.Name)
+                    .ID("txtName")
+                    .FieldLabel("Nội dung hành động" + Html.Required())
+                    .EmptyText("Nội dung hành động khắc phục phòng ngừa")
+                    .AllowBlank(false)
+                    .BlankText("Nội dung này không được bỏ trống!"),
+               
+                Html.X().TextAreaFor(m => m.Cause)
+                    .AllowBlank(false)
+                    .FieldLabel("Nguyên nhân" + Html.Required())
+                    .BlankText("Nội dung này không được bỏ trống!")
+                    .EmptyText("Nguồn phát sinh của điểm không phù hợp")
+                    .Height(80),
+                    
+                Html.X().TextAreaFor(m => m.Solution)
+                        .AllowBlank(false)
+                        .FieldLabel("Giải pháp" + Html.Required())
+                        .BlankText("Nội dung này không được bỏ trống!")
+                        .EmptyText("Nguồn phát sinh của điểm không phù hợp")
+                        .Height(80),
+                        
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().DateFieldFor(m => m.CompleteTime).FieldLabel("Ngày hoàn thành" + Html.Required()).Value(DateTime.Now).ColumnWidth(0.5)
+                ),
+                
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().DateFieldFor(m => m.AuditTime).FieldLabel("Thời hạn đánh giá").Value(DateTime.Now).ColumnWidth(0.5)
+                ),    
+                     
+                Html.X().TextAreaFor(m => m.Note)
+                    .FieldLabel("Ghi chú")
+                    .EmptyText("Thông tin ghi chú thêm")
+                    .Height(120)
+
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+            .ID("btnSave")
+            .TabIndex(8)
+            .Icon(Icon.Disk)
+            .Text("Lưu lại")
+            .Handler("onInsertCAPA(this.up('window'))"),
+        Html.X().Button()
+            .ID("btnExit")
+            .TabIndex(9)
+            .Icon(Icon.Cancel)
+            .Text("Thoát")
+            .Handler("this.up('window').close();")
+    )
+)
+<script>
+    function insertCAPA(form) {
+        form.submit({
+            url: '@(Url.Action("Insert", "CAPA", new { area = "Quality"}))',
+            params: {},
+        });
+    }
+    function onInsertCAPA(window) {
+        App.hdfNCID_new.setValue(App.hdfNCID.value);
+        var form = window.down('form');
+        if (checkFormValid(form)) {
+            insertCAPA(form);
+        }
+    }
+    function checkFormValid(form) {
+        if (!form.isValid()) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Chưa nhập đủ các thông tin cần nhập!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+            return false;
+        }
+        return true;
+    }
+</script>

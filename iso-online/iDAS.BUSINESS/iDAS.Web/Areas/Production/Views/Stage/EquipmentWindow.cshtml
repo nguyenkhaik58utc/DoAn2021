@@ -1,0 +1,61 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductionStageEquipmentItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    bool isUpdate = (bool)ViewData["Update"];
+    if (isUpdate)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật thiết bị sản xuất";
+    }
+    else
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới thiết bị sản xuất";
+    }
+}
+@(Html.X().Window()
+    .Title(title)
+    .Icon(IconView)
+    .BodyPadding(0)
+    .Width(350)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+            Html.X().CustomFormPanel().ID("frmEquipmentUpdate")
+                        .Items(
+                                Html.X().HiddenFor(m => m.EquipmentProductionCategoryID).ID("hdfEquipmentProductionCategoryID"),
+                                Html.X().TextFieldFor(m => m.EquipementName).ID("txtEquipementName").FieldLabel("Thiết bị" + Html.Required()).Height(24)
+                                            .BlankText("Bắt buộc nhập thiết bị").EmptyText("Nhập thiết bị --->")
+                                            .RightButtons(Html.X().Button().Icon(Icon.Pencil).Handler("ShowSelectEquipement")).AllowOnlyWhitespace(false),
+                                Html.X().NumberFieldFor(m => m.Quantity).MinValue(1).FieldLabel("Số lượng" + Html.Required())
+                                            .EmptyText("Nhập số lượng cần")
+                                            .AllowBlank(false).BlankText("Bắt buộc nhập số lượng thiết bị")
+                        )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                .Handler("onSaveEquipment(this.up('window'))"),
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var onSaveEquipment = function (window) {
+        if (!App.frmEquipmentUpdate.getForm().isValid()) { return false; };
+        var form = window.down("form");
+        SaveEquipment(form.getForm().getValues(), '@isUpdate');
+        window.close();
+    };
+    var ShowSelectEquipement = function () {
+        onDirectMethod('@Url.Action("EquipmentWindowSelect")');
+    };
+    var SelectEquipement = function (records) {
+        App.hdfEquipmentProductionCategoryID.setValue(records[0].data.id);
+        App.txtEquipementName.setValue(records[0].data.text);
+    };
+</script>

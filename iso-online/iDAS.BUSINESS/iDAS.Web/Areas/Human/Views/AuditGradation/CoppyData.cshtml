@@ -1,0 +1,98 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@{
+    var humanAuditGradationRoleId = ViewData["HumanAuditGradationRoleID"];
+}
+@(Html.X().Window()
+          .ID("winCoppyDataCateCriteria")
+          .Title("Danh sách bộ tiêu chí đánh giá mẫu")
+          .Icon(Icon.DatabaseCopy)
+          .Height(360)
+          .Width(650)
+          .BodyPadding(0)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+               Html.X().GridPanel()
+                .Region(Region.Center)
+                .ID("grCoppyCateCriteria")
+                .Border(false)
+                .RowLines(true)
+                .ColumnLines(true)
+                .ForceFit(true)
+                     .Store(Html.X().Store().ID("stCoppyCategoryCriteria")
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy()
+                                               .Url(Url.Action("GetDataCoppy", "AuditGradation", new { area = "Human" }))
+                                           .Reader(Html.X().JsonReader()
+                                           .Root("data")
+                                           )
+                                    )
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name")
+                                 )
+                             )
+                        )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                    Html.X().Column()
+                            .Text("Bộ tiêu chí")
+                            .Align(Alignment.Left)
+                            .DataIndex("Name")
+                            .Flex(1)
+                            )
+                            .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            )
+                    .Plugins(
+                        Html.X().CellEditing()
+                            .ClicksToEdit(1)
+                        )
+                    .BottomBar(Html.X().CustomPagingToolbar())
+            )
+            .Buttons(
+                Html.X().Button()
+                    .ID("btnSave")
+                    .Text("Tiến hành coppy dữ liệu")
+                    .Icon(Icon.DatabaseSave)
+                    .Handler("coppyDataToGradation();"),
+                Html.X().Button()
+                    .ID("btnCancel")
+                    .Text("Hủy")
+                    .Icon(Icon.Cancel)
+                    .TabIndex(20)
+                    .Handler("this.up('window').close();")
+            )
+)
+
+<script type="text/javascript">
+    var coppyDataToGradation = function () {
+        var records = App.grCoppyCateCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var aId = new Array();
+            var stringId = "";
+            for (var i = 0; i < records.length; i++) {
+                aId[i] = records[i].get('ID');
+            }
+            stringId = aId.join();
+            var url = '@(Url.Action("CoppyData", "AuditGradation", new { Area = "Human" }, null))';
+            var params = {
+                humanAuditGradationRoleId: '@humanAuditGradationRoleId',
+                stringCateId: stringId
+                };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

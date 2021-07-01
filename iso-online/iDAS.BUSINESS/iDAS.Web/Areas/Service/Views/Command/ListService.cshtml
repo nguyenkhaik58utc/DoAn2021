@@ -1,0 +1,138 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    var commandId = ViewData["commandId"] != null ? ViewData["commandId"].ToString() : "0";
+}
+@( Html.X().Window()
+    .Title("Danh sách dịch vụ cung cấp")
+    .Icon(Icon.Add)
+    .Height(420)
+    .Width(720)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(0)
+    .Border(true)
+    .Center()
+    .Items(
+      Html.X().GridPanel()
+                        .ID("grMnCommandService")
+                        .Border(false)
+                    .Store(Html.X().Store()
+                            .ID("stMnCommandService")
+                            .Proxy(Html.X().AjaxProxy()
+                                     .Url(Url.Action("GetDataByCommandID", "CommandService"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("commandId", commandId, ParameterMode.Value));
+
+                                })
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                            Html.X().Model()
+                                    .Fields(
+
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("ContractName").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("CustomerName").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("FromDate").Type(ModelFieldType.Date),
+                                                Html.X().ModelField().Name("ToDate").Type(ModelFieldType.Date),
+                                        Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Center)
+                                    .Width(33),
+                            Html.X().Column()
+                                    .Text("ID")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                                       Html.X().Column()
+                                    .Text("Tên dịch vụ")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("Name")
+                                   .Flex(1),
+                                      Html.X().Column()
+                                    .Text("Khách hàng")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("CustomerName")
+                                   .Width(200),
+                            Html.X().Column()
+                                    .Text("Hợp đồng")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("ContractName")
+                                   .Width(100)
+                                    .Wrap(true),
+                                            Html.X().DateColumnExtend()
+                                        .Text("Từ ngày")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("FromDate")
+                                       .Width(70)
+                                        .Wrap(true),
+                                            Html.X().DateColumnExtend()
+                                        .Text("Đến ngày")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("ToDate")
+                                       .Width(70)
+                                        .Wrap(true)
+
+                    ).SelectionModel(
+                        Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                .Listeners(l =>
+                                {
+                                    l.Select.Handler = "";
+                                })
+                                )
+                                  .View(
+                                Html.X().GridView().MarkDirty(false)
+                                )
+
+                                .Plugins(
+                                                    Html.X().RowEditing()
+                                                    .SaveBtnText("Cập nhật")
+                                                    .CancelBtnText("Hủy bỏ")
+                                                        .Listeners(l =>
+                                                        {
+                                                            l.Edit.Fn = "onEditSelected";
+                                                            l.CancelEdit.Handler = "if(e.record.phantom){e.store.remove(e.record);}";
+                                                        })
+                                                )
+                                .BottomBar
+                                (
+                                      Html.X().CustomPagingToolbar())
+
+               )
+            .Buttons(
+                Html.X().ButtonExit()
+            )
+
+)
+<script type="text/javascript">
+    var onEditSelected = function (editor, e) {
+        var commandId = '@(commandId)';
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateServiceSelected", "Command"))',
+                params: {
+                    data: e.record.data,
+                    commandId: commandId
+
+                }
+            });
+        }
+    };
+</script>

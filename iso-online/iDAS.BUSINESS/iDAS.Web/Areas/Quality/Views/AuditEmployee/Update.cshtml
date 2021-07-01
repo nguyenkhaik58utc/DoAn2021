@@ -1,0 +1,61 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.QualityAuditEmployeeItem
+@(Html.X().Window()
+          .ID("winEditAuditObject")
+          .Title("Cập nhật thành phần tham gia")
+          .Icon(Icon.Pencil)
+          .Height(253)
+          .Width(550)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().FormPanel()
+                .ID("frAuditObject")
+                .Layout(LayoutType.Column)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+        .Items(
+        Html.X().HiddenFor(m => m.ID),
+             Html.X().FieldSet().Title("Thông tin cá nhân").MarginSpec("-2 0 0 0").Layout(LayoutType.Form).ColumnWidth(0.77).Items(
+            Html.X().TextFieldFor(m => m.EmployeeName).FieldLabel("Họ tên").ReadOnly(true),
+                     Html.X().TextFieldFor(m => m.Role).FieldLabel("Chức danh").ReadOnly(true),
+                      Html.X().TextFieldFor(m => m.Email).FieldLabel("Email").ReadOnly(true),
+                       Html.X().TextFieldFor(m => m.Phone).FieldLabel("Điện thoại").ReadOnly(true),
+                    Html.X().CheckboxFor(m => m.IsCaptain).ID("cbIsCap").BoxLabel("Trưởng nhóm đánh giá").HideLabel(true)
+                    .MarginSpec("0 0 0 105"),
+                           Html.X().CheckboxFor(m => m.IsAuditor).ID("cbIsAudit").BoxLabel("Nhân sự đánh giá").HideLabel(true).MarginSpec("0 0 0 105")),
+                                   Html.X().FieldSet().Title("Ảnh đại diện").MarginSpec("-2 0 0 5").Height(170).Layout(LayoutType.Fit).ColumnWidth(0.23).PaddingSpec("0 4 3 4").Items(
+
+                Html.X().ImageButton()
+
+                .TabIndex(10)
+                .ID("imgLogoEdit")
+                     .ImageUrl(Url.Action("LoadImage", "File", new { area = "Generic", Model.FileID, Model.FileName }))
+                    .Listeners(l => l.Click.Handler = "showBrowseImage();")
+
+                ))
+            )
+            .Buttons(
+            Html.X().ButtonSave()
+            .ID("btnSaves")
+                            .Handler("updateAudit(App.cbIsCap.value,App.cbIsAudit.value);this.up('window').close();"),
+             Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var getLogoNameAdd = function () {
+        var imgUrl = document.getElementById("imgLogoEdit").getAttribute('src');
+        return imgUrl;
+    };
+    var updateAudit = function (isCaptain, isAuditor) {
+        var record = App.grMnObject.selModel.getSelection()[0];
+        record.set('IsAuditor', isAuditor);
+        record.set('IsCaptain', isCaptain);
+    };
+</script>

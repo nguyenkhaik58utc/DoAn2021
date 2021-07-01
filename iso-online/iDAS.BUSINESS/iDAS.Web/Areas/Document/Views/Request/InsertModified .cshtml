@@ -1,0 +1,265 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DocumentRequirementItem
+@(
+ Html.X().Window()
+    .ID("winNewRequestModified")
+    .Title("Thêm mới đề nghị sửa đổi tài liệu")
+    .Icon(Icon.Add)
+    .Constrain(true)
+    .Width(700)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .ID("frmNewRequestModified")
+            .Items(
+                Html.X().TabPanel()
+                    .ID("TabPanel1")
+                    .ActiveTabIndex(0)
+                    .Border(true)
+                    .Items(
+                        Html.X().Panel()
+                            .ID("Tab1")
+                             .Icon(Icon.ApplicationViewDetail)
+                            .Layout(LayoutType.Form)
+                            .StyleSpec("border: none;")
+                            .Title("Thông tin đề nghị")
+                            .Frame(true)
+                            .Items(
+                                Html.X().HiddenFor(m => m.ApproveBy).ID("hdfEmployeeApproveId").ColumnWidth(1),
+                                Html.X().TextFieldFor(m => m.Name)
+                                    .FieldLabel("Tên đề nghị" + Html.Required())
+                                    .AllowBlank(false).BlankText("Tên đề nghị bắt buộc nhập!")
+                                    .AllowOnlyWhitespace(false)
+                                    .MaxLength(200).MaxLengthText("Tên đề nghị không dài quá 200 ký tự!")
+                                    .TabIndex(1),
+                                Html.X().DepartmentFieldFor(m => m.Department).AllowBlank(false).Multiple(false)
+                                    .FieldLabel("Phòng ban" + Html.Required()),
+                                Html.X().Container().Layout(LayoutType.Column).Items(
+                                            Html.X().ComboBoxFor(m => m.TypeID).ColumnWidth(0.6)
+                                                .ID("cbType")
+                                                .FieldLabel("Loại đề nghị" + Html.Required())
+                                                .AllowBlank(false).BlankText("Loại đề nghị bắt buộc chọn!")
+                                                .TabIndex(3)
+                                                .QueryMode(DataLoadMode.Local)
+                                                .ForceSelection(true)
+                                                .TriggerAction(TriggerAction.All)
+                                                .DisplayField("Name")
+                                                .ValueField("ID")
+                                                .ReadOnly(true)
+                                                .Store(
+                                                    Html.X().Store()
+                                                        .AutoLoad(true)
+                                                        .Model(
+                                                            Html.X().Model()
+                                                                .IDProperty("ID")
+                                                                .Fields(
+                                                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                )
+                                                        )
+                                                        .Proxy(
+                                                            Html.X().AjaxProxy()
+                                                                .Url(Url.Action("FillRequestType"))
+                                                                .Reader(Html.X().JsonReader().Root("data"))
+                                                )
+                                                    .Listeners(ls => ls.Load.Handler = "App.cbType.select(App.cbType.store.getAt(0))")
+
+                                                )
+                                                    .Listeners(p => p.Change.Handler = "showControlByType();"),
+                            Html.X().DateFieldFor(m => m.FinishDateExpected).ID("txtFinishDateExpected")
+                                .FieldLabel("Ngày hoàn thành" + Html.Required())
+                                .EmptyText("dd/MM/yyyy")
+                                .TabIndex(4)
+                                .MarginSpec("0 0 0 5")
+                                .ColumnWidth(0.4)
+                                .Format("dd/MM/yyyy")
+                                .AllowBlank(false).BlankText("Ngày hoàn thành bắt buộc nhập!")),
+                            Html.X().TextAreaFor(m => m.ReasonChange).ID("txtReasonRequest")
+                                .FieldLabel("Lý do đề nghị" + Html.Required())
+                                .TabIndex(5)
+                                .MaxLength(500)
+                                .Height(50)
+                                .AllowOnlyWhitespace(false)
+                                .MaxLengthText("Lý do đề nghị không được dài quá 500 ký tự!")
+                                .AllowBlank(false).BlankText("Lý do đề nghị bắt buộc nhập!"),
+                    Html.X().TextAreaFor(m => m.Content)
+                        .ID("txtContent")
+                        .FieldLabel("Nội dung" + Html.Required())
+                        .TabIndex(6).Height(150)
+                        .MaxLength(1000)
+                        .AllowOnlyWhitespace(false)
+                        .AllowBlank(false).BlankText("Nội dung bắt buộc nhập!"),
+                Html.X().EmployeeFieldFor(m => m.Approval).Title("Người phê duyệt" + Html.Required()).ID("fsEmployee")),
+                     Html.X().Panel()
+                            .ID("Tab2")
+                             .Icon(Icon.ApplicationViewDetail)
+                            .Layout(LayoutType.Form)
+                            .StyleSpec("border: none;")
+                            .Title("Nội dung sửa đổi")
+                            .Frame(true)
+                            .Items(
+                                Html.X().ComboBoxFor(m => m.DocumentID)
+                                    .ID("cbDocument")
+                                    .FieldLabel("Tài liệu" + Html.Required())
+                                    .TabIndex(8)
+                                    .ReadOnly(true)
+                                    .AllowBlank(false).BlankText("Tài liệu sửa đổi bắt buộc chọn!")
+                                    .QueryMode(DataLoadMode.Local)
+                                    .ForceSelection(true)
+                                    .TriggerAction(TriggerAction.All)
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+                                    .Disabled(true)
+                                    .Listeners(l => l.Select.Handler = "setDocInfo();")
+                                    .Store(
+                                        Html.X().Store()
+                                            .AutoLoad(true)
+                                            .Model(
+                                                Html.X().Model()
+                                                    .IDProperty("ID")
+                                                    .Fields(
+                                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                    )
+                                            )
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                 .Url(Url.Action("FillDocumentIssued"))
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                    )),
+                            Html.X().Container().Layout(LayoutType.Column).Items(
+
+                                    Html.X().TextFieldFor(m => m.Version)
+                                        .ID("txtVersion")
+                                        .ColumnWidth(0.5)
+                                        .FieldLabel("Phiên bản")
+                                        .ReadOnly(true),
+                                    Html.X().TextFieldFor(m => m.Times)
+                                        .ID("txtTimes")
+                                        .ColumnWidth(0.5)
+                                        .MarginSpec("0 0 0 10")
+                                        .FieldLabel("Lần ban hành")
+                                        .ReadOnly(true)
+
+                                ),
+                            Html.X().TextAreaFor(m => m.ContentOld)
+                                .ID("txtContentOld")
+                                .FieldLabel("Nội dung cũ" + Html.Required())
+                                .Disabled(true)
+                                .EmptyText("Nhập nội dung cũ cần thay đổi của tài liệu!")
+                                .TabIndex(8)
+                                .Height(150)
+                                .AllowOnlyWhitespace(false)
+                                .MaxLength(1000)
+                                .AllowBlank(false).BlankText("Nội dung cũ bắt buộc nhập!"),
+                            Html.X().TextAreaFor(m => m.ContentChange).ID("txtContentChange")
+                                .FieldLabel("Nội dung thay đổi" + Html.Required())
+                                .Disabled(true)
+                                .TabIndex(9)
+                                .EmptyText("Nhập nội dung thay đổi của tài liệu!")
+                                .Height(150)
+                                .AllowOnlyWhitespace(false)
+                                .MaxLength(1000)
+                                .AllowBlank(false).BlankText("Nội dung thay đổi bắt buộc nhập!")
+                             )
+                       )
+                    )
+               )
+        .Buttons(
+            Html.X().ButtonSendWindow()
+                .ID("btnSendApp")
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewRequestModified";
+                    de.Click.ExtraParams.Add(new { isEdit = false, frmName = "winNewRequestModified", isreload = false, IsSendApproval = true });
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.Before = @"if (!#{frmNewRequestModified}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                    de.Click.Success = "this.up('window').close();";
+                }),
+            Html.X().ButtonSave()
+                .ID("btnSaves")
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewRequestModified";
+                    de.Click.ExtraParams.Add(new { isEdit = true, frmName = "winNewRequestModified", isreload = false });
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.Before = @"if (!#{frmNewRequestModified}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                    de.Click.Success = "this.up('window').close();";
+                }),
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var showEmployer = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowDepartment", "Request", new { Area = "Document" }, null))'
+        });
+    };
+    var fillDepartent = function (id) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            App.cbDepartment.setValue(parseInt(id));
+            App.winChoiceDepartment.close();
+        }
+    };
+    function onSelectEmployee(records) {
+        if (records.length == 1) {
+            App.nameApproval.setValue(records[0].get('Name'));
+            App.hdfEmployeeApproveId.setValue(records[0].get('ID'));
+            App.avatarApproval.setImageUrl(records[0].get('Avatar'));
+            var dept = role = 'N/A';
+            if (records[0].get('DepartmentName') != null)
+                dept = records[0].get('DepartmentName');
+            if (records[0].get('Role') != null)
+                role = records[0].get('Role');
+            var displayApproval = 'Phòng ban: ' + dept + '</br> Chức danh: ' + role;
+            App.displayApproval.setValue(displayApproval);
+        }
+        else {
+            Ext.Msg.alert("", "Bạn chưa lựa chọn bản ghi nào!");
+        };
+
+    };
+    var showControlByType = function () {
+        if (App.cbType.getValue() == 0) {     
+            App.cbDocument.setDisabled(true);
+            App.cbDocument.allowBlank = true;
+            App.txtContentOld.setDisabled(true);
+            App.txtContentOld.allowBlank = true;
+            App.txtContentChange.setDisabled(true);
+            App.txtContentChange.allowBlank = true;
+
+        } else {   
+            App.cbDocument.setDisabled(false);
+            App.cbDocument.allowBlank = false;
+            App.txtContentOld.setDisabled(false);
+            App.txtContentOld.allowBlank = false;
+            App.txtContentChange.setDisabled(false);
+            App.txtContentChange.allowBlank = false;
+        }
+    };
+</script>

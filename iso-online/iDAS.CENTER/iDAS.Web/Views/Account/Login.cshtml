@@ -1,0 +1,145 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model iDAS.Items.UserLoginItem
+
+@section headtag
+{
+    <script src="~/Scripts/jquery-1.8.2.js"></script>
+    <script>
+    var refreshCaptcha = function () {
+        date = new Date();
+        $.ajax({
+            type: "GET",
+            url: '@Url.Action("Captcha")?' + date.getTime(),
+            datatype: "image/Jpeg",
+            success: function (data) {
+                $('#captcha_img').attr('src', '@Url.Action("Captcha")?' + date.getTime());
+            }
+        });
+    };
+    var formSubmit = function (obj) {
+        obj.up('form').submit({ waitMsg: 'Đang thực hiện ....' });
+    };
+    var keyPress = function (e) {
+        if (e.getKey() == e.ENTER) {
+            formSubmit(e);
+        }
+    };
+    var keyEnter = function (obj) {
+        Ext.getCmp(obj.target.id).submit({ waitMsg: 'Đang thực hiện ....' });
+    };
+    </script>
+    <style>
+        .login .x-btn-inner {
+            color: white;
+        }
+    </style>
+    @Html.X().ResourceManager()
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .AutoScroll(true)
+    .MinWidth(1080)
+    .MinHeight(350)
+    .Items(
+        //Header
+        Html.X().Panel()
+            .Region(Region.North)
+            .Height(50)
+            .Margin(0)
+            .Header(false)
+            .Border(false)
+            .Layout(LayoutType.HBox)
+            .BodyStyle("background-color:#dfe8f6;")
+            .Items(
+                Html.X().Image().ImageUrl("~/Content/themes/login/iDAS-logo.png")
+                    .Width(87).Height(35).Border(false)
+                    .MarginSpec("6 0 0 50"),
+                Html.X().Label().Text("HỆ THỐNG NÂNG CAO NĂNG SUẤT CHẤT LƯỢNG VÀ TÍCH HỢP CÁC TIÊU CHUẨN ISO")
+                    .StyleSpec("margin-left:50px;line-height: 48px; font-size: 18px;font-weight: bold;color: #415ca5;font-family: Cambria, Times New Roman, Tahoma;")
+            ),
+        //Content
+        Html.X().Panel()
+            .Layout(LayoutType.Border)
+            .Region(Region.Center)
+            .BodyStyle("background: #4c6ec7;")
+            .Items(
+                Html.X().Image().ImageUrl("~/Content/themes/login/idas-kit.png")
+                    .Region(Region.West)
+                    .PaddingSpec("50 50 50 100"),
+                Html.X().Container().Region(Region.East)
+                    .PaddingSpec("0 300 0 0")
+                    .Border(false)
+                    .Items(
+                        Html.X().FormPanel()
+                        .FieldDefaults(fs =>
+                        {
+                            fs.LabelSeparator = ""; fs.LabelWidth = 130;
+                            fs.LabelStyle = @"color: white;font-size: 10pt;font-family: Tahoma;";
+                        })
+                        .Listeners(ls =>
+                        {
+                            ls.AfterLayout.Handler = "this.center();";
+                        })
+                        .Width(420)
+                        .Layout(LayoutType.Form)
+        // .ID("loginFormStart")
+                        .Border(false)
+                        .Padding(0)
+                        .Margin(0)
+                        .BodyPaddingSummary("15 20 15 30")
+                        .BodyStyle("background: #32467f;")
+                        .KeyMap(Html.X().KeyMap()
+                        .Binding(b => { b.Add(Html.X().KeyBinding().Handler("keyEnter(this);").KeysString("13")); }))
+                        .Items(
+                            Html.X().TextFieldFor(m => m.Account).ColumnWidth(1).Icon(Icon.User).Height(24),
+                            Html.X().TextFieldFor(m => m.Password).ColumnWidth(1).Icon(Icon.Key).Height(24),
+                            //Html.X().TextFieldFor(m => m.Code).ColumnWidth(1).Icon(Icon.Keyboard).Height(24),
+                            Html.X().ComboBoxFor(m => m.Languague).Icon(Icon.World).Height(23).Editable(false)
+                                .Items(
+                                    Html.X().ListItem().Text("Tiếng Việt").Value("vi-VN"),
+                                    Html.X().ListItem().Text("English").Value("en-US")
+                                )
+                                .EnableKeyEvents(true)
+                                .Listeners(ls =>
+                                {
+                                    ls.Added.Handler = "this.select('vi-VN');";
+                                }),
+                            Html.X().TextFieldFor(m => m.Captcha).Icon(Icon.Calculator).Height(24)
+                                .FieldLabel(@"<div onclick='refreshCaptcha()' style='cursor:pointer'>
+                                            <img id='captcha_img' alt='Captcha'
+                                            src='" + @Url.Action("Captcha") + "' style='' /></div>")
+                        )
+                        .BottomBar(
+                            Html.X().Toolbar().Padding(0).Margin(5).StyleSpec("background: rgba(0, 0, 0, 0);").Items(
+                                Html.X().ToolbarFill(),
+                                Html.X().LinkButton().Text("Quên mật khẩu?").MarginSpec("0 20 0 0"),
+                                Html.X().Button().Height(27).Cls("login").Text("Đăng nhập").StyleSpec("background: #9e2c23;").MarginSpec("0 15 0 0")
+                                    .Listeners(ls =>
+                                    {
+                                        ls.Click.Handler = "formSubmit(this)";
+                                    })
+                            )
+                        )
+                        .Frame(true)
+                    )
+            ),
+        //Footer
+        Html.X().Toolbar()
+            .Region(Region.South)
+            .Height(40)
+            .Margin(0)
+            .Border(false)
+            .Layout(LayoutType.HBox)
+            .StyleSpec("background-color:#dfe8f6;")
+            .Items(
+                Html.X().HyperLink().ID("CoppyRight").MarginSpec("10 0 0 10").Text("Copyright © 2015 DAS-TECHNOLOGY Ltd. All rights reserved").NavigateUrl("http://www.das.com.vn").Target("_blank"),
+                Html.X().ToolbarSeparator().MarginSpec("13 5 0 5"),
+                    Html.X().HyperLink().ID("Contact").MarginSpec("10 0 0 0").Text("Liên hệ với chúng tôi").NavigateUrl("http://www.das.com.vn").Target("_blank"),
+                Html.X().ToolbarSeparator().MarginSpec("13 5 0 5"),
+                    Html.X().HyperLink().ID("Poili").MarginSpec("10 0 0 0").Text("Chính sách bảo mật").NavigateUrl("http://www.das.com.vn").Target("_blank"),
+                Html.X().ToolbarSeparator().MarginSpec("13 5 0 5"),
+                    Html.X().HyperLink().ID("Clause").MarginSpec("10 0 0 0").Text("Điều khoản sử dụng").NavigateUrl("http://www.das.com.vn").Target("_blank")
+            )
+    )
+)

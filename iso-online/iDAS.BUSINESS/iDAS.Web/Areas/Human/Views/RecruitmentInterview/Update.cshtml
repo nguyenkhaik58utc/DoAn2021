@@ -1,0 +1,87 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentProfileInterviewItem
+@{
+    var X = Html.X();
+}
+
+@(Html.X().Window()
+.ID("winRequirement")
+.Title("Kết quả thi tuyển")
+.Icon(Icon.BookRed)
+.Width(800)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Form)
+    .Frame(true)
+    .Border(false).Padding(0)
+    .MarginSpec("-5 0 -3 0")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => df.LabelWidth = 150)
+    .DefaultAnchor("100%")
+    .Items(
+            X.HiddenFor(m => m.PlanID).ID("hdfPlanID"),
+            X.HiddenFor(m=>m.ID).ID("hdfPofileInterviewID"),
+                    Html.X().GridPanel().Height(200)
+                    .Header(false)
+                    .ID("GrInterview").Margin(0).Padding(0)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreInterview")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadInterview")).Reader(Html.X().JsonReader().Root("data")))
+                        .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("ProfileInterviewID", "App.hdfPofileInterviewID.value", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("PlanID", "App.hdfPlanID.value", ParameterMode.Raw));
+                                })
+                        .Model(
+                                Html.X().Model().IDProperty("PlanInterviewID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("PlanInterviewName"),
+                                Html.X().ModelField().Name("PlanInterviewID"),
+                                Html.X().ModelField().Name("PorfileInterviewID"),
+                                Html.X().ModelField().Name("Result"),
+                                Html.X().ModelField().Name("Note"),
+                                Html.X().ModelField().Name("Time")
+                            )
+                         )
+                )
+                .ColumnModel(
+                            X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                            X.Column().DataIndex("PlanInterviewName").Text("Vòng thi tuyển").Flex(1),
+                            Html.X().Column().DataIndex("Result").Text("Kết quả").Align(Alignment.Right)
+                                    .Editor(Html.X().TextField().AllowBlank(false)),
+                                X.DateColumnExtend().DataIndex("Time").Text("Thời gian").Format("dd/MM/yyyy").Align(Alignment.Center)
+                                            .Editor(Html.X().DateField().EmptyDate(DateTime.Now).AllowBlank(false)),
+                            Html.X().Column().Width(300).DataIndex("Note").Text("Nhận xét").Editor(Html.X().TextField())
+                        ).Plugins(Html.X().CellEditing().ClicksToEdit(1).Listeners(ls => ls.Edit.Fn = "SaveResult"))
+           )
+    )
+    .Buttons(Html.X().ButtonExit())
+)
+
+<script>
+    var SaveResult = function (editor, e) {
+        if (!(e.value === e.originalValue) && e.record.data.Result != null) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateInteview"))',
+                params: {
+                    InterviewItem: e.record.data
+                }
+            });
+        };
+    };
+</script>

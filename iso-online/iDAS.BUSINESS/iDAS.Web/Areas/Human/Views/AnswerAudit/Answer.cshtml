@@ -1,0 +1,47 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model List<iDAS.Items.HumanQuestionItem>
+@{
+    var phaseAuditId = ViewData["PhaseAuditID"];
+}
+@{
+    System.Text.StringBuilder htmlSend = new System.Text.StringBuilder();
+    htmlSend.Append("<form action='" + Url.Action("SaveAnswerQuestion") + "' id='frmSaveAnswerQuestion'>");
+    var questions = new List<iDAS.Items.HumanQuestionItem>();
+    questions = Model;
+    for (var i = 0; i < questions.Count(); i++)
+    {
+        htmlSend.Append("<div id='p" + i + "' style='border: 1px dotted gray; margin: 5px; padding: 5px;'><div>" + (i + 1).ToString() + "." + questions[i].Name + "</div><br/>");
+
+        for (var j = 0; j < questions[i].Answer.Count(); j++)
+        {
+            if (questions[i].IsMulti)
+            {
+                htmlSend.Append("<div><input type='checkbox' name='" + "uId." + i + "' value='" + questions[i].Answer[j].ID + "'/>"
+                            + questions[i].Answer[j].Answer + "</div><br/>");
+            }
+            else
+            {
+                htmlSend.Append("<div><input type='radio' name='" + "uId." + i + "' value='" + questions[i].Answer[j].ID + "'/>"
+                        + questions[i].Answer[j].Answer + "</div><br/>");
+            }
+        }
+        htmlSend.Append("</div>");
+    }
+    htmlSend.Append("<input type='Hidden' name ='phaseAuditId' value='" + phaseAuditId + "'/>");
+    htmlSend.Append("<button type='submit' id='btnSumitAnswer'>Gửi kết quả</button></form>");
+}
+@(Html.X().Window()
+          .ID("winNewAnswer")
+          .Title("Trả lời câu hỏi đánh giá")
+          .Icon(Icon.UserComment).Height(200)
+          .Maximized(true)
+          .BodyPadding(0)
+          .Constrain(true).AutoScroll(true)
+          .Html(
+              htmlSend.ToString()
+            )
+            
+)

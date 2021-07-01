@@ -1,0 +1,273 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAnswerItem
+@{
+    var questionId = ViewData["QuestionID"];
+}
+@(Html.X().Menu()
+        .ID("cmMenu")
+        .Width(150)
+        .Items(
+            new MenuItem
+                {
+                    Text = "Thêm mới",
+                    ID = "cmAdd",
+                    Icon = Icon.Add,
+                    Handler = "addRecordAnswer(App.GrAnswer);"
+                },
+            new MenuItem
+                {
+                    Text = "Xóa",
+                    ID = "cmDelete",
+                    Icon = Icon.Delete,
+                    Disabled = true,
+                    Handler = "deleteRecordAnswer();"
+                }
+        )
+)
+@(Html.X().Window()
+          .ID("winNewAnswer")
+          .Title("Danh sách câu trả lời")
+          .Icon(Icon.Add)
+          .Height(370)
+          .Width(650)
+          .BodyPadding(0)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().GridPanel()
+                .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                .ID("GrAnswer")
+                .Height(400)
+                .Border(false)
+                .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonCreate()
+                                .Handler("addRecordAnswer(this.up('grid'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                .ID("btnDeleteAnswer")
+                                .Handler("deleteRecordAnswer();"),                            
+                            Html.X().ToolbarFill()
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                            .ID("stAnswer")
+                        .Proxy(
+                                Html.X().AjaxProxy()
+                                    .Url(Url.Action("LoadDataAnswer"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("questionId", questionId.ToString(), ParameterMode.Raw));
+                            })
+                        .RemoteSort(false)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Answer").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("IsTrue").Type(ModelFieldType.Boolean)
+                                    )
+                                    )
+
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .Width(33)
+                        .Align(Alignment.Center),
+                    Html.X().Column()
+                        .Text("Câu trả lời")
+                            .DataIndex("Answer")
+                            .Flex(1)
+                        .Width(150)
+                        .Wrap(true)
+                        .Editor(
+                            Html.X().TextField()
+                                .MaxLength(100)
+                                .AllowBlank(false).AllowOnlyWhitespace(false)
+                                .BlankText("Câu trả lời không được trống")
+                        ),
+                       Html.X().Column()
+                            .Text("Đáp án")
+                            .DataIndex("IsTrue")
+                            .Align(Alignment.Center)
+                            .Width(100)
+                            .Renderer("UseRenderer")
+                            .Editor(
+                                Html.X().ComboBox()
+                                    .TabIndex(5)
+                                    .Items(
+                                        new ListItem("Đúng", true),
+                                        new ListItem("Sai", false)
+                                    )
+                            ),
+                    Html.X().CommandColumn()
+                        .ID("commandCol")
+                        .Text("Chức năng")
+                        .Width(70)
+                        .Commands(
+                            Html.X().GridCommand()
+                                .CommandName("save")
+                                .Icon(Icon.Disk)
+                                .ToolTip(tt => tt.Text = "Lưu"),
+                            Html.X().GridCommand()
+                                .CommandName("reject")
+                                .Icon(Icon.ArrowUndo)
+                                .ToolTip(tt => tt.Text = "Hủy")
+                        )
+                        .Listeners(ls => ls.Command.Handler = "handlecmd(command,this.up('grid'),record );")
+                )
+                .SelectionModel(
+                   Html.X().RowSelectionModel()
+                           .Mode(SelectionMode.Single)
+                           .Listeners(l=> l.SelectionChange.Handler="checkStatus();")
+                    )
+                .Plugins(Html.X().CellEditing() )
+                .BottomBar(Html.X().CustomPagingToolbar())
+             )
+         .Buttons(
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+                .Handler("this.up('window').close();")
+            )
+)
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var UseRenderer = function (value, p, record) {
+        var sUse = "Đúng";
+        var sNot = "<font style='color:red'>Sai</font>";
+        if (value == "1") {
+            return sUse;
+        } else {
+            return sNot;
+        }
+    };
+    var checkStatus = function () {
+        var records = App.GrAnswer.selModel.getSelection();
+        if (records.length > 0) {       
+            if (records[0].get('IsTrue') == false) {
+                SetEnabled(App.cmDelete, App.btnDeleteAnswer);
+            } else {
+                SetDisabled(App.cmDelete, App.btnDeleteAnswer);
+            }
+        }
+        else {
+            SetDisabled(App.cmDelete, App.btnDeleteAnswer);
+        }
+    };
+    function addRecordAnswer(grid) {
+        grid.store.insert(0, { Answer: '', IsTrue: true });
+        grid.editingPlugin.startEditByPosition({ row: 0, column: 0 });
+    } 
+    var deleteRecordAnswer = function () {
+        var records = App.GrAnswer.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                MessageBox();
+                break;
+            default:
+
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn muốn xóa Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var strId = records[0].get('ID');
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("DeleteAnswer", "CategoryQuestion", new { Area = "Human" }, null))', params: { id: strId },
+                                success: function (result) {
+                                    if (result == 'Error') {
+                                        Ext.MessageBox.show({
+                                            title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa Dữ liệu phát sinh lỗi do Dữ liệu này có thể đã được sử dụng. Đề nghị kiểm tra lại!',
+                                            buttons: { yes: 'Đồng ý' },
+                                            iconCls: '#Cancel',
+                                            fn: function (btn) {
+                                                records[0].reject();
+                                                return false;
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var handlecmd = function (cmd, grid, record) {
+        if (cmd == 'save') {
+            var id = record.get('ID'), answer = record.get('Answer'),  istrue = record.get('IsTrue');
+            if (name == '') {
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Mức độ bảo mật không được để trống!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                return;
+            }
+            if (id != null && id > 0 && answer != '') {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("UpdateAnswer", "CategoryQuestion", new { Area = "Human" }, null))',
+                    params: { data: record.data },
+                    success: function (result) {
+                        if (result == 'Error') {
+                            Ext.MessageBox.show({
+                                title: 'Lỗi', msg: 'Mức độ bảo mật có tên là: ' + answer + ' đã tồn tại',
+                                buttons: { yes: 'Đồng ý' },
+                                iconCls: '#Cancel',
+                                fn: function (btn) {
+                                    record.reject();
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            else {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("InsertAnswer", "CategoryQuestion", new { Area = "Human" }, null))',
+                    params: { data: record.data, questionId: '@questionId'},
+                    success: function (result) {
+                        if (result == 'ErrorExisted') {
+                            Ext.MessageBox.show({
+                                title: 'Lỗi', msg: 'Mức độ bảo mật có tên là: ' + answer + ' đã tồn tại',
+                                buttons: { yes: 'Đồng ý' },
+                                iconCls: '#Cancel',
+                                fn: function (btn) {
+                                    record.reject();
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+        }
+        if (cmd == 'reject') {
+            record.reject();
+        }
+    };
+</script>    

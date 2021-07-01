@@ -1,0 +1,137 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditTickItem
+    <style>
+        .search-item {
+            font: normal 11px tahoma, arial, helvetica, sans-serif;
+            padding: 3px 10px 3px 10px;
+            border: 1px solid #fff;
+            border-bottom: 1px solid #eeeeee;
+            white-space: normal;
+            color: #555;
+            font-weight:bold;
+            }
+            .search-item h3 {
+                display: block;
+                font: inherit;
+                font-weight: bold;
+                color: #222;
+                margin: 0px;
+            }
+            .search-item h3 span {
+                float: right;
+                text-align: right;
+                font-weight: normal;
+                margin: 0 0 5px 5px;
+                width: 100px;
+                display: block;
+                clear: none;
+            }
+    </style>
+@(Html.X().Window()
+.ID("winUpdateResult")
+.Title("Cập nhật kết quả đánh giá nhân sự")
+.Icon(Icon.StarBronze)
+.Width(530)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frResult")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+        .Layout(LayoutType.VBox)
+        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+        .Items(
+            Html.X().HiddenFor(m => m.ID),
+            Html.X().EmployeeFieldFor(m => m.EmployeeAudit).ReadOnly(true).Title("Nhân sự").MarginSpec("0 0 3 105"),
+            Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 5 0").Items(
+            Html.X().NumberFieldFor(m => m.TotalEmployeeAuditResult).FieldLabel("Điểm tự đánh giá").ReadOnly(true).MinValue(0).MarginSpec("0 5 0 0"),
+            Html.X().NumberFieldFor(m => m.TotalManagementAuditResult).MinValue(0).ReadOnly(true).FieldLabel("Quản lý đánh giá")),
+            Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 5 0").Items(
+            Html.X().NumberFieldFor(m => m.TotalLeaderAuditResult).FieldLabel("Lãnh đạo đánh giá").ReadOnly(true).MinValue(0).MarginSpec("0 5 0 0"),
+            Html.X().ComboBoxFor(m => m.HumanAuditLevelID)
+                    .FieldLabel("Xếp loại"+Html.Required())
+                    .AllowBlank(false)
+                    .BlankText("Bạn phải chọn kết quả xếp loại đánh giá!")
+                    .Editable(false)
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Editable(false)
+                    .TypeAhead(false)
+                    .PageSize(20)
+                    .MinChars(0)
+                    .ForceSelection(true)
+                            .MatchFieldWidth(false)
+                            .ListConfig(
+                    Html.X().BoundList().StyleSpec("width:245px")
+                            .LoadingText("Searching...")
+                            .ItemTpl(Html.X().XTemplate()
+                                .Html(@<text>
+                                <div class="search-item">
+                                    {Name}
+                                    <h3><span>{PointFrom} - {PointTo}</span>Điểm từ: </h3>
+                                </div>
+                                </text>)
+                                )
+                            )
+                    .Store(
+                Html.X().Store()
+                    .ID("StoreLevel")
+                    .AutoLoad(true)
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("humanAuditDepartmentId", Model.HumanAuditDepartmentID.ToString(), ParameterMode.Value));
+                        ps.Add(new StoreParameter("humanRoleId", Model.HumanRoleID.ToString(), ParameterMode.Value));
+                    })
+                    .Proxy(
+                Html.X().AjaxProxy()
+                        .Url(Url.Action("LoadLevelData", "AuditTickResult", new { area = "Human" }))
+                        .Reader(Html.X().JsonReader().Root("data")
+                        )
+                        )
+                    .Model(Html.X().Model()
+                    .Fields(
+                        new ModelField("Name"),
+                        new ModelField("PointFrom"),
+                        new ModelField("PointTo"),
+                        new ModelField("ID")
+                    )
+                )
+            )
+            ),
+            Html.X().TextAreaFor(m => m.Comments).FieldLabel("Nhận xét").Height(150)
+                )
+             )
+        )
+        .Buttons(
+        Html.X().Button()
+        .ID("btnSaves")
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .TabIndex(7)
+        .DirectEvents(de =>
+        {
+            de.Click.Before = @"if (!App.frResult.getForm().isValid()) { return false; } ";
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Action = "Update";
+            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+            de.Click.FormID = "frResult";
+            de.Click.Success = "this.up('window').close(); App.StoreEmployeeAudtitResults.reload();";
+        }),
+        Html.X().Button()
+        .ID("btnCancel")
+        .Text("Hủy")
+        .Icon(Icon.Cancel)
+        .TabIndex(9)
+        .Handler("App.frResult.reset(); App.winUpdateResult.close();")
+        )
+)

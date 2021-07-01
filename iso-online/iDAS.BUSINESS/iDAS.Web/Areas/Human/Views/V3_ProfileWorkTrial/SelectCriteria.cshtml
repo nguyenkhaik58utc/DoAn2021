@@ -1,0 +1,166 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.HumanProfileWorkTrialItem
+@{
+    var X = Html.X();
+}
+
+@(Html.X().Window()
+            .ID("frmUpdate")
+            .Title("Chọn tiêu chí đánh giá nhân viên thử việc")
+                    .Layout(LayoutType.Border).Maximized(true)
+        .Icon(Icon.Zoom)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+                Html.X().HiddenFor(m => m.ID).ID("txtID"), Html.X().Hidden().ID("hdfCategoryIDs"),
+            Html.X().TreePanel()
+                       .Region(Region.West)
+                        .Width(350)
+                            .Header(false).Title("Bộ tiêu chí đánh giá")
+                            .ID("trCriteriaCategory").Layout(LayoutType.Fit)
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                            .Root(Html.X().Node().NodeID("0").Expanded(true)
+                                    .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "Name", Value = "Bộ tiêu chí đánh giá", Mode = ParameterMode.Value }))
+                                    .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "ParentID", Value = "0", Mode = ParameterMode.Value }))
+                          )
+                    .SingleExpand(false)
+                        .Store(Html.X().TreeStore()
+                            .ID("stCriteriaCategory")
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetData", "CriteriaCategory", new { area = "Quality" })))
+                            .Model(
+                            Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean)
+                                    )
+                                  )
+                              )
+                        .HideHeaders(true)
+                        .ColumnModel(
+                            Html.X().TreeColumn()
+                                .Align(Alignment.Left)
+                                .DataIndex("Name")
+                                .Flex(1)
+                    )
+                            .SelectionModel(Html.X().CheckboxSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                    .Listeners(ls =>
+                            {
+                                ls.SelectionChange.Handler = "CreSelectChange();";
+                            })),
+        Html.X().GridPanel()
+                       .Region(Region.Center)
+                        .Margin(1)
+                        .Header(false)
+                        .ID("grAuditResult")
+
+                        .ColumnLines(true)
+                        .ForceFit(true)
+
+                    .Store(
+                        Html.X().Store()
+                                .ID("StoreAditResult")
+                                .RemotePaging(true)
+                                .AutoLoad(false)
+                                                    .GroupField("CategoryName")
+                                                    .Sorters(Html.X().DataSorter().Property("CategoryName").Direction(Ext.Net.SortDirection.ASC))
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetQualityCriteria"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                .IDParam("ID"))
+                                .Parameters(ps =>
+                                {
+                                    //ps.Add(new StoreParameter("categoryID", "App.trCriteriaCategory.selModel.getSelection().length>0?App.trCriteriaCategory.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("categoryID", "App.hdfCategoryIDs.getValue()", ParameterMode.Raw));
+                                    //ps.Add(new StoreParameter("humanProfileWorkTrialID", "App.txtID.getValue()", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("MinPoint"),
+                                    Html.X().ModelField().Name("MaxPoint"),
+                                        Html.X().ModelField().Name("CategoryName"),
+                                    Html.X().ModelField().Name("Note")
+
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                        Html.X().Column().DataIndex("Index").Hidden(true),
+                                                Html.X().Column().DataIndex("Name").Text("Tiêu chí").Flex(1).StyleSpec("font-weight: bold;text-align: center"),
+                                            Html.X().Column().Text("Điểm Min").Align(Alignment.Right).DataIndex("MinPoint"),
+                                            Html.X().Column().Text("Điểm Max").Align(Alignment.Right).DataIndex("MaxPoint"),
+                                                Html.X().Column().DataIndex("Note").Text("Gợi ý").Width(200).StyleSpec("font-weight: bold;text-align: center")
+                            )
+
+                     .Features(
+                                        Html.X().GroupingSummary()
+                                        .ID("GroupingSummarySupplier")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                )
+                    
+                    
+                 )
+.Buttons(
+                        Html.X().Button()
+            .ID("btnSaves")
+            .Text("Gửi yêu cầu")
+            .Icon(Icon.ArrowRight).Handler("Save()"),
+X.ButtonExit()
+    )
+)
+
+
+
+<script type="text/javascript">
+    var RenderTotal = function (value, p, record) {
+        var value1 = record.get('Point') * record.get('Factory');
+        if (value1 == null) {
+            return "0";
+        }
+        return value1;
+    };
+    
+    var CreSelectChange = function () {
+        var component = App.trCriteriaCategory;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = records[i]; i++) {
+                aId.push(records[i].get('id'));
+            }
+            strId = aId.join();
+            App.hdfCategoryIDs.setValue(strId);
+            App.grAuditResult.getStore().reload();
+        };
+    };
+    var Save = function () {
+        var url = '@(Url.Action("SaveCriteria"))';
+        var params = {
+            humanProfileWorkTrialID: App.txtID.getValue(),
+            catID: App.hdfCategoryIDs.getValue()
+        };
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: params,
+            success: function (result) {
+                App.StoreProfile.reload();
+            }
+        });
+    };
+</script>

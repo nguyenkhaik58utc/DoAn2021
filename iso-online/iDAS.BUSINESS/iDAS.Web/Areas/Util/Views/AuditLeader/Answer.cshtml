@@ -1,0 +1,168 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditTickItem
+@(Html.X().Window()
+          .ID("winNewAnswer")
+          .Title("Lãnh đạo đánh giá nhân sự")
+          .Icon(Icon.UserTick).Height(200)
+          .Maximized(true)
+          .BodyPadding(0)
+          .Layout(LayoutType.Fit)
+          .Constrain(true).AutoScroll(true)
+          .Items(
+               Html.X().FormPanel().ID("frLeaderAnswer").Hidden(true)
+               .Items
+               (
+                Html.X().HiddenFor(m => m.ID).ID("hdfAuditID"),
+                Html.X().NumberFieldFor(m=>m.EmployeeAuditResult).AllowDecimals(true).Hidden(true),
+                Html.X().NumberFieldFor(m => m.EmployeeAuditManagementResult).AllowDecimals(true).Hidden(true),
+                Html.X().NumberFieldFor(m => m.EmployeeAuditLeaderResult).Hidden(true)
+               ),
+               
+               Html.X().GridPanel()
+                        .Border(false)
+                        .ColumnLines(true)
+                        .Store(
+                                Html.X().Store()
+                                        .ID("stAuditAnswer")
+                                        .GroupField("Criteria")
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetAnswer")).Reader(Html.X().JsonReader().Root("data")))
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("id", "App.hdfAuditID.value", ParameterMode.Raw));
+                                            })
+                                        .Model(
+                                                Html.X().Model()
+                                                        .Fields(
+                                                                Html.X().ModelField().Name("Criteria").Type(ModelFieldType.String),
+                                                                Html.X().ModelField().Name("CriteriaPoint").Type(ModelFieldType.String),
+                                                                Html.X().ModelField().Name("CriteriaPointID").Type(ModelFieldType.Int),
+                                                                Html.X().ModelField().Name("Point").Type(ModelFieldType.Float),
+                                                                Html.X().ModelField().Name("Factory").Type(ModelFieldType.Float),
+                                                                Html.X().ModelField().Name("IsEmployeeSelect").Type(ModelFieldType.Boolean),
+                                                                Html.X().ModelField().Name("IsManagementSelect").Type(ModelFieldType.Boolean),
+                                                                Html.X().ModelField().Name("IsLeaderSelect").Type(ModelFieldType.Boolean)
+                                                            )
+                                              )
+                                        .Listeners(ls => ls.Load.Handler = "loadResult();")      
+                            )
+                        .ColumnModel(
+                                        Html.X().Column().Text("Tiêu chí").DataIndex("CriteriaPoint").Flex(1),
+                                        Html.X().CheckColumn().Text("Kết quả tự đánh giá").DataIndex("IsEmployeeSelect").Width(150),
+                                        Html.X().CheckColumn().Text("Quản lý đánh giá").DataIndex("IsManagementSelect").Width(130),
+                                        Html.X().CheckColumn().Text("Lãnh đạo đánh giá").DataIndex("IsLeaderSelect").Width(130)
+                                                            .Width(120).Editable(true)
+                                    )
+                        .Features(
+                                    Html.X().GroupingSummary()
+                                                .GroupHeaderTplString("{name}")
+                                                .HideGroupedHeader(true)
+                                                .EnableGroupingMenu(false)
+                                                .ShowSummaryRow(false)
+                        )
+                        .Plugins(
+                                    Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "edit")
+                                )
+                        .SelectionModel(
+                            Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Single)
+                                 .Listeners(l =>
+                                    {
+                                        l.Select.Handler = "checkStatus()";
+                                    })
+                            )
+          )
+        .TopBarItem(
+                    Html.X().DisplayField().ID("lblEmployeeResult").Value("<b>Tự đánh giá:</b>"),
+                    Html.X().ToolbarFill(),
+                    Html.X().DisplayField().ID("lblManagmentResult").Value("<b>Quản lý đánh giá:</b>"),
+                    Html.X().ToolbarFill(),
+                    Html.X().DisplayField().ID("lblLeaderResult").Value("<b>Lãnh đạo đánh giá:</b>"),
+                    Html.X().ToolbarFill()
+            )
+        .Buttons(
+                        Html.X().ButtonChoice().Text("Duyệt")
+                                .DirectEvents(de =>
+                                {
+                                    de.Click.ExtraParams.Add(new { ID = Model.ID });
+                                    de.Click.FormID = "frLeaderAnswer";
+                                    de.Click.Url = Url.Action("Approval");
+                                    de.Click.Success = "this.up('window').close(); App.stLeaderAudit.reload();";
+                                }),
+                        Html.X().ButtonExit()
+            )
+)
+<script>
+    var edit = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("HandleChanges"))',
+                params: {
+                    id: App.hdfAuditID.value,
+                    criteriaPointID: e.record.data.CriteriaPointID
+                }
+            });
+        };
+    };
+    var loadResult = function () {
+        getPointEmployee();
+        getPointManagement();
+        getPointLeader();
+    };
+    var getPointEmployee = function () {
+        var rows = App.stAuditAnswer.getAllRange();
+        if (rows.length > 0) {
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i].data.IsEmployeeSelect) {
+                    sum += rows[i].data.Point * rows[i].data.Factory;
+                };
+            };
+            if (sum != 0) {
+                App.lblEmployeeResult.setValue("<b>Kết quả tự đánh giá:</b> " + sum);
+                App.EmployeeAuditResult.setValue(sum);
+            }
+            else {
+                App.lblEmployeeResult.setValue("<b>Kết quả tự đánh giá:</b> 0 ");
+            }
+        };
+    };
+    var getPointManagement = function () {
+        var rows = App.stAuditAnswer.getAllRange();
+        if (rows.length > 0) {
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i].data.IsManagementSelect) {
+                    sum += rows[i].data.Point * rows[i].data.Factory;
+                };
+            };
+            if (sum != 0) {
+                App.lblManagmentResult.setValue("<b>Kết quả quản lý đánh giá:</b> " + sum);
+                App.EmployeeAuditManagementResult.setValue(sum);
+            }
+            else {
+                App.lblManagmentResult.setValue("<b>Kết quả quản lý đánh giá:</b> 0");
+            };
+        };
+    };
+    var getPointLeader = function () {
+        var rows = App.stAuditAnswer.getAllRange();
+        if (rows.length > 0) {
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i].data.IsLeaderSelect) {
+                    sum += rows[i].data.Point * rows[i].data.Factory;
+                };
+            };
+            if (sum != 0) {
+                App.lblLeaderResult.setValue("<b> Kết quả lãnh đạo đánh giá: </b>" + sum);
+                App.EmployeeAuditLeaderResult.setValue(sum);
+            }
+            else {
+                App.lblLeaderResult.setValue("<b> Kết quả lãnh đạo đánh giá:</b> 0");
+            };
+        };
+    };
+</script>

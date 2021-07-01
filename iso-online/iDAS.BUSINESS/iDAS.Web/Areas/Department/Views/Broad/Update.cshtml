@@ -1,0 +1,45 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DepartmentBroadItem
+
+@(Html.X().Window()
+                .ID("winEditBroad")
+                .Title("Sửa tin bài")
+                .Icon(Icon.Pencil)
+                .Height(1)
+                .Maximized(true)
+                .BodyPadding(0)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                        Html.X().CustomFormPanel().ID("frBroad")
+                                .Items(
+                                        Html.X().HiddenFor(m => m.ID),
+                                        Html.X().Container().Layout(LayoutType.Column)
+                                        .Items(
+                                                Html.X().TextFieldFor(m => m.Title)
+                                                            .FieldLabel("Tiêu đề" + Html.Required())
+                                                            .AllowBlank(false)
+                                                            .BlankText("Tiêu đề không được trống!")
+                                                            .AllowOnlyWhitespace(false).ColumnWidth(0.7),
+                                            Html.X().TextFieldFor(m => m.CategoryName).ColumnWidth(0.3)
+                                                                    .FieldLabel("Nhóm tin").ReadOnly(true).MarginSpec("0 0 0 10")
+                                                ),
+                                        Html.X().TextAreaFor(m => m.Description).EmptyText("Nhập mô tả").FieldLabel("Mô tả"),
+                                        Html.X().HtmlEditorFor(m => m.Content).FieldLabel("Nội dung").MinHeight(300).Flex(1)
+                                    )
+                        )
+    .Buttons(
+                Html.X().ButtonSave().DirectEvents(de =>
+                                                {
+                                                    de.Click.Before = @"if (!App.frBroad.getForm().isValid()) { return false; } ";
+                                                    de.Click.Action = "Update";
+                                                    de.Click.FormID = "frBroad";
+                                                    de.Click.Success = "this.up('window').close();";
+                                                }),
+                Html.X().ButtonExit()
+        )
+)

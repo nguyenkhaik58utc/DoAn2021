@@ -1,0 +1,146 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.NewsItem
+
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("NewsPanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateNews").Icon(Icon.Add).Handler("showCreateNews();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateNews").Icon(Icon.Pencil).Handler("showUpdateNews();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteNews").Icon(Icon.Delete).Handler("showDeleteNews();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailNews").Icon(Icon.Zoom).Handler("showDetailNews();").Disabled(true),
+                Html.X().ToolbarFill(),
+                Html.X().ComboBox().ID("cboNewsCategory")
+                .QueryMode(DataLoadMode.Local)
+                .EmptyText("Chọn Danh mục tin tức ...")
+                .DisplayField("Name")
+                .ValueField("ID")
+                .FieldLabel("<b>Danh mục</b>")
+                .MarginSpec("0 10 0 0")
+                .Flex(1)
+                .LabelWidth(60)
+                .Editable(false)
+                .Store(
+                    Html.X().Store().AutoLoad(true)
+                    .Model(
+                        Html.X().Model().IDProperty("ID")
+                        .Fields(
+                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                        )
+                    )
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadNewsCategories")).Reader(Html.X().JsonReader().Root("data")))
+                    .Listeners(ls => ls.Load.Handler = "App.cboNewsCategory.select(App.cboNewsCategory.store.getAt(0))")
+                )
+                .Listeners(ls => ls.DirtyChange.Handler = "reloadNews();")
+                .Listeners(ls => ls.Select.Handler = "reloadNews();")
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .AutoLoad(false)
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .Parameters(Html.X().StoreParameter().Name("newsCategoryId").Value("App.cboNewsCategory.value").Mode(ParameterMode.Raw))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Title").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectNews()")
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex("ID").Hidden(true),
+            Html.X().Column().Text("Tiêu đề").DataIndex("Title").StyleSpec("font-weight: bold;text-align: center").Width(250).Wrap(true),
+            Html.X().Column().Text("Mô tả").DataIndex("Description").StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex("IsActive").StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex("CreateAt").Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex("UpdateAt").Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeNews()")
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var urlCreateNews = '@Url.Action("Create", "News", new { area = "Web" })';
+    var urlUpdateNews = '@Url.Action("Update", "News", new { area = "Web" })';
+    var urlDeleteNews = '@Url.Action("Delete", "News", new { area = "Web" })';
+    var urlDetailNews = '@Url.Action("Detail", "News", new { area = "Web" })';
+
+    var getNewsSelection = function () {
+        return App.NewsPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadNews = function () {
+        App.NewsPanel.getStore().reload();
+        deSelectNews();
+    }
+    var deSelectNews = function () {
+        App.NewsPanel.selModel.lastSelected = null;
+        selectionChangeNews();
+    }
+    var showCreateNews = function () {
+        var url = urlCreateNews;
+        var newsCategoryId = App.cboNewsCategory.value;
+        var params = { newsCategoryId: newsCategoryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateNews = function () {
+        var url = urlUpdateNews;
+        var record = getNewsSelection();
+        var newsId = record == null ? 0 : record.data.ID;
+        var params = { newsId: newsId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteNews = function () {
+        var url = urlDeleteNews;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getNewsSelection();
+                            var newsId = record == null ? 0 : record.data.ID;
+                            var params = { newsId: newsId };
+                            onDirectMethod(url, params, 'post', reloadNews);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailNews = function () {
+        var url = urlDetailNews;
+        var record = getNewsSelection();
+        var newsId = record == null ? 0 : record.data.ID;
+        var params = { newsId: newsId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeNews = function () {
+        var record = getNewsSelection();
+        App.btnUpdateNews.setDisabled(record == null);
+        App.btnDeleteNews.setDisabled(record == null);
+        App.btnDetailNews.setDisabled(record == null);
+    };
+</script>

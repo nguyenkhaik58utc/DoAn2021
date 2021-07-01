@@ -1,0 +1,53 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    var phaseAuditId = ViewData["phaseAuditId"];
+}
+@(Html.X().Window().ID("windowObject").Layout(LayoutType.Fit)
+                        .Title("Danh sách nhân sự")
+                        .Icon(Icon.ApplicationSideList)
+                        .Border(false)
+                        .Height(450)
+                        .Width(800)
+                            .ItemsFromAction("EmployeeViewMulti", "Employee", new { Area = "Human", gridEmployeeId = "grEmployeeApprove" })
+                        .Buttons(
+                            Html.X().ButtonChoice()
+                            .Listeners(ls => ls.Click.Handler = "SaveObject();")
+                            .ID("btnSelectObject"),
+                            Html.X().ButtonExit()
+                            .Listeners(ls => ls.Click.Handler = "CancelObject();")
+                        
+                            )
+)
+<script type="text/javascript">
+    function SaveObject() {
+        if (App.windowObject.hidden == true) {
+            App.windowObject.show();
+        }
+        else {
+            var records = App.grEmployeeApprove.selModel.getSelection();
+            if (records.length >= 1) {
+                var phaseAuditId = '@(phaseAuditId)';
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                        aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("SaveAuditObject", "PhaseAudit", new { Area = "Human" }, null))',
+                    params: { stringId: strId, phaseAuditId: phaseAuditId }
+                });
+                App.windowObject.hide();
+            }
+            else {
+                MessageBox();
+            };
+
+        };
+    };
+    function CancelObject() {
+        App.windowObject.hide();
+    };
+</script>

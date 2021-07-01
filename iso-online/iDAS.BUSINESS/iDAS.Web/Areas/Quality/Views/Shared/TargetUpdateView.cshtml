@@ -1,0 +1,285 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityTargetItem
+@(Html.X().Window()
+          .ID("winEditTarget")
+          .Title("Sửa thông tin mục tiêu")
+          .Icon(Icon.Pencil)
+          .Width(750)
+          .BodyPadding(0)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+             Html.X().FormPanel()
+                    .ID("frTargetEdit")
+                                    .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().HiddenFor(m => m.IsApproval),
+                        Html.X().TextFieldFor(m => m.Name)
+                            .FieldLabel("Tên mục tiêu" + Html.Required())
+                            .ID("txtName")
+                            .AllowBlank(false),
+                    Html.X().ComboBoxFor(m => m.QualityTargetCategoryID)
+                        .ID("cbCategoryIDEdit")
+                        .FieldLabel("Nhóm mục tiêu" + Html.Required())
+                        .BlankText("Nhóm mục tiêu không được trống")
+                        .AnchorHorizontal("100%")
+                        .Editable(false)
+                        .AllowBlank(false)
+                        .TabIndex(1)
+                        .QueryMode(DataLoadMode.Local)
+                        .ForceSelection(true)
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Store(Html.X().Store()
+                        .AutoLoad(true)
+                        .Model(Html.X().Model()
+                        .IDProperty("ID")
+                        .Fields(
+                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                        new ModelField("Unit", ModelFieldType.String) { Mapping = "Unit" }
+                        )
+                        )
+                        .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataActive", "TargetCategory"))
+                        .Reader(Html.X().JsonReader().Root("data")
+                        )
+                        )
+                        ),
+        //    .Listeners(l => l.Change.Handler = "App.cbTargetTypeID.getStore().reload();var record= this.store.getById(this.value); App.txtUnitEdit.setValue(record.get('Unit'));"),
+        //Html.X().ComboBoxFor(m => m.TypeID)
+        //            .ID("cbTargetTypeID")
+        //            .FieldLabel("Loại mục tiêu" + Html.Required())
+        //            .BlankText("Loại mục tiêu không được trống")
+        //            .AnchorHorizontal("100%")
+        //            .Editable(false)
+        //            .AllowBlank(false)
+        //            .TabIndex(1)
+        //            .QueryMode(DataLoadMode.Local)
+        //            .ForceSelection(true)
+        //            .DisplayField("Name")
+        //            .ValueField("ID")
+        //            .Store(Html.X().Store()
+        //            .ID("stTypeTarget")
+        //            .AutoLoad(false)
+        //            .Parameters(ps =>
+        //            {
+        //                ps.Add(new StoreParameter("targetCateId", "App.cbCategoryIDEdit.getValue()!=null?App.cbCategoryIDEdit.getValue():0", ParameterMode.Raw));
+        //            })
+        //            .Model(Html.X().Model()
+        //            .IDProperty("ID")
+        //            .Fields(
+        //                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+        //                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+        //                    )
+        //                    )
+        //                    .Proxy(Html.X().AjaxProxy()
+        //                    .Url(Url.Action("GetData", "QualityTargetType"))
+        //                    .Reader(Html.X().JsonReader().Root("data")
+        //                    )
+        //                    )
+        //                   ),
+                    Html.X().Container()
+                            .Layout(LayoutType.Column)
+                            .ColSpan(2)
+                            .MarginSpec("0 0 4 0")
+                            .Items(
+                                Html.X().NumberFieldFor(m => m.Value)
+                             .FieldLabel("Số lượng" + Html.Required())
+                                .AllowBlank(false).MarginSpec("0 5 5 0")
+                            .BlankText("Số lượng đạt bắt buộc nhập!")
+                            .AllowOnlyWhitespace(false)
+                            .ColumnWidth(0.7),
+                    Html.X().TextFieldFor(m => m.Unit)
+                            .FieldLabel("Đơn vị tính")
+                            .ID("txtUnit")
+                            .ColumnWidth(0.3)
+                             ),
+                      Html.X().DepartmentFieldFor(m => m.Department).FieldLabel("Phòng ban" + Html.Required()).Multiple(false).AllowBlank(false).Height(25),
+                Html.X().Container()
+                    .Layout(LayoutType.Column)
+                    .ColSpan(2)
+                    .Items(
+                Html.X().ComboBoxFor(m => m.Type)
+                        .FieldLabel("Mục tiêu thuộc" + Html.Required())
+                    .MarginSpec("0 5 5 0")
+                    .ColumnWidth(0.3)
+                    .Items(
+                    new ListItem("Tổ chức", true),
+                    new ListItem("Cá nhân", false)
+                    ),
+                Html.X().ComboBoxFor(m => m.ParentID)
+                    .ColumnWidth(0.7)
+                    .FieldLabel("Mục tiêu cha")
+                    .TabIndex(2)
+                        .ID("cbxParentTarget")
+                    .Triggers(Html.X().FieldTrigger().Icon(TriggerIcon.SimpleEdit))
+                        .Listeners(ls =>
+                        {
+                            ls.BeforeSelect.Handler = "return false;";
+                            ls.TriggerClick.Fn = "showTarget";
+                        })
+                    .HideBaseTrigger(true)
+                    .Editable(false)
+                    .EmptyText("Chọn mục tiêu cha...")
+                    .BlankText("Mục tiêu cha chưa được chọn!")
+                    .DisplayField("TargetName")
+                    .ValueField("ID")
+                    .Store(
+                        Html.X().Store()
+                        .ID("stParentTarget")
+                        .AutoLoad(true)
+                        .Model(
+                        Html.X().Model()
+                        .IDProperty("ID")
+                        .Fields(
+                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                        new ModelField("TargetName", ModelFieldType.String) { Mapping = "TargetName" }
+                        )
+                        )
+                        .Proxy(
+                        Html.X().AjaxProxy()
+                        .Url(Url.Action("GetTargetParent"))
+                        .Reader(Html.X().JsonReader().Root("data")
+                        )
+                    )
+                    )
+                    ),
+                Html.X().TextAreaFor(m => m.Description)
+                    .FieldLabel("Nội dung" + Html.Required())
+                    .AllowBlank(false)
+                    .Height(140)
+                    .BlankText("Nội dung mục tiêu không được trống!")
+                    .AllowOnlyWhitespace(false),
+                Html.X().DateTimeFieldFor(m => m.CompleteAt)
+                    .AllowBlank(false)
+                        .FieldLabel("Ngày đạt" + Html.Required())
+                    .MarginSpec("3 0 3 0"),
+                Html.X().EmployeeFieldFor(m => m.Approval)
+                    .AllowBlank(false)
+                    .MarginSpec("-2 0 0 105")
+                    .Title("Người phê duyệt" + Html.Required())
+                    )
+            )
+            .Buttons(
+                Html.X().ButtonSendWindow()
+                            .ID("btnSendApprovalUpdate")
+                            .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frTargetEdit.getForm().isValid()) { return false; } ";
+                                de.Click.Action = "Update";
+                                de.Click.ExtraParams.Add(new { IsEdit = false });
+                                de.Click.FormID = "frTargetEdit";
+                                de.Click.Success = "this.up('window').close();";
+
+                            }),
+            Html.X().ButtonSave()
+            .ID("btnSavesUpdate")
+            .DirectEvents(de =>
+            {              
+                de.Click.Before = @"if (!App.frTargetEdit.getForm().isValid()) { return false; } ";
+                de.Click.Action = "Update";
+                de.Click.ExtraParams.Add(new { IsEdit = true });
+                de.Click.FormID = "frTargetEdit";           
+            }),           
+            Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var showTarget = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("LoadTargetPartialView", "Plan", new { Area = "Quality" }, null))',
+            success: function (result) {
+                mask.hide();
+            }
+        });
+    };
+    function SelectApprovalView() {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("EmployeeWindow", "Employee", new { Area = "Human" }))',
+            success: function (result) {
+                mask.hide();
+            },
+        });
+    };
+     function selectDepartmentUpdate(records) {
+        App.Update_DepartmentID.setValue(records[0].get('id'));
+        App.Update_DepartmentName.setValue(records[0].get('text'));
+    };
+    function onSelectEmployee(records) {
+            if (records.length == 1) {
+                App.nameApproval.setValue(records[0].get('Name'));
+                App.hdfEmployeeApproveId.setValue(records[0].get('ID'));
+                App.avatarApproval.setImageUrl(records[0].get('Avatar'));
+                var   RoleName = records[0].get('Role');
+                if (RoleName == null) {
+                    RoleName = "N/A";
+                };
+                var DepartmentName = records[0].get('DepartmentName');
+                if (DepartmentName == null) {
+                    DepartmentName = "N/A";
+                };
+                App.displayApproval.setValue("Đơn vị: " + DepartmentName + "</br> Chức danh: " + RoleName);
+            }
+            else {
+                Ext.Msg.alert("", "Bạn chưa lựa chọn bản ghi nào!");
+            };
+
+        };
+    function onDepartmentClose(records) {
+        if (records.length > 0) {
+            if (records.length == 1) {
+                var id = records[0].get('id');
+                App.cbDepartment.setValue(parseInt(id));
+            }
+            else {
+                Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chọn duy nhất một phòng ban!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+            };
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Bạn chưa chọn phòng ban nào!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        };
+    };
+    var showTarget = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("LoadTargetPartialView", "Plan", new { Area = "Quality" }, null))',
+            success: function (result) {
+                mask.hide();
+            },
+        });
+    };
+    var onSelectTarget = function (id) {
+        if (id == 0) {
+            Ext.MessageBoHtml.X().show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            App.cbxParentTarget.setValue(parseInt(id));
+            App.WinTarget.close();
+        };
+
+    };
+</script>

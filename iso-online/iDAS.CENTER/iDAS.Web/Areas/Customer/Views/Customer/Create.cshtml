@@ -1,0 +1,104 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerItem
+@(Html.X().Window()
+    .Title("Thêm mới thông tin khách hàng")
+    .Icon(Icon.Add)
+    .Height(370)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .FieldDefaults(fs => fs.LabelWidth = 120)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).EmptyText("Tên khách hàng").AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Tên khách hàng *"),
+                            Html.X().Container().Layout(LayoutType.Column).Items(
+                                Html.X().Checkbox().BoxLabel("Tổ chức").ID("chkIsOrganization").FieldLabel("Loại khách hàng").ColumnWidth(0.4)
+                                .Listeners(ls => ls.Change.Handler = "App.chkIsPersonal.setValue(!this.value)").Value(true),
+                                Html.X().Container().ColumnWidth(0.1),
+                                Html.X().CheckboxFor(m => m.IsPersonal).ID("chkIsPersonal").BoxLabel("Cá nhân").HideLabel(true).ColumnWidth(0.3)
+                                .Listeners(ls => ls.Change.Handler = "App.chkIsOrganization.setValue(!this.value)"),
+                                Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.2).HideLabel(true).BoxLabel("Kích hoạt").ReadOnly(true)
+                            ),
+                            Html.X().TextFieldFor(m => m.Represent).FieldLabel("Người đại diện"),
+                            Html.X().TextFieldFor(m => m.Role).FieldLabel("Chức danh"),
+                            Html.X().TextFieldFor(m => m.Email).FieldLabel("Email"),
+                            Html.X().TextFieldFor(m => m.Phone).FieldLabel("Điện thoại")
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true)
+                        )
+                    ),
+                    Html.X().TextAreaFor(m => m.Address).FieldLabel("Địa chỉ").Height(55),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().DateFieldFor(m => m.Birthday).FieldLabel("Ngày thành lập").ColumnWidth(0.4),
+                        Html.X().Container().ColumnWidth(0.2),
+                        Html.X().DateFieldFor(m => m.RegisterAt).FieldLabel("Ngày đăng ký").Value(DateTime.Now).ColumnWidth(0.4)
+                    )
+                ),
+                Html.X().Panel().Title("Thông tin thêm").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().TextFieldFor(m => m.TaxCode).ColumnWidth(0.3).FieldLabel("Mã số thuế"),
+                    Html.X().TextFieldFor(m => m.CompanySize).ColumnWidth(0.3).FieldLabel("Quy mô đơn vị"),
+                    Html.X().TextAreaFor(m => m.Scope).ColumnWidth(0.3).FieldLabel("Lĩnh vực hoạt động"),
+                    Html.X().TextFieldFor(m => m.Website).ColumnWidth(0.3).FieldLabel("Website"),
+                    Html.X().ComboBoxFor(m => m.WebCustomerCityID).FieldLabel("Tỉnh thành")
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Editable(false)
+                    .Store(
+                        Html.X().Store().AutoLoad(true)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                            )
+                        )
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCities")).Reader(Html.X().JsonReader().Root("data")))
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if (result.result) {this.up('window').close(); reloadCustomer();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+

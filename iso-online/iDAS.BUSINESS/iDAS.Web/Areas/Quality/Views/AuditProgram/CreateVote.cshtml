@@ -1,0 +1,158 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityAuditRecordedVoteItem
+@(Html.X().Window()
+          .ID("winNewVote")
+          .Title("Thêm điểm phát hiện")
+          .Icon(Icon.Add)
+          .Height(400)
+          .Width(650)
+          .Maximizable(true).Maximized(true)
+          .BodyPadding(0)
+          .Constrain(true).Border(false)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+                    Html.X().FormPanel().ID("frCreateVoteItems")
+                        .Layout(LayoutType.VBox).Frame(true)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                        .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                        .Items(
+                                Html.X().Container().Layout(LayoutType.Column)
+                                    .Items(
+                                            Html.X().Container().ColumnWidth(0.5)
+                                                .Items(
+                                                        Html.X().HiddenFor(m => m.QualityAuditProgramID).ID("hdfQualityAuditProgramID"),
+                                                        Html.X().ComboBoxFor(m => m.HumanDepartmentID).FieldLabel("Phòng ban" + Html.Required()).AllowBlank(false)
+                                                            .QueryMode(DataLoadMode.Local).Editable(false).Width(350)
+                                                            .ForceSelection(true)
+                                                            .DisplayField("Name")
+                                                            .ValueField("ID")
+                                                            .Store(Html.X().Store()
+                                                                        .AutoLoad(true)
+                                                                        .PageSize(100)
+                                                                        .Model(Html.X().Model().IDProperty("ID")
+                                                                                    .Fields(
+                                                                                                new ModelField("ID", ModelFieldType.Int),
+                                                                                                new ModelField("Name", ModelFieldType.String)
+                                                                                            )
+                                                                                )
+                                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDeparment"))
+                                                                                        .Reader(Html.X().JsonReader().Root("data")))
+                                                                        .Parameters(ps =>
+                                                                            {
+                                                                                ps.Add(new StoreParameter("programId", "App.hdfQualityAuditProgramID.value", ParameterMode.Raw));
+                                                                            })
+                                                                    ),
+                                                        Html.X().DateTimeFieldFor(m => m.AuditAt).AllowBlank(false).FieldLabel("Ngày đánh giá" + Html.Required()),
+                                                        Html.X().EmployeeFieldFor(m => m.Auditer).AllowBlank(false).Title("Người đánh giá" + Html.Required())
+                                                      ),
+                                            Html.X().Container().ColumnWidth(0.5).Layout(LayoutType.Form).PaddingSpec("0 5 0 10").ID("frmModuleSelect")
+                                                .Items(
+                                                          Html.X().ComboBoxFor(m => m.ModuleCode).FieldLabel("Module" + Html.Required()).ID("cbxModule")
+                                                                        .QueryMode(DataLoadMode.Local).ForceSelection(true)
+                                                                        .TriggerAction(TriggerAction.All).Editable(true).AllowBlank(false)
+                                                                        .DisplayField("Name")
+                                                                        .ValueField("ID")
+                                                                            .Listeners(ls => ls.Change.Fn = "onSelectComboboxModule")
+                                                                        .Store(
+                                                                                Html.X().Store()
+                                                                                    .Parameters(ps =>
+                                                                                        {
+                                                                                            ps.Add(new StoreParameter("programId", "App.hdfQualityAuditProgramID.value", ParameterMode.Raw));
+                                                                                        })
+                                                                                    .Model(
+                                                                                            Html.X().Model().IDProperty("ID")
+                                                                                                .Fields(Html.X().ModelField().Name("ID"),
+                                                                                                        Html.X().ModelField().Name("Name"))
+                                                                                            )
+                                                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadModule")).Reader(Html.X().JsonReader().Root("data")))
+                                                                                ),
+                                                            Html.X().ComboBoxFor(m => m.FunctionCode).FieldLabel("Chức năng" + Html.Required()).ID("cbxFucntion")
+                                                                        .QueryMode(DataLoadMode.Local).ForceSelection(true).Editable(true)
+                                                                        .TriggerAction(TriggerAction.All).AllowBlank(false).ReadOnly(true)
+                                                                        .DisplayField("Name")
+                                                                        .ValueField("ID")
+                                                                        .Store(
+                                                                                Html.X().Store().AutoLoad(false).ID("storeFunction")
+                                                                                        .Parameters(ps =>{  ps.Add(new StoreParameter("moduleCode", "App.cbxModule.value", ParameterMode.Raw));
+                                                                                                         })
+                                                                                    .Model(
+                                                                                            Html.X().Model().IDProperty("ID")
+                                                                                                .Fields(
+                                                                                                        Html.X().ModelField().Name("ID"),
+                                                                                                        Html.X().ModelField().Name("Name"),
+                                                                                                        Html.X().ModelField().Name("ModuleName")
+                                                                                                    )
+                                                                                            )
+                                                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadFunction")).Reader(Html.X().JsonReader().Root("data")))
+                                                                                ),
+                                                            Html.X().ComboBoxFor(m => m.ISOIndexID).FieldLabel("Điều khoản" + Html.Required()).ID("cbxISOIndex")
+                                                                    .QueryMode(DataLoadMode.Local).ForceSelection(true)
+                                                                    .TriggerAction(TriggerAction.All).Editable(true)
+                                                                    .DisplayField("Name")
+                                                                    .ValueField("ID")
+                                                                    .Store(
+                                                                            Html.X().Store()
+                                                                                .Parameters(ps =>{ps.Add(new StoreParameter("programId", "App.hdfQualityAuditProgramID.value", ParameterMode.Raw));})
+                                                                                .Model(
+                                                                                        Html.X().Model().IDProperty("ID")
+                                                                                            .Fields(Html.X().ModelField().Name("ID"),
+                                                                                                    Html.X().ModelField().Name("Name")
+                                                                                                   )
+                                                                                      )
+                                                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadISOIndex")).Reader(Html.X().JsonReader().Root("data")))
+                                                                           )
+                                                                               ,
+                                                            Html.X().Container().Height(25).Layout(LayoutType.Column)
+                                                                .Items(
+                                                                        Html.X().RadioGroupForEnum(m => m.Enums.Type)
+                                                                                    .FieldLabel("Phân loại" + Html.Required()).ColumnWidth(0.55)
+                                                                    )                 
+                                                    )
+                                    ),
+                            Html.X().Container().LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                                    .MarginSpec("0 0 0 5").Flex(1)
+                            .Items(
+                                        Html.X().TextAreaFor(m => m.Contents).MinHeight(150).Flex(1)
+                                        .FieldLabel("<b>Nội dung</b>" + Html.Required())
+                                        .AllowBlank(false)
+                                        .AllowOnlyWhitespace(false).LabelAlign(LabelAlign.Top)
+                                )
+                                           
+                    )
+                )
+            .Buttons(
+                    Html.X().ButtonSave().DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frCreateVoteItems.getForm().isValid()) { return false; } ";
+                                de.Click.Action = "InsertVotePoint";
+                                de.Click.FormID = "frCreateVoteItems";
+                            }),
+                    Html.X().ButtonSaveAndExit()
+                            .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frCreateVoteItems.getForm().isValid()) { return false; } ";
+                                de.Click.Action = "InsertVotePoint";
+                                de.Click.FormID = "frCreateVoteItems";
+                                de.Click.Success = "this.up('window').close();";
+                            }),
+                    Html.X().ButtonReset().Handler("App.frCreateVoteItems.reset();"),        
+                    Html.X().ButtonExit()
+            )
+)
+<script>
+    function onSelectComboboxModule() {
+        if(App.cbxModule.value)
+        {
+            App.cbxFucntion.setReadOnly(false);
+            App.storeFunction.reload();
+        }
+        else
+        {
+            App.cbxFucntion.setReadOnly(true);
+        }
+    };
+</script>

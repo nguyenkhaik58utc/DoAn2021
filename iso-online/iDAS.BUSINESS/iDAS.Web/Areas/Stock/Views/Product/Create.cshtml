@@ -1,0 +1,369 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.StockProductItem
+@(Html.X().Window()
+.ID("winNewProduct")
+.Title("Thêm mới thông tin vật tư hàng hóa")
+.Icon(Icon.Add)
+.Height(445)
+.Width(800)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frProduct")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+        .Layout(LayoutType.Column)
+        .Items(
+        Html.X().ComboBoxFor(m => m.Type_ID)
+                .FieldLabel("Loại" + Html.Required())
+                .ID("txtType_ID")
+                .AllowBlank(false)
+                .LabelWidth(40)
+                .ColumnWidth(0.3)
+                .Editable(false)
+                .BlankText("Loại vật tư hàng hóa không được để trống!")
+                .AnchorHorizontal("100%")
+                .TabIndex(1)
+                .Items(
+                new ListItem("Hàng hóa", 1),
+                    new ListItem("Bán thành phẩm", 2),
+                    new ListItem("Nguyên liệu", 3),
+                  new ListItem("Nhiên liệu", 4),
+                      new ListItem("Thành phẩm", 5),
+                  new ListItem("Sản phẩm lắp ráp", 6),
+                          new ListItem("Sản phẩm yêu cầu phát triển", 7)
+
+
+        ),
+        Html.X().ComboBoxFor(m => m.StockID)
+        .FieldLabel("Kho mặc định" + Html.Required())
+                .ID("txtStockID")
+                .AllowBlank(false)
+                .LabelWidth(90)
+                .MarginSpec("0 5 0 5")
+                .ColumnWidth(0.4)
+                .BlankText("Kho mặc định không được để trống!")
+                .AnchorHorizontal("100%")
+                .TabIndex(2)
+                .DisplayField("Name")
+                .ValueField("ID")
+                    .TypeAhead(false)
+                    .PageSize(20)
+                    .MinChars(0)
+        .ForceSelection(true)
+            .ListConfig(Html.X().BoundList()
+                .LoadingText("Searching...")
+                .ItemTpl(Html.X().XTemplate()
+                    .Html(@<text>
+                    <div class="search-item">
+                        <h3>{Name}</h3>
+                        Địa chỉ: {Address}
+                    </div>
+                    </text>)
+                )
+            )
+            .Store(Html.X().Store()
+                .AutoLoad(true)
+                .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("LoadStock","Stock_Inward"))
+                    .ActionMethods(am => am.Read = HttpMethod.POST)
+                    .Reader(Html.X().JsonReader().Root("data"))
+                )
+                .Model(Html.X().Model()
+                    .Fields(
+                        Html.X().ModelField().Name("Address"),
+                        Html.X().ModelField().Name("Name"),
+                        Html.X().ModelField().Name("ID")
+                    )
+                )
+        ),
+        Html.X().TextFieldFor(m => m.Description)
+                .FieldLabel("Vị trí")
+                .ID("txtDescription")
+                .LabelWidth(45)
+                .ColumnWidth(0.3)
+                .MaxLength(200)
+                .MaxLengthText("Trường không vượt quá 200 ký tự")
+                .AnchorHorizontal("100%")
+                .TabIndex(3)
+        ),
+Html.X().Container()
+        .Layout(LayoutType.Column)
+        .MarginSpec("0 0 0 0")
+        .Items(
+        Html.X().Container()
+        .ColumnWidth(0.6)
+        .MarginSpec("0 0 0 0")
+        .Layout(LayoutType.Form)
+        .Items(
+Html.X().FieldSet()
+        .Title("Thông tin chung")
+        .MarginSpec("0 0 0 0")
+        .Layout(LayoutType.Form)
+        .Height(220)
+        .Items(
+           Html.X().ComboBoxFor(m => m.Group_ID)
+                .FieldLabel("Thuộc nhóm"+ Html.Required())
+                .ID("txtGroup_ID")
+                .AllowBlank(false)
+                .Editable(true)
+                .LabelWidth(85)
+                .BlankText("Nhóm vật tư hàng hóa không được để trống!")
+                .AnchorHorizontal("100%")
+                .TabIndex(4)
+                 .DisplayField("Name")
+                .ValueField("ID")
+                    .TypeAhead(false)
+                    .PageSize(20)
+                    .MinChars(0)
+        .ForceSelection(true)
+            .ListConfig(Html.X().BoundList()
+                .LoadingText("Searching...")
+                .ItemTpl(Html.X().XTemplate()
+                    .Html(@<text>
+                    <div class="search-item">
+                        <h3>{Name}</h3>
+                    </div>
+                    </text>)
+                    )
+                )
+                .Store(Html.X().Store()
+                    .AutoLoad(true)
+                    .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("LoadGroup"))
+                        .ActionMethods(am => am.Read = HttpMethod.POST)
+                        .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Model(Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("ID")
+                        )
+                    )
+                ),
+            Html.X().Container()
+                    .MarginSpec("0 0 0 0")
+                    .Layout(LayoutType.Column)
+                    .Items(
+            Html.X().TextFieldFor(m => m.Code)
+                    .FieldLabel("Mã" + Html.Required())
+                    .ID("txtCode")
+                    .MaxLength(20)
+                    .MaxLengthText("Trường không vượt quá 20 ký tự!")
+                    .AllowBlank(false)
+                    .LabelWidth(85)
+                    .ColumnWidth(0.5)
+                    .BlankText("Mã vật tư hàng hóa không được để trống!")
+                    .AllowOnlyWhitespace(false)
+                    .AnchorHorizontal("100%")
+                    .TabIndex(5),
+            Html.X().TextFieldFor(m => m.Barcode)
+                    .FieldLabel("Mã vạch")
+                    .ID("txtBarcode")
+                    .MarginSpec("0 0 0 5")
+                    .MaxLength(20)
+                    .MaxLengthText("Trường không vượt quá 20 ký tự")
+                    .LabelWidth(85)
+                    .ColumnWidth(0.5)
+                    .AnchorHorizontal("100%")
+                    .TabIndex(6)
+                    ),
+            Html.X().TextFieldFor(m => m.Name)
+                    .FieldLabel("Tên" + Html.Required())
+                    .ID("txtName")
+                    .AllowBlank(false)
+                    .LabelWidth(85)
+                    .MaxLength(255)
+                    .MaxLengthText("Trường không vượt quá 255 ký tự")
+                    .BlankText("Tên vật tư hàng hóa không được để trống!")
+                    .AllowOnlyWhitespace(false)
+                    .AnchorHorizontal("100%")
+                    .TabIndex(7),
+            Html.X().Container()
+                    .MarginSpec("0 0 0 0")
+                    .Layout(LayoutType.Column)
+                    .Items(
+            Html.X().ComboBoxFor(m => m.Unit_ID)
+                    .FieldLabel("Đơn vị tính" + Html.Required())
+                    .ID("txtUnit_ID")
+                    .Editable(false)
+                    .AllowBlank(false)
+                    .LabelWidth(85)
+                    .ColumnWidth(0.5)
+                    .BlankText("Đơn vị tính không được trống!")
+                    .AnchorHorizontal("100%")
+                    .TabIndex(8)
+                      .QueryMode(DataLoadMode.Local)
+                            .ForceSelection(true)
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .Store(Html.X().Store()
+                            .AutoLoad(true)
+                            .Model(Html.X().Model()
+                            .IDProperty("ID")
+                            .Fields(
+                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                            )
+                            )
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("LoadUnitAdd"))
+                            .Reader(Html.X().JsonReader().Root("data")
+                      )
+                   )
+                ),
+            Html.X().ComboBoxFor(m => m.VAT_ID)
+                    .FieldLabel("Thuế")
+                    .ID("txtVAT_ID")
+                    .LabelWidth(85)
+                    .MarginSpec("0 0 0 5")
+                    .ColumnWidth(0.5)
+                    .AnchorHorizontal("100%")
+                    .TabIndex(9)
+                    .Items(
+                    new ListItem("Không thuế", null),
+                    new ListItem("0%", 0),
+                    new ListItem("5%", 5),
+                    new ListItem("10%", 10),
+                    new ListItem("10%x50%", 500)
+                    )
+                    ),
+            Html.X().TextFieldFor(m => m.Origin)
+                    .FieldLabel("Xuất xứ")
+                    .ID("txtOrigin")
+                    .LabelWidth(85)
+                    .MaxLength(100)
+                    .MaxLengthText("Trường không vượt quá 100 ký tự!")
+                    .AnchorHorizontal("100%")
+                    .TabIndex(10),
+            Html.X().NumberFieldFor(m => m.MinStock)
+                    .FieldLabel("Tồn tối thiểu" + Html.Required())
+                    .ID("txtMinStock")
+                    .AllowBlank(false)
+                    .EmptyText("Bạn phải nhập số lượng tồn tối thiểu của vật tư hàng hóa!")
+                    .LabelWidth(85)
+                    .Value(0)
+                    .MinValue(0)
+                    .AnchorHorizontal("100%")
+                    .TabIndex(11),
+                     Html.X().NumberFieldFor(m => m.MaxStock)
+                    .FieldLabel("Tồn tối đa" + Html.Required())
+                    .ID("txtMaxStock")
+                    .AllowBlank(false)
+                    .EmptyText("Bạn phải nhập số lượng tồn tối đa của vật tư hàng hóa!")
+                    .LabelWidth(85)
+                    .Value(0)
+                    .MinValue(0)
+                    .AnchorHorizontal("100%")
+                    .TabIndex(12)
+            ),
+            Html.X().FieldSet()
+                    .Title("Thông tin giao dịch")
+                    .MarginSpec("0 0 0 0")
+                    .Height(115)
+                    .Layout(LayoutType.Form)
+                    .Items(
+                    Html.X().Container().Layout(LayoutType.HBox).MarginSpec("0 0 2 0").Items(
+                    Html.X().NumberFieldFor(m => m.Org_Price)
+                            .FieldLabel("Giá mua")
+                            .ID("txtOrg_Price")
+                            .MinValue(0)
+                            .LabelWidth(80)
+                            .Width(405)
+                            .Value(0)
+                            .AnchorHorizontal("100%")
+                            .MarginSpec("0 5 0 0")
+                            .TabIndex(13),
+                             Html.X().Label().Text("VNĐ")
+                            ),
+                             Html.X().Container().Layout(LayoutType.HBox).MarginSpec("0 0 2 0").Items(
+                    Html.X().NumberFieldFor(m => m.Sale_Price)
+                            .FieldLabel("Giá bán")
+                            .ID("txtSale_Price")
+                            .LabelWidth(80)
+                            .MinValue(0)
+                            .Value(0)
+                            .Width(405)
+                              .MarginSpec("0 5 0 0")
+                            .AnchorHorizontal("100%")
+                            .TabIndex(14),
+                              Html.X().Label().Text("VNĐ")
+                            ),
+                             Html.X().Container().Layout(LayoutType.HBox).MarginSpec("0 0 0 0").Items(
+                             Html.X().NumberFieldFor(m => m.Retail_Price)
+                            .FieldLabel("Giá sỉ lẻ")
+                            .MinValue(0)
+                            .Width(405)
+                             .Value(0)
+                              .MarginSpec("0 5 0 0")
+                            .ID("txtRetail_Price")
+                            .LabelWidth(80)
+                            .AnchorHorizontal("100%")
+                            .TabIndex(15),
+                              Html.X().Label().Text("VNĐ")
+                            )
+                            )
+                            ),
+        Html.X().Container()
+                .ColumnWidth(0.4)
+                .Layout(LayoutType.Fit)
+                .Items(
+            Html.X().FieldSet()
+                    .MarginSpec("4 0 0 5")
+                    .Title("Ảnh chi tiết")
+                    .Height(335)
+                    .Items(
+                    Html.X().ImageButton()
+                    .ID("imgProduct")
+                    .TabIndex(16)
+                    .ToolTip("Click vào ảnh để chọn ảnh chi tiết")
+                    .Width(279)
+                    .Height(275)
+                    .ImageUrl(@Url.Content(Common.UploadPathStock + "product.jpg").ToString()),
+                        Html.X().FileUploadField().ID("FileUploadImageFieldId")
+                             .ButtonText("Ảnh chi tiết vật tư")
+                             .MarginSpec("5 0 0 0")
+                             .ButtonOnly(false)
+                                          .Width(279)
+                             .Icon(Icon.ImageEdit)
+                                     .Listeners(ls => ls.Change.Handler = "imageProductChange(this);")
+
+                    )
+
+          )))
+            )
+            .Buttons(
+            Html.X().ButtonSave()
+            .ID("btnSave")
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { val = false });
+                de.Click.Before = @"if (!App.frProduct.getForm().isValid()) { return false; } ";
+                de.Click.Action = "Insert";
+                de.Click.FormID = "frProduct";
+            }),
+            Html.X().ButtonSaveAndExit()
+            .ID("btnSaves")
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { val = true });
+                de.Click.Before = @"if (!App.frProduct.getForm().isValid()) { return false; } ";
+                de.Click.Action = "Insert";
+                de.Click.FormID = "frProduct";
+            }),
+            Html.X().ButtonReset()
+            .ID("btnReset")
+            .Handler("App.frProduct.reset();"),
+            Html.X().ButtonExit()
+            )
+)

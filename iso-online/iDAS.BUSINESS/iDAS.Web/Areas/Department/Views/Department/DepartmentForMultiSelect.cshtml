@@ -1,0 +1,59 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+<script type="text/javascript">
+    var DepartmentSelectChange = function () {
+        var component = App.treeDepartment;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = records[i]; i++) {
+                    aId.push(records[i].get('id'));
+            }
+            strId = aId.join();
+            onDepartmentReady(strId);
+        };
+    };
+</script>
+
+@(
+ Html.X().TreePanel().Margin(0).Padding(0)
+                .Tools(
+                        Html.X().Tool().Type(ToolType.Plus).Handler("App.treeDepartment.expandAll();").ToolTip("Mở rộng"),
+                        Html.X().Tool().Type(ToolType.Minus).Handler("App.treeDepartment.collapseAll();").ToolTip("Thu gọn"),
+                        Html.X().Tool().Type(ToolType.Refresh).Handler("App.treeDepartment.store.reload();").ToolTip("Tải lại")
+                       )
+                .Title("SƠ ĐỒ TỔ CHỨC")
+                .ID("treeDepartment")
+                .TitleAlign(TitleAlign.Center)
+                .Border(false)
+                .AutoScroll(true)
+                    .SingleExpand(true)
+                .Region(Region.West)
+                .HideHeaders(true)
+                .RootVisible(false)
+                .Listeners(ls =>
+                {
+                    //ls.AfterLayout.Handler = "this.selModel.doSelect(0);";
+                })
+                .Store(
+                        Html.X().TreeStore().ID("StoreDepartment")
+                            .AutoDataBind(true)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Department", new { Area = "Department" }))
+                            .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("id"),
+                                Html.X().ModelField().Name("text")
+                            )
+                        )
+                    )
+                        .SelectionModel(Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                                .Listeners(ls =>
+                        {
+                            ls.Select.Handler = "DepartmentSelectChange();";
+                        }))
+
+)

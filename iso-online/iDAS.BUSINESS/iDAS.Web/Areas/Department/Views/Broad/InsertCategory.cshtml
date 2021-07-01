@@ -1,0 +1,42 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DepartmentBroadCategoryItem
+@(Html.X().CustomWindow()
+          .ID("winNewBroadCategory")
+          .Title("Thêm mới thông tin nhóm tin nội bộ")
+          .Icon(Icon.Add)
+          .Items(
+                Html.X().CustomFormPanel()
+                        .ID("frBroadCategory")
+                        .Items(
+                                Html.X().HiddenFor(m=>m.ParentID),
+                                Html.X().TextFieldFor(m=>m.Name).FieldLabel("Tên nhóm tin"+Html.Required())
+                                        .BlankText("Tên nhóm tin không được trống!").AllowOnlyWhitespace(false),
+                               Html.X().TextAreaFor(m => m.Description).MinHeight(100).Flex(1)
+                                        .FieldLabel("Mô tả").LabelAlign(LabelAlign.Top).PaddingSpec("0 0 5 0")
+                                
+                     )
+            )
+            .Buttons(
+            Html.X().ButtonSave()
+            .DirectEvents(de =>
+            {             
+                de.Click.ExtraParams.Add(new { val = false });
+                de.Click.Before = @"if (!App.frBroadCategory.getForm().isValid()) { return false; } ";
+                de.Click.Action = "InsertCategory";
+                de.Click.FormID = "frBroadCategory";
+                de.Click.Success = " this.up('window').close();InsertSuccess(" + Model.ParentID + ");";                
+            }),
+            Html.X().ButtonExit()
+         )   
+)
+<script>
+    var InsertSuccess = function (id) {
+        var node = App.trBroadCategory.store.getNodeById(id);
+        App.trBroadCategory.store.reload({ node: node });
+        node.data.expanded = true;
+        node.expand();
+    };
+</script>

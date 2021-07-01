@@ -1,0 +1,92 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+<style>
+    .x-grid-dirty-cell {
+        background-image: none;
+    }
+</style>
+@(Html.X().Window()
+    .Title("Sơ đồ website")
+    .Icon(Icon.House)
+    .Width(600)
+    .Height(450)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .BodyPadding(0)
+    .Border(true)
+    .Items(
+        Html.X().TreePanel()
+        .ID("SitemapWindow")
+        .Header(false)
+        .TitleAlign(TitleAlign.Center)
+        .Layout(LayoutType.Fit)
+        .Icon(Icon.TextListBullets)
+        .ForceFit(true)
+        .RootVisible(false)
+        .RowLines(true)
+        .SingleExpand(false)
+        .Border(false)
+        .Region(Region.West)
+        .HideHeaders(true)
+        .MultiSelect(false)
+        .Listeners(ls =>
+        {
+            ls.Load.Handler = "setSitemapWindow();";
+        })
+        .Store(
+            Html.X().TreeStore()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .Model(
+                Html.X().Model().Fields(
+                    Html.X().ModelField().Name("id"),
+                    Html.X().ModelField().Name("text"),
+                    Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                )
+            )
+        )
+        .ColumnModel(
+            Html.X().TreeColumn().Text("SƠ ĐỒ WEBSITE").Align(Alignment.Left).DataIndex("text").Flex(1),
+            Html.X().CheckColumn().DataIndex("IsSelected").Width(40).Editable(true)
+                .Listeners(ls => ls.CheckChange.Handler = "setSitemapWindowSelection(record)")
+        )
+    )
+    .Buttons(
+        Html.X().ButtonChoice().Handler("selectSitemapWindow(" + ViewData["Fn"] + ");this.up('window').close();").ID("btnChoiceSitemap").Disabled(true),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var sitemapId = '@ViewData["SitemapID"]';
+    var setSitemapWindow = function () {
+        var node = App.SitemapWindow.store.getNodeById(sitemapId);
+        if (node != null && sitemapId != 0) {
+            node.data.IsSelected = true;
+            App.SitemapWindow.view.refresh();
+        }
+    };
+    var setSitemapWindowSelection = function (record) {
+        var records = App.SitemapWindow.view.store.getRange();
+        records.forEach(function (obj) {
+            if (obj.data.id == record.data.id && obj.data.id > 0) {
+                obj.data.IsSelected = obj.data.IsSelected;
+                App.btnChoiceSitemap.setDisabled(!obj.data.IsSelected);
+            }
+            else {
+                obj.data.IsSelected = false;
+            }
+        });
+        App.SitemapWindow.view.refresh();
+    };
+    var selectSitemapWindow = function (fn) {
+        var records = App.SitemapWindow.view.store.getRange();
+        records.forEach(function (obj) {
+            if (obj.data.IsSelected) {
+                fn(obj);
+            }
+        });
+    };
+</script>

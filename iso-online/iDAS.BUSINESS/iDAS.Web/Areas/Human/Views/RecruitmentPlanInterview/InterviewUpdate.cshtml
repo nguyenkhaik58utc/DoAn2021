@@ -1,0 +1,76 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.HumanRecruitmentPlanInterviewItem
+@{
+    var X = Html.X();
+    var IconView = new Icon();
+    bool readStatus = true;
+    string title = "";
+    string actionForm = Model.ActionForm;
+    if (actionForm == "add")
+    {
+        readStatus = false;
+        IconView = Icon.Add;
+        title = "Thêm mới vòng thi tuyển";
+    }
+    if (actionForm == "edit")
+    {
+        readStatus = false;
+        IconView = Icon.Pencil;
+        title = "Cập nhật vòng thi tuyển";
+    }
+    if (actionForm == "view")
+    {
+        readStatus = true;
+        IconView = Icon.Zoom;
+        title = "Chi tiết vòng thi tuyển";
+    }
+}
+@(Html.X().Window()
+.ID("winInterviewUpdate")
+.Title(title)
+.Icon(IconView)
+.Width(840)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Modal(true)
+.MaxHeight(620)
+.Layout(LayoutType.Fit)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmInterviewUpdate")
+    .Layout(LayoutType.Column)
+    .MarginSpec("0 -4 0 0")
+    .Frame(true)
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 120; })
+        .Items(
+            X.HiddenFor(m => m.ID), X.HiddenFor(m => m.PlanID),
+            X.TextFieldFor(m => m.Name).MaxLength(200)
+                    .AllowOnlyWhitespace(false)
+                    .FieldLabel("Vòng thi tuyển"+Html.Required()).ReadOnly(readStatus).ColumnWidth(1).PaddingSpec("5 8 0 8"),
+            X.DateFieldFor(m => m.StartTime).Format("dd/MM/yyyy")
+                    .AllowBlank(false)
+                    .FieldLabel("Ngày bắt đầu" + Html.Required()).ReadOnly(readStatus).ColumnWidth(0.5).PaddingSpec("5 8 0 8"),
+            X.DateFieldFor(m => m.EndTime).Format("dd/MM/yyyy")
+                    .AllowBlank(false)
+                    .FieldLabel("Ngày kết thúc" + Html.Required()).ReadOnly(readStatus)
+                    .ColumnWidth(0.5).PaddingSpec("5 8 0 8"),
+            X.TextAreaFor(m => m.Content).FieldLabel("Nội dung").ReadOnly(readStatus).ColumnWidth(1).Height(150).PaddingSpec("5 8 0 8")
+       
+       )
+    )
+    .Buttons(
+                Html.X().ButtonSave().Hidden(readStatus)
+                                .DirectEvents(de =>
+                                            {
+                                                de.Click.Before = @"if (!App.frmInterviewUpdate.getForm().isValid()) { return false; } ";
+                                                de.Click.Url = Url.Action("UpdateInterview");
+                                                de.Click.FormID = "frmInterviewUpdate";
+                                            }),
+                Html.X().ButtonExit()
+        )
+)

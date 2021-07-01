@@ -1,0 +1,323 @@
+﻿@using iDAS.Web.ExtExtend
+@using Ext.Net
+@using Ext.Net.MVC
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().ID("viewport22")
+    .Layout(LayoutType.Border)//.Padding(2)
+    .Items(
+        Html.X().TreePanel()
+            .ID("DepartmentPanel1")
+            .Region(Region.West)
+            .Width(360)
+            .Header(false)
+            .Border(true)
+            .RowLines(true)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)
+            .SingleExpand(false)
+            .Split(true)
+            .Collapsible(true)
+            .MarginSpec("1 0 1 1")
+            .Listeners(ls =>
+            {
+                ls.Load.Handler = "expandDepartment(records);";
+                ls.Select.Handler = "reloadPermissionStore();";
+            })
+            .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                        Html.X().Button().Text("Mở rộng").Icon(Icon.ControlAddBlue).Handler("this.up('treepanel').expandAll();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Thu gọn").Icon(Icon.ControlRemoveBlue).Handler("this.up('treepanel').collapseAll();")
+                    )
+            )
+            .Store(
+                Html.X().TreeStore()
+                    .ID("StoreDepartments")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "ProblemStatisticalUser", new { area = "Problem" })).Reader(Html.X().JsonReader().Root("data")))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("id"),
+                            Html.X().ModelField().Name("text"),
+                            Html.X().ModelField().Name("ParentID"),
+                            Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsMerge").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().TreeColumn().Text("Cơ cấu tổ chức").StyleSpec("font-weight: bold;text-align: center")
+                    .DataIndex("text").Flex(1).Filterable(false).Sortable(false)
+            ),
+
+        Html.X().Panel().Region(Region.North)
+            .TopBar(
+                Html.X().Toolbar()
+                    .ID("tbgpDepartmentStatisticalProfile")
+                    .Items(
+                        Html.X().SearchByDate("getDataTest1();").FromDateID("dfFromDate").ToDateID("dfToDate"),
+                        Html.X().ButtonExportExcelFile().GridIDGetFile("grdStatisticUserType").isTree(false).Icon(Icon.PageExcel).Text("Loại").ID("btnExType").Hidden(true),
+                        Html.X().ButtonExportExcelFile().GridIDGetFile("grdStatisticUserCri").isTree(false).Icon(Icon.PageExcel).Text("Mức độ nghiêm trọng").ID("btnExCri").Hidden(true),
+                        Html.X().ButtonExportExcelFile().GridIDGetFile("grdStatisticOneUser").isTree(false).Icon(Icon.PageExcel).Text("Cá nhân").ID("btnExOneUser").Hidden(true)
+                          )
+                   ),
+        Html.X().Panel().ID("pnlGrid").Region(Region.Center).Layout(LayoutType.Border)
+      )
+)
+<script type="text/javascript">
+
+    var exStatisticUserType = function () {
+        App.btnExType.fireEvent(App.btnExType.clickEvent);
+    }
+
+    var exStatisticUserCri = function () {
+        App.btnExCri.fireEvent(App.btnExCri.clickEvent);
+    }
+
+    var exStatisticOneUser = function () {
+        App.btnExOneUser.fireEvent(App.btnExOneUser.clickEvent);
+    }
+
+
+    var getDepartmentSelection = function () {
+        return App.DepartmentPanel1.getSelectionModel().getLastSelected();
+    };
+
+    var expandDepartment = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+        var count = App.DepartmentPanel1.selModel.getCount();
+        if (count <= 0) {
+            App.DepartmentPanel1.selModel.select(0);
+        }
+    };
+
+    var reloadPermissionStore = function () {
+        //App.PermissionPanel.store.reload();
+        //App.PermissionPanel.selModel.deselectAll();
+        //App.btnSelectPermissionAll.setDisabled(true);
+        //App.btnDeselectPermissionAll.setDisabled(true);
+        getDataTest1();
+    };
+
+
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+
+    var optionTime = function () {
+        var date = new Date();
+        var option = App.Time.getValue();
+        var quarter = Math.floor((date.getMonth() + 3) / 3);
+        switch (option) {
+            case 0:
+                App.dfFromDate.setValue(date);
+                App.dfToDate.setValue(date);
+                break;
+            case 1:
+                var startDay = 1;
+                var d = date.getDay();
+                var weekStart = new Date(date.valueOf() - (d <= 0 ? 7 - startDay : d - startDay) * 86400000);
+                var weekEnd = new Date(weekStart.valueOf() + 6 * 86400000);
+                App.dfFromDate.setValue(weekStart);
+                App.dfToDate.setValue(weekEnd);
+                break;
+            case 2:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+                break;
+            case 3:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * quarter - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * quarter + 0, 1));
+                break;
+            case 4:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11, 31));
+                break;
+            case 5:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 0 + 1, 0));
+                break;
+            case 6:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 1, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 1 + 1, 0));
+                break;
+            case 7:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 2, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 2 + 1, 0));
+                break;
+            case 8:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 + 1, 0));
+                break;
+            case 9:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 4, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 4 + 1, 0));
+                break;
+            case 10:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 5, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 5 + 1, 0));
+                break;
+            case 11:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 6, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 6 + 1, 0));
+                break;
+            case 12:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 7, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 7 + 1, 0));
+                break;
+            case 13:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 8, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 8 + 1, 0));
+                break;
+            case 14:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 9, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 9 + 1, 0));
+                break;
+            case 15:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 10, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 10 + 1, 0));
+                break;
+            case 16:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 11, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11 + 1, 0));
+                break;
+            case 17:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 1 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 1 + 0, 1));
+                break;
+            case 18:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 2 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 2 + 0, 1));
+                break;
+            case 19:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 3 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 3 + 0, 1));
+                break;
+            case 20:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 4 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 4 + 0, 1));
+                break;
+            default:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+        }
+        App.gpDepartmentStatistical.getStore().load();
+        CheckStatus();
+    };
+
+    var getDataTest1 = function () {
+        var strDepartmentIDorUserID = App.DepartmentPanel1.getSelectionModel().getLastSelected();
+        if (isNaN(strDepartmentIDorUserID)) {
+            App.btnExType.hidden = false;
+            App.btnExCri.hidden = false;
+            App.btnExOneUser.hidden = true;
+        }
+        else {
+            App.btnExType.hidden = true;
+            App.btnExCri.hidden = true;
+            App.btnExOneUser.hidden = false;
+        }
+
+        if (strDepartmentIDorUserID)
+        var url = '@(Url.Action("GetGridPanel", "ProblemStatisticalUser", new { Area = "Problem" }, null))';
+            var params = {
+                containerId: "pnlGrid",
+                fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+                toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+                strDepartmentIDorUserID: getDepartmentSelection().data.id
+            };
+            onDirectMethod(url, params);
+    }
+
+    var renderDetailForType = function (value, metadata, record, rowIndex, colIndex, store, obj) {
+        if (value != null) {
+            var colIndex1 = colIndex + 1;
+            var typeID = App.grdStatisticUserType.columns[colIndex1].tag;
+            return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatisticForType(" + typeID + ")\">" + value + "</a>";
+        }
+    };
+
+    var renderDetailForCri = function (value, metadata, record, rowIndex, colIndex, store, obj) {
+        if (value != null) {
+            var colIndex1 = colIndex + 1;
+            var criID = App.grdStatisticUserCri.columns[colIndex1].tag;
+            return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatisticForCri(" + criID + ")\">" + value + "</a>";
+        }
+    };
+
+    var renderDetailOneUser = function (value, metadata, record, rowIndex, colIndex, store, obj) {
+        if (value != null) {
+            var colIndex1 = colIndex + 1;
+            var criID = App.grdStatisticOneUser.columns[colIndex1].tag;
+            return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatisticOneUser(" + criID + ")\">" + value + "</a>";
+        }
+    };
+
+    var showDetailStatisticForType = function (typeID) {
+        var records = App.grdStatisticUserType.selModel.getSelection();
+        var userID = 0;
+        if (records.length > 0) {
+            userID = records[0].get('UserID');
+        }
+        var url = '@(Url.Action("StatisticTypeDetail", "ProblemStatisticalUser", new { Area = "Problem" }))';
+        var params = {
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+            type: typeID,
+            userID: userID,
+            departmentID: getDepartmentSelection().data.id
+        };
+
+        onDirectMethod(url, params);
+    };
+
+    var showDetailStatisticForCri = function (criticalLevelID) {
+        var records = App.grdStatisticUserCri.selModel.getSelection();
+        var userID = 0;
+        if (records.length > 0) {
+            userID = records[0].get('UserID');
+        }
+        var url = '@(Url.Action("StatisticTypeDetail", "ProblemStatisticalUser", new { Area = "Problem" }))';
+        var params = {
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+            criticalLevelID: criticalLevelID,
+            userID: userID,
+            departmentID: getDepartmentSelection().data.id
+        };
+
+        onDirectMethod(url, params);
+    };
+
+    var showDetailStatisticOneUser = function (criticalLevelID) {
+        var records = App.grdStatisticOneUser.selModel.getSelection();
+        var typeID = 0;
+        if (records.length > 0) {
+            typeID = records[0].get('TypeID');
+        }
+        var url = '@(Url.Action("StatisticOneUserDetail", "ProblemStatisticalUser", new { Area = "Problem" }))';
+        var params = {
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+            type: typeID,
+            criticalLevelID: criticalLevelID,
+            strUserID: getDepartmentSelection().data.id,
+            departmentID: 0
+        };
+
+        onDirectMethod(url, params);
+    };
+</script>

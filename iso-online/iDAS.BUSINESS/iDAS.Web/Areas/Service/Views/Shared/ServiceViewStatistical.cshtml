@@ -1,0 +1,153 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    var windowID = "StatisticalCommand";
+    var StoreParamCommand = ViewData["StoreParamCommandStatiscal"] as StoreParameter;
+}
+@(Html.X().Window()
+            .ID(windowID)
+            .Title("Danh sách lệnh cung cấp dịch vụ")
+            .StyleSpec("-webkit-border-radius:0")
+            .Icon(Icon.ApplicationSideList)
+            .Height(1)
+            .Maximized(true)
+            .Constrain(true)
+            .Layout(LayoutType.Fit)
+            .Modal(true)
+            .Resizable(false)
+            .Margin(0)
+            .BodyPadding(0)
+            .Border(true)
+            .Items(
+         Html.X().GridPanel()
+                    .ID("grCommandInfo")
+                    .ColumnLines(true)
+                    .Border(false)
+                         .TopBar(
+                    Html.X().Toolbar()
+                            .Items(                              
+                            Html.X().ButtonView()
+                                    .ID("btnDetail")
+                                    .Handler("showFormDetail();"),                                       
+                            Html.X().ToolbarFill()
+                            )
+                         )
+                      .Store(
+                    Html.X().Store()
+                        .ID("stCommandInfo")
+                         .AutoLoad(true)
+                    .Proxy(
+                        Html.X().AjaxProxy().Url(ViewData["StoreUrlCommand"].ToString()).Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(a =>
+                    {
+                        a.Add(StoreParamCommand);
+                                    a.Add(new { fromDate = ViewData["FromDate"] });
+                                    a.Add(new { toDate = ViewData["ToDate"] });
+                    })
+                    .RemoteSort(false).RemotePaging(true).PageSize(20)
+                    .Model(Html.X().Model()
+                        .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("StartTime").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("EndTime").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("IsNew").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("IsEdit").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("IsApproval").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("IsAccept").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("ApporvalBy").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("Status").Type(ModelFieldType.String)
+                                )
+                        )
+                    )
+                        .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                        Html.X().Column()
+                                .Text("ID")
+                                .DataIndex("ID")
+                                .Hidden(true),
+                        Html.X().Column()
+                                .Text("Tên lệnh")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                .DataIndex("Name")
+                               .Flex(1)
+                                .Wrap(true),
+                       Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                .Columns(
+                    Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                        .Width(120)
+                        .Text("Bắt đầu")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Center)
+                        .DataIndex("StartTime")
+                        .Format("dd/MM/yyyy HH:mm"),
+                    Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                        .Width(120)
+                        .Text("Kết thúc")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Center)
+                        .DataIndex("EndTime")
+                        .Format("dd/MM/yyyy HH:mm")
+                ),
+            Html.X().Column()
+                    .Width(100)
+                    .Text("Trạng thái")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Align(Alignment.Center)
+                    .DataIndex("Status")
+
+                )
+                .Plugins(
+                                    Html.X().FilterHeader().Remote(true)
+                            )
+             .View(Html.X().GridView().StripeRows(false))         
+            .SelectionModel(
+                    Html.X().RowSelectionModel().Mode(SelectionMode.Single).Listeners(ls=>ls.SelectionChange.Handler="checkStatusCommandView()")
+            )
+            .BottomBar(
+                  Html.X().CustomPagingToolbar())
+            
+      
+ )
+)
+<script type="text/javascript">
+    var showFormDetail = function () {
+        var records = App.grCommandInfo.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "Command", new { Area = "Service" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var checkStatusCommandView = function () {
+        var records = App.grCommandInfo.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDetail.setDisabled(false);
+        }
+        else {
+            App.btnDetail.setDisabled(true);
+        }
+    };
+</script>

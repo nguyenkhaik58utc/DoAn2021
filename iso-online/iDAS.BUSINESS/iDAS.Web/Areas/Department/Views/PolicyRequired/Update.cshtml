@@ -1,0 +1,84 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.DepartmentPolicyItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới chính sách";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật chính sách";
+    }
+}
+@(Html.X().CustomWindow()
+.ID("winPolicyForm")
+        .Title(title)
+        .Icon(IconView)
+        .Border(false)
+        .Items(
+                X.FormPanel().ID("frmUpdate")
+                        .Layout(LayoutType.Fit)
+                        .StyleSpec("border: none;")
+                        .Border(false).BodyPadding(0)
+                        .Items(
+                                X.TabPanel()
+                                    .Items(
+                                       X.CustomFormPanel().Title("Thông tin chính sách")
+                                        .Items(
+                                                X.HiddenFor(m => m.ID),
+                                                X.TextFieldFor(m => m.Name).FieldLabel("Tên chính sách" + Html.Required())
+                                                        .EmptyText("Tên chính sách...")
+                                                        .BlankText("Tên chính sách không được bỏ trống!")
+                                                        .AllowOnlyWhitespace(false),
+                                                Html.X().ComboBoxFor(m => m.ISOID).FieldLabel("Tên ISO")
+                                                                .QueryMode(DataLoadMode.Local).Editable(false)
+                                                                .EmptyText("Tiêu chuẩn ISO ....")
+                                                                .ForceSelection(true)
+                                                                .DisplayField("Name")
+                                                                .ValueField("ID")
+                                                                .Store(Html.X().Store()
+                                                                            .AutoLoad(true)
+                                                                            .Model(Html.X().Model()
+                                                                                    .IDProperty("ID")
+                                                                                    .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                                            new ModelField("Name", ModelFieldType.String)))
+                                                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetISO"))
+                                                                                            .Reader(Html.X().JsonReader().Root("data")))
+                                                                                            ),        
+                                                X.DateFieldFor(m => m.Time).FieldLabel("Thời gian áp dụng"),
+                                                X.CheckboxFor(m => m.IsUse).FieldLabel("Sử dụng"),
+                                                X.TextAreaFor(m => m.Scope).FieldLabel("Phạm vi áp dụng"),
+                                                X.TextAreaFor(m => m.Object).FieldLabel("Đối tượng áp dụng"),
+                                                X.TextAreaFor(m => m.Description).FieldLabel("Mô tả")
+                                                            .EmptyText("Nhập mô tả...").MinHeight(100).Flex(1),
+                                                X.FileUploadFieldFor(m => m.AttachmentFiles)
+                                             ),
+                                        X.Panel().Title("Nội dung").Layout(LayoutType.Fit).BodyPadding(2)
+                                          .Items(
+                                              X.TextAreaFor(m => m.Content).HideLabel(true)
+                                                            .EmptyText("Nhập nội dung...").MinHeight(300)
+                                          )
+                                    )
+                            )
+                )
+.Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.FormID = "frmUpdate";
+                                }), 
+            Html.X().ButtonExit()
+      )
+)

@@ -1,0 +1,163 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerAuditResultItems
+
+@(
+ Html.X().Window().ID("winAuditResult")
+.Title("Kết quả đánh giá của khách hàng")
+.Icon(Icon.Comment)
+.Maximized(true)
+.Height(1)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+Html.X().HiddenFor(m => m.AuditID).ID("hdfAuditID"),
+Html.X().HiddenFor(m => m.CustomerID).ID("hdfCustomerID"),
+Html.X().HiddenFor(m => m.CriteriaCategoryID).ID("hdfCategoryID"),
+Html.X().TreePanel()
+    .Header(false)
+    .Split(true)
+    .Border(false)
+    .ID("TreePanelAuditResult")
+    .TitleAlign(TitleAlign.Center)
+    .Layout(LayoutType.Fit)
+    .Collapsible(true)
+    .ForceFit(true)
+    .RootVisible(false)
+    .ColumnLines(true)
+    .RowLines(true)
+    .SingleExpand(false)
+
+    .TopBar(
+        Html.X().Toolbar()
+            .Items(
+            Html.X().Button()
+                .Icon(Icon.Pencil)
+                .ID("btnSetPoint")
+                .Text("Chấm điểm")
+                    .Handler("updateForm(this.up('treepanel'));")
+                .Disabled(true),
+            Html.X().ToolbarSeparator(),
+            Html.X().ButtonDelete()
+                .ID("btnDeletePoint")
+                    .Handler("deleteRecord(this.up('treepanel'));")
+        )
+    )
+    .Store(Html.X().TreeStore().ID("StoreTreeCriteria")
+        .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("LoadResult"))
+                    .Reader(Html.X().JsonReader()
+                    .Root("data"))
+                )
+              .Parameters(ps =>
+                {
+                    ps.Add(new StoreParameter("cateId", "App.hdfCategoryID.getValue()!=null? App.hdfCategoryID.getValue():0", ParameterMode.Raw));
+                    ps.Add(new StoreParameter("auditId", "App.hdfAuditID.getValue()!=null? App.hdfAuditID.getValue():0", ParameterMode.Raw));
+                    ps.Add(new StoreParameter("customerId", "App.hdfCustomerID.getValue()!=null? App.hdfCustomerID.getValue():0", ParameterMode.Raw));
+                })
+        .Model(
+            Html.X().Model().IDProperty("ID")
+            .Fields(
+                    Html.X().ModelField().Name("ID"),
+                    Html.X().ModelField().Name("Name"),
+                    Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("MinPoint").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("MaxPoint").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsCategory").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("Point").Type(ModelFieldType.String)
+            )
+        )
+    )
+    .ColumnModel(
+        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+        Html.X().TreeColumn()
+            .Text("Tiêu chí đánh giá")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Align(Alignment.Left)
+            .DataIndex("Name")
+            .Flex(1),
+        Html.X().Column()
+            .Text("Điểm")
+            .Width(100)
+            .Align(Alignment.Right)
+            .DataIndex("Point")
+    )
+        .Listeners(lS => lS.SelectionChange.Handler = "checkStatus(this);")
+).Buttons(Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var updateForm = function (tree) {
+        TreePanel = tree;
+        var record = tree.selModel.getSelection();
+        if (record.length > 0) {
+            var auditId = App.hdfAuditID.getValue();
+            var criteriaId = record[0].get('ID');
+            var customerId = App.hdfCustomerID.getValue();
+            var url = '@(Url.Action("FrmEdit"))';
+            var params = { auditId: auditId, criteriaId: criteriaId, customerId: customerId };
+            onDirectMethod(url,params);
+        }
+    };
+    var deleteRecord = function (tree) {
+        TreePanel = tree;
+        var record = tree.selModel.getSelection();
+        if (record.length > 0) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa kết quả đánh giá đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var auditId = App.hdfAuditID.getValue();
+                        var criteriaId = record[0].get('ID');
+                        var customerId = App.hdfCustomerID.getValue();
+                        var url = '@(Url.Action("DeleteAuditResult"))';
+                        var params ={ auditId: auditId, criteriaId: criteriaId, customerId: customerId };
+                        onDirectMethod(url, params,null,refresh);
+                    }
+                }
+            });
+        }
+    };
+    var refresh = function () {
+        var selectNodes = App.TreePanelAuditResult.selModel.getSelection();
+        if (selectNodes.length > 0) {
+            if (selectNodes.length == 1) {
+                selectNodeId = selectNodes[0].getId();
+                App.StoreTreeCriteria.getNodeById(selectNodeId).parentNode.reload();
+            }
+        }
+        else {
+            App.StoreTreeCriteria.getRootNode().reload();
+        };
+    };
+    var checkStatus = function (tree) {
+        var records = tree.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnSetPoint.setDisabled(true);
+                App.btnDeletePoint.setDisabled(true);
+                break;
+            case 1:
+                if (!records[0].get('IsCategory') && App.hdfAuditID.getValue() != 0) {
+                    App.btnSetPoint.setDisabled(false);
+                    App.btnDeletePoint.setDisabled(false);
+                } else {
+                    App.btnSetPoint.setDisabled(true);
+                    App.btnDeletePoint.setDisabled(true);
+                }
+
+                break;
+            default:
+                App.btnSetPoint.setDisabled(true);
+                App.btnDeletePoint.setDisabled(true);
+
+        }
+    };
+</script>

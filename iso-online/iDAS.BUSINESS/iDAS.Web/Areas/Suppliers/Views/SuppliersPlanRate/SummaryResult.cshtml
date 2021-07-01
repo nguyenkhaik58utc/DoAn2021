@@ -1,0 +1,182 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SupplierAuditPlanItem
+@(Html.X().Window()
+.ID("winRequirementList")
+.Title("Tổng hợp kết quả đánh giá định kỳ")
+.Layout(LayoutType.Fit).Maximized(true).Height(600)
+    .Icon(Icon.TableRow)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+                Html.X().HiddenFor(m => m.ID).ID("hdfSuppAuditPlanID"),
+                Html.X().GridPanel()
+                        .Header(true)
+                        .ID("GrSuppAudit")
+                        .ColumnLines(true).ForceFit(true)
+                        .Margin(1)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                            .MarginSpec("0 1 0 1")
+        //                .TopBar(
+        //                    Html.X().Toolbar()
+        //                    .Layout(LayoutType.HBox)
+        //                    .Items(
+        //                    Html.X().ButtonCreate().ID("btnAdd").Handler("AddNewPartial();").Text("Thêm nhà cung cấp"),
+        //                        Html.X().ToolbarSeparator(),
+        //                        Html.X().ButtonUpdate().ID("btnUpdatePartial").Handler("UpdatePartial();").Hidden(true),
+        //                        Html.X().ToolbarSeparator(),
+        //                        Html.X().ButtonDelete().ID("btnDeletePartial").Handler("DeleteRecords();"),
+        ////Html.X().ToolbarSeparator(),
+        ////Html.X().ButtonView().ID("btnDetailPartial").Handler("ViewDetailPartial();"),
+
+        //                        Html.X().ToolbarFill()
+        //                    )
+         //           )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreSuppAudit")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetSuppAuditSummaryResult")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("planID", "App.hdfSuppAuditPlanID.value", ParameterMode.Raw));
+                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                                        new ModelField("ID", ModelFieldType.Int),
+                                                                new ModelField("Supplier.Name", ModelFieldType.String),
+                                                                            new ModelField("Supplier.Commodity", ModelFieldType.String),
+                                                                        new ModelField("countSupplierOrder", ModelFieldType.Int),
+                                                                new ModelField("totalAudit", ModelFieldType.String)
+
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("Supplier.Name").Text("Tên nhà cung cấp").Width(200),
+                                            Html.X().Column().DataIndex("Supplier.Commodity").Text("Mặt hàng cung cấp").Wrap(true).Width(150),
+                                            Html.X().Column().DataIndex("countSupplierOrder").Text("Số lần <br> cung cấp").Wrap(true).Width(80),
+                                        Html.X().ComponentColumn().Text("Đánh giá kết quả giao hàng").Columns(
+                                        Html.X().Column().DataIndex("").Text("Số lượng").Wrap(true).Width(80),
+                                        Html.X().Column().DataIndex("").Text("Thời gian giao").Wrap(true).Width(100),
+                                            Html.X().Column().DataIndex("totalAudit").Text("Tổng điểm đg").Wrap(true).Width(100),
+                                        Html.X().Column().DataIndex("").Text("Mức độ khác").Wrap(true).Width(100)
+                                        ),
+                                            Html.X().Column().DataIndex("").Text("Kết luận").Wrap(true).Width(150),
+                                        Html.X().Column().DataIndex("").Text("Ghi chú").Wrap(true).Width(150)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+            )
+.Buttons(
+        Html.X().ButtonExit()
+    )
+)
+<script>
+
+    function CheckStatus() {
+        var records = App.GrSuppAudit.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDeletePartial, App.btnUpdatePartial);
+
+        }
+        else {
+            SetDisabled(App.btnDeletePartial, App.btnUpdatePartial);
+        };
+    };
+    var ViewDetailPartial = function () {
+        var records = App.GrSuppAudit.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetail", "SuppliersPayment", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var UpdatePartial = function () {
+        var records = App.GrSuppAudit.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "SuppliersPayment", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                ActionForm: '@(iDAS.Utilities.Form.Edit)'
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AddNewPartial = function () {
+
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmFindSupplier", "SuppliersPlanRate", new { Area = "Suppliers" }, null))',
+            params: {
+                id: App.hdfSuppAuditPlanID.getValue()
+            }
+        });
+    };
+
+    var DeleteRecords = function () {
+        var records = App.GrSuppAudit.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var url = '@(Url.Action("DeleteSuppliersAudit", "SuppliersPlanRate", new { Area = "Suppliers" }, null))';
+                        var params = {
+                            ID: records[0].get('ID'),
+                        };
+                        onDirectMethod(url, params);
+                    }
+                }
+            });
+        }
+    };
+
+
+    var insertProductsToStempInward = function () {
+
+        var records = App.gpSupplier.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có NCC nào được chọn!',
+                    iconCls: '#Exclamation',
+                    buttons: { yes: 'Đồng ý' }
+                });
+                break;
+            default:
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("updateSupplierAudit", "SuppliersPlanRate", new { Area = "Suppliers" }, null))',
+                    params: { stringId: strId, planid: App.hdfSuppAuditPlanID.getValue() }
+                });
+                break;
+                alert();
+        }
+    };
+</script>

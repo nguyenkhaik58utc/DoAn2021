@@ -1,0 +1,139 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ServiceProgramItem
+
+@(Html.X().Window()
+    .Title("Danh sách chương trình")
+    .Icon(Icon.ApplicationSideList)
+    .Modal(true)
+    .Width(750)
+    .Height(400)
+    .Constrain(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Items(
+        Html.X().GridPanel()
+        .ID("ServiceProgramPanel")
+        .Header(false)
+        .ColumnLines(true)
+        .Border(false)
+        .ForceFit(true)
+        .Collapsible(true)
+        .Split(true)
+        .Icon(Icon.TextListBullets)
+        .TopBarItem(
+            Html.X().Button().Text("Thêm").ID("btnCreateServiceProgram").Icon(Icon.Add).Handler("showCreateServiceProgram();"),
+            Html.X().Button().Text("Sửa").ID("btnUpdateServiceProgram").Icon(Icon.Pencil).Handler("showUpdateServiceProgram();").Disabled(true),
+            Html.X().Button().Text("Xóa").ID("btnDeleteServiceProgram").Icon(Icon.Delete).Handler("showDeleteServiceProgram();").Disabled(true),
+            Html.X().Button().Text("Xem chi tiết").ID("btnDetailServiceProgram").Icon(Icon.Zoom).Handler("showDetailServiceProgram();").Disabled(true),
+            Html.X().Button().Text("Tệp đính kèm").ID("btnViewServiceProgramFile").Icon(Icon.Attach).Handler("showViewServiceProgramFile();").Disabled(true)
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .Parameters(Html.X().StoreParameter().Name("serviceId").Value("getServiceId()").Mode(ParameterMode.Raw))
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Price").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectServiceProgram()")
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").Hidden(true),
+            Html.X().Column().Text("Chủ đề").DataIndex(Model, m => m.Name).StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().NumberColumn().Text("Giá thành").DataIndex(Model, m => m.Price).StyleSpec("font-weight: bold;text-align: center").Width(130).Align(Alignment.Right).Format("0,0.00 ₫"),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex(Model, m => m.CreateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeServiceProgram()")
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var urlCreateServiceProgram = '@Url.Action("Create", "ServiceProgram", new { area = "Web" })';
+    var urlUpdateServiceProgram = '@Url.Action("Update", "ServiceProgram", new { area = "Web" })';
+    var urlDeleteServiceProgram = '@Url.Action("Delete", "ServiceProgram", new { area = "Web" })';
+    var urlDetailServiceProgram = '@Url.Action("Detail", "ServiceProgram", new { area = "Web" })'; 
+    var urlViewServiceProgramFile = '@Url.Action("Index", "ServiceProgramFile", new { area = "Web" })'; 
+
+    var getServiceId = function () {
+        var record = getServiceSelection();
+        var serviceId = record == null ? 0 : record.data.ID;
+        return serviceId;
+    };
+    var getServiceProgramSelection = function () {
+        return App.ServiceProgramPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadServiceProgram = function () {
+        App.ServiceProgramPanel.getStore().reload();
+        deSelectServiceProgram();
+    };
+    var deSelectServiceProgram = function () {
+        App.ServiceProgramPanel.selModel.lastSelected = null;
+        selectionChangeServiceProgram();
+    };
+    var showCreateServiceProgram = function () {
+        var url = urlCreateServiceProgram;
+        var serviceId = getServiceId();
+        var params = { serviceId: serviceId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateServiceProgram = function () {
+        var url = urlUpdateServiceProgram;
+        var record = getServiceProgramSelection();
+        var serviceProgramId = record == null ? 0 : record.data.ID;
+        var params = { serviceProgramId: serviceProgramId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteServiceProgram = function () {
+        var url = urlDeleteServiceProgram;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getServiceProgramSelection();
+                            var serviceProgramId = record == null ? 0 : record.data.ID;
+                            var params = { serviceProgramId: serviceProgramId };
+                            onDirectMethod(url, params, 'post', reloadServiceProgram);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailServiceProgram = function () {
+        var url = urlDetailServiceProgram;
+        var record = getServiceProgramSelection();
+        var serviceProgramId = record == null ? 0 : record.data.ID;
+        var params = { serviceProgramId: serviceProgramId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showViewServiceProgramFile = function () {
+        var url = urlViewServiceProgramFile;
+        onDirectMethod(url, null, 'get');
+    };
+    var selectionChangeServiceProgram = function () {
+        var record = getServiceProgramSelection();
+        App.btnUpdateServiceProgram.setDisabled(record == null);
+        App.btnDeleteServiceProgram.setDisabled(record == null);
+        App.btnDetailServiceProgram.setDisabled(record == null); 
+        App.btnViewServiceProgramFile.setDisabled(record == null); 
+    };
+</script>

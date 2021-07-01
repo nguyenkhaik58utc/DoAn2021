@@ -1,0 +1,78 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanTrainingPractionersItem
+@(Html.X().Window()
+.ID("winUpdateResult")
+.Title("Cập nhật kết quả đào tạo của học viên")
+.Icon(Icon.StarBronze)
+.Width(530)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frResult")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+        .Items(     
+            Html.X().HiddenFor(m => m.ID),
+            Html.X().EmployeeFieldFor(m => m.EmployeesRegister).ReadOnly(true).Title("Học viên").MarginSpec("0 0 3 105"),                 
+            Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 5 0").Items(
+            Html.X().NumberFieldFor(m=>m.NumberPresence).FieldLabel("Số buổi có mặt").MinValue(0).MarginSpec("0 5 0 0"),
+            Html.X().NumberFieldFor(m=>m.NumberAbsence).MinValue(0).FieldLabel("Số buổi vắng mặt")),
+            Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 5 0").Items(
+            Html.X().NumberFieldFor(m => m.TotalPoint).FieldLabel("Tổng điểm").MinValue(0).MarginSpec("0 5 0 0"),
+                        Html.X().ComboBoxFor(m => m.RankID).FieldLabel("Xếp loại").DisplayField("RankName").ValueField("ID")
+                        .Store(
+                                            Html.X().Store()
+                                                .ID("StoreListRank")
+                                                .AutoLoad(true)
+                                                     .Proxy(Html.X().AjaxProxy()
+                                                                    .Url(Url.Action("LoadDataUse", "Rank", new { area = "Human" }))
+                                                        .Reader(Html.X().JsonReader().Root("data")
+                                                        )
+                                                        )
+                                                .Model(Html.X().Model()
+                                                    .Fields(
+                                                            new ModelField("RankName"),
+                                                        new ModelField("ID")
+                                                    )
+                                                )
+                                        )),
+            Html.X().TextAreaFor(m=>m.CommentOfTeacher).FieldLabel("Nhận xét giáo viên").Height(150)           
+
+                )
+             )
+        )
+        .Buttons(
+        Html.X().Button()
+        .ID("btnSaves")
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .TabIndex(7)
+        .DirectEvents(de =>
+        {
+            de.Click.Before = @"if (!App.frResult.getForm().isValid()) { return false; } ";
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Action = "Update";
+            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+            de.Click.FormID = "frResult";
+            de.Click.Success = "this.up('window').close(); App.StorePractioners.reload();";
+        }),
+        Html.X().Button()
+        .ID("btnCancel")
+        .Text("Hủy")
+        .Icon(Icon.Cancel)
+        .TabIndex(9)
+                    .Handler("App.frResult.reset(); App.winUpdateResult.close();")
+        )
+)

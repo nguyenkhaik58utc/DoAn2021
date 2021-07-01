@@ -1,0 +1,47 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerContractItem
+@(
+ Html.X().Window()
+.ID("winEndContract")
+.Title("Kết thúc hợp đồng")
+//.Header(false)
+.Icon(Icon.Money)
+.Width(300)
+.Height(100)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+ Html.X().FormPanel()
+            .AutoScroll(true)
+            .ID("frmEndContract")
+            .Layout(LayoutType.Column)
+            .Frame(true)
+            .FieldDefaults(df => { df.LabelWidth = 100;  })
+            .StyleSpec("border: none;")
+            .Items(
+                        Html.X().HiddenFor(m => m.ID).ID("hdfCancelContractID"),
+                        Html.X().CheckboxFor(m=>m.IsSuccess).FieldLabel("Kết thúc").BoxLabel("Đồng ý").ColumnWidth(1).MarginSpec("0 0 8 5")
+            ))
+            .Buttons(
+                Html.X().Button()
+                                .Text("Lưu lại")
+                                .Icon(Icon.DatabaseSave)
+                                .DirectEvents(de =>
+                                            {
+                                                de.Click.Before = @"if (!App.frmEndContract.getForm().isValid()) { return false; }; ";
+                                                de.Click.ExtraParams.Add(new { exit = true });
+                                                de.Click.Url = Url.Action("EndContract");
+                                                de.Click.EventMask.ShowMask = true;
+                                                de.Click.FormID = "frmEndContract";
+                                                de.Click.Success = "this.up('window').close();";
+                                            })
+                , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

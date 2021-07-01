@@ -1,0 +1,47 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanTrainingPractionersItem
+@(Html.X().Window()
+.ID("winUpdateJoin")
+.Title("Cập nhật trạng thái tham gia của học viên")
+.Icon(Icon.ArrowJoin)
+.Width(500)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frResult")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+        .Items(     
+            Html.X().HiddenFor(m => m.ID),
+            Html.X().EmployeeFieldFor(m => m.EmployeesRegister).ReadOnly(true).Title("Học viên"),
+            Html.X().CheckboxFor(m => m.IsJoin).HideLabel(true).BoxLabel("Có tham gia"),
+            Html.X().TextAreaFor(m=>m.ResonUnJoin).FieldLabel("Lý do không tham gia").Height(150).LabelAlign(LabelAlign.Top)           
+
+                )
+             )
+        )
+        .Buttons(
+        Html.X().ButtonSave()
+        .ID("btnSaves")
+        .DirectEvents(de =>
+        {
+            de.Click.Before = @"if (!App.frResult.getForm().isValid()) { return false; } ";
+            de.Click.Action = "UpdateJoin";
+            de.Click.FormID = "frResult";
+            de.Click.Success = "this.up('window').close(); App.StorePractioners.reload();";
+        }),
+        Html.X().ButtonExit()        
+        )
+)

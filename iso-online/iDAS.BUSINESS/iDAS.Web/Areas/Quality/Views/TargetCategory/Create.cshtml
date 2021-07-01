@@ -1,0 +1,77 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.QualityTargetCategoryItem
+@(Html.X().Window()
+              .ID("winNewTargetCategory")
+          .Title("Thêm mới nhóm mục tiêu")
+          .Icon(Icon.Add)
+          .Height(300)
+          .Width(500)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().FormPanel()
+                    .ID("frTargetCategory")
+                .Layout(LayoutType.Form)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+        .Items(              
+                Html.X().TextFieldFor(m => m.Name)
+                .FieldLabel("Tên nhóm mục tiêu" + Html.Required())
+                .ID("txtName")
+                .AllowBlank(false)
+                .LabelWidth(120)
+                .BlankText("Tên nhóm mục tiêu không được để rỗng!")
+                .AllowOnlyWhitespace(false),        
+        Html.X().ComboBoxFor(m => m.IsActive)
+                .TabIndex(4)
+                .LabelWidth(120)
+                .Editable(false)
+                .Listeners(ls => ls.Render.Handler = "App.cbIsUse.select(App.cbIsUse.store.getAt(0))")
+                .FieldLabel("Tình trạng" + Html.Required())
+                .ID("cbIsUse")
+                .Items(
+                    new ListItem("Sử dụng", true),
+                    new ListItem("Không sử dụng", false)
+                 ),
+         Html.X().TextAreaFor(m=>m.Description)
+                 .FieldLabel("Mô tả")
+                 .Height(130)
+                 .LabelWidth(120)
+             )
+            )
+            .Buttons(
+            Html.X().ButtonSave()
+            .ID("btnSave")
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { val = false });
+                de.Click.Before = @"if (!App.frTargetCategory.getForm().isValid()) { return false; } ";
+                de.Click.Action = "Insert";
+                de.Click.FormID = "frTargetCategory";
+            }),
+            Html.X().ButtonSaveAndExit()
+            .ID("btnSaves")
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { val = true });
+                de.Click.Before = @"if (!App.frTargetCategory.getForm().isValid()) { return false; } ";
+                de.Click.Action = "Insert";
+                de.Click.FormID = "frTargetCategory";
+                de.Click.Success = "this.up('window').close();";
+            }),
+            Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var showFrmListCate = function () { 
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmListCriteriaCategory", "TargetCategory", new { Area = "Quality" }, null))'             
+            });       
+    };
+</script>

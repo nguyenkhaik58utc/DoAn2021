@@ -1,0 +1,406 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@( Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+              Html.X().Menu()
+                .ID("cmMenu")
+                .Items(
+                    new MenuItem { Text = "Xem chi tiết", ID = "cmDetail", Icon = Icon.Zoom, Handler = "showDetailResult();" },
+                    Html.X().MenuSeparator(),
+                    new MenuItem { Text = "Kết quả chi tiết", ID = "cmEdit", Disabled = true, Icon = Icon.Pencil, Handler = "showEditResult();" }
+                    ),
+            Html.X().GridPanel()
+                .Header(true)
+                .Region(Region.West)
+                .Width(350)
+                .Split(true)
+                .Title("KẾ HOẠCH ĐÁNH GIÁ")
+                .ID("grQualityAuditPlan")
+                .Border(true)
+                .MarginSpec("1 0 1 1")
+                .TitleAlign(TitleAlign.Center)
+                .Layout(LayoutType.Fit)
+                .Collapsible(true)
+                .ForceFit(true)
+                .ColumnLines(true)
+                .RowLines(true)
+                .TopBar(
+                        Html.X().Toolbar()
+                            .Items(
+                                    Html.X().ButtonView().ID("btnDetailAudit").Handler("showFormDetail();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().Icon(Icon.StarGold).ID("btnResultISO")
+                                        .Disabled(true).Text("Kết quả đánh giá").Handler("showUpdateResultISO();")
+                                    )
+                        )
+                .Store(Html.X().Store().ID("stMnQualityAuditPlan")
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataIsApproval", "AuditPlan")).Reader(Html.X().JsonReader().Root("data")))
+                                .RemoteSort(true)
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Model(
+                                        Html.X().Model()
+                                        .IDProperty("ID")
+                                                .Fields(
+                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("ISOName").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("StartTime").Type(ModelFieldType.Date),
+                                                    Html.X().ModelField().Name("EndTime").Type(ModelFieldType.Date),
+                                                    Html.X().ModelField().Name("Type").Type(ModelFieldType.Boolean),
+                                                    Html.X().ModelField().Name("IsPass").Type(ModelFieldType.Boolean),
+                                                    Html.X().ModelField().Name("IsNew").Type(ModelFieldType.Boolean),
+                                                    Html.X().ModelField().Name("AuditNote").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("IsEdit").Type(ModelFieldType.Boolean),
+                                                    Html.X().ModelField().Name("IsApproval").Type(ModelFieldType.Boolean),
+                                                    Html.X().ModelField().Name("IsAccept").Type(ModelFieldType.Boolean),
+                                                    Html.X().ModelField().Name("ApporvalBy").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("Scope").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("Require").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("Status").Type(ModelFieldType.String)
+                                                )
+                                    )
+                        )
+                .ColumnModel(
+                                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true),
+                                Html.X().Column().Text("Tên kế hoạch").DataIndex("Name").Flex(1).Wrap(true)
+                            )
+                .HideHeaders(true)
+                .SelectionModel(
+                                Html.X().CheckboxSelectionModel().Mode(SelectionMode.Single).RowSpan(2)
+                                        .Listeners(l =>
+                                        {
+                                            l.Select.Handler = "checkStatusAudit(); App.btnDetailAudit.setDisabled(false); App.grMnAuditProgram.getStore().reload();";
+                                        })
+                                )
+                .Features(Html.X().RowBody().GetAdditionalData("getAdditionalData"),
+                            Html.X().RowWrap()
+                            )
+                .View(Html.X().GridView().MarkDirty(false))
+                .BottomBar(Html.X().CustomPagingToolbar()),
+                Html.X().GridPanel()
+                        .ID("grMnAuditProgram")
+                        .Border(true)
+                        .Region(Region.Center)
+                        //.Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                        .TitleAlign(TitleAlign.Center)
+                        .Header(true)
+                        .Title("KẾT QUẢ ĐÁNH GIÁ")
+                        .Border(true)
+                        .RowLines(true)
+                        .ColumnLines(true)
+                        .MarginSpec("1 1 1 0")
+                        .TopBar(
+                                Html.X().Toolbar().Hidden(true)
+                                        .Items(
+                                                Html.X().ButtonUpdate().ID("btnEdit").Text("Kết quả chi tiết").Handler("showEditResult();"),
+                                                Html.X().ToolbarSeparator(),
+                                                Html.X().ButtonView().ID("btnDetail").Disabled(true).Handler("showDetailResult();"),
+                                                Html.X().ToolbarFill(),
+                                                Html.X().ButtonTutorial()
+                                            )
+                                )
+                        .Store(Html.X().Store()
+                            .ID("stMnDetailResult")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "Audit")).Reader(Html.X().JsonReader().Root("data")))
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("auditPlanId", "App.grQualityAuditPlan.selModel.getSelection().length>0?App.grQualityAuditPlan.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                            })
+                            .RemoteSort(true)
+                            .AutoLoad(false)
+                            .GroupField("DepartmentName")
+                            .Sorters(Html.X().DataSorter().Property("ID").Direction(Ext.Net.SortDirection.ASC))
+                            .RemotePaging(true)
+                            .PageSize(100)
+                            .Model(
+                                    Html.X().Model()
+                                            .Fields(
+                                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("IsoIndexName").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("ISOIndexID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("IsoIndexCode").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("ProgramName").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("DepartmentID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("QualityAuditProgramID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("DepartmentName").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("IsPass").Type(ModelFieldType.Boolean),
+                                                Html.X().ModelField().Name("IsAudit").Type(ModelFieldType.Boolean),
+                                                Html.X().ModelField().Name("AuditNote").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("IsObs").Type(ModelFieldType.Boolean),
+                                                Html.X().ModelField().Name("IsMaximum").Type(ModelFieldType.Boolean),
+                                                Html.X().ModelField().Name("IsMedium").Type(ModelFieldType.Boolean),
+                                                Html.X().ModelField().Name("ListModuleName").Type(ModelFieldType.String)
+                                            )
+                                  )
+                              )
+                        .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(33),
+                                        Html.X().Column().Text("Điều khoản").DataIndex("IsoIndexCode").Width(90).Wrap(true),
+                                        Html.X().Column().Text("Tên điều khoản").DataIndex("IsoIndexName").Flex(1).Wrap(true),
+                                        Html.X().ComponentColumn().Text("Điểm không phù hợp")
+                                            .Columns(
+                                                        Html.X().CheckColumn().Text("Obs").Align(Alignment.Right)
+                                                                    .DataIndex("IsObs").Width(80),
+                                                        Html.X().CheckColumn().Text("M").Align(Alignment.Right)
+                                                                    .DataIndex("IsMaximum").Width(80).Wrap(true),
+                                                        Html.X().CheckColumn().Text("m").Align(Alignment.Right)
+                                                                    .DataIndex("IsMedium").Width(80).Wrap(true)
+        //            ,
+        //Html.X().CommandColumn().Hidden(true)
+        //        .GroupCommands(
+        //                        Html.X().CommandFill(),
+        //                        Html.X().GridCommand().Hidden(true)
+        //                                .Icon(Icon.PageWord)
+        //                                .Text("Phiếu ghi chép")
+        //                                .CommandName("ViewRecordedVotes")
+        //                                .ToolTip(tt => { tt.Text = "Xem chi tiết phiếu ghi chép"; }),
+        //                        Html.X().GridCommand()
+        //                                .Icon(Icon.UserTick).Hidden(true)
+        //                                .Text("Kết quả đánh giá chi tiết")
+        //                                .CommandName("AuditResult")
+        //                                .ToolTip(tt => { tt.Text = "Xem kết quả đánh giá"; })
+        //                       )
+        //        .MarginSpec("0 20 0 0").PrepareGroupToolbar("prepareGroupToolbar")
+        //        .Listeners(ls => ls.GroupCommand.Fn = "onGroupCommand")
+                                                  )
+                                )
+                        .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                                .Listeners(l =>
+                                                {
+                                                    l.Select.Handler = "checkStatusResult();";
+                                                })
+                                        )
+                        .Plugins(Html.X().RowExpander().ID("rExAuditResult")
+                                        .TemplateHtml(@"<div><b>Nội dung:</b><br/><p>{AuditNote}</p></div>")
+                                  )
+                        .Features(Html.X().GroupingSummary()
+                                        .ID("GroupingSummary1")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                        .ShowSummaryRow(false)
+                                  )
+                        .BottomBar(Html.X().CustomPagingToolbar("100", "200", "300", "500", "1000"))
+       )
+)
+<script type="text/javascript">
+    var prepareGroupToolbar = function (grid, toolbar, groupId, records) {
+    };
+    var onGroupCommand = function (column, command, group) {
+        if (command === 'ViewRecordedVotes') {
+            var url = '@(Url.Action("ResultVoteForm"))';
+            var params = { programId: group.children[0].data.QualityAuditProgramID, departmentName: group.children[0].data.DepartmentName };
+            onDirectMethod(url, params);
+            return;
+        }
+        if (command === 'AuditResult') {
+            var planId = App.grQualityAuditPlan.selModel.getSelection().length > 0 ? App.grQualityAuditPlan.selModel.getSelection()[0].get('ID') : 0;
+            var url = '@(Url.Action("AuditResult"))';
+            var params = { planId: planId, departmentId: group.children[0].data.DepartmentID, departmentName: group.children[0].data.DepartmentName };
+            onDirectMethod(url, params);
+            return;
+        }
+    };
+    var getAdditionalData = function (data, idx, record, orig) {
+        return {
+            rowBodyColspan: record.fields.getCount(),
+            rowBody: Ext.String.format('<div style=\'padding:0 5px 0px 0px;\'>Tiêu chuẩn đánh giá: <i>{0}</i>.</div><br /><b>Kết quả đáp ứng yêu cầu: {1}</b>', data.ISOName, (data.IsPass && data.AuditNote.length > 0) ? "<span style=\"color:blue\">Đạt</span>" : (!data.IsPass && data.AuditNote.length > 0) ? "<span style=\"color:red\">Không đạt</span>" : "<span style=\"color:green\">Chưa nhập kết quả</span>")
+        };
+    };
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var showListMeeting = function () {
+        var records = App.grMnAuditProgram.selModel.getSelection();
+        if (records.length > 0) {
+            var programId = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("Index", "AuditMeeting", new { Area = "Quality" }, null))',
+                params: { auditPlanId: App.grQualityAuditPlan.selModel.getSelection()[0].get('ID'), programId: programId }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có kế hoạch đánh giá nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+    var checkStatusAudit = function () {
+        var records = App.grQualityAuditPlan.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnResultISO.setDisabled(true);
+                App.btnDetailAudit.setDisabled(true);
+                break;
+            case 1:
+                App.btnResultISO.setDisabled(false);
+                App.btnDetailAudit.setDisabled(false);
+                break;
+            default:
+                App.btnResultISO.setDisabled(true);
+                App.btnDetailAudit.setDisabled(true);
+
+        }
+    };
+    var checkStatusResult = function () {
+        var records = App.grQualityAuditPlan.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnEdit.setDisabled(true);
+                App.btnDetail.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.cmDetail.setDisabled(true);
+                break;
+            case 1:
+                App.btnEdit.setDisabled(false);
+                App.btnDetail.setDisabled(false);
+                App.cmEdit.setDisabled(false);
+                App.cmDetail.setDisabled(false);
+                App.rExAuditResult.expandRow(App.grMnAuditProgram.selModel.getSelection()[0]);
+                break;
+            default:
+                App.btnEdit.setDisabled(true);
+                App.btnDetail.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.cmDetail.setDisabled(true);
+        }
+    };
+    var showFormDetail = function () {
+        var records = App.grQualityAuditPlan.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "AuditPlan", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showUpdateResultISO = function () {
+        var records = App.grQualityAuditPlan.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowUpdateResultISO", "AuditPlan", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showFormDetailProgram = function () {
+        var records = App.grMnAuditProgram.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetail", "AuditProgram", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có chương trình nào được chọn',
+                buttons: { yes: 'Đồng ý' },
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+    };
+    var showAuditResult = function () {
+        var records = App.grMnAuditProgram.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+        else {
+            var programId = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowSetResult", "Audit", new { Area = "Quality" }, null))',
+                params: { programId: programId }
+            });
+        }
+    };
+    var showEditResult = function () {
+        var records = App.grMnAuditProgram.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            var url = '@(Url.Action("AuditUpdateWindow", "Audit", new { Area = "Quality" }))';
+            var params = { id: id };
+            onDirectMethod(url, params);
+        }
+    };
+    var showDetailResult = function () {
+        var records = App.grMnAuditProgram.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            var url = '@(Url.Action("AuditDetailWindow", "Audit", new { Area = "Quality" }))';
+            var params = { id: id };
+            onDirectMethod(url, params);
+        }
+    };
+    var showVoteForm = function (auditProgramIsoId, isoIndexId) {
+        var url = '@(Url.Action("ResultVoteForm"))';
+        var params = { auditProgramIsoId: auditProgramIsoId };
+        onDirectMethod(url, params);
+    };
+</script>

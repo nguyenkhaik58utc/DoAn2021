@@ -1,0 +1,391 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();  
+}
+@( Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+         Html.X().Menu()
+                .ID("cmMenu")
+                .Items(
+                        new MenuItem { Text = "Xem chi tiết", ID = "cmDetail", Icon = Icon.Zoom, Handler = "showFormDetail();" },
+                        Html.X().MenuSeparator(),
+                        new MenuItem { Text = "Thêm mới", ID = "cmAdd", Icon = Icon.Add, DirectClickAction = "ShowFrmAdd" },
+                        new MenuItem { Text = "Sửa", ID = "cmEdit", Disabled = true, Icon = Icon.Pencil, Handler = "updateForm();" },
+                        new MenuItem { Text = "Xóa", ID = "cmDelete", Disabled = true, Icon = Icon.Delete, Handler = "deleteRecord();" },
+                        new MenuItem { Text = "Gửi duyệt", ID = "cmSendApproval", Disabled = true, Icon = Icon.Tick, Handler = "SendApproval();" },
+                        new MenuItem { Text = "Phê duyệt", ID = "cmApproval", Disabled = true, Icon = Icon.Tick, Handler = "showApprove();" }
+                    ),
+        Html.X().GridPanel()
+            .Header(true)
+            .Region(Region.West)
+            .Width(300)
+            .Split(true)
+            .Title("LỆNH CUNG CẤP DỊCH VỤ")
+            .ID("grCommand")
+            .Border(true)
+            .MarginSpec("1 0 1 1")
+            .TitleAlign(TitleAlign.Center)
+            .Layout(LayoutType.Fit)
+            .Collapsible(true)
+            .ForceFit(true)
+            .ColumnLines(true)
+            .RowLines(true)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                            Html.X().Button()
+                                    .Disabled(true)
+                                        .Icon(Icon.Zoom)
+                                        .Text("Xem chi tiết")
+                                        .ID("btnDetailCommand")
+                                        .Handler("showFormDetail();")
+                                    .Disabled(true)
+                        )
+                    )
+                    .Store(Html.X().Store()
+                    .ID("stMnCommand")
+                    .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetDataIsApproval", "Command"))
+                    .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Model(
+                    Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String)                                  
+                              )
+                            )
+                        )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                        Html.X().Column()
+                                .Text("ID")
+                                .DataIndex("ID")
+                                .Hidden(true),
+                        Html.X().Column()
+                                .Text("Tên lệnh")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                .DataIndex("Name")
+                                .Flex(1)
+                                .Wrap(true)
+
+                )
+                .HideHeaders(true)
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = " checkCommandStatus(); App.grMnPlanIndex.getStore().reload();";
+                            })
+                            )
+
+                              .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                    .BottomBar
+                                (
+                                             X.CustomPagingToolbar()
+                ),
+               Html.X().GridPanel()
+               .Region(Region.Center)               
+                .Margin(1)
+                .Header(false)
+                        .ID("grMnPlanIndex")
+                               .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+                        Html.X().ButtonCreate().ID("btnAddPlan").Disabled(true).Handler("AddNew();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Icon(Icon.Delete).ID("btnDelete").Text("Xóa").Handler("onDelete(App.grMnPlanIndex.selModel.getSelection()[0].get('ID'));").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();").Disabled(true),     
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonSend().ID("btnSend").Handler("SendApproval();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonApproval().ID("btnApprovePlan").Handler("ApprovePlan();").Disabled(true),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                Html.X().Store()
+                        .ID("StorePlanIndex")
+                        .RemotePaging(true)
+                        .AutoLoad(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "Plan", new { Area = "Service" }))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        .IDParam("ID"))
+                        .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("commandId", "App.grCommand.selModel.getSelection().length>0?App.grCommand.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("PlanID"),
+                            Html.X().ModelField().Name("CommandID"),                            
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("StartTime"),
+                            Html.X().ModelField().Name("EndTime"),
+                            Html.X().ModelField().Name("Cost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("IsAccept"),
+                            Html.X().ModelField().Name("IsApproval"),
+                            Html.X().ModelField().Name("Status")
+                        )
+                     )
+            )
+            .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.Column().DataIndex("Name").Text("Tên kế hoạch").Width(300).Flex(1),
+                        X.ComponentColumn().Text("Thời gian thực hiện").Columns(
+                        X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(80).Align(Alignment.Center),
+                        X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(80).Align(Alignment.Center)),
+                        X.ComponentColumn().Text("Chi phí").Columns(
+                        X.NumberColumn().DataIndex("Cost").Text("Giá trị").Width(70).Align(Alignment.Right),
+                        X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                        X.Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(80).Filterable(false)
+                )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                        .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+                        .Plugins(
+                                Html.X().FilterHeader().Remote(true)
+                        )
+            .BottomBar(
+                   X.CustomPagingToolbar()
+        )
+       )
+)
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var deleteUrl = '@(Url.Action("DeletePlan"))';
+    var checkCommandStatus = function () {
+        var records = App.grCommand.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnDetailCommand.setDisabled(true);
+                App.btnAddPlan.setDisabled(true);
+                break;
+            case 1:
+                App.btnDetailCommand.setDisabled(false);
+                App.btnAddPlan.setDisabled(false);
+                break;
+            default:
+                App.btnDetailCommand.setDisabled(true);
+                App.btnAddPlan.setDisabled(true);
+        }
+    };     
+    var showFormDetail = function () {
+        var records = App.grCommand.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "Command", new { Area = "Service" }, null))',
+                params: { id: id }
+            });
+        }
+    };    
+    function CheckStatus() {
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        if (records.length == 1) {
+            var IsEdit = records[0].get('IsEdit');
+            if (IsEdit == true) {
+                App.btnUpdate.setDisabled(false);
+                App.btnSend.setDisabled(false);
+                App.cmSendApproval.setDisabled(false);
+                App.btnDelete.setDisabled(false);
+                App.btnApprovePlan.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.cmDelete.setDisabled(true);
+                App.cmApproval.setDisabled(true);
+            }
+            else {
+                App.btnUpdate.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnSend.setDisabled(true);
+                App.cmSendApproval.setDisabled(true);
+                App.cmDelete.setDisabled(true);           
+                if (!records[0].get('IsApproval') && !records[0].get('IsAccept')) {
+                    App.btnApprovePlan.setDisabled(false);                 
+                    App.cmApproval.setDisabled(false);
+                }
+                else {
+                    App.btnApprovePlan.setDisabled(true);                
+                    App.cmApproval.setDisabled(true);
+                }
+            }
+            App.btnDetail.setDisabled(false); 
+            App.cmDetail.setDisabled(false);    
+        }
+        else {
+            App.btnDetail.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnUpdate.setDisabled(true);
+            App.btnApprovePlan.setDisabled(true);
+            App.cmEdit.setDisabled(true);
+            App.cmDelete.setDisabled(true);
+            App.cmApproval.setDisabled(true);
+            App.cmDetail.setDisabled(true);
+            App.btnSend.setDisabled(true);
+            App.cmSendApproval.setDisabled(true);
+        };
+    };
+    var AddNew = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        var records = App.grCommand.selModel.getSelection();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("AddForm", "Plan", new { Area = "Service" }, null))',
+            params: { commandId: records[0].get('ID') },
+            success: function (result) {
+                mask.hide();
+            }
+        });
+    };
+    var UpdateItem = function () {
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        var record = App.grCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var commandId = 0;
+            if (record.length > 0) {
+                commandId = record[0].get('ID');
+            }
+            else {
+                commandId = records[0].get('CommandID');
+            }
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "Plan", new { Area = "Service" }, null))',
+                params: {
+                    id: records[0].get('ID'),
+                    commandId: commandId
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+    var ViewDetail = function () {
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        var record = App.grCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var commandId = 0;
+            if (record.length > 0) {
+                commandId = record[0].get('ID');
+            }
+            else {
+                commandId = records[0].get('CommandID');
+            }
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "Plan", new { Area = "Service" }, null))',
+                params: {
+                    id: records[0].get('ID'),
+                    commandId: commandId
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SendApproval = function () {
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        var record = App.grCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var commandId = 0;
+            if (record.length > 0) {
+                commandId = record[0].get('ID');
+            }
+            else {
+                commandId = records[0].get('CommandID');
+            }
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("SendApprovalForm", "Plan", new { Area = "Service" }, null))',
+                params: {
+                    id: records[0].get('ID'),
+                    commandId: commandId
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ApprovePlan = function () {
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        var record = App.grCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var commandId = 0;
+            if (record.length > 0) {
+                commandId = record[0].get('ID');
+            }
+            else {
+                commandId = records[0].get('CommandID');
+            }
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();       
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ApproveForm", "Plan", new { Area = "Service" }, null))',
+                params: {
+                    id: records[0].get('ID'),
+                    commandId: commandId
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+
+</script>

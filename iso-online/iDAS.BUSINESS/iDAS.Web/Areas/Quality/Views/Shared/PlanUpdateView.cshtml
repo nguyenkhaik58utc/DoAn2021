@@ -1,0 +1,96 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.QualityPlanItem
+@{
+    var X = Html.X();
+    var urlsubmit = ViewData["UrlSubmit"].ToString();
+}
+@(Html.X().ApprovalSendWindow()
+.UrlSubmit(urlsubmit)
+.ItemsExtend(
+ Html.X().FormPanel()
+            .AutoScroll(true)
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .Frame(true)
+            .FieldDefaults(df => { df.LabelWidth = 120; df.LabelStyle = "padding-left: 5px;"; })
+            .PaddingSpec("0 5 0 0")
+            .StyleSpec("-webkit-border-radius: 0; border-radius: 0;")
+            .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().HiddenFor("paramID").Value(ViewData["ParamID"].ToString()),
+                    Html.X().TextFieldFor(m => m.Name).EmptyText("Nhập tên kế hoạch ...").FieldLabel("Tên kế hoạch" + Html.Required()).MarginSpec("5 8 0 8"),
+                    Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 2 0 0")
+                        .Items(
+                             Html.X().DateTimeFieldFor(m => m.StartTime).FieldLabel("Bắt đầu" + Html.Required()).AllowBlank(false).ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                             Html.X().DateTimeFieldFor(m => m.EndTime).LabelWidth(70).FieldLabel("Kết thúc" + Html.Required()).AllowBlank(false).ColumnWidth(0.5).MarginSpec("5 4 0 8")
+                        ),
+                     Html.X().Container().Layout(LayoutType.Column)
+                        .Items(
+                             Html.X().ComboBoxFor(m => m.Type).FieldLabel("Loại kế hoạch" + Html.Required())
+                                    .EmptyText("Chọn loại kế hoạch")
+                                    .Items(
+                                            new ListItem("Tổ chức", false),
+                                            new ListItem("Cá nhân", true)
+                                            )
+                                        .AllowBlank(false)
+                                        .ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                        Html.X().NumberFieldFor(m => m.Cost)
+                                    .LabelWidth(70)
+                                    .FieldLabel("Chi phí" + Html.Required())
+                                    .AllowBlank(false)
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("5 8 0 8")
+                        ),
+                        Html.X().DepartmentFieldFor(m => m.Department).AllowBlank(false).FieldLabel("Phòng ban"+ Html.Required()).Height(25)
+                                .MarginSpec("5 8 0 8"),
+                    Html.X().ComboBoxFor(m => m.TargetID).FieldLabel("Thuộc mục tiêu").EmptyText("Chọn mục tiêu ...")
+                                .ID("cbxTarget")
+                                .QueryMode(DataLoadMode.Local)
+                                .ForceSelection(true)
+                                .DisplayField("TargetName")
+                                .ValueField("ID")
+                                .Store(Html.X().Store()
+                                                .AutoLoad(true)
+                                                .Proxy(Html.X().AjaxProxy().Url(ViewData["UrlTargetStore"].ToString()).Reader(Html.X().JsonReader().Root("data")))
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("paramId", ViewData["ParamID"].ToString(), ParameterMode.Value));
+                                                    })
+                                                .Model(Html.X().Model()
+                                                    .IDProperty("ID")
+                                                    .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                    new ModelField("TargetName", ModelFieldType.String) { Mapping = "TargetName" }
+                                                            )
+                                                    )
+                                        )
+                                .MarginSpec("5 8 0 8"),
+                    Html.X().ComboBoxFor(m => m.ParentID).FieldLabel("Thuộc kế hoạch").EmptyText("Chọn kế hoạch ...")
+                                .ID("cbxParentPlan")
+                                .QueryMode(DataLoadMode.Local)
+                                .ForceSelection(true)
+                                .DisplayField("Name")
+                                .ValueField("ID")
+                                .Store(Html.X().Store()
+                                                .AutoLoad(true)
+                                                .Proxy(Html.X().AjaxProxy().Url(ViewData["UrlPlanStore"].ToString()).Reader(Html.X().JsonReader().Root("data")))
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("paramId", ViewData["ParamID"].ToString(), ParameterMode.Value));
+                                                    })
+                                                .Model(Html.X().Model()
+                                                        .IDProperty("ID")
+                                                        .Fields(
+                                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                )
+                                                        )
+                                            )
+                                .MarginSpec("5 8 0 8"),
+                    Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung").MinHeight(150).Flex(1).MarginSpec("5 8 0 8")
+        )
+    )
+)

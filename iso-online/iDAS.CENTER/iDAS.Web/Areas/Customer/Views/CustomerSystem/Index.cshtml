@@ -1,0 +1,387 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model iDAS.Items.CustomerSystemItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@Html.X().Hidden().ID("RecordID")
+@Html.X().Hidden().ID("Code")
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+            .ID("grCustomerSystem")
+            .Title("Danh sách khách hàng")
+            .Header(false)
+             .Border(false)
+             .ColumnLines(true)
+             .ForceFit(true)
+              .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().Text("Cập nhật logo").Icon(Icon.ArrowRefreshSmall).ID("btnEditLogo").Disabled(true).Handler("EditLogoOnclick()"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Xem chi tiết").ToolTip("Xem chi tiết").Handler("DetailOnclick()").Icon(Icon.Zoom).ID("btnDetail").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Thiết lập hệ thống").Icon(Icon.DatabaseYellowStart).ID("btnCreateDatabase").Disabled(true).Handler("setupSystem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Tạo hệ thống").Icon(Icon.DatabaseStart).ID("btnCreateSystem").Disabled(false).Handler("createSystem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Cập nhật dung lượng").Icon(Icon.DatabaseRefresh).ID("btnUpdateDataSize").Handler("UpdateDataSize();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Cập nhật hệ thống").Icon(Icon.ApplicationSideList).ID("btnUpdateSystem").Handler("UpdateSystem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Module đăng ký").Icon(Icon.ApplicationSideList).ID("btnServiceRegister").Handler("showModules()"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ComboBox().ID("cboSystem")
+                            .QueryMode(DataLoadMode.Local)
+                            .TriggerAction(TriggerAction.All)
+                            .SelectOnFocus(true)
+                            .Width(300)
+                            .EmptyText("Chọn hệ thống ...")
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .FieldLabel("<b>Hệ thống</b>")
+                            .LabelWidth(60)
+                            .MarginSpec("0 5 0 0")
+                            .Store(
+                                Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                        )
+                                            )
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadSystem", "CustomerSystem"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Listeners(ls => ls.Load.Handler = "App.cboSystem.select(App.cboSystem.store.getAt(0))")
+                                )
+                                .Listeners(ls => ls.Change.Handler = "App.grCustomerSystem.getStore().load()")
+                    )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                    .ID("StoreCustomers")
+                    .PageSize(10)
+                    .AutoLoad(false)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomers")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("systemID", "App.cboSystem.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("updateId", "GetSelecttion()", ParameterMode.Raw));
+                    })
+
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column().DataIndex(Model, m => m.CustomerID).Hidden(true),
+                Html.X().Column().DataIndex(Model, m => m.ID).Hidden(true),
+                Html.X().Column().DataIndex(Model, m => m.LogoUrl).Text("Logo").Renderer("Update").Align(Alignment.Center)
+                        .Width(87).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column().DataIndex(Model, m => m.Code).Text("Mã khách hàng").Align(Alignment.Center)
+                        .Editor(Html.X().TextField()).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column().DataIndex(Model, m => m.Name).Text("Tên khách hàng").Flex(1)
+                        .Editor(Html.X().TextField()).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column().DataIndex(Model, m => m.Company).Text("Công ty")
+                        .Editor(Html.X().TextField()).StyleSpec("font-weight: bold; text-align: center;").Flex(1),
+                Html.X().NumberColumn().DataIndex(Model, m => m.DataSizeUsing).Text("Dung lượng sử dụng (Gb)").Width(150).Align(Alignment.Right).StyleSpec("font-weight: bold; text-align: center;"),        
+                Html.X().NumberColumn().DataIndex(Model, m => m.DataSize).Text("Dung lượng hiện tại (Gb)").Width(150).Align(Alignment.Right).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().NumberColumn().DataIndex(Model, m => m.DataSizePlus).Text("Dung lượng bổ sung (Gb)").Width(150).Align(Alignment.Right).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().CheckColumn().DataIndex(Model, m => m.IsNew).Text("Yêu cầu mới").Width(100).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().CheckColumn().DataIndex(Model, m => m.IsActive).Text("Kích hoạt").Width(70).Editable(true).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;")
+            )
+            .View(Html.X().GridView().TrackOver(false))
+            .BottomBar(
+                Html.X().PagingToolbar()
+                    .EmptyMsg("Hiện không có dữ liệu")
+                    .NextText("Trang kế tiếp")
+                    .PrevText("Trang trước")
+                    .LastText("Trang cuối cùng")
+                    .FirstText("Trang đầu tiên")
+                    .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                    .BeforePageText("Trang")
+                    .AfterPageText("của {0}")
+                    .RefreshText("Tải lại Dữ liệu")
+                    .Items(
+                        Html.X().Label("Số bản ghi trên 1 trang"),
+                        Html.X().ToolbarSpacer(10),
+                        Html.X().ComboBox()
+                            .Width(50)
+                            .Items("10", "20", "30", "50", "100")
+                            .SelectedItems("10")
+                            .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                    )
+                    .Plugins(Html.X().ProgressBarPager())
+            )
+            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)).Listeners(l =>
+                                                        {
+                                                            l.SelectionChange.Handler = "ChangeStatus()";
+                                                        })
+            .Plugins(
+                Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEdit")
+            )
+    )
+)
+
+
+<script>
+        var ChangeStatus = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length == 1) {
+                App.btnDetail.setDisabled(false);
+                if (!records[0].get('IsActive'))
+                    App.btnCreateSystem.setDisabled(false);
+                else {
+                    App.btnCreateSystem.setDisabled(true);
+                }
+                SetEnabled(App.btnCreateDatabase, App.btnEditLogo, App.btnUpdateDataSize);
+            }
+            else {
+                SetDisabled(App.btnDetail, App.btnCreateDatabase, App.btnEditLogo, App.btnUpdateDataSize);
+            };
+        };
+        var insertUrl = '@(Url.Action("InsertCustomer"))';
+        var updateUrl = '@(Url.Action("UpdateCustomer"))';
+        var createDatabase = function (id) {
+            var titleConfirm = 'Thông báo';
+            var messageConfirm = 'Bạn muốn tạo Database cho khách hàng này ?';
+            var url = '@(Url.Action("CreateDatabase"))';
+            @*var url = "http://localhost:54400/Customer/Customer/CreateDatabase";*@
+            onRequest1(id, url, titleConfirm, messageConfirm);
+        };
+        var UpdateSystem = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length > 0) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn hệ thống đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Help',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var url = '@(Url.Action("UpdateSystem", "CustomerSystem", new { Area = "Customer" }, null))';
+                            var params= { customerId: records[0].data.ID, systemId: App.cboSystem.getValue() };
+                            onDirectMethod(url, params);
+                        }
+                    }
+                });
+            }
+            else
+            {
+                MessageBox();
+            }
+        };
+        var UpdateDataSize = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length > 0) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn hệ thống đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Help',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var url = '@(Url.Action("UpdateDataSize", "CustomerSystem", new { Area = "Customer" }, null))';
+                            var params= { customerId: records[0].data.ID, systemId: App.cboSystem.getValue() };
+                            onDirectMethod(url, params);
+                        }
+                    }
+                });
+            }
+            else
+            {
+                MessageBox();
+            }
+        };
+        var setupSystem = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            var id = records[0].get('ID');
+            var sysID = App.cboSystem.getValue();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmCreateSystem", "CustomerSystem", new { Area = "Customer" }, null))',
+                params: { id: id, systemID: sysID }
+            });
+        };
+        var createSystem = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            var id = records[0].get('ID');
+            var sysID = App.cboSystem.getValue();
+            Ext.MessageBox.show({
+                title: 'Xác nhận',
+                msg: 'Bạn có chắc chắn hệ thống đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Help',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("SetupSystem", "CustomerSystem", new { Area = "Customer" }, null))',
+                            params: { customerId: id, systemId: App.cboSystem.getValue() },
+                        });
+                    }
+                }
+            });
+        };
+        var DetailOnclick = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length == 1) {
+                var id = records[0].get('ID')
+                var sysID = App.cboSystem.getValue();
+
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("Detail", "CustomerSystem", new { Area = "Customer" }, null))', params: { id: id, systemID: sysID }
+                });
+            }
+            else {
+                MessageBox();
+            }
+        };
+        var CreateDatabaseOnclick = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length == 1) {
+                createDatabase(records[0].get('ID'));
+            }
+            else {
+                MessageBox();
+            }
+        };
+        var DeleteDatabaseOnclick = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length == 1) {
+                deleteDatabase(records[0].get('ID'));
+            }
+            else {
+                MessageBox();
+            }
+        };
+        var EditLogoOnclick = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length == 1) {
+                var id = records[0].get('ID');
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có muốn cập nhật Logo của Khách hàng không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Help',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("UpdateLogo", "CustomerSystem", new { Area = "Customer" }, null))', params: { id: id },
+                                success: function (result) {
+                                    if (result == 'Error') {
+                                        Ext.MessageBox.show({
+                                            title: 'Cảnh báo', msg: 'Quá trình cập nhật phát sinh lỗi. Đề nghị liên hệ với Admin!',
+                                            buttons: { yes: 'Đồng ý' },
+                                            iconCls: '#Cancel',
+                                            fn: function (btn) {
+                                                return false;
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+
+            }
+            else {
+                MessageBox();
+            }
+        };
+
+        var onRequest1 = function (id, url, titleConfirm, messageConfirm) {
+            Ext.MessageBox.confirm(titleConfirm, messageConfirm, function (btn) {
+                if (btn == 'yes') {
+                    var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+                    mask.show();
+                    Ext.net.DirectMethod.request({
+                        url: url,
+                        method: 'post',
+                        params: {
+                            id: id,
+                        },
+                        success: function (result, request) {
+                            //Ext.MessageBox.hide();Ext.ultil.JSON.decode()
+                            //var data = Ext.util.JSON.decode(result.responseText);
+                            alert(result.responseText);
+                            mask.hide();
+                        },
+                    });
+                }
+            })
+        };
+        var deleteDatabase = function (id) {
+            var titleConfirm = 'Thông báo';
+            var messageConfirm = 'Bạn muốn xóa Database của khách hàng này ?';
+            var url = '@(Url.Action("DeleteDatabase"))';
+            onRequest(id, url, titleConfirm, messageConfirm);
+        };
+        var Update = function (value) {
+            var tpl = "<img src='" + value + "' style='width:75px; height:30px;'/>";
+            return tpl;
+        };
+        var UpdateLogo = function () {
+            this.up('window').down('form').submit({
+                url: insertUrl,
+                success: function (form, action) {
+                    if (action.result.success) onClosed();
+                }
+            });
+        };
+        var openWindowUpdateLogo = function () {
+            App.WindowLogoEdit.show();
+        };
+        var closeWindowUpdateLogo = function () {
+            App.WindowLogoEdit.hide();
+            App.WindowLogoEdit.down('form').reset();
+        };
+        var UploadLogo = function (data) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UploadLogo"))',
+                params: {
+                    id: data,
+                }
+            });
+        };
+        var showModules = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length == 1) {
+                var id = records[0].get('ID');
+                var systemId = App.cboSystem.getValue();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("ModuleSetting"))',
+                    params: {
+                        id: id, systemId: systemId
+                    }
+                });
+
+            }
+            else {
+                Ext.Msg.alert("Thông báo", "Bạn chưa chọn khách hàng nào");
+            }
+        };
+        var ServiceRegisterOnclick = function () {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length == 1) {
+                var id = records[0].get('ID');
+                var customerId = records[0].get('CustomerID');
+                var systemId = App.cboSystem.getValue();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("ServiceRegister", "CustomerSystem", new { Area = "Customer" }, null))',
+                    params: { id: id, customerId: customerId, systemId: systemId }
+                });
+            }
+            else {
+                MessageBox();
+            };
+        };
+        function GetSelecttion() {
+            var records = App.grCustomerSystem.selModel.getSelection();
+            if (records.length > 0) {
+                return records[0].get('ID');
+            }
+            else return 0;
+        };
+</script>

@@ -1,0 +1,81 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@using iDAS.Utilities
+@model iDAS.Items.ProfileCancelItem
+@(
+ Html.X().Window()
+    .ID("winEditCancelProfile")
+    .Title("Cập nhật thông tin biên bản hủy hồ sơ")
+    .Icon(Icon.Pencil)
+    .Width(500)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+            .ID("frmEditCancelProfile")
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .Items(
+             Html.X().HiddenFor(m => m.ID),
+                Html.X().TextFieldFor(m => m.Name)
+                    .FieldLabel("Tên Biên bản" + Html.Required())
+                    .AllowBlank(false).BlankText("Tên biên bản hủy bắt buộc nhập!")
+                    .AllowOnlyWhitespace(false)
+                    .MaxLength(200).MaxLengthText("Tên biên bản không quá 200 ký tự!")
+                    .TabIndex(1),
+                Html.X().ComboBoxFor(m => m.MethodID)
+                    .ID("cbMethod")
+                    .FieldLabel("Phương thức hủy" + Html.Required())
+                    .TabIndex(2)
+                    .AllowBlank(false).BlankText("Phương thức hủy hồ sơ bắt buộc chọn!")
+                    .EmptyText("Chọn phương thức hủy hồ sơ...")
+                    .QueryMode(DataLoadMode.Local)
+                    .ForceSelection(true)
+                    .TriggerAction(TriggerAction.All)
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Store(
+                        Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                    )
+                                    )
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataMethod"))//ham load dl cho combobox
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        ),
+                Html.X().DateFieldFor(m => m.CancelAt)
+                        .MinDate(Model.CancelAt)
+                        .FieldLabel("Thời gian hủy" + Html.Required())
+                        .Format("dd/MM/yyyy") 
+                        .TabIndex(3),
+                Html.X().TextAreaFor(m => m.Note)
+                        .ID("txtContent")
+                        .FieldLabel("Ghi chú")
+                        .TabIndex(4).Height(100)
+                        .MaxLength(1000)
+                        )
+        )
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(5)
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmEditCancelProfile";
+                    de.Click.Url = Url.Action("Update");
+                    de.Click.Before = @"if (!#{frmEditCancelProfile}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                }),
+            Html.X().ButtonExit()
+        )
+)

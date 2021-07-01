@@ -1,0 +1,68 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerAssessItem
+@{
+    var X = Html.X();
+}
+@(X.Window()
+.ID("winAuditDetail")
+.Title("Xem chi tiết đợt đánh giá")
+.Icon(Icon.Zoom)
+.Width(800)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+     X.FormPanel()
+    .AutoScroll(true)
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .FieldDefaults(df => { df.LabelWidth = 120; df.LabelStyle = "padding-left: 5px;"; })
+                .PaddingSpec("5 10 0 0")
+                .StyleSpec("border: none;")
+                .Items( 
+                        X.TextFieldFor(m=>m.Name).FieldLabel("Đợt đánh giá").ReadOnly(true),
+                        X.TextFieldFor(m => m.Method).FieldLabel("Hình thức").ReadOnly(true),
+                        X.ComboBoxFor(m => m.CriteriaCategoryID)
+                            .FieldLabel("Bộ tiêu chí").ReadOnly(true)           
+                            .AllowBlank(false)
+                            .ID("cbCriteriaCategoryID")
+                            .Editable(false)
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .Store(
+                                    X.Store()
+                                        .ID("StoreCriteriaCategory")
+                                        .AutoLoad(true)
+                                        .Proxy(X.AjaxProxy().Url(Url.Action("LoadCategoryCriteriaActive", "CustomerCriteriaCategory")).Reader(Html.X().JsonReader().Root("data")))
+                                        .Model(X.Model()
+                                            .Fields(
+                                                new ModelField("Name"),
+                                                new ModelField("ID")
+                                            )
+                                        )
+                                ),
+                        X.Container().Layout(LayoutType.Column).MarginSpec("0 -2 2 0")
+                                .Items(
+                                        Html.X().DateTimeFieldFor(m => m.StartTime).FieldLabel("Bắt đầu" + Html.Required()).ReadOnly(true).AllowBlank(false).ColumnWidth(0.55),
+                                        Html.X().DateTimeFieldFor(m => m.EndTime).LabelWidth(80).FieldLabel("Kết thúc" + Html.Required()).ReadOnly(true).AllowBlank(false).LabelWidth(70).ColumnWidth(0.45)
+                                    ),
+                        X.Container().Layout(LayoutType.Column).MarginSpec("0 -2 2 0")
+                                .Items(
+                                 X.NumberFieldFor(m =>m.Cost).FieldLabel("Chi phí").ReadOnly(true).Icon(Icon.MoneyDollar).ColumnWidth(0.55).MinValue(0),
+                                 X.CheckboxFor(m=>m.IsActive).FieldLabel("Tình trạng").ReadOnly(true).LabelWidth(80).BoxLabel("Kích hoạt").ColumnWidth(0.45)
+                                ),
+                       X.TextAreaFor(m=>m.Note).FieldLabel("Ghi chú").ReadOnly(true).MinHeight(100).Flex(1)
+                    )
+)
+.Buttons(
+    X.ButtonExit())
+)

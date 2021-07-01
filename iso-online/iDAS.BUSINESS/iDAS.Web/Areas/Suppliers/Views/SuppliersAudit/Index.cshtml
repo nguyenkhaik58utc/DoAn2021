@@ -1,0 +1,311 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+@( Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().GridPanel()
+                .Header(true)
+                .Region(Region.West)
+                .Width(350)
+                .Split(true)
+                .Title("Kế hoạch đánh giá NCC")
+                .ID("grRequirment")
+                .Border(true)
+                .MarginSpec("1 0 1 1")
+                .TitleAlign(TitleAlign.Center)
+                .Layout(LayoutType.Fit)
+                .Collapsible(true)
+                .ForceFit(true)
+                .ColumnLines(true)
+                .RowLines(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                                Html.X().ComboBox()
+                                        .DisplayField("Name")
+                                        .ValueField("ID")
+                                        .FieldLabel("Chọn kế hoạch").Width(300)
+                                        .Editable(true).Select(0)
+                                        .ID("cbPlan")
+                                         .ColumnWidth(1).MarginSpec("5 8 0 8")
+                                         .TypeAhead(false)
+                                         .PageSize(20)
+                                         .MinChars(0)
+                                .ForceSelection(true)
+                                    .ListConfig(Html.X().BoundList()
+                                        .LoadingText("Searching...")
+                                        .ItemTpl(Html.X().XTemplate()
+                                            .Html(@<text>
+                                                <div class="search-item">
+							                       <h3>{Name}</h3>
+						                        </div>
+                                            </text>)
+                                        )
+                                    )
+                                    .Store(Html.X().Store()
+                                        .AutoLoad(true)
+                                        .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("GetPlan"))
+                                            .ActionMethods(am => am.Read = HttpMethod.POST)
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                        )
+                                        .Model(Html.X().Model()
+                                            .Fields(
+                                               
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("ID")
+                                            )
+                                        )
+                                            )
+                                        .EmptyText("Chọn kế hoạch đánh giá NCC...")
+                                        .Listeners(ls =>
+                                                        ls.Select.Handler = "App.grRequirment.getStore().reload()"
+                                        )
+
+                        )
+                    )
+                          .Store(Html.X().Store()
+                                .ID("stMnRequirment")
+                            .Proxy(Html.X().AjaxProxy()
+                                                        .Url(Url.Action("GetData", "SuppliersAudit", new { area = "Suppliers" }))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("planId", "App.cbPlan.getValue()", ParameterMode.Raw));
+                                })
+                            .RemoteSort(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                            Html.X().Model()
+                                    .Fields(
+                                            Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Supplier.Name"),
+                                        Html.X().ModelField().Name("SupplierID"),
+                                            Html.X().ModelField().Name("IsPass")
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Center)
+                                    .Width(33),
+                            Html.X().Column()
+                                    .Text("ID")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                                         Html.X().Column()
+                                        .Text("SuppID")
+                                                .DataIndex("SupplierID")
+                                        .Hidden(true),
+                            Html.X().Column()
+                                    .Text("Tên nhà cung cấp")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                                .DataIndex("Supplier.Name")
+                                   .Flex(1)
+                                    .Wrap(true),
+                                        Html.X().CheckColumn().Text("Đạt").DataIndex("IsPass").Width(50).Editable(true)
+                        ).Plugins(
+                                        Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "editSummary")
+                                )
+                    .SelectionModel(
+                        Html.X().CheckboxSelectionModel()
+                                .Mode(SelectionMode.Single)
+                                .Listeners(l =>
+                                {
+                                    l.Select.Handler = "checkCommandStatus();App.grMnPlanIndex.getStore().reload()";
+                                })
+                                )
+
+                                  .View(
+                                Html.X().GridView().MarkDirty(false)
+                                )
+                        .BottomBar
+                                    (
+                                 X.CustomPagingToolbar()
+
+
+                        ),
+                   Html.X().GridPanel()
+                   .Region(Region.Center)
+                    .Margin(1)
+                    .Header(false)
+                            .ID("grMnPlanIndex")
+                                       
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .TopBar(
+                        Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                                Html.X().ButtonUpdate().Text("Thêm mới đánh giá NCC").Handler("ShowFrmAdd").ID("btnAdd"),
+                            Html.X().Button().ID("btnSave").Text("Lưu lại đánh giá NCC").Icon(Icon.Disk).Handler("SaveResults").Disabled(true),
+                                    Html.X().Button().ID("btnViewDeal").Text("Lịch sử giao hàng NCC").Icon(Icon.Comment).Handler("ViewDeal").Disabled(true),
+
+                                Html.X().ToolbarFill(),Html.X().ButtonTutorial()
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                            .ID("StorePlanIndex")
+                            .RemotePaging(true)
+                            .AutoLoad(false)
+                                                .PageSize(20).GroupField("QualityCriteria1.CategoryName")
+                                                .Sorters(Html.X().DataSorter().Property("QualityCriteria1.CategoryName").Direction(Ext.Net.SortDirection.ASC))
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetSuppAuditResult", "SuppliersAudit", new { Area = "Suppliers" }))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            .IDParam("ID"))
+                            .Parameters(ps =>
+                            {
+                                //ps.Add(new StoreParameter("categoryID", "App.cbGroupQuantity.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("supplierAuditID", "App.grRequirment.selModel.getSelection().length>0?App.grRequirment.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                            })
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("QualityCriteria1.Name"),
+                                Html.X().ModelField().Name("Point"),
+                               // Html.X().ModelField().Name("MaxPoint"),
+                                    Html.X().ModelField().Name("Factory"),
+                                    Html.X().ModelField().Name("QualityCriteria1.CategoryName"),
+                                    Html.X().ModelField().Name("QualityCriteria1.AvgPoint"),
+                                Html.X().ModelField().Name("TotalPoint")
+                                //Html.X().ModelField().Name("IsAccept"),
+                                //Html.X().ModelField().Name("IsApproval"),
+                                //Html.X().ModelField().Name("Status")
+                            )
+                         )
+                )
+                .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                X.Column().DataIndex("QualityCriteria1.Name").Text("Tiêu chí").Flex(1).StyleSpec("font-weight: bold;text-align: center"),
+                                X.Column().Text("Điểm").Align(Alignment.Right).DataIndex("Point").Editor(Html.X().NumberField().MinValue(1).MaxValue(10)),
+                                X.Column().DataIndex("Factory").Text("Hệ số").Width(50).StyleSpec("font-weight: bold;text-align: center"),
+                                X.Column().DataIndex("TotalPoint").Text("Tổng điểm").Renderer("RenderTotal").Width(100).StyleSpec("font-weight: bold;text-align: center"),
+                                X.Column().DataIndex("QualityCriteria1.AvgPoint").Text("Đánh giá").Renderer("RenderRate").Width(100).StyleSpec("font-weight: bold;text-align: center")       
+                    )
+                
+                 .Features(
+                                    Html.X().GroupingSummary()
+                                    .ID("GroupingSummarySupplier")
+                                    .GroupHeaderTplString("{name}")
+                                    .HideGroupedHeader(true)
+                                    .EnableGroupingMenu(false)
+                            )
+                       .Plugins(
+                            Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "editIndex")
+                        )             
+                .BottomBar(
+                       X.CustomPagingToolbar()
+            )
+    ))
+
+<script type="text/javascript">
+    var SaveResults = function () {
+        
+        var records = App.grRequirment.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("SaveResults", "SuppliersAudit", new { Area = "Suppliers" }, null))';
+            var params = {
+                
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    }; 
+    var ViewDeal = function () {
+
+        var records = App.grRequirment.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowFrmDeal", "SuppliersAudit", new { Area = "Suppliers" }, null))';
+            var params = {
+                suppid: records[0].get('SupplierID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowFrmAdd = function () {
+        var records = App.grRequirment.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowFrmAdd", "SuppliersAudit", new { Area = "Suppliers" }, null))';
+            var params = {
+                id : records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var RenderTotal = function (value, p, record) {
+        var value1 = record.get('Point') * record.get('Factory');
+        if (value1 == null) {
+            return "0";
+        }
+        return value1;
+    };
+    
+    var RenderRate = function (value, p, record) {
+        var value1 = record.get('TotalPoint') > record.get('QualityCriteria1.AvgPoint');        
+        if (value1) {
+            return "<span style=\"color:green\">Đạt</span>";
+        }else
+            return "<span style=\"color:red\">Ko Đạt</span>";
+    };
+    var editIndex = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("HandleChangesIndex", "SuppliersAudit", new { Area = "Suppliers" }, null))',
+                params: {
+                    id: e.record.data.ID,
+                    point: e.record.data.Point,
+                    totalpoint: e.record.data.TotalPoint
+                }
+            });
+        };
+    };
+    var editSummary = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("HandleChangesSummary"))',
+                params: {
+                    id: e.record.data.ID,
+                    ispass: e.record.data.IsPass
+                }
+            });
+        }
+    };
+    var checkCommandStatus = function () {
+        var records = App.grRequirment.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnSave.setDisabled(true);
+                App.btnAdd.setDisabled(true);
+                App.btnViewDeal.setDisabled(true);                
+                break;
+            case 1:
+                App.btnSave.setDisabled(false);
+                App.btnAdd.setDisabled(false);
+                App.btnViewDeal.setDisabled(false);
+                break;
+            default:
+                App.btnSave.setDisabled(true);
+                App.btnAdd.setDisabled(true);
+                App.btnViewDeal.setDisabled(true);
+        }
+
+    };
+</script>

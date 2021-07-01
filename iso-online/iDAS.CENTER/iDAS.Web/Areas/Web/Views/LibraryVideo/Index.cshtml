@@ -1,0 +1,100 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.LibraryItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete", "LibraryVideo", new { area = "Web" }))';
+    var CheckStatus = function () {
+        var records = App.grLibrary.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDelete.setDisabled(false);
+            if (records.length == 1) {
+                SetEnabled(App.btnEdit, App.btnDetail);
+            }
+            else {
+                SetDisabled(App.btnEdit, App.btnDetail);
+            };
+        }
+        else {
+            SetDisabled(App.btnDelete, App.btnEdit, App.btnDetail);
+        };
+    };
+    function ShowInsert() {
+        var url = '@Url.Action("Insert", "LibraryVideo", new { area = "Web"})';
+        onDirectMethod(url, null, 'get');
+    };
+    function showUpdate() {
+        var records = App.grLibrary.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "LibraryVideo", new { area = "Web"}))';
+            var params = {id:records[0].get('ID')};
+            onDirectMethod(url, params,'get');
+        } else {
+            MessageBox();
+        }
+    };
+    function showDetail() {
+        var records = App.grLibrary.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Detail", "LibraryVideo", new { area = "Web"}))';
+            var params = {id:records[0].get('ID')};
+            onDirectMethod(url, params);rl: postUrl
+        } else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+            .ID("grLibrary")
+            .Header(false)
+            .Border(false)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonAdd().Handler("ShowInsert();"),
+                            Html.X().ButtonEdit().ID("btnEdit").Handler("showUpdate();"),
+                            Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.grLibrary.selModel.getSelection()[0].data.ID);"),
+                            Html.X().ButtonView().ID("btnDetail").Handler("showDetail();")
+                        )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                        .GroupField(Model,m=>m.LibraryCategoryName)
+                        .ID("StoreLibraryVideo")
+                        .PageSize(10)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+            )
+            .ColumnModel(
+                       Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                       Html.X().Column().DataIndex(Model, m => m.Name).Text("Tên Video").Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+                       Html.X().Column().DataIndex(Model, m => m.Link).Text("Đường dẫn").Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+                       Html.X().CheckColumn().DataIndex(Model, m => m.IsShow).Text("Hiển thị").Width(100).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;")
+                )
+            .Features(
+                Html.X().GroupingSummary()
+                    .GroupHeaderTplString("{name}")
+                    .ShowSummaryRow(false)
+                    .EnableGroupingMenu(false)
+            )
+            .View(Html.X().GridView().TrackOver(false))
+            .BottomBar(Html.X().CustomPagingToolbar("10", "20", "30", "50", "100"))
+             .SelectionModel(
+                                Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi)
+                                            .Listeners(l =>
+                                            {
+                                                l.SelectionChange.Handler = "CheckStatus()";
+                                            })
+                            )
+        )
+)
+
+

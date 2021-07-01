@@ -1,0 +1,93 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityCAPARequireItem
+@{
+    var title = "Thêm mới yêu cầu khắc phục phòng ngừa";
+    var icon = Icon.Add;
+    if (Model.ID != 0)
+    {
+        title = "Cập nhật yêu cầu khắc phục phòng ngừa";
+        icon = Icon.Pencil;
+    }
+}
+
+@( Html.X().Window()
+    .ID("WindowCAPARequireUpdate")
+    .Title(title)
+    .Icon(icon)
+    .Layout(LayoutType.Fit)
+    .Width(800)
+    .Height(500)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Border(true)
+    .BodyPadding(0)
+    .Center()
+    .Items(
+         Html.X().FormPanel()
+            .Url(Url.Action("UpdateRequire", "NC", new { area = "Quality" }))
+            .AutoScroll(true)
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .Frame(true)
+            .FieldDefaults(df => { df.LabelWidth = 125; })
+            .PaddingSpec("5 10 0 10")
+            .StyleSpec("border: none;")
+            .Items(
+                        Html.X().HiddenFor(m => m.ID),
+                        Html.X().HiddenFor(m => m.NCID),
+                        Html.X().TextFieldFor(m => m.Name)
+                        .MaxLength(150)
+                                .FieldLabel("Tên yêu cầu" + Html.Required())
+                                .AllowBlank(false)
+                                .BlankText("Nội dung này không được bỏ trống!"),
+                        Html.X().TextFieldFor(m => m.Code)
+                                .FieldLabel("Mã yêu cầu" + Html.Required())
+                                .AllowBlank(false)
+                                .MaxLength(50)
+                                .BlankText("Nội dung này không được bỏ trống!"),
+                        Html.X().DepartmentFieldFor(m => m.Department).AllowBlank(false)
+                                .FieldLabel("Tới phòng ban" + Html.Required())
+                                .Multiple(false)
+                                .Height(25).PaddingSpec("0 0 0 0")
+                                ,
+                        Html.X().EmployeeBoxFor(m => m.Represent).AllowBlank(false)
+                                .FieldLabel("Người đại diện"+Html.Required())
+                                .LabelWidth(125)
+                                .Height(95),
+                        Html.X().Container().Layout(LayoutType.Column).Height(25)
+                                .Items(
+                                            Html.X().DateTimeFieldFor(m => m.CompleteTime).AllowBlank(false)
+                                                    .FieldLabel("Thời gian hoàn thành" + Html.Required()).ColumnWidth(0.5)
+                                        ),
+                        Html.X().TextAreaFor(m => m.Content)
+                            .FieldLabel("Nội dung yêu cầu" + Html.Required())
+                            .AllowBlank(false)
+                            .BlankText("Nội dung không được để trống")
+                            .EmptyText("Nội dung yêu cầu")
+                            .MinHeight(70).Flex(1)
+                        //    ,
+                        //Html.X().EmployeeBoxFor(m => m.Employee).FieldLabel("Người ghi yêu cầu").LabelWidth(115)
+                    )
+                                     
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+            .Handler("onUpdateCAPAReuire(this.up('window'))"),
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var onUpdateCAPAReuire = function (window) {
+        var form = window.down('form');
+        form.submit({
+            success: function (form, action) {
+                window.close();
+                CAPAReuireGridPanel.store.reload();
+            },
+        });
+    };
+</script>

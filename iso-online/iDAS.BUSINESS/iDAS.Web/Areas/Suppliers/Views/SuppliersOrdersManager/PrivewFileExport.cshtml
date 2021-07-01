@@ -1,0 +1,69 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@(Html.X().Window()
+.ID("winRequirementList")
+    .Title("Preview File Export")
+.Layout(LayoutType.Fit)
+    .Width(800)
+    .Height(400)
+    .Icon(Icon.User)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Items(                
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrPayListOrder")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        
+                    .Store(
+                        Html.X().Store()
+                            .ID("StorePayListOrder")
+                            .RemotePaging(true)
+                            .PageSize(10)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetPreView")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("id", "App.hdfOrderID.value", ParameterMode.Raw));
+                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                                        new ModelField("ID", ModelFieldType.Int),
+                                                        new ModelField("SuppliersOrder.CODE", ModelFieldType.String),
+                                                        new ModelField("SuppliersOrder.SupplierName", ModelFieldType.String),
+                                                        new ModelField("SuppliersOrder.Amount", ModelFieldType.String),
+                                                                new ModelField("SuppliersOrder.AmountRecive", ModelFieldType.String),
+                                                        new ModelField("PayDate", ModelFieldType.Date),
+                                                        new ModelField("PayedMoney", ModelFieldType.Auto)
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("SuppliersOrder.CODE").Text("Mã đơn hàng").Width(70),
+                                        Html.X().Column().DataIndex("SuppliersOrder.SupplierName").Text("Tên nhà cung cấp").Wrap(true).Width(200),
+                                            Html.X().Column().DataIndex("SuppliersOrder.Amount").Text("Giá trị đơn hàng").Wrap(true).Width(100).Renderer("RenderVND"),
+                                                    Html.X().Column().DataIndex("SuppliersOrder.AmountRecive").Text("Giá trị hàng đã nhận").Wrap(true).Width(120).Renderer("RenderVND"),
+                                        Html.X().DateColumnExtend().DataIndex("PayDate").Text("Ngày TT").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("PayedMoney").Text("Số tiền").Wrap(true).Width(80).Renderer("RenderVND")
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar("10", "20", "30", "50", "100")
+                )
+            )
+.Buttons(
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    
+</script>

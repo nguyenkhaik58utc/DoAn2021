@@ -1,0 +1,124 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.RiskLevelItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới danh mục mức độ nghiêm trọng";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật danh mục mức độ nghiêm trọng";
+    }
+}
+@(
+ Html.X().CustomWindow()
+    .ID("winCustomerType")
+    .Title(title)
+    .Icon(IconView)
+    .Items(
+            X.CustomFormPanel().ID("frmUpdate")
+                .Items(
+                    X.HiddenFor(m => m.ID),
+                    Html.X().ComboBoxFor(m => m.CenterRiskMethodID).FieldLabel("Mức độ" + Html.Required())
+                                                .ID("cbMethod")
+                                                .TabIndex(3)
+                                                .QueryMode(DataLoadMode.Local)
+                                                .ForceSelection(true)
+                                                .AllowBlank(false)
+                                                .TriggerAction(TriggerAction.All)
+                                                .DisplayField("Name")
+                                                .Editable(false)
+                                                .ValueField("Id")
+                                                .Store(
+                                                    Html.X().Store()
+                                                    .ID("storeMethod")
+                                                        .AutoLoad(true)
+                                                        .Model(
+                                                            Html.X().Model()
+                                                                .IDProperty("Id")
+                                                                .Fields(
+                                                                    new ModelField("Id", ModelFieldType.Int) { Mapping = "ID" },
+                                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Level" },
+                                                                    new ModelField("Method", ModelFieldType.String) { Mapping = "Method" },
+                                                                    new ModelField("Description", ModelFieldType.String) { Mapping = "Description" },
+                                                                    new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                                                )
+                                                        )
+                                                        .Proxy(
+                                                            Html.X().AjaxProxy()
+                                                                .Url(Url.Action("LoadRiskMethod"))
+                                                                .Reader(Html.X().JsonReader().Root("data")
+                                                                )
+                                                        )
+                                                )
+                            .Tpl(
+                            @<text>
+                                <tpl for=".">
+                                    <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                        <div style="width: 20px; height: 20px; float: left; background-color:{Color}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left; font-size: 0.9em;">&nbsp;{Name}</div>
+                                    </div>
+                                </tpl>
+                            </text>)
+                                        .Listeners(l => l.Change.Handler = "onSelectMethod(App.cbMethod, App.storeMethod);"),
+                    X.TextFieldFor(m=>m.Method).FieldLabel("Phương thức ứng phó").ReadOnly(true),
+                    X.TextAreaFor(m => m.Description).FieldLabel("Mô tả").ReadOnly(true).Height(100).Flex(1),
+                    X.NumberFieldFor(m => m.MinPoint).FieldLabel("Điểm tối thiểu" + Html.Required())
+                            .EmptyText("Điểm tối thiểu cho mức độ...")
+                            .MinValue(1).MaxValue(999)
+                            .AllowBlank(false)
+                            .BlankText("Điểm tối thiểu không được bỏ trống!")
+                            .Listeners(ls => { ls.Change.Handler = "markChange(this,this.next(),true);"; ls.Change.Buffer = 250; })
+                            .AllowOnlyWhitespace(false),
+                    X.NumberFieldFor(m => m.MaxPoint).FieldLabel("Điểm tối đa" + Html.Required())
+                            .EmptyText("Điểm tối đa cho mức độ...")
+                            .MinValue(1).MaxValue(1000)
+                            .AllowBlank(false)
+                            .BlankText("Điểm tối đa không được bỏ trống!")
+                            .AllowOnlyWhitespace(false)
+                            .Listeners(ls => { ls.Change.Handler = "markChange(this.prev(),this,false)"; ls.Change.Buffer = 250; })
+                    )
+            )
+    .Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                            de.Click.Url = Url.Action("Update");
+                            de.Click.FormID = "frmUpdate";
+                            de.Click.Success = "this.up('window').close();";
+                        }),
+           Html.X().ButtonExit()
+    )
+)
+<script type="text/javascript">
+    var onSelectMethod = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+        var description = record.get('Description');
+        var method = record.get('Method');
+        App.Method.setValue(method);
+        App.Description.setValue(description);
+    };
+    var markChange = function (minObj, maxObj, isMin) {
+        if (minObj.value > maxObj.value) {
+            if (isMin) {
+                maxObj.setValue(minObj.value);
+            }
+            else {
+                minObj.setValue(maxObj.value);
+            };
+        }
+    };
+</script>

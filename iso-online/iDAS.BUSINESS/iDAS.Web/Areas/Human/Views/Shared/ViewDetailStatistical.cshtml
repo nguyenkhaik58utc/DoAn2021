@@ -1,0 +1,94 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Human.Controllers
+@{
+    var X = Html.X();
+    var windowID = "StatisticalProfile";
+    var StoreParamProfile = ViewData["StoreParamProfileStatiscal"] as StoreParameter;
+}
+@(Html.X().Window()
+            .ID(windowID)
+            .Title("Danh sách nhân sự")
+            .StyleSpec("-webkit-border-radius:0")
+            .Icon(Icon.ApplicationSideList)
+            .Height(1)
+            .Maximized(true)
+            .Constrain(true)
+            .Layout(LayoutType.Fit)
+            .Modal(true)
+            .Resizable(false)
+            .Margin(0)
+            .BodyPadding(0)
+            .Border(true)
+            .Items(
+           Html.X().GridPanel()
+                                .Header(false)
+                                .ID("GrOrder")
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .Border(false)
+                                .Icon(Icon.TextListBullets)
+                .RowLines(true)
+                .Store(Html.X().Store()
+                                .ID("stMnRequirment")
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(ViewData["StoreUrlProfile"].ToString())
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(StoreParamProfile);
+                                    ps.Add(new { depId = ViewData["depId"] });
+                                })
+                            .RemoteSort(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                                .Model(
+                        Html.X().Model()
+                                .Fields(
+                                        new ModelField("ID", ModelFieldType.Int),
+                                                            new ModelField("FileID", ModelFieldType.String),
+                                                            new ModelField("FileName", ModelFieldType.String),
+                                                            new ModelField("Code", ModelFieldType.String),
+                                                            new ModelField("Name", ModelFieldType.String),
+                                                            new ModelField("Email", ModelFieldType.String),
+                                                        new ModelField("Phone", ModelFieldType.String),
+                                                            new ModelField("Birthday", ModelFieldType.String),
+                                                        new ModelField("Address", ModelFieldType.String),
+                                                            new ModelField("Gender", ModelFieldType.Int),
+                                                                                new ModelField("ChucDanh", ModelFieldType.String)
+                                )
+                              )
+                              )
+                        .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                        X.TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+                          X.XTemplate().Html(@<text>
+                            <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                 style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                        </text>)
+                        ),
+                        X.Column().DataIndex("Name").Flex(1).Text("Họ Tên").Width(120).StyleSpec("font-weight: bold;text-align: center"),
+                        X.DateColumnExtend().DataIndex("Birthday").Text("Ngày sinh").Align(Alignment.Right).Width(100).StyleSpec("font-weight: bold;text-align: center"),
+                        X.Column().DataIndex("Email").Text("Email").Width(150).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center"),
+                        X.Column().DataIndex("Phone").Text("Số điện thoại").Width(100).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center"),
+                        X.Column().DataIndex("ChucDanh").Text("Chức danh").Width(150).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center")
+                        
+                )
+                .SelectionModel(X.CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Multi).Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                .BottomBar(
+                        X.CustomPagingToolbar()
+                )
+
+
+)
+)
+<script>
+    
+   
+</script>
+
+
+
+

@@ -1,0 +1,325 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.ProductionStageItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới công đoạn sản xuất";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật công đoạn sản xuất";
+    }
+}
+@(Html.X().Window()
+.ID("winStage")
+        .BodyPadding(0)
+        .Height(1).Maximized(true)
+        .Constrain(true)
+        .Modal(true)
+        .Layout(LayoutType.Fit)
+        .Title(title)
+        .Icon(IconView)
+        .Items(
+                            Html.X().CustomFormPanel().ID("frmUpdate").Title("Thông tin công đoạn").PaddingSpec("0 0 0 0")
+                                    .Items(
+                                            Html.X().CustomFormPanel().Items(
+                                            Html.X().HiddenFor(m => m.ID),
+                                            Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên công đoạn" + Html.Required())
+                                                    .EmptyText("Tên công đoạn sản xuất...")
+                                                    .BlankText("Tên công đoạn sản xuất không được bỏ trống!")
+                                                    .AllowOnlyWhitespace(false),
+                                            Html.X().ProductFieldFor(m => m.Product).FieldLabel("Thuộc sản phẩm" + Html.Required()).AllowBlank(false),
+                                            Html.X().NumberFieldFor(m => m.Position).FieldLabel("Thứ tự"+Html.Required()).InputWidth(100).MinValue(1).AllowBlank(false),
+                                            Html.X().Container().Layout(LayoutType.Column).Height(24)
+                                                .Items(
+                                                        Html.X().NumberFieldFor(m => m.ResultQuantity).AllowBlank(false).MinValue(1).FieldLabel("Định mức nỗ lực" + Html.Required()).InputWidth(100).ColumnWidth(0.4),
+                                                        Html.X().NumberFieldFor(m => m.MenDay).AllowBlank(false).MinValue(1).FieldLabel("Sản phẩm/ngày công").InputWidth(100).ColumnWidth(0.4)
+                                                                .LabelWidth(105).LabelSeparator("").LabelAlign(LabelAlign.Right)
+                                            ),
+                                            Html.X().ProductFieldFor(m => m.ResultProduct).FieldLabel("Thành phẩm" + Html.Required()).AllowBlank(false),
+                                            Html.X().Container().Layout(LayoutType.Column).Height(24)
+                                                        .Items(
+                                                             Html.X().NumberFieldFor(m=>m.Quantity).ID("StageQuanlity").MinValue(1).AllowBlank(false).FieldLabel("Số thành phẩm"+Html.Required()).InputWidth(100).ColumnWidth(0.4),
+                                                             Html.X().Label().Text("/ 1 sản phẩm")
+                                                        ),
+                                            Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Sử dụng")),
+                                            Html.X().TabPanel().MinHeight(200).Flex(1).Margin(1)
+                                                    .Items(
+                                                            Html.X().GridPanel().ID("GrHaftProductResult").Title("Bán thành phẩm")
+                                                                        .ColumnLines(true)
+                                                                        .ForceFit(true)
+                                                                        .Border(false)
+                                                                        .TopBar(
+                                                                            Html.X().Toolbar()
+                                                                            .Items(
+                                                                                    Html.X().ButtonCreate().Handler("ShowCreateProduct()"),
+                                                                                    Html.X().ButtonUpdate().ID("btnUpdateProduct").Handler("ShowUpdateProduct(this.up('gridpanel'))"),
+                                                                                    Html.X().ButtonDelete().ID("btnDeleteProduct").Handler("DeleteRecord(this.up('gridpanel'))")
+                                                                            )
+                                                                        )
+                                                                        .Store(
+                                                                            Html.X().Store()
+                                                                                    .RemotePaging(true)
+                                                                                    .DataSource(Model.Products)
+                                                                                    .Model(
+                                                                                        Html.X().Model().Fields(
+                                                                                            Html.X().ModelField().Name("StockProductID"),
+                                                                                            Html.X().ModelField().Name("ProductName"),
+                                                                                            Html.X().ModelField().Name("Quantity")
+                                                                                        )
+                                                                                    )
+                                                                                )
+                                                                                .ColumnModel(
+                                                                                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                                            Html.X().Column().DataIndex("ProductName").Text("Tên bán thành phẩm").Flex(1),
+                                                                                            Html.X().Column().DataIndex("Quantity").Text("Số lượng").Align(Alignment.Center).Width(180)
+                                                                                )
+                                                                        .Plugins(
+                                                                                Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "editQuantity")
+                                                                        )
+                                                                        .Listeners(ls => ls.SelectionChange.Handler = "CheckGridStatus(this,App.btnUpdateProduct,App.btnDeleteProduct)"),
+                                                             Html.X().GridPanel().ID("GrEquipment").Title("Thiết bị")
+                                                                    .ColumnLines(true)
+                                                                    .ForceFit(true)
+                                                                    .Border(false)
+                                                                    .TopBar(
+                                                                                Html.X().Toolbar()
+                                                                                .Items(
+                                                                                        Html.X().ButtonCreate().Handler("ShowCreateEquipement()"),
+                                                                                        Html.X().ButtonUpdate().ID("btnUpdateEquipment").Handler("ShowUpdateEquipement(this.up('gridpanel'))"),
+                                                                                        Html.X().ButtonDelete().ID("btnDeleteEquipment").Handler("DeleteRecord(this.up('gridpanel'))")
+                                                                                )
+                                                                            )
+                                                                    .Store(
+                                                                            Html.X().Store()
+                                                                                    .RemotePaging(true)
+                                                                                    .DataSource(Model.Equipements)
+                                                                                    .Model(
+                                                                                        Html.X().Model().Fields(
+                                                                                            Html.X().ModelField().Name("EquipmentProductionCategoryID"),
+                                                                                            Html.X().ModelField().Name("EquipementName"),
+                                                                                            Html.X().ModelField().Name("Quantity")
+                                                                                        )
+                                                                                  )
+                                                                            )
+                                                                    .ColumnModel(
+                                                                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                                Html.X().Column().DataIndex("EquipementName").Text("Tên thiết bị").Flex(1),
+                                                                                Html.X().Column().DataIndex("Quantity").Text("Số lượng").Align(Alignment.Center).Width(180)
+                                                                            )
+                                                                        .Plugins(
+                                                                                Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "editQuantity")
+                                                                        )
+                                                                    .Listeners(ls => ls.SelectionChange.Handler = "CheckGridStatus(this,App.btnUpdateEquipment,App.btnDeleteEquipment)"),
+                                                        Html.X().GridPanel().ID("GrMaterial").Title("Nguyên vật liệu")
+                                                                    .ColumnLines(true)
+                                                                    .ForceFit(true)
+                                                                    .Border(false)
+                                                                    .TopBar(
+                                                                            Html.X().Toolbar()
+                                                                            .Items(
+                                                                                    Html.X().ButtonCreate().Handler("ShowCreateMaterial()"),
+                                                                                    Html.X().ButtonUpdate().ID("btnUpdateMaterial").Handler("ShowUpdateMaterial(this.up('gridpanel'))"),
+                                                                                    Html.X().ButtonDelete().ID("btnDeleteMaterial").Handler("DeleteRecord(this.up('gridpanel'))")
+                                                                            )
+                                                                        )
+                                                                    .Store(
+                                                                        Html.X().Store()
+                                                                                .RemotePaging(true)
+                                                                                .DataSource(Model.Materials)
+                                                                                .Model(
+                                                                                    Html.X().Model().Fields(
+                                                                                        Html.X().ModelField().Name("StockMaterialID"),
+                                                                                        Html.X().ModelField().Name("MaterialName"),
+                                                                                        Html.X().ModelField().Name("Quantity")
+                                                                                    )
+                                                                                )
+                                                                            )
+                                                                    .ColumnModel(
+                                                                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                                Html.X().Column().DataIndex("MaterialName").Text("Tên vật liệu").Flex(1),
+                                                                                Html.X().Column().DataIndex("Quantity").Text("Số lượng").Align(Alignment.Center).Width(180)
+                                                                            )
+                                                                    .Plugins(
+                                                                            Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "editQuantity")
+                                                                    )
+                                                                    .Listeners(ls => ls.SelectionChange.Handler = "CheckGridStatus(this,App.btnUpdateMaterial,App.btnDeleteMaterial)")
+                                          )
+                    )
+)
+.Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; };";
+                                    de.Click.ExtraParams.Add(new { strEquipement = new JRawValue("JSON.stringify(App.GrEquipment.store.getRecordsValues())") });
+                                    de.Click.ExtraParams.Add(new { strMaterial = new JRawValue("JSON.stringify(App.GrMaterial.store.getRecordsValues())") });
+                                    de.Click.ExtraParams.Add(new { strProduct = new JRawValue("JSON.stringify(App.GrHaftProductResult.store.getRecordsValues())") });
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.FormID = "frmUpdate";
+                                    de.Click.Success = "this.up('window').close();";
+                                }),
+            Html.X().ButtonExit()
+      )
+)
+<script>
+    var CheckGridStatus = function (grid, btnUpdate, btnDelete) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            SetEnabled(btnUpdate, btnDelete);
+        }
+        else {
+            SetDisabled(btnUpdate, btnDelete);
+        }
+    };
+    var editQuantity = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            e.record.commit();
+        };
+    };
+    var DeleteRecord = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    grid.store.remove(records);
+                };
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowCreateEquipement = function () {
+        onDirectMethod('@Url.Action("EquipmentWindow")');
+    };
+    var ShowUpdateEquipement = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@Url.Action("EquipmentWindow")';
+            var parmas = { isUpdate: true };
+            onDirectMethod(url, parmas, 'post', function () { App.frmEquipmentUpdate.getForm().loadRecord(records[0]); });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SaveEquipment = function (value, isUpdate) {
+        var grid = App.GrEquipment;
+        var store = grid.store;
+        if (isUpdate.toLowerCase() == "true") {
+            var record = grid.selModel.getSelection()[0];
+            record.data.EquipmentProductionCategoryID = value.EquipmentProductionCategoryID;
+            record.data.EquipementName = value.EquipementName;
+            record.data.Quantity = value.Quantity;
+            record.commit();
+        }
+        else {
+            var records = store.getRecordsValues();
+            if (records.length > 0) {
+                for (var i = 0; i < records.length; i++) {
+                    if (records[i].EquipmentProductionCategoryID == value.EquipmentProductionCategoryID) {
+                        Ext.MessageBox.show({
+                            title: 'Thông báo', msg: "Đã tồn tại thiết bị!",
+                            buttons: { yes: 'Đồng ý' },
+                            iconCls: '#Exclamation'
+                        });
+                        return;
+                    };
+                };
+            };
+            grid.store.insert(grid.store.data.length, value);
+        };
+    };
+    var ShowCreateMaterial = function () {
+        onDirectMethod('@Url.Action("MaterialWindow")');
+    };
+    var ShowUpdateMaterial = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@Url.Action("MaterialWindow")';
+            var parmas = { isUpdate: true };
+            onDirectMethod(url, parmas, 'post', function () { App.frmMaterialUpdate.getForm().loadRecord(records[0]); });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SaveMaterial = function (value, isUpdate) {
+        var grid = App.GrMaterial;
+        var store = grid.store;
+        if (isUpdate.toLowerCase() == "true") {
+            var record = grid.selModel.getSelection()[0];
+            record.data.StockMaterialID = value.StockMaterialID;
+            record.data.MaterialName = value.MaterialName;
+            record.data.Quantity = value.Quantity;
+            record.commit();
+        }
+        else {
+            var records = store.getRecordsValues();
+            if (records.length > 0) {
+                for (var i = 0; i < records.length; i++) {
+                    if (records[i].StockMaterialID == value.StockMaterialID) {
+                        Ext.MessageBox.show({
+                            title: 'Thông báo', msg: "Đã tồn tại nguyên vật liệu!",
+                            buttons: { yes: 'Đồng ý' },
+                            iconCls: '#Exclamation'
+                        });
+                        return;
+                    };
+                };
+            };
+            grid.store.insert(grid.store.data.length, value);
+        };
+    };
+    var ShowCreateProduct = function () {
+        onDirectMethod('@Url.Action("ProductWindow")');
+    };
+    var ShowUpdateProduct = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@Url.Action("ProductWindow")';
+            var parmas = { isUpdate: true, StockProductID: records[0].data.StockProductID, ProductName: records[0].data.ProductName, Quantity: records[0].data.Quantity };
+            onDirectMethod(url, parmas);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SaveHaftProductResult = function (value, isUpdate) {
+        var grid = App.GrHaftProductResult;
+        var store = grid.store;
+        if (isUpdate.toLowerCase() == "true") {
+            var record = grid.selModel.getSelection()[0];
+            record.data.StockProductID = value.StockProductID;
+            record.data.ProductName = value.ProductName;
+            record.data.Quantity = value.Quantity;
+            record.commit();
+        }
+        else {
+            var records = store.getRecordsValues();
+            if (records.length > 0) {
+                for (var i = 0; i < records.length; i++) {
+                    if (records[i].StockProductID == value.StockProductID) {
+                        Ext.MessageBox.show({
+                            title: 'Thông báo', msg: "Đã tồn tại nguyên vật liệu!",
+                            buttons: { yes: 'Đồng ý' },
+                            iconCls: '#Exclamation'
+                        });
+                        return;
+                    };
+                };
+            };
+            grid.store.insert(grid.store.data.length, value);
+        };
+    };
+</script>

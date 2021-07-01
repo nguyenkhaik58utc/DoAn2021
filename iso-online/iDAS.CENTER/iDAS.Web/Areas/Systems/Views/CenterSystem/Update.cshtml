@@ -1,0 +1,129 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@model iDAS.Items.SystemItem
+@(
+ Html.X().Window()
+    .ID("winEditCenterSystem")
+    .Title("Cập nhật thông tin Hệ thống")
+    .Icon(Icon.Pencil)
+    .Width(600)
+    .BodyPadding(0)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmEditCenterSystem")
+        .Layout(LayoutType.Column)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .DefaultAnchor("100%")
+        .Items(
+            Html.X().Panel().Layout(LayoutType.Form).Border(false).Frame(true)
+                .ColumnWidth(0.8).MarginSpec("0 10 0 0").StyleSpec("border: none;")
+                .Items(
+                    Html.X().TextFieldFor(m => m.ID).ID("ID").Hidden(true),
+                    Html.X().TextFieldFor(m => m.Code).ID("txtCode")
+                        .FieldLabel("Mã hệ thống")
+                        .TabIndex(1)
+                        .ReadOnly(true),
+                    Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                        .FieldLabel("Tên hệ thống")
+                        .TabIndex(2)
+                        .AllowBlank(false).BlankText("Tên hệ thống bắt buộc nhập!"),
+                    Html.X().TextFieldFor(m => m.Url).ID("txtUrl")
+                        .FieldLabel("Url"),
+                     Html.X().TextFieldFor(m => m.DBSource).ID("txtDatabaseDataSource")
+                        .FieldLabel("DBSource")
+                        .MaxLength(50),
+                    Html.X().TextFieldFor(m => m.DBUserID).ID("txtDatabaseUserID")
+                        .FieldLabel("DBUserID")
+                        .MaxLength(50),
+                    Html.X().TextFieldFor(m => m.DBPassword).ID("txtDatabasePassword")
+                        .InputType(Ext.Net.InputType.Password)
+                        .FieldLabel("DBPassword")
+                        .MaxLength(50),
+                    Html.X().TextFieldFor(m => m.DocumentFolder).ID("txtDocumentFolder")
+                        .FieldLabel("Document Folder")
+                        .MaxLength(500),
+                    Html.X().TextFieldFor(m => m.MailHost).ID("txtMailHost")
+                        .FieldLabel("MailHost")
+                        .MaxLength(50),
+                    Html.X().NumberFieldFor(m => m.MailPort).ID("MailPort")
+                        .FieldLabel("MailPort").MinValue(0)
+                        .MaxLength(50),
+                    Html.X().CheckboxFor(m => m.MailEnableSsl).ID("MailEnableSsl")
+                        .FieldLabel("MailEnableSsl"),
+                    Html.X().TextFieldFor(m => m.MailUserName).ID("txtMailUserName")
+                        .FieldLabel("MailUserName")
+                        .MaxLength(50),
+                    Html.X().TextFieldFor(m => m.MailUserPassword).ID("txtMailUserPassword")
+                        .InputType(Ext.Net.InputType.Password)
+                        .FieldLabel("MailPassword")
+                        .MaxLength(50),
+                    Html.X().CheckboxFor(m => m.IsActive).ID("ckIsActive")
+                        .FieldLabel("Kích hoạt")
+                ),
+                     Html.X().FieldSet().Title("Ảnh đại diện")
+                                        .Layout(LayoutType.Form)
+                                        .ColumnWidth(0.2).Margin(0)
+                                        .PaddingSpec("5 5 5 5")
+                                        .Items(
+                                                Html.X().ImageButton().ID("ImageAvatar").Height(150).Text("Ảnh đại diện").ImageUrl(Model.ImageUserUrl)
+                                                        .ToolTip("Ảnh đại diện").StyleSpec("border: 0.5px solid #b5b8c8; width:98%;"),
+                                                Html.X().FileUploadField().ID("FileUploadAvatarFieldId").ButtonText("").Icon(Icon.ImageAdd)
+                                                .Listeners(ls => ls.Change.Handler = "AvatarChange(this);")
+                                        ) ,
+                     Html.X().FieldSet().ColumnWidth(0.2)
+                                        .Layout(LayoutType.Form)
+                                        .MarginSpec("5 0 0 0")
+                                        .PaddingSpec("5 5 5 5")
+                                        .Items(
+                                                Html.X().ImageButton().ID("ImageLogo").Height(41).Text("Logo hệ thống").ImageUrl(Model.ImageLogoUrl)
+                                                        .ToolTip("Logo").StyleSpec("border: 0.5px solid #b5b8c8; width:98%;"),
+                                                Html.X().FileUploadField().ID("FileUploadLogoFieldId").ButtonText("Logo hệ thống").ButtonOnly(true).Icon(Icon.ImageEdit)
+                                                .Listeners(ls => ls.Change.Handler = "LogoChange(this);")
+                                        )              
+        ))
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmEditCenterSystem";
+                    de.Click.ExtraParams.Add(new
+                    {
+                        DBSource = new JRawValue("App.txtDatabaseDataSource.value"),
+                        DBUserID = new JRawValue("App.txtDatabaseUserID.value"),
+                        DBPassword = new JRawValue("App.txtDatabasePassword.value"),
+                        MailHost = new JRawValue("App.txtMailHost.value"),
+                        MailUserName = new JRawValue("App.txtMailUserName.value"),
+                        MailUserPassword = new JRawValue("App.txtMailUserPassword.value"),
+                    });
+                    de.Click.Url = Url.Action("EditSystem");
+                    de.Click.Before = @"if (!#{frmEditCenterSystem}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                }),
+
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Hủy")
+                .Handler("App.frmEditCenterSystem.reset(); App.winEditCenterSystem.close();")
+        )
+)
+<script>
+    var AvatarChange = function (obj) {
+        var file = obj.fileInputEl.dom.files[0];
+        var url = URL.createObjectURL(file);
+        App.ImageAvatar.setImageUrl(url);
+    };
+    var LogoChange = function (obj) {
+        var file = obj.fileInputEl.dom.files[0];
+        var url = URL.createObjectURL(file);
+        App.ImageLogo.setImageUrl(url);
+    };
+</script>

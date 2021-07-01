@@ -1,0 +1,166 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityTargetItem
+@(Html.X().Window()
+        .ID("winDetailTarget")
+        .Title("Xem chi tiết mục tiêu")
+        .Icon(Icon.Zoom)
+        .Layout(LayoutType.Border)
+        .Maximized(true)
+        .MinWidth(800)
+        .Height(400)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Border(true)
+        .Modal(true)
+        .Resizable(true)
+        .Items(
+                Html.X().FormPanel()
+                        .ID("frTargetDetail")     
+                        .Frame(true)
+                        .Region(Region.Center)
+                       // .StyleSpec("border: none;")
+                       .MarginSpec("1 0 1 1")
+                        .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                        .Items (
+                Html.X().HiddenFor(m => m.ID),
+                         Html.X().TextFieldFor(m => m.ParentName)
+                    .FieldLabel("Mục tiêu cha")
+                    .ReadOnly(true)
+                    .TabIndex(2)
+                    .ID("cbxTargetParent"),                
+                Html.X().ComboBoxFor(m=>m.QualityTargetCategoryID)
+                        .ID("cbCategoryID")
+                        .FieldLabel("Nhóm mục tiêu")
+                        .BlankText("Nhóm mục tiêu không được trống")
+                        .AnchorHorizontal("100%")
+                        .Editable(false)
+                        .AllowBlank(false)
+                        .ReadOnly(true)
+                        .TabIndex(1)
+                        .QueryMode(DataLoadMode.Local)
+                        .ForceSelection(true)
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Store(Html.X().Store()
+                        .AutoLoad(true)
+                        .Model(Html.X().Model()
+                        .IDProperty("ID")
+                        .Fields(
+                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                        )
+                        )
+                        .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetData", "TargetCategory"))
+                        .Reader(Html.X().JsonReader().Root("data")
+                        )
+                        )
+                        ),
+                Html.X().TextFieldFor(m => m.Name)
+                        .FieldLabel("Tên mục tiêu")
+                        .ID("txtName")
+                        .ReadOnly(true),
+                Html.X().Container()
+                        .Layout(LayoutType.Column)
+                        .ColSpan(2)
+                        .MarginSpec("0 0 0 0")
+                        .Items(
+                Html.X().NumberFieldFor(m => m.Value)
+                        .FieldLabel("Số lượng").ReadOnly(true)
+                        .AllowBlank(false).MarginSpec("0 5 5 0")
+                        .BlankText("Số lượng đạt bắt buộc nhập!")
+                        .AllowOnlyWhitespace(false)
+                        .ColumnWidth(0.7),
+                Html.X().TextFieldFor(m => m.Unit)
+                        .FieldLabel("Đơn vị tính")
+                        .ID("txtUnit").ReadOnly(true)                    
+                        .ColumnWidth(0.3)
+                         ),
+                Html.X().DepartmentFieldFor(m => m.Department)
+                        .ReadOnly(true)
+                        .FieldLabel("Phòng ban")
+                        .Multiple(false)
+                        .AllowBlank(false)
+                        .Height(25),  
+                Html.X().Container()
+                        .Layout(LayoutType.Column)
+                        .MarginSpec("0 0 5 0")
+                        .ColSpan(2)
+                        .Items(
+                Html.X().ComboBoxFor(m => m.Type)
+                        .FieldLabel("Mục tiêu thuộc")
+                        .MarginSpec("0 5 0 0")
+                        .ReadOnly(true)
+                        .ColumnWidth(0.3)
+                        .Items(
+                        new ListItem("Tổ chức", true),
+                        new ListItem("Cá nhân", false)
+                        ),
+                   Html.X().ComboBoxFor(m => m.QualityTargetLevelID)
+                        .ID("cbLevelID")
+                        .MarginSpec("0 0 5 0")
+                        .ColumnWidth(0.5)
+                        .FieldLabel("Mức độ ưu tiên")
+                        .EmptyText("Chọn mức độ ưu tiên mục tiêu")
+                        .BlankText("Mức độ ưu tiên chưa được chọn!")
+                        .Triggers(Html.X().FieldTrigger().Icon(TriggerIcon.SimpleTogglePlus))
+                        .ReadOnly(true)
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Editable(false)
+                        .Tpl(
+                        @<text>
+                            <tpl for=".">
+                                <div class="x-boundlist-item"><div style="text-align: center; width: 100%; background-color: {Color}; border: #cecece 1px solid;">{Name}</div></div>
+                            </tpl>
+                        </text>
+                            )
+                        .Store(
+                            Html.X().Store()
+                                .ID("stQualityTargetLevel")
+                                .AutoLoad(true)
+                                .Model(
+                                    Html.X().Model().IDProperty("ID")
+                                        .Fields(
+                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                            new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                        )
+                                )
+                                .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("LoadStoreIsUse", "QualityTargetLevel", new { area = "Quality" }))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                        )
+                        .Listeners(l => l.Change.Handler = "getColorLevel(App.cbLevelID, App.stQualityTargetLevel);")
+
+                ),
+                    Html.X().TextAreaFor(m => m.Description)
+                        .FieldLabel("Nội dung")
+                        .AllowBlank(false)
+                        .Flex(1)
+                        .Height(140)
+                        .ReadOnly(true)
+                        .BlankText("Nội dung mục tiêu không được trống!")
+                        .AllowOnlyWhitespace(false),
+                    Html.X().DateTimeFieldFor(m => m.CompleteAt)
+                        .ReadOnly(true)
+                        .AllowBlank(false)
+                        .FieldLabel("Ngày đạt")
+                        .MarginSpec("3 0 3 0")                                
+                        //Html.X().EmployeeFieldFor(m => m.Approval)
+                        //.ReadOnly(true)
+                        //.MarginSpec("-2 0 0 105")
+                        //.Title("Người phê duyệt")
+                        ),
+                 Html.X().ApprovalPanelFor(m => m).ReadOnly(true)   
+                    )
+            .Buttons(                
+            Html.X().ButtonExit()
+                )
+            )

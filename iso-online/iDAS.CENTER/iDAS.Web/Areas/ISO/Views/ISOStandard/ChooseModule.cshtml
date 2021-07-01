@@ -1,0 +1,268 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@model iDAS.Items.ISONaceCodeItem
+@(
+Html.X().Window()
+        .ID("winAddModuleIso")
+        .Title("Chọn module cho tiêu chuẩn ISO mã ["+ Model.Code+"]")
+        .Icon(Icon.TableAdd)
+        .Width(800)
+        //.Height(500)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+            Html.X().FormPanel()
+                    .ID("frmAddModuleIso")
+                    .Layout(LayoutType.Form)
+                    .Frame(true)
+                    .Border(false)
+                    .MarginSpec("0 -4 -3 -4")
+                    .StyleSpec("border: none;")
+                    .FieldDefaults(df => df.LabelWidth = 100)
+                    .DefaultAnchor("100%")
+                    .Items(
+            Html.X().HiddenFor(m=>m.ID)
+                        .ID("hdfIsoId"),          
+            Html.X().TextFieldFor(m => m.Name).ReadOnly(true)
+                    .ID("txtName")
+                        .Width(770)
+                    .FieldLabel("Tiêu chuẩn ISO")
+                    .LabelWidth(150)
+                    .MarginSpec("0 8 0 8") 
+                    .TabIndex(1),
+       
+            Html.X().Container()
+                .MarginSpec("0 0 0 0").Layout(LayoutType.Fit).Height(380)
+                .Items(
+                            Html.X().GridPanel()
+                                .ID("grModuleIsoNace")
+                                .MarginSpec("0 0 0 0")
+                                .ColumnLines(true)
+                                .Icon(Icon.TextListBullets)
+                                .Title("THIẾT LẬP MODULE THUỘC ISO VÀ LĨNH VỰC TRÊN")
+                                .Header(false)
+                                .Border(false)                             
+                                .TopBar(
+                                            Html.X().Toolbar()
+                                                .Layout(LayoutType.HBox)
+                                                .Items( 
+                                                        Html.X().ComboBox().ID("cboSystem")
+                                                            .QueryMode(DataLoadMode.Local)
+                                                            .TriggerAction(TriggerAction.All)
+                                                            .SelectOnFocus(true)
+                                                            .Width(768)    
+                                                            .LabelWidth(148)                                           
+                                                            .EmptyText("Chọn hệ thống ...")
+                                                            .DisplayField("SystemName")
+                                                            .ValueField("SystemCode")
+                                                            .FieldLabel("Hệ thống") 
+                                                            .LabelStyle("color: #000;font: 12px/14px tahoma,arial,verdana,sans-serif;margin-top: 4px;")
+                                                            .MarginSpec("0 0 0 8")
+                                                            .Store(
+                                                                Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("Code")
+                                                                    .Fields(
+                                                                             new ModelField("SystemCode", ModelFieldType.String) { Mapping = "Code" },
+                                                                            new ModelField("SystemName", ModelFieldType.String) { Mapping = "Name" }
+                                                                            )
+                                                                        )
+                                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataSystem"))
+                                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                                                    )   
+                                                                    .Listeners(ls => ls.Load.Handler = "App.cboSystem.select(App.cboSystem.store.getAt(0));                                                                     App.grModuleIsoNace.getStore().load()")
+                                                                    )
+                                                                    .Listeners(ls =>                                                                                              
+                                                                            ls.Change.Handler = "App.grModuleIsoNace.getStore().load()")
+                                                                )
+                                )
+                                    .Store(
+                                        Html.X().Store()                                   
+                                            .RemotePaging(true)
+                                            .AutoLoad(false)
+                                            .ID("stModuleIsoNace")
+                                            .PageSize(10)
+                                            .Model(
+                                                    Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                        new ModelField("ID"),
+                                                        new ModelField("Name"),
+                                                        new ModelField("Price"),
+                                                        new ModelField("IsSelected"),
+                                                        new ModelField("IsRequired"),                                                        
+                                                        new ModelField("IsShow"),
+                                                        new ModelField("IsActive")
+                                                        ))
+                                                    .Proxy(
+                                                        Html.X().AjaxProxy()
+                                                           .Url(Url.Action("LoadModules"))
+                                                           .Reader(Html.X().JsonReader().Root("data"))
+                                                        )
+                                                .Parameters(ps =>
+                                                    {
+                                                            ps.Add(new StoreParameter("iSONaneCodeId", "App.hdfIsoId.getValue()", ParameterMode.Raw));
+                                                            ps.Add(new StoreParameter("systemCode", "App.cboSystem.getValue()", ParameterMode.Raw));
+                                                    }
+                                                )
+                                    )
+                                .ColumnModel(
+                                    Html.X().RowNumbererColumn()
+                                        .Text("STT")
+                                        .Align(Alignment.Center)
+                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                        .Width(33),
+                                    Html.X().Column()
+                                        .DataIndex("ID")
+                                        .ID("ID")
+                                        .Hidden(true),
+                                    Html.X().Column()
+                                        .Text("Tên module")                                        
+                                        .DataIndex("Name")
+                                        .StyleSpec("font-weight: bold;text-align: center; ")
+                                        .Width(300)
+                                        .Flex(1),
+                                   //Html.X().NumberColumn()
+                                   //         .Text("Giá (VNĐ)")                                            
+                                   //         .DataIndex("Price")
+                                   //         .Align(Alignment.Right)
+                                   //         .CustomSummaryType("totalCost")                                                                                                            
+                                   //         .StyleSpec("font-weight: bold;text-align: center; ")
+                                   //         .Width(150)                                         
+                                   //         ,
+                                    Html.X().CheckColumn()
+                                        .Text("Kích hoạt")
+                                        .DataIndex("IsActive")
+                                        .StyleSpec("font-weight: bold;text-align: center; ").Width(100)
+                                             .Editable(false)
+                                             //.Editor(
+                                             //Html.X().Checkbox()                                                        
+                                             //   )
+                                                ,
+                                    Html.X().CheckColumn()
+                                        .Text("Hiển thị")
+                                        .DataIndex("IsShow")
+                                        .StyleSpec("font-weight: bold;text-align: center; ").Width(100)
+                                             .Editable(false)
+                                            //.Editor(
+                                            //      Html.X().Checkbox()                                                 
+                                            //)
+                                            ,
+                                    Html.X().CheckColumn()
+                                        .DataIndex("IsSelected")
+                                        .HideTitleEl(true)
+                                        .StyleSpec("font-weight: bold;text-align: center; ")
+                                        .Width(100)
+                                        .Editable(false)
+                                            .Editor(
+                                            Html.X().Checkbox()                                                        
+                                            )
+                                        .HeaderItems(
+                                                Html.X().Checkbox().ID("ckModule").Listeners(ls => ls.Change.Handler = "updateSelectednace(this.value, App.hdfIsoId.getValue())")
+                                        )
+                                        .Sortable(false)
+                                        .Resizable(false)
+                                        
+                                )      
+                            
+                                .SelectionModel(
+                                    Html.X().RowSelectionModel().Mode(SelectionMode.Multi)
+                                    )                                           
+                                    .Plugins(
+                                        Html.X().RowEditing()                                        
+                                        .SaveBtnText("Cập nhật")
+                                        .CancelBtnText("Hủy bỏ")
+                                            .Listeners(l =>
+                                            {
+                                                l.Edit.Fn = "onEditSelectednace";                                                           
+                                                l.CancelEdit.Handler = "if(e.record.phantom){e.store.remove(e.record);}";
+                                            })
+                                    )
+                                     .View(Html.X().GridView().TrackOver(false))
+                                        .Features(                               
+                                         Html.X().Summary().Dock(SummaryDock.Bottom)
+                                )         
+                            .BottomBar(
+                        Html.X().PagingToolbar()
+                                .EmptyMsg("Hiện không có dữ liệu")
+                                .NextText("Trang kế tiếp")
+                                .PrevText("Trang trước")
+                                .LastText("Trang cuối cùng")
+                                .FirstText("Trang đầu tiên")
+                                .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                                .BeforePageText("Trang")
+                                .AfterPageText("của {0}")
+                                .RefreshText("Tải lại Dữ liệu")
+                                .Items(
+                                    Html.X().Label("Số bản ghi trên 1 trang"),
+                                    Html.X().ToolbarSpacer(10),
+                                    Html.X().ComboBox()
+                                        .Width(50)
+                                        .Items("10", "20", "30", "50", "100")
+                                        .SelectedItems("10")
+                                       .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                                )
+                                .Plugins(Html.X().ProgressBarPager())
+                         ) 
+                    )                
+            )
+        )
+        .Buttons(            
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Thoát")
+                .TabIndex(8)
+                .Handler("App.winAddModuleIso.close();")
+        )
+)
+<script type="text/javascript">
+    var RenderNumber = function (value) {     
+       
+            return "<b>" + value+"</b>";
+    };
+    var onWrite = function (store, operation) {
+        var record = operation.getRecords()[0],
+            name = Ext.String.capitalize(operation.action),
+            verb;
+        if (name == 'Destroy') {
+            record = operation.records[0];
+            verb = 'Destroyed';
+        } else {
+            verb = name + 'd';
+        }
+        Ext.net.Notification.show({ title: name, html: Ext.String.format("{0} user: {1}<br/>{2}", verb, record.getId(), operation.resultSet.message) });
+    };
+    var updateUrl = '@(Url.Action("UpdateModuleSelected"))';
+    var onEditSelectednace = function (editor, e) {
+        var iSOId = App.hdfIsoId.getValue();
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: updateUrl,
+                params: {
+                    data: e.record.data,
+                    iSOId: iSOId,
+                    SystemCode: App.cboSystem.getValue()
+                }
+            });
+        }
+    };
+    var updateSelectednace = function (value, iSONaneCodeId) {
+        var perData = App.grModuleIsoNace.getStore().getRange();
+        var gridData = new Array();
+        Ext.each(perData, function (record) {
+            gridData.push(record.data.ID);
+        });
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateModuleSelecteds"))',
+            params: {
+                data: gridData,
+                iSOId: iSONaneCodeId,
+                isSelected: value
+            }
+        });
+    };
+    </script>

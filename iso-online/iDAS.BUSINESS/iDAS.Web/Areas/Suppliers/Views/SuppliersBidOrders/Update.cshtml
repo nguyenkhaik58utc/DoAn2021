@@ -1,0 +1,83 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.SuppliersBidOrderItem
+@(Html.X().Window()
+.ID("winRequirementListAdd")
+.Title("Cập nhật nhà cung cấp yêu cầu báo giá")
+.Width(800)
+.MaxHeight(600)
+.Icon(Icon.Pencil)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .MarginSpec("0 -4 0 0")
+    .BodyPadding(0)
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 110; })
+    .Items(
+                    Html.X().HiddenFor(m => m.SuppliersOrderID), Html.X().HiddenFor(m => m.ID),
+           Html.X().ComboBoxFor(m => m.SupplierID)
+                                        .DisplayField("Name")
+                                        .ValueField("ID")
+                                        .FieldLabel("Chọn nhà cung cấp"+Html.Required())
+                                        .Editable(true)
+                                        .ID("cbProvider")
+                                         .ColumnWidth(1).MarginSpec("5 8 0 8")
+                                         .TypeAhead(false)
+                                         .PageSize(20)
+                                         .MinChars(0)
+                                .ForceSelection(true)
+                                    .ListConfig(Html.X().BoundList()
+                                        .LoadingText("Searching...")
+                                        .ItemTpl(Html.X().XTemplate()
+                                            .Html(@<text>
+                                                <div class="search-item">
+							                       <h3>{Name}</h3>
+                                                    {Address}
+						                        </div>
+                                            </text>)
+                                        )
+                                    )
+                                    .Store(Html.X().Store()
+                                        .AutoLoad(true)
+                                        .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("LoadSupplier"))
+                                            .ActionMethods(am => am.Read = HttpMethod.POST)
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                        )
+                                        .Model(Html.X().Model()
+                                            .Fields(
+                                               Html.X().ModelField().Name("Address"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("ID")
+                                            )
+                                        )
+                                        ),
+            Html.X().DateFieldFor(m => m.StartDate).SelectedDate(DateTime.Now).FieldLabel("Thời gian gửi YC").ColumnWidth(0.6).MarginSpec("5 8 0 8"),
+                Html.X().DateFieldFor(m => m.EndDate).SelectedDate(DateTime.Now.AddDays(5)).FieldLabel("Gửi trước").LabelWidth(60).ColumnWidth(0.4).MarginSpec("5 4 0 8"),
+            Html.X().TextAreaFor(m => m.Contents)
+                .FieldLabel("Nội dung yêu cầu")
+                .EmptyText("Nhập nội dung yêu cầu ...")
+                .ColumnWidth(1).MarginSpec("5 8 0 8").Height(80)
+           )
+      )
+    .Buttons(
+        Html.X().ButtonSave()
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; };";
+                                de.Click.Url = Url.Action("Update");
+                                de.Click.FormID = "frmUpdate";
+                            }),
+        Html.X().ButtonExit())
+)

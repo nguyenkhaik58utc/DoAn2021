@@ -1,0 +1,54 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.ProductionShiftItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới ca sản xuất";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật ca sản xuất";
+    }
+}
+@(Html.X().CustomWindow()
+.ID("winShift")
+        .Title(title)
+        .Icon(IconView)
+        .Items(
+           Html.X().CustomFormPanel().ID("frmUpdate")
+                .Items(
+                        Html.X().HiddenFor(m => m.ID),
+                        Html.X().TextFieldFor(m => m.Name).FieldLabel("Ca sản xuất" + Html.Required())
+                                .EmptyText("Tên ca sản xuất...")
+                                .BlankText("Tên ca sản xuất không được bỏ trống!")
+                                .AllowOnlyWhitespace(false),
+                        Html.X().HiddenFor(m => m.StartTime).ID("hdfStartTime"),        
+                        Html.X().TimeField().Value(Model.StartTime).Format("HH:mm:ss").Icon(Icon.Clock).FieldLabel("Bắt đầu")
+                                .Listeners(ls => ls.Change.Handler = "App.hdfStartTime.setValue(this.rawValue)"),
+                        Html.X().HiddenFor(m => m.EndTime).ID("hdfEndTime"),
+                        Html.X().TimeField().Value(Model.EndTime).Format("HH:mm:ss").Icon(Icon.Clock).FieldLabel("Kết thúc")
+                                .Listeners(ls => ls.Change.Handler = "App.hdfEndTime.setValue(this.rawValue)"),
+                        Html.X().CheckboxFor(m => m.IsUse).FieldLabel("Sử dụng")
+                    )
+)
+.Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.FormID = "frmUpdate";
+                                    de.Click.Success = "this.up('window').close();";
+                                }), 
+            Html.X().ButtonExit()
+      )
+)

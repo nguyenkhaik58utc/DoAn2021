@@ -1,0 +1,77 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.CustomerContractItem
+@{
+    var X = Html.X();
+}
+@(
+ Html.X().Window()
+    .Title("Thông tin đề xuất thanh toán của kế toán")
+    .Icon(Icon.Money)
+    .Maximized(true)
+    .Width(800)
+    .Height(500)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+            X.HiddenFor(m => m.ID).ID("hdfContractID"), X.HiddenFor(m => m.CustomerID).ID("hdfCustomerID"),
+            Html.X().GridPanel().Layout(LayoutType.Fit)
+                                    .Title("Đề xuất thanh toán")
+                                    .ID("GrAccountingPayment")
+                                    .Header(false)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Border(false)
+                                    .Icon(Icon.TextListBullets)
+                                    .Store(
+                                    Html.X().Store().ID("StoreAccountingPayment")
+                                        .RemotePaging(true)
+                                        //.GroupField("TypeName")
+                                        .PageSize(100)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadAccountingPaymentForAccounting", "CustomerManagementContract", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("id", "App.hdfContractID.value", ParameterMode.Raw));
+
+                                            })
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Content"),
+                                                Html.X().ModelField().Name("TypeName"),
+                                                Html.X().ModelField().Name("Rate"),
+                                                Html.X().ModelField().Name("Value"),
+                                                Html.X().ModelField().Name("Note")
+                                            )
+                                        )
+                                    )
+                                    .ColumnModel(
+                                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                    Html.X().Column().DataIndex("Content").Text("Nội dung").Flex(1),
+                                                    Html.X().SummaryColumn().DataIndex("Value").Text("Số tiền").Width(100)
+                                                            .SummaryType(SummaryType.Sum)
+                                                            .SummaryRenderer("return value +' (VNĐ)';")
+                                                            .Align(Alignment.Right),
+                                                    Html.X().SummaryColumn().DataIndex("Rate").Text("Tỉ lệ thu hồi (%)").Width(100)
+                                                            .SummaryType(SummaryType.Sum)
+                                                            .Renderer("return value +' %';")
+                                                            .SummaryRenderer("return value +' %';")
+                                                            .Align(Alignment.Right),
+                                                    Html.X().Column().DataIndex("Note").Text("Ghi chú").Width(300).Wrap(true)
+                                        )
+                                    //.Features(
+                                    //            Html.X().GroupingSummary()
+                                    //            .ID("GroupingSummaryAccounting")
+                                    //            .GroupHeaderTplString("{name}")
+                                    //            .HideGroupedHeader(true)
+                                    //            .EnableGroupingMenu(false)
+                                    //    )
+     )
+    .Buttons(Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

@@ -1,0 +1,519 @@
+﻿@model System.Collections.IEnumerable
+@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/Content/FieldSet.css" rel="stylesheet" />
+<script type="text/javascript" src="@Url.Content("~/Areas/Stock/Content/js/jsCommon.js")"></script>
+<script type="text/javascript">
+    var optionTime = function () {
+        var date = new Date();
+        var option = App.Time.getValue();
+        var quarter = Math.floor((date.getMonth() + 3) / 3);
+        switch (option) {
+            case 0:
+                App.dfFromDate.setValue(date);
+                App.dfToDate.setValue(date);
+                break;
+            case 1:
+                var startDay = 1;
+                var d = date.getDay();
+                var weekStart = new Date(date.valueOf() - (d <= 0 ? 7 - startDay : d - startDay) * 86400000);
+                var weekEnd = new Date(weekStart.valueOf() + 6 * 86400000);
+                App.dfFromDate.setValue(weekStart);
+                App.dfToDate.setValue(weekEnd);
+                break;
+            case 2:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+                break;
+            case 3:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * quarter - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * quarter + 0, 1));
+                break;
+            case 4:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11, 31));
+                break;
+            case 5:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 0 + 1, 0));
+                break;
+            case 6:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 1, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 1 + 1, 0));
+                break;
+            case 7:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 2, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 2 + 1, 0));
+                break;
+            case 8:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 + 1, 0));
+                break;
+            case 9:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 4, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 4 + 1, 0));
+                break;
+            case 10:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 5, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 5 + 1, 0));
+                break;
+            case 11:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 6, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 6 + 1, 0));
+                break;
+            case 12:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 7, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 7 + 1, 0));
+                break;
+            case 13:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 8, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 8 + 1, 0));
+                break;
+            case 14:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 9, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 9 + 1, 0));
+                break;
+            case 15:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 10, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 10 + 1, 0));
+                break;
+            case 16:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 11, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11 + 1, 0));
+                break;
+            case 17:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 1 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 1 + 0, 1));
+                break;
+            case 18:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 2 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 2 + 0, 1));
+                break;
+            case 19:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 3 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 3 + 0, 1));
+                break;
+            case 20:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 4 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 4 + 0, 1));
+                break;
+            default:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+        }
+        App.gpReportOutwardBySupplier.getStore().load();
+    };
+    var applyFilter = function (field) {
+        var store = App.gpReportOutwardBySupplier.getStore();
+        store.filterBy(getRecordFilter());
+    };
+    var filterString = function (value, dataIndex, record) {
+        var val = record.get(dataIndex);
+        if (typeof val != "string") {
+            return value.length == 0;
+        }
+        return val.toLowerCase().indexOf(value.toLowerCase()) > -1;
+    };
+    var filterDate = function (value, dataIndex, record) {
+        var val = Ext.Date.clearTime(record.get(dataIndex), true).getTime();
+        if (!Ext.isEmpty(value, false) && val != Ext.Date.clearTime(value, true).getTime()) {
+            return false;
+        }
+        return true;
+    };
+    var filterNumber = function (value, dataIndex, record) {
+        var val = record.get(dataIndex);
+
+        if (!Ext.isEmpty(value, false) && val != value) {
+            return false;
+        }
+        return true;
+    };
+    var filterBoolean = function (value, dataIndex, record) {
+        var val = record.get(dataIndex);
+        if (typeof val != "boolean") {
+            return value.length == 0;
+        }
+        return val.toString().toLowerCase().indexOf(value.toString().toLowerCase()) > -1;
+    };
+    var getRecordFilter = function () {
+        var f = [];
+        f.push({
+            filter: function (record) {
+                return filterDate(App.ftLimit.getValue() || "", "Limit", record);
+            }
+        });
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftProductCode.getValue() || "", "ProductCode", record);
+            }
+        });
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftProductName.getValue() || "", "ProductName", record);
+            }
+        });
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftUnit.getValue() || "", "Unit", record);
+            }
+        });
+        f.push({
+            filter: function (record) {
+                return filterNumber(App.ftQuantity.getValue() || "", "Quantity", record);
+            }
+        });
+        f.push({
+            filter: function (record) {
+                return filterNumber(App.ftAmount.getValue() || "", "Amount", record);
+            }
+        });
+        var len = f.length;
+        return function (record) {
+            for (var i = 0; i < len; i++) {
+                if (!f[i].filter(record)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+    };
+    var clearFilter = function () {
+        App.ftProductCode.reset();
+        App.ftProductName.reset();
+        App.ftUnit.reset();
+        App.ftQuantity.reset();
+        App.ftAmount.reset();
+        App.stReportOutwardBySupplier.clearFilter();
+    };
+</script>
+@(Html.X().Viewport()
+          .Layout(LayoutType.Fit)
+          .Items(
+            Html.X().GridPanel()
+                    .ID("gpReportOutwardBySupplier")
+                    .ColumnLines(true)
+                    .Border(false)
+                    .TopBar(
+                    Html.X().Toolbar()
+                    .ID("tbgpReportOutwardBySupplier")
+                    .Items(
+                         Html.X().Checkbox().HideLabel(true).ID("chkIsInside").BoxLabel("Khách hàng nội bộ").Listeners(ls => ls.Change.Handler = "App.cbProvider.clearValue();App.cbProvider.getStore().reload();"),
+                       Html.X().ComboBox()
+                                        .DisplayField("Name")
+                                        .ValueField("ID")
+                                        .FieldLabel("Khách hàng")
+                                        .HideLabel(true)
+                                        .Editable(true)
+                                        .ID("cbProvider")
+                                        .EmptyText("Chọn khách hàng cần xem báo cáo!")
+                                        .LabelWidth(70)
+                                        .Width(400)
+                                        .Listeners(l => l.Select.Handler = "App.gpReportOutwardBySupplier.getStore().load();")
+                                        .AllowBlank(false)
+                                        .MarginSpec("0 0 2 0")
+                                         .TypeAhead(false)
+                                         .PageSize(20)
+                                         .MinChars(0)
+                                .ForceSelection(true)
+                                    .ListConfig(Html.X().BoundList()
+                                        .LoadingText("Searching...")
+                                        .ItemTpl(Html.X().XTemplate()
+                                            .Html(@<text>
+                                            <div class="search-item">
+                                                <h3>{Name}</h3>
+                                                {Address}
+                                            </div>
+                                            </text>)
+                                            )
+                                        )
+                                        .Store(Html.X().Store()
+                                            .AutoLoad(false)
+                                            .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("LoadCustomer", "Stock_Outward"))
+                                                .ActionMethods(am => am.Read = HttpMethod.POST)
+                                                .Reader(Html.X().JsonReader().Root("data"))
+                                            )
+                                            .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("isInside", "App.chkIsInside.value", ParameterMode.Raw));
+
+                                            })
+                                            .Model(Html.X().Model()
+                                                .Fields(
+                                                   Html.X().ModelField().Name("Address"),
+                                                    Html.X().ModelField().Name("Name"),
+                                                    Html.X().ModelField().Name("ID")
+                                                )
+                                              )
+                                            ),
+                            Html.X().ComboBox()
+                                    .ID("Time")
+                                    .MarginSpec("0 5 0 5")
+                                    .LabelWidth(50)
+                                    .Width(150)
+                                    .FieldLabel("Thời gian")
+                                    .ValueField("ID")
+                                    .Listeners(l => l.Select.Handler = "optionTime();")
+                                    .Items(
+                                    new ListItem("Hôm nay", 0),
+                                    new ListItem("Tuần này", 1),
+                                    new ListItem("Tháng này", 2),
+                                    new ListItem("Quý này", 3),
+                                    new ListItem("Năm nay", 4),
+                                    new ListItem("Tháng 1", 5),
+                                    new ListItem("Tháng 2", 6),
+                                    new ListItem("Tháng 3", 7),
+                                    new ListItem("Tháng 4", 8),
+                                    new ListItem("Tháng 5", 9),
+                                    new ListItem("Tháng 6", 10),
+                                    new ListItem("Tháng 7", 11),
+                                    new ListItem("Tháng 8", 12),
+                                    new ListItem("Tháng 9", 13),
+                                    new ListItem("Tháng 10", 14),
+                                    new ListItem("Tháng 11", 15),
+                                    new ListItem("Tháng 12", 16),
+                                    new ListItem("Quý 1", 17),
+                                    new ListItem("Quý 2", 18),
+                                    new ListItem("Quý 3", 19),
+                                    new ListItem("Quý 4", 20)
+                                    ),
+                                           Html.X().DateField()
+                                                   .FieldLabel("Từ")
+                                                   .ID("dfFromDate")
+                                                   .MarginSpec("0 5 0 0")
+                                                   .LabelWidth(30)
+                                                   .Width(150)
+                                                   .Listeners(l => l.Select.Handler = "App.gpReportOutwardBySupplier.getStore().load();")
+                                                   .Format("dd/MM/yyyy"),
+                                           Html.X().DateField()
+                                                   .FieldLabel("Đến")
+                                                   .LabelWidth(30)
+                                                   .Width(150)
+                                                   .ID("dfToDate")
+                                                   .Listeners(l => l.Select.Handler = "App.gpReportOutwardBySupplier.getStore().load();")
+                                                   .Format("dd/MM/yyyy"),
+                                              Html.X().Button()
+                                                      .Text("In báo cáo")
+                                                           .Handler("this.up('grid').print();")
+                                                      .Icon(Icon.Printer),
+                                                               Html.X().ToolbarFill(),
+                                                                 Html.X().ButtonTutorial()
+
+
+                                    ))
+                .Store(Html.X().Store()
+                        .ID("stReportOutwardBySupplier")
+                         .Parameters(ps =>
+                             {
+                                 ps.Add(new StoreParameter("isInside", "App.chkIsInside.value", ParameterMode.Raw));
+                                 ps.Add(new StoreParameter("provider_Id", "App.cbProvider.getValue()", ParameterMode.Raw));
+                                 ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                 ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+
+                             }
+                        )
+                       .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataReportOutwardBySupplier", "Stock_Outward"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .AutoLoad(false)
+                        .RemoteSort(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .GroupField("CustomerName")
+                        .Sorters(Html.X().DataSorter().Property("CustomerName").Direction(Ext.Net.SortDirection.ASC))
+                        .Model(
+                            Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("ProductName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("ProductCode").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("Quantity").Type(ModelFieldType.Float),
+                                    Html.X().ModelField().Name("Unit").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("Amount").Type(ModelFieldType.Float),
+                                    Html.X().ModelField().Name("Cost").Type(ModelFieldType.Float),
+                                    Html.X().ModelField().Name("CustomerName").Type(ModelFieldType.String)
+
+                                )
+                        )
+
+                )
+    .ColumnModel(
+    Html.X().RowNumbererColumn()
+            .Text("STT")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(33)
+            .Wrap(true)
+            .Align(Alignment.Center),
+    Html.X().Column()
+            .Text("ID")
+            .DataIndex("ID")
+            .Wrap(true)
+            .Hidden(true),
+            Html.X().Column()
+            .Text("Mã vật tư hàng hóa")
+            .DataIndex("ProductCode")
+             .Align(Alignment.Center)
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(120)
+            .Wrap(true)
+            .HeaderItems(
+                    Html.X().TextField()
+                            .ID("ftProductCode")
+                            .Icon(Icon.Magnifier)
+                            .Listeners(ls =>
+                            {
+                                ls.Change.Handler = "applyFilter(this);";
+                                ls.Change.Buffer = 120;
+                            })
+                            .Plugins(Html.X().ClearButton())
+                        ),
+        Html.X().Column()
+            .Text("Tên vật tư hàng hóa")
+            .DataIndex("ProductName")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Flex(1)
+            .Wrap(true)
+            .HeaderItems(
+                    Html.X().TextField()
+                            .ID("ftProductName")
+                            .Icon(Icon.Magnifier)
+                            .Listeners(ls =>
+                            {
+                                ls.Change.Handler = "applyFilter(this);";
+                                ls.Change.Buffer = 190;
+                            })
+                            .Plugins(Html.X().ClearButton())
+                        ),
+        Html.X().Column()
+            .Text("Đơn vị tính")
+            .DataIndex("Unit")
+            .Align(Alignment.Left)
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(90)
+            .Wrap(true)
+            .HeaderItems(
+                    Html.X().TextField()
+                            .ID("ftUnit")
+                            .Icon(Icon.Magnifier)
+                            .Listeners(ls =>
+                            {
+                                ls.Change.Handler = "applyFilter(this);";
+                                ls.Change.Buffer = 90;
+                            })
+                            .Plugins(Html.X().ClearButton())
+                        ),
+        Html.X().SummaryColumn()
+            .Text("Số lượng")
+            .DataIndex("Quantity")
+            .Align(Alignment.Right)
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(80)
+            .SummaryType(SummaryType.Sum)
+            .Wrap(true)
+            .HeaderItems(
+                    Html.X().TextField()
+                            .ID("ftQuantity")
+                            .Icon(Icon.Magnifier)
+                            .Listeners(ls =>
+                            {
+                                ls.Change.Handler = "applyFilter(this);";
+                                ls.Change.Buffer = 80;
+                            })
+                            .Plugins(Html.X().ClearButton())
+
+                ),
+            Html.X().SummaryColumn()
+            .Text("Thành tiền")
+            .DataIndex("Amount")
+            .Align(Alignment.Right)
+            .Renderer("RenderVND")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(140)
+            .Wrap(true)
+            .SummaryType(SummaryType.Sum)
+            .SummaryRenderer("RenderVND")
+            .HeaderItems(
+                    Html.X().TextField()
+                            .ID("ftAmount")
+                            .Icon(Icon.Magnifier)
+                            .Listeners(ls =>
+                            {
+                                ls.Change.Handler = "applyFilter(this);";
+                                ls.Change.Buffer = 140;
+                            })
+                            .Plugins(Html.X().ClearButton())
+
+                ),
+                Html.X().SummaryColumn()
+            .Text("Giá trị")
+            .DataIndex("Cost")
+            .Align(Alignment.Right)
+            .Renderer("RenderVND")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(140)
+            .Wrap(true)
+            .SummaryType(SummaryType.Sum)
+            .SummaryRenderer("RenderVND")
+            .HeaderItems(
+                    Html.X().TextField()
+                            .ID("ftCost")
+                            .Icon(Icon.Magnifier)
+                            .Listeners(ls =>
+                            {
+                                ls.Change.Handler = "applyFilter(this);";
+                                ls.Change.Buffer = 140;
+                            })
+                            .Plugins(Html.X().ClearButton())
+
+                ),
+    Html.X().Column()
+            .Width(25)
+            .Sortable(false)
+            .MenuDisabled(true)
+            .Text("&nbsp;")
+            .Resizable(false)
+            .Renderer("return '';")
+            .HeaderItems(
+            Html.X().Container()
+            .Items(
+                Html.X().Button()
+                        .ID("ClearFilterButton")
+                        .Icon(Icon.Cancel)
+                        .ToolTip("Loại bỏ tất cả điều kiện tìm kiếm")
+                        .Handler("clearFilter();")
+                        )
+                 )
+            )
+            .SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "";
+                            })
+                            )
+
+                              .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                            .Features(
+                                Html.X().GroupingSummary()
+                                        .ID("GroupingSummaryProductGroup")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false),
+                                         Html.X().Summary().Dock(SummaryDock.Bottom)
+                                )
+                            .Plugins(Html.X().CellEditing())
+                            .BottomBar
+                            (
+                                     Html.X().CustomPagingToolbar()
+            )
+         )
+)

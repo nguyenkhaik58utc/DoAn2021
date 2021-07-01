@@ -1,0 +1,161 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCancelItem
+@{
+    var X = Html.X();
+}
+@(
+ Html.X().Window()
+    .ID("winNewCancelProfile")
+    .Title("Thêm mới biên bản hủy hồ sơ")
+    .Icon(Icon.Add)
+    .Width(600)
+    .Height(400)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .ID("frmNewCancelProfile")
+            .Items(
+                Html.X().Hidden().ID("hdfDepartmentID"),
+                Html.X().HiddenFor(m => m.DepartmentIDs).ID("hdfUserID"),
+                Html.X().TabPanel()
+                    .ID("TabPanel1")
+                    .ActiveTabIndex(0)
+                    .Border(true)
+                    .Items(
+                        Html.X().Panel()
+                            .ID("Tab1")
+                             .Icon(Icon.ApplicationViewDetail)
+                            .Layout(LayoutType.Form)
+                            .StyleSpec("border: none;")
+                            .Title("Thông tin yêu cầu")
+                            .Frame(true)
+                            .Items(
+                                    Html.X().TextFieldFor(m => m.Name)
+                        .FieldLabel("Tên Biên bản" + Html.Required())
+                        .AllowBlank(false).BlankText("Tên biên bản hủy bắt buộc nhập!"),
+                    Html.X().ComboBoxFor(m => m.MethodID)
+                        .ID("cbMethod")
+                        .FieldLabel("Phương thức hủy" + Html.Required())
+                        .TabIndex(4)
+                        .AllowBlank(false).BlankText("Phương thức hủy hồ sơ bắt buộc chọn!")
+                        .EmptyText("Chọn phương thức hủy hồ sơ...")
+                        .QueryMode(DataLoadMode.Local)
+                        .ForceSelection(true)
+                        .TriggerAction(TriggerAction.All)
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Store(
+                            Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                        )
+                                        )
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataMethod"))//ham load dl cho combobox
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                            ),
+                    Html.X().DateFieldFor(m => m.CancelAt)
+                        .FieldLabel("Thời gian hủy")
+                        .Format("dd/MM/yyyy")
+                        .Value(DateTime.Now),
+                    Html.X().TextAreaFor(m => m.Note)
+                        .ID("txtContent")
+                        .FieldLabel("Ghi chú")
+                        .TabIndex(3).Height(100)
+                        .MaxLength(1000)
+                        ),
+                    Html.X().Panel()
+                        .ID("TaskDepartmentPanel")
+                       .Height(300)
+                        .Split(true)
+                        .Border(true)
+                        .MarginSpec("1 0 1 1")
+                        .Title("Thành phần tham gia")
+                        .TitleAlign(TitleAlign.Center)
+                        .Layout(LayoutType.Border)
+                        .Collapsible(true)
+                        .Header(true)
+                        .Items(
+
+                                 X.Panel().ID("ApprovalDepartmentPanel").Region(Region.West).Layout(LayoutType.Fit).Width(200)
+                                .Title("SƠ ĐỒ TỔ CHỨC")
+                                .Split(true).Collapsible(true)
+                                    .ItemsFromAction("DepartmentView", "Department", new { Area = "Human" })
+                                    .Listeners(ls => ls.Added.Handler = "onDepartmentAdded(this,onDepartmentReady);"),
+                                        X.GridPanel()
+                                    .ID("GridEmployeeID")
+                                    .Layout(LayoutType.Fit)
+                                    .Header(false)
+                                    .Split(true)
+                                    .Region(Region.Center)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Store(
+                                        Html.X().Store()
+                                        .AutoLoad(false)
+                                        .RemotePaging(true)
+                                        .PageSize(5)
+                                              .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadUsers", "Employee", new { Area = "Human" }, null))
+                                         .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            X.Model().Fields(
+                                                X.ModelField().Name("ID"),
+                                                X.ModelField().Name("Name"),
+                                                X.ModelField().Name("Avatar"),
+                                                X.ModelField().Name("Role")
+                                            )
+                                        )
+                                    )
+                                    .ColumnModel(
+                                        X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                        X.Column().DataIndex("Avatar").Width(31).Text("").Renderer("AvatarRenderer"),
+                                        X.Column().DataIndex("Name").Flex(1).Text("Họ Tên")
+                                    )
+                                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Multi)
+                                        .Listeners(l => l.SelectionChange.Handler = "getUserSelected();"))
+
+                        )
+                       )
+        ))
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(12)
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewCancelProfile";
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.Before = @"if (!#{frmNewCancelProfile}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                }),
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    function getUserSelected() {
+        var records = App.GridEmployeeID.selModel.getSelection();
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        App.hdfUserID.setValue(strId);
+    };
+    function onDepartmentReady(records) {
+        Ext.getCmp('GridEmployeeID').getStore().reload({ params: { departmentID: records[0].get('id') } });
+    };
+</script>

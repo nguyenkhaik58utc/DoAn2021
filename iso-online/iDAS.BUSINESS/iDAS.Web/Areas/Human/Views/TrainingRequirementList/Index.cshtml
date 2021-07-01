@@ -1,0 +1,157 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanTrainingRequirementItem
+@(Html.X().Window()
+.ID("winRequirementList")
+.Title("Nhân sự tham gia đào tạo")
+.Layout(LayoutType.Fit)
+    .Width(800)
+    .Height(400)
+    .Icon(Icon.User)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+                Html.X().HiddenFor(m => m.ID).ID("hdfRequirementID"),
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrRequirementList")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().Button().Icon(Icon.UserAdd).Text("Thêm nhiều nhân sự").Handler("AddMultiplePartial"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonCreate().Handler("AddNewPartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonUpdate().ID("btnUpdatePartial").Handler("UpdatePartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete().ID("btnDeletePartial").Handler("onDelete(App.GrRequirementList.selModel.getSelection()[0].get('ID'));"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView().ID("btnDetailPartial").Handler("ViewDetailPartial();"),
+                                Html.X().ToolbarFill(),
+                                Html.X().ButtonTutorial()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreRequirementList")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRequirementList")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("id", "App.hdfRequirementID.value", ParameterMode.Raw));
+                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Employee.Name"),
+                                                Html.X().ModelField().Name("Content"),
+                                                Html.X().ModelField().Name("StartTime"),
+                                                Html.X().ModelField().Name("EndTime")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("Employee.Name").Text("Nhân sự tham gia").Width(200),
+                                    Html.X().Column().DataIndex("Content").Text("Nội dung").Wrap(true).Width(400),
+                                    Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                                         .Columns(
+                                            Html.X().DateColumnExtend().DataIndex("StartTime").Text("bắt đầu").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                            Html.X().DateColumnExtend().DataIndex("EndTime").Text("kết thúc").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center)
+                                            )
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+            )
+.Buttons(
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var deleteUrl = '@(Url.Action("DeleteRequirement"))';
+    function CheckStatus() {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetailPartial, App.btnDeletePartial, App.btnUpdatePartial);
+        }
+        else {
+            SetDisabled(App.btnDetailPartial, App.btnDeletePartial, App.btnUpdatePartial);
+        };
+    };
+    var ViewDetailPartial = function () {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "TrainingRequirementList", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var UpdatePartial = function () {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "TrainingRequirementList", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                ActionForm: '@(iDAS.Utilities.Form.Edit)'
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AddNewPartial = function () {
+
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("AddForm", "TrainingRequirementList", new { Area = "Human" }, null))',
+            params: {
+                id: App.hdfRequirementID.value
+            }
+        });
+    };
+    var AddMultiplePartial = function () {
+
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("EmployeeWindow", "Employee", new { Area = "Human" }, null))',
+            params: {
+                multi: true
+            }
+        });
+    };
+    var selectEmployee = function (records) {
+        var url = '@(Url.Action("InsertMultiple"))';
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        var id = App.hdfRequirementID.value;
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: {
+                employeeIds: strId,
+                id: id
+            }
+        });
+    };
+</script>

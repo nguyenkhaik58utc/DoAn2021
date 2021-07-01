@@ -1,0 +1,114 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@{
+    var X = Html.X();
+}
+@model iDAS.Items.UserItem
+@(Html.X().HiddenFor(m => m.ID).ID("UserId").Hidden(true))
+@(Html.X().Hidden().ID("GroupId").Hidden(true))
+@(Html.X().Window()
+        .ID("winSetting")
+        .Title("Thiết lập chức danh")
+        .Icon(Icon.ApplicationViewDetail)
+        .Height(370)
+        .Width(800)
+         .BodyPadding(0)
+         .Border(false)
+         .Margin(0)
+         .Constrain(true)
+         .Layout(LayoutType.Border)
+         .Modal(true)
+         .Resizable(false)
+        .Items(
+                    Html.X().TreePanel()
+                    .ID("TreePanel1")
+                    .Title("Danh sách tổ chức")
+                    .Header(false)
+                    .Width(100)
+                    .Region(Region.Center)
+                    .Icon(Icon.TextListBullets)
+                    .ForceFit(true)
+                    .RootVisible(false)
+                    .SingleExpand(false)
+                    .SelectionModel(sm => sm.Add(Html.X().RowSelectionModel().SelectedIndex(0)))
+                    .Store(
+                        Html.X().TreeStore().AutoLoad(true)
+                            .ID("StoreGroups")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadGroups", "Group")).Reader(Html.X().JsonReader().Root("data")))
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("id"),
+                                    Html.X().ModelField().Name("text"),
+                                    Html.X().ModelField().Name("Description"),
+                                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean)
+                                )
+                            )
+                    )
+                            .ColumnModel(Html.X().TreeColumn().Text("Sơ đồ tổ chức").StyleSpec("font-weight: bold;text-align: center").DataIndex("text").Flex(1))
+                    .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "if (selected.length<=0) return;  App.GridPanel1.setTitle('Danh sách chức danh của '+ selected[0].data.text); App.GroupId.value=selected[0].data.id; App.GridPanel1.getStore().load({params: {groupId: App.GroupId.value,userId: App.UserId.value}});";
+                    })
+
+
+                    ,
+                    Html.X().GridPanel()
+                    .ID("GridPanel1")
+                    .Title("Danh sách chức danh")
+                    .Header(false)
+                    .Collapsible(true)
+                    .Split(true)
+                    .Width(550)
+                    .Region(Region.East)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .Store(
+                        Html.X().Store()
+                            .AutoLoad(true)
+                            .ID("StoreOrganizations")
+                            .RemotePaging(true)
+                            .PageSize(10)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadOrganizations", "Organization")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("groupId", "App.GroupId.value", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("userId", "App.UserId.value", ParameterMode.Raw));
+                            })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                Html.X().Column().DataIndex("Name").Text("Tên chức danh").Width(350).StyleSpec("font-weight: bold;text-align: center"),
+                                Html.X().CheckColumn().DataIndex("IsSelected").Text("Chọn").Editable(true).Width(90).StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center)
+                    )
+                    .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditOrganization"))
+
+
+        ).Buttons(Html.X().Button()
+                                        .Text("Hủy")
+                                        .Icon(Icon.Cancel)
+                                        .TabIndex(15)
+                                    .OnClientClick("this.up('window').close();"))
+)
+<script>
+
+    var updateOrganizationUrl = '@(Url.Action("UpdateOrganization", "Organization"))';
+    var onEditOrganization = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: updateOrganizationUrl,
+                params: {
+                    data: e.record.data,
+                    userId: App.UserId.value
+                }
+            });
+        }
+    };
+</script>

@@ -1,0 +1,183 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable 
+  @(Html.X().Window()
+            .ID("frmProducts")
+            .Title("Chọn vật tư hàng hóa tiến hành chuyển kho")
+            .Width(850)
+            .Height(500)
+            .Constrain(true)
+            .Modal(true)
+            .Closable(true)
+            .Icon(Icon.Add)
+            .Resizable(true)
+            .Layout(LayoutType.Border)
+            .Items(
+            Html.X().Panel()
+                    .Region(Region.West)
+                    .Title("KHO LƯU TRỮ")
+                    .Header(true)
+                     .StyleSpec("font-weight: bold; text-align: center;")
+                    .TitleAlign(TitleAlign.Center)
+                    .Width(250)
+                    .Collapsible(false)
+                    .MinWidth(250)
+                    .MaxWidth(300)
+                    .MarginSpec("5 0 5 5")
+                    .Layout(LayoutType.Fit).Items(
+                    Html.X().GridPanel()
+                            .ID("gpStock")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .ResizableConfig(new Resizer { Handles = ResizeHandle.East })
+                            .Store(Html.X().Store()
+                            .ID("stStock")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .DataSource(Model)
+                            .Model(
+                                Html.X().Model()
+                                .Fields(
+                                new ModelField("ID", ModelFieldType.Int),
+                                new ModelField("Name", ModelFieldType.String),
+                                new ModelField("Code", ModelFieldType.String)
+                                )
+                            )
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataStock"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        )
+                        .ColumnModel(
+                            Html.X().Column()
+                                    .Text("Mã")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                           Html.X().Column()
+                                    .Text("Mã kho")
+                                    .DataIndex("Code")
+                                    .Align(Alignment.Center)
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Width(60),
+                            Html.X().Column()
+                                    .Text("Tên kho")
+                                    .DataIndex("Name")
+                                     .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Flex(1)
+                        )
+                        .SelectionModel(
+                        Html.X().CheckboxSelectionModel().Mode(SelectionMode.Single).Listeners(ls =>
+                                      ls.Select.Handler = "App.stProducts.reload();"
+                        )
+                )
+                
+            ),
+    Html.X().Panel()
+            .Region(Region.Center)
+            .Title("Vật tư hàng hóa thuộc kho")
+            .Header(true)
+            .Header(false)
+            .StyleSpec("border:none;")
+            .Layout(LayoutType.Fit)
+            .Icon(Icon.BookOpenMark)
+            .Width(250)
+            .MarginSpec("5 5 5 5")   
+            .Items(
+            Html.X().GridPanel()
+                    .ID("gpProducts")
+                    .Title("Vật tư hàng hóa thuộc kho")
+                    .ContextMenuID("cmMenuEvaluationCriteria")
+                    .ColumnLines(true)
+                    .Header(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .ResizableConfig(new Resizer { Handles = ResizeHandle.East })
+                    .Store(Html.X().Store()
+                    .ID("stProducts")
+                    .RemotePaging(true)
+                    .PageSize(10000)
+                    .DataSource(Model)
+                    .GroupField("Group_Name")
+                    .Sorters(Html.X().DataSorter().Property("Group_Name").Direction(Ext.Net.SortDirection.ASC))  
+                    .Model(
+                    Html.X().Model()
+                            .IDProperty("ID")
+                            .Fields(
+                        Html.X().ModelField()
+                                .Name("ID"),
+                        Html.X().ModelField()
+                                .Name("Code"),
+                        Html.X().ModelField()
+                                .Name("Name"),
+                        Html.X().ModelField()
+                                .Name("Group_Name"),
+                        Html.X().ModelField()
+                                .Name("Description"),
+                        Html.X().ModelField()
+                                .Name("Unit_Name") 
+                            )
+                    )
+                           .Proxy(Html.X().AjaxProxy()
+                                  .Url(Url.Action("GetProductsByStock"))
+                      .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                          {
+                              ps.Add(new StoreParameter("stockId", "App.gpStock.selModel.getSelection().length>0?App.gpStock.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                          })
+
+                )
+                .Plugins( Html.X().CellEditing().ClicksToEdit(1))
+                .ColumnModel(
+        Html.X().RowNumbererColumn()
+                .Text("STT")
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(33),
+                Html.X().Column()
+                .Width(100)
+                .Text("Mã")
+                .Wrap(true)
+                .Align(Alignment.Center)
+                .DataIndex("Code")
+                .StyleSpec("font-weight: bold; text-align: center;"),
+        Html.X().Column()
+                .Text("Tên sản phẩm")
+                .DataIndex("Name")
+                .Flex(1)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;"),
+        Html.X().Column()
+                .Text("Đơn vị tính")
+                .DataIndex("Unit_Name")
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(80),
+        Html.X().Column()
+                .Text("ID")
+                .DataIndex("ID")
+                .Hidden(true)
+                )        
+        .SelectionModel(
+        Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi)
+        )
+        .View(
+        Html.X().GridView().MarkDirty(false)
+        )
+        .Features(
+        Html.X().GroupingSummary()
+        .ID("GroupingSummary1")
+        .GroupHeaderTplString("{name}")
+        .HideGroupedHeader(true)
+        .EnableGroupingMenu(false)
+        )
+      )
+   )   
+.Buttons(
+Html.X().ButtonChoice()
+        .ID("btnAccept")
+        .Handler("insertProductsToStemp();"),
+Html.X().ButtonExit()
+    )     
+)

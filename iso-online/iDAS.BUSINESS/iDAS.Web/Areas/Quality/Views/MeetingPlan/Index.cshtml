@@ -1,0 +1,197 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(X.Hidden().ID("hdfMeetingPlan"))
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(2).Frame(false).StyleSpec("border: none;")
+.Items(
+        Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+        Html.X().DepartmentPanel().Handler("onDepartmentReady"),
+        Html.X().GridPanel()
+                .Region(Region.Center)
+                .Layout(LayoutType.Fit)
+                .Header(false)
+                .ID("GrMeetingPlan")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().ButtonCreate().Handler("AddNew();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDelete").Handler("DeleteItem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Vấn đề cuộc họp").Icon(Icon.Information).ID("btnProblem").Disabled(true).Handler("SettingProblem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Thành phần tham dự").Icon(Icon.Group).ID("btnObject").Disabled(true).Handler("SettingObject();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonSend().ID("btnSend").Handler("SendPlanApprove();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonApproval().ID("btnApprovePlan").Handler("SendPlanApprove();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                Html.X().Store()
+                    .ID("StoreMeetingPlan")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMeetingPlan", "MeetingPlan", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("departmentID", "App.hdfMeetingPlan.value", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                            })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("StartTime"),
+                            Html.X().ModelField().Name("EndTime"),
+                            Html.X().ModelField().Name("Cost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("IsMeetingAudit"),
+                            Html.X().ModelField().Name("AttachmentFileIDs")
+                        )
+                     )
+            )
+            .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.Column().DataIndex("Name").Text("Tên cuộc họp").Width(300).Flex(1),
+                        X.ComponentColumn().Text("Thời gian thực hiện").Columns(
+                        X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                        X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(120).Align(Alignment.Center)),
+                        X.ComponentColumn().Text("Chi phí").Columns(
+                        X.NumberColumn().DataIndex("Cost").Text("Giá trị").Width(100).Align(Alignment.Right),
+                        X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                        X.Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(80),
+                        Html.X().ColumnFileExtend("AttachmentFileIDs")
+                )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+            .BottomBar(X.CustomPagingToolbar())
+            .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+    )
+)
+
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    var DeleteItem = function () {
+        var records = App.GrMeetingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID')
+            onDelete(id, CheckStatus);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function onDepartmentReady(records) {
+        App.hdfMeetingPlan.setValue(records[0].get('id'));
+        App.GrMeetingPlan.getStore().reload();
+    };
+    function CheckStatus() {
+        var records = App.GrMeetingPlan.selModel.getSelection();
+        if (records.length == 1) {
+            var IsEdit = records[0].get('IsEdit');
+            if (IsEdit == true) {
+                SetEnabled(App.btnDelete, App.btnProblem, App.btnSend, App.btnObject, App.btnUpdate);
+                App.btnApprovePlan.setDisabled(true);
+            }
+            else {
+                SetDisabled(App.btnDelete, App.btnProblem, App.btnSend, App.btnObject, App.btnUpdate);
+                App.btnApprovePlan.setDisabled(false);
+            }
+            App.btnDetail.setDisabled(false);
+        }
+        else {
+            SetDisabled(App.btnDetail, App.btnDelete, App.btnProblem, App.btnSend, App.btnApprovePlan, App.btnObject, App.btnUpdate);
+        };
+    };
+
+    var AddNew = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "MeetingPlan", new { Area = "Quality" }, null))'
+        });
+    };
+    var UpdateItem = function () {
+        var records = App.GrMeetingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "MeetingPlan", new { Area = "Quality" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+    var ViewDetail = function () {
+        var records = App.GrMeetingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "MeetingPlan", new { Area = "Quality" }, null))',
+                params: { ID: records[0].get('ID') }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SettingObject = function () {
+        var records = App.GrMeetingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ObjectForm", "MeetingPlan", new { Area = "Quality" }, null))',
+                params: { ID: records[0].get('ID') }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SettingProblem = function () {
+        var records = App.GrMeetingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ProblemForm", "MeetingPlan", new { Area = "Quality" }, null))',
+                params: { ID: records[0].get('ID') }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SendPlanApprove = function () {
+        var records = App.GrMeetingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ApproveForm", "MeetingPlan", new { Area = "Quality" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+</script>

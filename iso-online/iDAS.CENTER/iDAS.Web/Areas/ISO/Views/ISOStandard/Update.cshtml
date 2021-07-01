@@ -1,0 +1,77 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@model iDAS.Items.ISOStandardItem
+@{    
+    SelectedRowCollection select = ViewData["Selected"] != null?(SelectedRowCollection)ViewData["Selected"]: null;
+}
+@(
+ Html.X().Window()
+    .ID("winEditIso")
+    .Title("Sửa thông tin tiêu chuẩn ISO")
+    .Icon(Icon.Pencil)
+        .Width(600)
+        .Height(250)
+        .Constrain(true)
+        .Modal(true)
+        .Border(true)
+        .Resizable(false)
+        .Layout(LayoutType.Fit)
+        .Items(
+                Html.X().FormPanel()
+                        .ID("frmEditIso")
+                        .Layout(LayoutType.Column).Frame(true).StyleSpec("border: none;")
+                        .Items(
+                                Html.X().HiddenFor(m => m.ID),
+                                Html.X().Container().Layout(LayoutType.Column).ColumnWidth(0.75).MarginSpec("5 0 0 0")
+                                        .Items(
+                                                Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                                                        .FieldLabel("Tiêu chuẩn*").ColumnWidth(1).MarginSpec("2 0 2 0")
+                                                        .AllowBlank(false).BlankText("Tên tiêu chuẩn bắt buộc nhập!"),
+                                                Html.X().TextFieldFor(m => m.Code).ID("txtCode")
+                                                        .FieldLabel("Mã tiêu chuẩn*")
+                                                        .ColumnWidth(1).MarginSpec("2 0 2 0")
+                                                        .AllowBlank(false).BlankText("Mã tiêu chuẩn bắt buộc nhập!"),
+                                                Html.X().TextFieldFor(m => m.UrlAvatar).ColumnWidth(1).MarginSpec("2 0 2 0")
+                                                        .FieldLabel("Đường dẫn ảnh").EmptyText("/Content/images/underfind.jpg")
+                                                        .Listeners(ls => ls.Change.Handler = "App.ImageAvatar.setImageUrl(this.value);") ,
+                                                Html.X().CheckboxFor(m => m.IsAnnex).ID("ckIsAnnex")
+                                                        .FieldLabel("Kèm phụ lục").ColumnWidth(0.5).BoxLabel("xác nhận"),
+                                                Html.X().CheckboxFor(m => m.IsActive).ID("ckIsActive")
+                                                        .FieldLabel("Kích hoạt").ColumnWidth(0.5).BoxLabel("xác nhận")
+                                        ),
+                                Html.X().Container().Layout(LayoutType.Column).ColumnWidth(0.25)
+                                        .Items(
+                                                Html.X().FieldSet().Title("Ảnh đại diện")
+                                                        .Layout(LayoutType.Form)
+                                                        .Margin(0).Width(120).StyleSpec("float: right;")
+                                                        .PaddingSpec("0 5 5 5")
+                                                        .Items(
+                                                                Html.X().ImageButton().ID("ImageAvatar").Height(150).Text("Ảnh đại diện").ImageUrl(Model.UrlAvatar)
+                                                                    .ToolTip("Ảnh đại diện").StyleSpec("border: 0.5px solid #b5b8c8; width:100%;")
+                                                                )
+                                            )
+                                )
+                )
+    .Buttons(
+        Html.X().Button()
+            .ID("btnSaves")
+            .Icon(Icon.Disk)
+            .Text("Lưu lại")
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmEditIso";
+                    de.Click.Url = Url.Action("UpdateIso");
+                    de.Click.Before = @"if (!#{frmEditIso}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                    de.Click.Success = "App.winEditIso.close();";
+                }),
+        Html.X().Button()
+            .ID("btnCancel")
+            .Icon(Icon.Cancel)
+            .Text("Hủy")
+            .Handler("App.frmEditIso.reset(); App.winEditIso.close();")
+    )
+)

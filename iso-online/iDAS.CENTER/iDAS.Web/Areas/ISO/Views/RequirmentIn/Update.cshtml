@@ -1,0 +1,111 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.DepartmentRequirmentItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == "Add")
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới yêu cầu";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật yêu cầu";
+    }
+}
+@(Html.X().CustomWindow().Width(600)
+.ID("winRequirmentForm")
+        .Title(title)
+        .Icon(IconView)
+        .Border(false)
+        .Items(
+                X.FormPanel().ID("frmUpdate")
+                        .Layout(LayoutType.Fit)
+                        .StyleSpec("border: none;")
+                        .Border(false).BodyPadding(0)
+                        .Items(
+                                X.TabPanel()
+                                    .Items(
+                                       X.CustomFormPanel().Title("Thông tin yêu cầu")
+                                        .FieldDefaults(fs => fs.LabelWidth = 120)
+                                        .Items(
+                                                X.HiddenFor(m => m.ID),
+                                                Html.X().ComboBoxFor(m => m.CenterDepartmentRequirmentCategoryID).FieldLabel("Nhóm yêu cầu" + Html.Required())
+                                                            .BlankText("Nhóm yêu cầu không được để trống!")
+                                                            .ID("ctR")
+                                                            .QueryMode(DataLoadMode.Local).Editable(true)
+                                                            .RightButtons(
+                                                                            Html.X().Button().Handler("ShowRequirmentCategory")
+                                                                                    .Icon(Icon.Pencil).Text("Sửa")
+                                                                          )
+                                                            .EmptyText("Nhập nhóm yêu cầu ....")
+                                                            .ForceSelection(true)
+                                                            .DisplayField("Name")
+                                                            .ValueField("ID")
+                                                            .Store(Html.X().Store().ID("storeRequirementCategory")
+                                                                        .AutoLoad(true)
+                                                                        .Model(Html.X().Model()
+                                                                                .IDProperty("ID")
+                                                                                .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                                        new ModelField("Name", ModelFieldType.String)))
+                                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCategory", "RequirmentCategory"))
+                                                                                        .Reader(Html.X().JsonReader().Root("data")))
+                                                                                        ).Height(22),
+                                                    X.TextFieldFor(m => m.Name).FieldLabel("Tên yêu cầu" + Html.Required()).ID("cNR")
+                                                        .EmptyText("Tên yêu cầu...").AllowBlank(false)
+                                                        .BlankText("Tên yêu cầu không được bỏ trống!")
+                                                        .AllowOnlyWhitespace(false),
+                                                    Html.X().ComboBoxFor(m => m.ISOStandardID).FieldLabel("Tên ISO" + Html.Required()).ID("cbISO")
+                                                                .QueryMode(DataLoadMode.Local).AllowBlank(false).BlankText("ISO không được để trống")
+                                                                .EmptyText("Tiêu chuẩn ISO ....")
+                                                                .ForceSelection(true)
+                                                                .DisplayField("Name")
+                                                                .ValueField("ID")
+                                                                .Store(Html.X().Store()
+                                                                            .AutoLoad(true)
+                                                                            .Model(Html.X().Model()
+                                                                                    .IDProperty("ID")
+                                                                                    .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                                            new ModelField("Name", ModelFieldType.String)))
+                                                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("FillLstIso", "ISOStandard"))
+                                                                                            .Reader(Html.X().JsonReader().Root("data")))
+                                                                                            ),
+                                                X.CheckboxFor(m => m.IsUse).FieldLabel("Tình trạng").BoxLabel("Sử dụng"),
+                                                X.TextAreaFor(m => m.Scope).FieldLabel("Phạm vi áp dụng"),
+                                                X.TextAreaFor(m => m.Object).FieldLabel("Đối tượng áp dụng"),
+                                                X.TextAreaFor(m => m.Description).FieldLabel("Mô tả")
+                                                            .EmptyText("Nhập mô tả...").MinHeight(100).Flex(1),
+                                                X.FileUploadFieldFor(m => m.AttachmentFiles)
+                                             ),
+                                        X.Panel().Title("Nội dung").Layout(LayoutType.Fit).BodyPadding(2)
+                                          .Items(
+                                              X.TextAreaFor(m => m.Content).HideLabel(true)
+                                                            .EmptyText("Nhập nội dung...").MinHeight(300)
+                                          )
+                                    )
+                            )
+                )
+.Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.FormID = "frmUpdate";
+                                }),
+            Html.X().ButtonExit()
+      )
+)
+<script>
+    var ShowRequirmentCategory = function () {
+        var url = '@(Url.Action("Index", "RequirmentCategory"))';
+        onDirectMethod(url, null);
+    };
+</script>

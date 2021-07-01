@@ -1,0 +1,100 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using System.Web.Mvc;
+@{
+    string fromDate = ViewData["fromDate"].ToString();
+    string toDate = ViewData["toDate"].ToString();
+    string type = ViewData["type"].ToString();
+    string departmentID = ViewData["departmentID"].ToString();
+    string criticalLevelID = ViewData["criticalLevelID"].ToString();
+}
+
+@(Html.X().Window()
+    .ID("winProblemStaticDetail")
+    .Title("Danh sách sự cố")
+    .Icon(Icon.Wrench)
+    .Modal(true)
+    .Layout(LayoutType.Border)
+    .Padding(1)
+    .Constrain(true)
+    .Height(500)
+    .Width(900)
+    .Items(
+         Html.X().GridPanel()
+            .ID("grdProblemStatistic")
+            .Border(true)
+            .Header(false)
+            .MarginSpec("0 1 0 0")
+            .TitleAlign(TitleAlign.Center)
+            .Region(Region.Center)
+
+            .Store(Html.X().Store()
+                    .ID("stProblemStatistic")
+                    .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetStatisticDetailByType", "ProblemStatisticalDepartment", new { area = "Problem"}))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(a =>
+                    {
+                        a.Add(new StoreParameter("fromDate", fromDate, ParameterMode.Value));
+                        a.Add(new StoreParameter("toDate", toDate, ParameterMode.Value));
+                        a.Add(new StoreParameter("type", type, ParameterMode.Value));
+                        a.Add(new StoreParameter("departmentID", departmentID, ParameterMode.Value));
+                        a.Add(new StoreParameter("criticalLevelID", criticalLevelID, ParameterMode.Value));
+                    })
+                    .RemoteSort(true)
+                    .AutoLoad(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Model(
+                        Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("OccuredDate").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("ResolvedDate").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("ReceiverName").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("ProblemStatusName").Type(ModelFieldType.String)
+                                )
+                            )
+                        )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Center).Width(33),
+                    Html.X().Column().Text("ID").DataIndex("ID").Hidden(true),
+                    Html.X().Column().Text("Mã sự cố").StyleSpec("font-weight: bold;text-align: center").DataIndex("Code").Width(90).Wrap(true),
+                    Html.X().Column().Text("Tên sự cố").Flex(1).StyleSpec("font-weight: bold;text-align: center").DataIndex("Name").Wrap(true),
+                    Html.X().Column().Text("Người tiếp nhận").DataIndex("ReceiverName").Width(130).Wrap(true),
+                    Html.X().DateColumn().Text("Ngày tiếp nhận").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Left).Wrap(true).DataIndex("OccuredDate").Format("dd/MM/yyyy HH:mm A ").Width(140),
+                    Html.X().DateColumn().Text("Ngày xử lý xong").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Left).Wrap(true).DataIndex("ResolvedDate").Format("dd/MM/yyyy HH:mm A ").Width(140),
+                    Html.X().Column().Text("Trạng thái").DataIndex("ProblemStatusName").Width(100).Align(Alignment.Center).Wrap(true)
+                    )
+                .SelectionModel(
+                    Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                    )
+                .View(
+                    Html.X().GridView().MarkDirty(false)
+                    )
+                .Plugins(Html.X().CellEditing())
+                .BottomBar(
+                    Html.X().CustomPagingToolbar()
+                    )
+     )
+)
+<script type="text/javascript">
+    var onSpecialKey = function (field, e) {
+        if (e.getKey() === e.ENTER) {
+            App.stProblemStatistic.reload();
+            e.stopEvent();
+        }
+    };
+
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+
+</script>

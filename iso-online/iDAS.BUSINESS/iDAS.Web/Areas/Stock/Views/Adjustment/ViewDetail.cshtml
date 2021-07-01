@@ -1,0 +1,178 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable 
+@{
+    var idAdjustment = ViewData["idAdjustment"] != null ? ViewData["idAdjustment"] : 0;
+    var adjustmentCode = ViewData["adjustmentCode"] != null ? ViewData["adjustmentCode"].ToString() : "";
+}
+  @(Html.X().Window()
+            .ID("wdDetail")
+            .Title("Xem chi tiết phiếu kiểm kê - Mã phiếu ["+adjustmentCode+"]")
+            .Width(950)
+            .Height(450)
+            .Constrain(true)
+            .Modal(true)
+            .Maximizable(true)
+            .Closable(true)
+            .Icon(Icon.Zoom)
+            .Resizable(true)
+            .Layout(LayoutType.Fit)
+            .Items( 
+            Html.X().Hidden().ID("hdfidAdjustment"),
+            Html.X().GridPanel()
+                    .ID("gpDetail")
+                    .Title("Chi tiết phiếu kiểm kê")          
+                    .ColumnLines(true)
+                    .Header(true)
+                    .Border(false)
+                    .Header(false)
+                    .ResizableConfig(new Resizer { Handles = ResizeHandle.East })                    
+                    .Layout(LayoutType.HBox)
+                    .Store(Html.X().Store()
+                                .ID("stDetail") 
+                                .Parameters(ps =>
+                                 {
+                                     ps.Add(new StoreParameter("idAdjustment", idAdjustment.ToString(), ParameterMode.Raw));                                                   
+                                 }
+                                 )                  
+                               .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataForDetail"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                ) 
+                        .RemotePaging(true)
+                        .PageSize(20) 
+                        .Model(
+                            Html.X().Model()
+                                .Fields(
+                               Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("StockAdjustmentID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("StockProductID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Product_Code").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Unit").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Product_Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StockID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Unit_ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("UnitConvert").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Width").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Height").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Orgin").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("CurrentQty").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("NewQty").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("QtyDiff").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("UnitPrice").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Amount").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("QtyConvert").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("StoreID").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("Batch").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Group_Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Sorted").Type(ModelFieldType.Auto),                            
+                                Html.X().ModelField().Name("Description").Type(ModelFieldType.String)                                            
+                            )
+                        )   
+                )
+            .ColumnModel(
+Html.X().RowNumbererColumn()
+        .Text("STT")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(33)
+        .Wrap(true)
+        .Align(Alignment.Center),
+Html.X().Column()
+        .Text("ID")
+        .DataIndex("ID")
+        .Wrap(true)
+        .Hidden(true),     
+        Html.X().Column()
+        .Text("Mã vật tư hàng hóa")
+        .DataIndex("Product_Code")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(120)
+        .Wrap(true),       
+    Html.X().Column()
+        .Text("Tên vật tư hàng hóa")
+        .DataIndex("Product_Name")
+        .StyleSpec("font-weight: bold; text-align: center;")       
+        .Width(150)
+        .Wrap(true),       
+    Html.X().Column()
+        .Text("Đơn vị tính")
+        .DataIndex("Unit")
+        .Align(Alignment.Left)
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(90)
+        .Wrap(true),    
+    Html.X().SummaryColumn()
+        .Text("Số lượng tồn")
+        .DataIndex("CurrentQty")
+        .Align(Alignment.Right)
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(90)
+        .SummaryType(SummaryType.Sum)
+        .Wrap(true),       
+    Html.X().SummaryColumn()
+        .Text("Số lượng kiểm kê")
+        .DataIndex("NewQty")
+        .Align(Alignment.Right)
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(120)
+        .SummaryType(SummaryType.Sum)
+        .Wrap(true), 
+        Html.X().SummaryColumn()
+        .Text("Chênh lệch")
+        .DataIndex("QtyDiff")
+        .Align(Alignment.Right)
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(80)
+        .SummaryType(SummaryType.Sum)
+        .Renderer("totalQtyiff")
+        .Wrap(true),       
+    Html.X().Column()
+        .Text("Đơn giá")
+        .DataIndex("UnitPrice")
+        .Align(Alignment.Right)
+        .Renderer("RenderVND")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(120)
+        .Wrap(true),       
+     Html.X().SummaryColumn()
+        .Text("Thành tiền")
+        .DataIndex("Amount")
+        .Renderer("RenderVND")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Align(Alignment.Right)
+         .Flex(1)
+        .Wrap(true) 
+        .Groupable(false)
+                    .CustomSummaryType("totalCost")
+                    .Renderer("RenderAmountVND")
+                    .SummaryRenderer("RenderVND")      
+                    )
+        
+        .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                            l.Select.Handler = "";
+                        })
+                        )
+
+                          .View(
+                        Html.X().GridView().MarkDirty(false)
+                        )
+                        .Features(
+                            Html.X().GroupingSummary()
+                                    .ID("GroupingSummaryDetail")
+                                    .GroupHeaderTplString("{name}")
+                                    .HideGroupedHeader(true)
+                                    .EnableGroupingMenu(false),
+                                     Html.X().Summary().Dock(SummaryDock.Bottom)  
+                            )
+                .BottomBar(Html.X().CustomPagingToolbar())
+        )
+         
+.Buttons(
+Html.X().ButtonExit()
+    )     
+)

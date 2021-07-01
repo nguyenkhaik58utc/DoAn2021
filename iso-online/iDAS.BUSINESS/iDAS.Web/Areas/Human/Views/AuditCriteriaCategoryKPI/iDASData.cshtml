@@ -1,0 +1,153 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@(Html.X().Window().Layout(LayoutType.Border).Border(false).Maximized(true).Icon(Icon.PackageDown).Title("Bộ tiêu chí đánh giá KPI mẫu của hệ thống iDAS")
+    .Items(
+            Html.X().Hidden().ID("hdfCenterCriteriaCategoryID"),
+            Html.X().Toolbar().Region(Region.North).MarginSpec("0 0 2 0")
+                    .Items(
+                            Html.X().ComboBox().FieldLabel("<b >Lựa chọn lĩnh vực </b>" + Html.Required())
+                                    .LabelWidth(165).ID("cbxNaceCode")
+                                    .InputWidth(300)
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+                                    .Editable(false)
+                                    .Store(
+                                                Html.X().Store().AutoLoad(true)
+                                                        .Model(
+                                                            Html.X().Model().IDProperty("ID")
+                                                            .Fields(
+                                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                            )
+                                                        )
+                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadISONaceCodeActive")).Reader(Html.X().JsonReader().Root("data")))
+                                            )
+                                    .Listeners(ls => ls.Change.Handler = "App.stCenterCriteriaCategory.reload();")
+                        ),
+            Html.X().GridPanel()
+                    .Header(false)
+                    .Region(Region.West)
+                    .ID("grCenterCriteriaCategory")
+                    .Width(500)
+                    .TitleAlign(TitleAlign.Center)
+                    .Collapsible(true)
+                    .Split(true)
+                    .Border(true)
+                    .RowLines(true)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Store(
+                            Html.X().Store().ID("stCenterCriteriaCategory")
+                                .AutoLoad(false)
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetIdasKPICriteriaCategory")).Reader(Html.X().JsonReader().Root("data")))
+                                .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("naceCodeID", "getNaceCodeValue()", ParameterMode.Raw));
+                                                })
+                                .Model(
+                                        Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean)
+                                                )
+                                    )
+                        )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().Text("Bộ tiêu chí đánh giá KPIs").Align(Alignment.Left).DataIndex("Name").Flex(1)
+                                )
+                    .BottomBar(Html.X().CustomPagingToolbar())
+                    .Listeners(ls => { ls.SelectionChange.Handler = "onCriteriaCategorySelect();"; }),
+            Html.X().GridPanel()
+                        .Region(Region.Center)
+                        .ID("grCenterCriteria")
+                        .Border(true)
+                        .RowLines(true)
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Store(Html.X().Store().ID("stCenterCriteria")
+                                    .AutoLoad(false)
+                                    .RemotePaging(true)
+                                    .PageSize(20)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetCenterKPICreiteria")).Reader(Html.X().JsonReader().Root("data")))
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("cateId", "App.hdfCenterCriteriaCategoryID.value", ParameterMode.Raw));
+                                        })
+                                    .Model(Html.X().Model().IDProperty("ID")
+                                                .Fields(
+                                                        Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("Name"),
+                                                        Html.X().ModelField().Name("Factory")
+                                                 )
+                                         )
+                            )
+            .ColumnModel(
+                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            Html.X().Column().Text("Tên tiêu chí đánh giá")
+                                        .Align(Alignment.Left)
+                                        .DataIndex("Name")
+                                        .Flex(1),
+                            Html.X().Column().Text("Hệ số")
+                                        .Align(Alignment.Right)
+                                        .DataIndex("Factory")
+                                        .Width(80)
+                    )
+                .BottomBar(Html.X().CustomPagingToolbar())
+         )
+              .Buttons(
+                        Html.X().Button().Icon(Icon.PackageDown).Text("Sử dụng").ID("btnUseDataIdas").Disabled(true)
+                                .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"";
+                                    de.Click.EventMask.ShowMask = true;
+                                    de.Click.ExtraParams.Add(new Parameter("criteriaSelectId", "IDASDataSelect()", ParameterMode.Raw));
+                                    de.Click.ExtraParams.Add(new Parameter("parentId", "App.hdfLsCateId.value", ParameterMode.Raw));
+                                    de.Click.Action = "IDASData";
+                                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                                    de.Click.Success = " this.up('window').close();App.trCategoryCriteria.store.reload();";
+                                }),
+                        Html.X().ButtonExit()
+                     )
+)
+<script type="text/javascript">
+    var onCriteriaCategorySelect = function () {
+        var records = App.grCenterCriteriaCategory.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnUseDataIdas.setDisabled(false);
+            App.hdfCenterCriteriaCategoryID.setValue(records[0].get('ID'));
+            App.grCenterCriteria.getStore().reload();
+        }
+        else {
+            App.btnUseDataIdas.setDisabled(true);
+        }
+    };
+    var getNaceCodeValue = function () {
+        if (App.cbxNaceCode) {
+            if (App.cbxNaceCode.value) {
+                return App.cbxNaceCode.value;
+            }
+            return 0;
+        }
+        return 0;
+    };
+    var IDASDataSelect = function () {
+        var selecteds = App.grCenterCriteriaCategory.selModel.getSelection();
+        if (selecteds.length > 0) {
+            var results = new Array();
+            for (var i = 0; i < selecteds.length; i++) {
+                results.push(selecteds[i].data.ID);
+            };
+            return results.toString();
+        }
+        else {
+            return "";
+        }
+    };
+</script>

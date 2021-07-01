@@ -1,0 +1,175 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+            .ID("frmProducts")
+            .Title("Chọn nhà cung cấp yêu cầu gửi báo giá")
+            .Width(900)
+            .Height(500)
+            .Constrain(true)
+            .Modal(true)
+            .Closable(true)
+            .Icon(Icon.Add)
+            .Resizable(true)
+            .Layout(LayoutType.Border)
+            .Items(
+                    Html.X().Hidden().ID("hdfGroupSupplierID"),
+                Html.X().TreePanel().Margin(0).Padding(0)
+                    .Tools(
+                            Html.X().Tool().Type(ToolType.Plus).Handler("App.treeGroupSupplierID.expandAll();").ToolTip("Mở rộng"),
+                            Html.X().Tool().Type(ToolType.Minus).Handler("App.treeGroupSupplierID.collapseAll();").ToolTip("Thu gọn"),
+                            Html.X().Tool().Type(ToolType.Refresh).Handler("App.treeGroupSupplierID.store.reload();").ToolTip("Tải lại")
+                           )
+
+                    .Title("NHÓM NHÀ CUNG CẤP")
+                    .ID("treeGroupSupplierID")
+                    .TitleAlign(TitleAlign.Center)
+                    .Border(true).Width(250)
+                    .AutoScroll(true)
+                    .Expand(false)
+                    .Region(Region.West)
+                    .HideHeaders(true)
+                    .RootVisible(false)
+                    .Listeners(ls =>
+                    {
+                        ls.AfterLayout.Handler = "this.selModel.doSelect(0);";
+                    })
+                    .Store(
+                            Html.X().TreeStore().ID("StoreGroupCustomer")
+                                .AutoDataBind(true)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadTreeData", "GroupSuppliers", new { Area = "Suppliers" }))
+                                .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Model(
+                                        Html.X().Model().Fields(Html.X().ModelField().Name("id"),
+                                                                Html.X().ModelField().Name("text"),
+                                                                Html.X().ModelField().Name("ParentID")
+                                                                ))
+                        )
+                     .Listeners(ls =>
+                        {
+                            ls.SelectionChange.Handler = "CategoryCustomerSelectChange();";
+                        }),
+    Html.X().GridPanel()
+                    .ID("gpSupplier")
+                    .Region(Region.Center)
+                //.Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")                
+            .Store(Html.X().Store()
+                        .ID("stSupplier")
+                    .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetListSupp"))
+                    .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("groupSupplierID", "App.hdfGroupSupplierID.getValue()", ParameterMode.Raw));
+
+                                    })
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Model(
+                    Html.X().Model()
+                            .Fields(
+                                    new ModelField("ID", ModelFieldType.Int),
+                                                    new ModelField("Code", ModelFieldType.String),
+                                                    new ModelField("Name", ModelFieldType.String),
+                                                    new ModelField("BrandName", ModelFieldType.String),
+                                                    new ModelField("Email", ModelFieldType.String),
+                                                    new ModelField("Website", ModelFieldType.String),
+                                                    new ModelField("Phone", ModelFieldType.String),
+                                                    new ModelField("Fax", ModelFieldType.String),
+                                                    new ModelField("Address", ModelFieldType.String),
+                                                    new ModelField("ProvinceId", ModelFieldType.Int),
+                                                    new ModelField("ProvinceName", ModelFieldType.String),
+                                                    new ModelField("CountryName", ModelFieldType.String),
+                                                    new ModelField("Representative", ModelFieldType.String),
+                                                    new ModelField("IsCustomer", ModelFieldType.Boolean),
+                                                    new ModelField("Position", ModelFieldType.String),
+                                                    new ModelField("Description", ModelFieldType.String),
+                                                        new ModelField("AttachmentFileID",ModelFieldType.Auto),
+                                                                new ModelField("FileName", ModelFieldType.String)
+                            )
+                          )
+                      )
+                    .ColumnModel(
+                                            Html.X().RowNumbererColumn()
+                                                    .Text("STT")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(33)
+                                                    .Align(Alignment.Center),
+    Html.X().TemplateColumn().DataIndex("AttachmentFileID").Text("Logo").Width(40).TdCls("AvatarColumn").Tpl(
+                         Html.X().XTemplate().Html(@<text>
+        <img id="{AttachmentFileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={AttachmentFileID}&fileName={FileName}"
+     style='width:40px;height:40px;' />
+                        </text>)
+                        ).Locked(true),
+                                            Html.X().Column()
+                                                    .DataIndex("Code")
+                                                    .Text("Mã nhà cung cấp")
+                                                    .Align(Alignment.Center)
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(120)
+                                                    .Locked(true),
+                                            Html.X().Column()
+                                                    .DataIndex("Name")
+                                                    .Text("Tên nhà cung cấp")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(230)
+                                                    .Locked(true),
+                                                    Html.X().Column()
+                                                        .DataIndex("BrandName")
+                                                        .Text("Thương hiệu")
+                                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                                            .Width(100),
+                                                                  Html.X().Column()
+                                                                            .DataIndex("Email")
+                                                            .Text("Email")
+                                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                                            .Width(100),
+                                                                    Html.X().Column()
+                                                                                .DataIndex("Phone")
+                                                                .Text("Điện thoại")
+                                                                .StyleSpec("font-weight: bold; text-align: center;")
+                                                                .Width(80)                                                             
+                                                            )
+.SelectionModel(
+                Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                            //l.Select.Handler = "checkStatus()";
+                        })
+                        )
+                          .View(
+                        Html.X().GridView().MarkDirty(false)
+                        )
+                        .Plugins(Html.X().CellEditing())
+                        .BottomBar
+                        (
+                    Html.X().CustomPagingToolbar())
+.Buttons(
+Html.X().ButtonChoice()
+        .ID("btnAccept")
+        .TabIndex(5).Handler("insertProductsToStempInward();"),
+Html.X().ButtonExit()
+    ))
+)
+
+<script type="text/javascript">
+    var CategoryCustomerSelectChange = function () {
+        var component = App.treeGroupSupplierID;
+        var records = component.selModel.getSelection();
+        if (records.length == 1) {            
+            OnSelectChangeGroupCustomer(records, true);
+        };
+    };
+    function OnSelectChangeGroupCustomer(records, value) {
+        if (value) {
+            App.hdfGroupSupplierID.setValue(records[0].get('id'));
+            App.gpSupplier.store.reload({ page: 1 });
+        };
+       
+    };
+</script>

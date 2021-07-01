@@ -1,0 +1,176 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ProductionPlanItem
+@(Html.X().Window()
+        .ID("winProductionPlan")
+        .Height(1).Maximized(true)
+        .Title("Chi tiết kế hoạch sản xuất")
+        .Icon(Icon.Zoom)
+        .Layout(LayoutType.Fit)
+        .Items(
+                Html.X().CustomFormPanel().Title("Thông tin kế hoạch").PaddingSpec("0 0 0 0")
+                            .FieldDefaults(df => { df.LabelWidth = 110; })
+                            .Items(
+                                Html.X().CustomFormPanel().ID("frmUpdate")
+                                        .Items(
+                                                Html.X().HiddenFor(m => m.ID).ID("hdfPlanID"),
+                                                Html.X().Container().Layout(LayoutType.Column).Height(24)
+                                                        .Items(
+                                                                Html.X().DateFieldFor(m => m.StartTime).FieldLabel("Bắt đầu").ReadOnly(true)
+                                                                            .EmptyText("Ngày bắt đầu thực hiện kế hoạch...")
+                                                                            .InputWidth(200)
+                                                                            .BlankText("Ngày lập kế hoạch không được bỏ trống!")
+                                                                            .AllowOnlyWhitespace(false).ColumnWidth(0.5),
+                                                                Html.X().DateFieldFor(m => m.EndTime).FieldLabel("Kết thúc").ReadOnly(true)
+                                                                            .InputWidth(200).LabelWidth(70).MarginSpec("0 0 0 10")
+                                                                            .EmptyText("Ngày kết thúc kế hoạch...")
+                                                                            .BlankText("Ngày lập kế hoạch không được bỏ trống!")
+                                                                            .AllowOnlyWhitespace(false).ColumnWidth(0.5)
+                                                              ),
+                                                Html.X().HiddenFor(m => m.ProductionRequirement.ID),
+                                                Html.X().DisplayFieldFor(m => m.ProductionRequirement.Name).ReadOnly(true).FieldLabel("Yêu cầu").ReadOnly(true).Height(24),
+                                                Html.X().HiddenFor(m => m.Product.ID).ID("hdfProductionId"),
+                                                 Html.X().TextFieldFor(m => m.Product.Name).FieldLabel("Sản phẩm").ReadOnly(true).MarginSpec("0 1 3 0").Height(24).ReadOnly(true),
+                                                Html.X().NumberFieldFor(m => m.Quantity).ReadOnly(true).MaxValue(Model.ProductionRequirement.Quantity).ID("txtQuantity")
+                                                                        .FieldLabel("Số lượng").InputWidth(100).MinValue(1)
+
+                                    ),
+                                    Html.X().TabPanel().MinHeight(200).Flex(1).Margin(1).ID("tabPanelID")
+                                                        .Items(
+                                                                Html.X().GridPanel().ID("GrSemiProduct").Title("Bán thành phẩm")
+                                                                            .ColumnLines(true)
+                                                                            .ForceFit(true)
+                                                                            .Border(false)
+                                                                             .TopBar(
+                                                                                Html.X().Toolbar()
+                                                                                .Items(
+                                                                                         Html.X().Button().ID("btnProductionPlanDetail").Handler("ShowProductionPlanDetail(this.up('gridpanel'))").Icon(Icon.TableEdit).Text("Kế hoạch công đoạn")
+                                                                                )
+                                                                            )
+                                                                            .Store(
+                                                                                Html.X().Store().ID("SemiProductStoreID")
+                                                                                        .RemotePaging(true)
+                                                                                        .PageSize(1000)
+                                                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProductionResult", "Plan", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                                                        .Parameters(pr => { pr.Add(new StoreParameter("planId", "App.hdfPlanID.value", ParameterMode.Raw)); })
+                                                                                        .Model(
+                                                                                            Html.X().Model().Fields(
+                                                                                                Html.X().ModelField().Name("ID"),
+                                                                                                Html.X().ModelField().Name("ProductResult.ID"),
+                                                                                                Html.X().ModelField().Name("ProductResult.Name"),
+                                                                                                Html.X().ModelField().Name("StageName"),
+                                                                                                Html.X().ModelField().Name("StageID"),
+                                                                                                Html.X().ModelField().Name("QuantityCalculator"),
+                                                                                                Html.X().ModelField().Name("QuantityStock"),
+                                                                                                Html.X().ModelField().Name("Quantity"),
+                                                                                                Html.X().ModelField().Name("StartTime"),
+                                                                                                Html.X().ModelField().Name("EndTime")
+
+                                                                                            )
+                                                                                        )
+                                                                                    )
+                                                                                    .ColumnModel(
+                                                                                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                                                Html.X().Column().DataIndex("StageName").Text("Tên công đoạn").Align(Alignment.Center).Width(180),
+                                                                                                Html.X().Column().DataIndex("ProductResult.Name").Text("Tên bán thành phẩm").Flex(1),
+                                                                                                Html.X().Column().Text("Thời gian")
+                                                                                                .Columns(
+                                                                                                        Html.X().DateColumnExtend().DataIndex("StartTime").Text("Bắt đầu").Align(Alignment.Center),
+                                                                                                        Html.X().DateColumnExtend().DataIndex("EndTime").Text("Kết thúc").Align(Alignment.Center)
+                                                                                                ),
+                                                                                                Html.X().NumberColumn().DataIndex("QuantityCalculator").Text("Số lượng tính toán").Align(Alignment.Right).Width(115).StyleSpec("background-color: red;"),
+                                                                                                Html.X().NumberColumn().DataIndex("QuantityStock").Text("Số lượng tồn kho").Align(Alignment.Right).Width(110).StyleSpec("background-color: blue;"),
+                                                                                                Html.X().NumberColumn().DataIndex("Quantity").Text("Số lượng cần").Align(Alignment.Right).Width(100)
+                                                                                                         .Renderer("QuantityRenderer")
+                                                                                    ),
+                                                                 Html.X().GridPanel().ID("GrEquipment").Title("Thiết bị")
+                                                                        .ColumnLines(true)
+                                                                        .ForceFit(true)
+                                                                        .Border(false)
+                                                                        .Store(
+                                                                                Html.X().Store().ID("EquipmentStoreID")
+                                                                                        .RemotePaging(true)
+                                                                                        .PageSize(1000)
+                                                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadEquipment", "Plan", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                                                        .Parameters(pr => { pr.Add(new StoreParameter("planId", "App.hdfPlanID.value", ParameterMode.Raw)); })
+                                                                                        .Model(
+                                                                                            Html.X().Model().Fields(
+                                                                                                Html.X().ModelField().Name("ID"),
+                                                                                                Html.X().ModelField().Name("EquipmentProduction.Name"),
+                                                                                                Html.X().ModelField().Name("Quantity")
+                                                                                            )
+                                                                                      )
+                                                                                )
+                                                                        .ColumnModel(
+                                                                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                                    Html.X().Column().DataIndex("EquipmentProduction.Name").Text("Tên thiết bị").Flex(1),
+                                                                                    Html.X().Column().DataIndex("Quantity").Text("Số lượng").Align(Alignment.Center).Width(180)
+                                                                                ),
+                                                            Html.X().GridPanel().ID("GrMaterial").Title("Nguyên vật liệu")
+                                                                        .ColumnLines(true)
+                                                                        .ForceFit(true)
+                                                                        .Border(false)
+                                                                        .Store(
+                                                                            Html.X().Store().ID("MaterialStoreID")
+                                                                                    .RemotePaging(true)
+                                                                                    .PageSize(1000)
+                                                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMaterial", "Plan", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                                                    .Parameters(pr => { pr.Add(new StoreParameter("planId", "App.hdfPlanID.value", ParameterMode.Raw)); })
+                                                                                    .Model(
+                                                                                        Html.X().Model().Fields(
+                                                                                            Html.X().ModelField().Name("ID"),
+                                                                                            Html.X().ModelField().Name("MaterialName"),
+                                                                                            Html.X().ModelField().Name("Quantity")
+                                                                                        )
+                                                                                    )
+                                                                                )
+                                                                        .ColumnModel(
+                                                                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                                    Html.X().Column().DataIndex("MaterialName").Text("Tên vật liệu").Flex(1),
+                                                                                    Html.X().Column().DataIndex("Quantity").Text("Số lượng").Align(Alignment.Center).Width(180)
+                                                                                )
+                                              )
+                )
+)
+.Buttons(
+            Html.X().ButtonExit()
+      )
+)
+<script>
+    var QuantityRenderer = function (value) {
+        return "<span style='color: red'>" + value + "</span>";
+    };
+    var ShowProductionPlanDetail = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var record = records[0];
+            var url = '@(Url.Action("PlanStage"))';
+            var startTime = record.data.StartTime;
+            var endTime = record.data.EndTime;
+            if (startTime == null || endTime == null) {
+                Ext.MessageBox.show({
+                    title: 'Thông báo', msg: "Kế hoạch chưa được thiết lập",
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation'
+                });
+                return;
+            }
+            else {
+                var params = {
+                    planProductId: record.data.ID,
+                    stageId: record.data.StageID,
+                    quantity: record.data.Quantity,
+                    startDate: startTime,
+                    endDate: endTime,
+                    isReadOnly : true
+                };
+                onDirectMethod(url, params);
+            };
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

@@ -1,0 +1,275 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.TaskItem
+@( Html.X().Window()
+    .Title("Thêm mới thông tin công việc")
+    .Icon(Icon.Add)
+    .Width(700)
+    .Layout(LayoutType.Fit)
+    .BodyPadding(0)
+    .Maximizable(true)
+    .Constrain(true)
+    .Modal(true)
+    .Border(true)
+    .Items(
+        Html.X().FormPanel()
+                .Url(ViewData["UrlSubmit"].ToString())
+                    .BaseParams(a =>
+                    {
+                        a.Add(ViewData["Parameter"] as Parameter);
+                        a.Add(new { arrObject = new JRawValue("getObjectPartial()") });
+                    })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(lb => lb.LabelWidth = 110)
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Items(
+            Html.X().TabPanel()
+                .Region(Region.Center)
+                .ActiveTabIndex(0)
+                .Border(true)
+                .Flex(1)
+                .Layout(LayoutType.Fit)
+                .Items(
+            Html.X().Panel()
+                    .BodyPadding(6)
+                    .Icon(Icon.ApplicationViewDetail)
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .StyleSpec("border: none;")
+                    .Title("Nội dung công việc")
+                    .Frame(true)
+                    .Items(
+            Html.X().ComboBoxFor(m => m.ParentID).FieldLabel("Phát sinh từ công việc").EmptyText("Chọn công việc cha ...")
+                    .ID("cbParentID")
+                    .AllowBlank(true)
+                    .QueryMode(DataLoadMode.Local).Editable(false)
+                    .ForceSelection(true)
+                    .HideBaseTrigger(true)
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Store(
+                        Html.X().Store()
+                                .AutoLoad(true)
+                                .Model(Html.X().Model()
+                                .IDProperty("ID")
+                                .Fields(
+                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" })
+                                )
+                                .Proxy(
+                                Html.X().AjaxProxy()
+                                        .Url(Url.Action("LoadComboTask", "Task", new { area = "Task" }))
+                                        .Reader(Html.X().JsonReader().Root("data")))
+                                    )
+                        .Triggers(
+                        Html.X().FieldTrigger()
+                                .Icon(TriggerIcon.SimpleEdit).Tag("c").Qtip("Chọn công việc cha"),
+                         Html.X().FieldTrigger()
+                                 .Icon(TriggerIcon.SimpleDelete).Tag("x").Qtip("Xóa")
+                            )
+                            .Listeners(ls => { ls.TriggerClick.Fn = "searchFieldTriggerClick"; }),
+                    Html.X().TextFieldFor(m => m.Name)
+                            .ID("txtName")
+                            .AllowOnlyWhitespace(false)
+                            .FieldLabel("Tên công việc" + Html.Required())
+                            .EmptyText("Nhập tên công việc")
+                            .MaxLength(100)
+                            .AllowBlank(false)
+                            .BlankText("Tên công việc không được bỏ trống!"),
+                    Html.X().ComboBoxFor(m => m.CategoryID)
+                            .FieldLabel("Nhóm công việc" + Html.Required())
+                            .EmptyText("Chọn nhóm công việc")
+                            .AllowBlank(false)
+                            .Editable(false)
+                            .BlankText("Nhóm công việc không được bỏ trống!")
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .Store(
+                                Html.X().Store()
+                                    .AutoLoad(false)
+                                    .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataIsUse", "TaskCategory", new { area = "Task" }))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    .Model(Html.X().Model()
+                                        .Fields(
+                                            new ModelField("ID"),
+                                            new ModelField("Name")
+                                        )
+                                    )
+                            ),
+                    Html.X().DepartmentFieldFor(m => m.Department)
+                            .FieldLabel("Phòng ban" + Html.Required())
+                            .Multiple(false)
+                            .AllowBlank(false)
+                            .Height(25),
+                    Html.X().Container()
+                            .Layout(LayoutType.Column)
+                            .ColSpan(2)
+                            .MarginSpec("0 0 0 0")
+                            .Items(
+                    Html.X().DateTimeFieldFor(m => m.StartTime, true, Model.Department == null ? 0 : Model.Department.ID)
+                            .AllowBlank(false)
+                            .FieldLabel("Bắt đầu" + Html.Required())
+                            .ColumnWidth(0.5)
+                            .ID("dfStart")
+                            .MarginSpec("0 5 5 0"),
+                    Html.X().DateTimeFieldFor(m => m.EndTime, true, Model.Department == null ? 0 : Model.Department.ID)
+                            .AllowBlank(false)
+                            .FieldLabel("Kết thúc" + Html.Required())
+                            .ColumnWidth(0.5)
+                            .MarginSpec("0 0 5 0")),
+                    Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 5 0").Items(
+                    Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 5 0 0").ColumnWidth(0.5).Items(
+                    Html.X().NumberFieldFor(m => m.Cost)
+                            .MinValue(0)
+                            .AllowDecimals(true)
+                            .Icon(Icon.Coins)
+                            .FieldLabel("Chi phí dự tính")
+                            .MarginSpec("0 5 0 0")
+                            .ColumnWidth(0.7),
+                    Html.X().TextField().Text("VNĐ")
+                            .Icon(Icon.MoneyDollar)
+                            .ColumnWidth(0.3)
+                            ),
+                Html.X().ComboBoxFor(m => m.LevelID)
+                        .ID("cbLevelID")
+                        .MarginSpec("0 0 5 0")
+                        .FieldLabel("Mức độ công việc" + Html.Required())
+                        .EmptyText("Chọn mức độ công việc")
+                        .BlankText("Mức độ ưu tiên chưa được chọn!")
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Editable(false)
+                        .ColumnWidth(0.5)
+                        .Tpl(
+                        @<text>
+                            <tpl for=".">
+                                <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                    <div style="width: 50px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left">&nbsp;{Name}</div>
+                                </div>
+                            </tpl>
+                        </text>)
+                        .Store(
+                            Html.X().Store()
+                                .ID("stTaskLevel")
+                                .AutoLoad(false)
+                                .Model(
+                                    Html.X().Model().IDProperty("ID")
+                                        .Fields(
+                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                            new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                        )
+                                )
+                                .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("LoadStoreIsUse", "TaskLevel", new { area = "Task" }))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                        )
+                        .Listeners(l => l.Select.Handler = "getColor(App.cbLevelID, App.stTaskLevel);")
+                ),
+                Html.X().TextAreaFor(m => m.Content)
+                        .ID("txtContent")
+                        .FieldLabel("Nội dung công việc")
+                        .EmptyText("Nhập nội dung chi tiết cho công việc")
+                        .Flex(1),
+                Html.X().FileUploadFieldFor(m => m.AttachmentFiles),
+                Html.X().EmployeeFieldFor(m => m.Perform).AllowBlank(false).Title("Người thực hiện" + Html.Required()).MarginSpec("0 0 0 115"),
+                Html.X().HiddenFor(m => m.IsNew)
+                        .ID("IsNew")
+                        .Value(true),
+                Html.X().HiddenFor(m => m.IsEdit)
+                        .ID("IsEdit")
+                        .Value(true)
+                        ),
+                    Html.X().Panel()
+                        .Icon(Icon.UserTick)
+                        .Height(380)
+                        .Border(false)
+                        .BodyPadding(0)
+                        .Margin(0)
+                        .Flex(1)
+                        .Padding(0)
+                        .AutoScroll(true)
+                        .Title("Người cùng thực hiện")
+                        .Layout(LayoutType.Fit)
+                        .ItemsFromAction("FormListObject", "Task")
+                        )
+                )
+        )
+    .Buttons(
+        Html.X().Button()
+       .ID("btnSendApproval")
+       .Icon(Icon.Tick)
+       .Text("Giao việc")
+       .Handler("App.IsEdit.setValue(false); App.IsNew.setValue(false); insertTask(this.up('window'))"),
+        Html.X().ButtonSave()
+        .ID("btnSave")
+        .Handler("insertTask(this.up('window'))"),
+        Html.X().ButtonExit()
+    )
+)
+<script type="text/javascript">
+    var searchFieldTriggerClick = function (field, trigger, index) {
+        var me = field;
+        if (index == 1) {
+            me.setValue('');
+        }
+        else {
+            showTask();
+        }
+    };
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.stM.data.length; i++) {
+            arr.push(App.stM.data.items[i].data.ID);
+        }
+        return arr.join(",");
+    };
+    var showTask = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("LoadTaskPartialView", "Task", new { Area = "Task" }, null))',
+            success: function (result) {
+                mask.hide();
+            }
+        });
+    };
+    var onSelectTask = function (id) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn công việc cha?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            App.cbParentID.setValue(parseInt(id));
+            App.WinTask.close();
+        };
+    };
+    var showTaskEmloyee = function () {
+        var url = '@(Url.Action("EmployeeWindow", "Task", new { Area = "Task" }))';
+        onDirectMethod(url);
+    };
+    var insertTask = function (window) {
+        var form = window.down('form');
+        form.submit({
+            success: function (form, action) {
+                window.close();
+                TaskGridPanel.getStore().load();
+            },
+        });
+    };
+</script>

@@ -1,0 +1,68 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@using iDAS.Utilities
+@model iDAS.Items.ProfileCancelItem
+@(
+ Html.X().Window()
+    .ID("winUpdateProfileCancel")
+    .Title("Cập nhật thông tin hủy hồ sơ")
+    .Icon(Icon.Pencil)
+    .Width(500)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+                .ID("frmUpdateProfileCancel")
+            .FieldDefaults(f => f.LabelWidth = 90)
+            .Items(
+             Html.X().HiddenFor(m => m.ID),
+                Html.X().TextFieldFor(m => m.Name)
+                    .FieldLabel("Hồ sơ hủy" )
+                    .ReadOnly(true),
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                     Html.X().NumberFieldFor(m => m.TotalPage)
+                        .FieldLabel("Tổng số trang"+ Html.Required() )
+                        .EmptyText("Nhập số trang cần hủy ....")
+                        .ColumnWidth(0.5)
+                        .MinValue(1).MinText("Số trang hủy phải lớn hơn 0!")
+                        .AllowBlank(false).BlankText("Số trang cần hủy bắt buộc nhập!"),
+                     Html.X().DateFieldFor(m => m.CancelAt)
+                        .FieldLabel("Thời gian hủy")
+                        .MarginSpec("0 0 0 10")
+                        .LabelWidth(80)
+                        .Format("dd/MM/yyyy")                    
+                        .ColumnWidth(0.5)
+                        .ReadOnly(true)
+               ),
+                Html.X().TextAreaFor(m => m.Reason)
+                    .ID("txtContent")
+                    .FieldLabel("Lý do hủy" + Html.Required())
+                    .TabIndex(3).Height(100)
+                    .AllowBlank(false).BlankText("Lý do hủy bắt buộc nhập!")
+                    .MaxLength(1000)
+                        )
+        )
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(6)
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmUpdateProfileCancel";
+                    de.Click.Url = Url.Action("UpdateCancel");
+                    de.Click.Before = @"if (!#{frmUpdateProfileCancel}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                    de.Click.Success = "App.winUpdateProfileCancel.close();";
+                }),
+            Html.X().ButtonExit()
+        )
+)

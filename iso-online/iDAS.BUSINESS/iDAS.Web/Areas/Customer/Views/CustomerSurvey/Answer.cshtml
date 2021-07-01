@@ -1,0 +1,48 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerSurveyQuestionItem
+@(Html.X().Window()
+.ID("winSurveyAnswer")
+.Title("Thêm mới câu trả lới")
+.Icon(Icon.Add)
+.Width(800)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .Border(false)
+    .MarginSpec("0 -4 -3 -4")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 110; })
+    .Items( 
+            Html.X().HiddenFor(m=>m.ParentID),Html.X().HiddenFor(m=>m.SurveyID),
+            Html.X().HiddenFor(m=>m.IsCategory), Html.X().HiddenFor(m=>m.IsUse),
+            Html.X().TextAreaFor(m => m.Name)
+                .FieldLabel("Câu trả lời" + Html.Required())
+                .EmptyText("Nhập tên Nội dung khảo sát...")
+                .AllowBlank(false)
+                .ColumnWidth(1)
+                .MarginSpec("5 8 0 8")
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                de.Click.ExtraParams.Add(new { exit = true });
+                                de.Click.Url = Url.Action("UpdateAnswerItem");
+                                de.Click.FormID = "frmUpdate";
+                                de.Click.Success = "refreshGridPanel()";
+                            })
+        , Html.X().ButtonExit())
+)

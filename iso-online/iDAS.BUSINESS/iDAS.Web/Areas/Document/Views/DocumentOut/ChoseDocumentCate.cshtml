@@ -1,0 +1,126 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCancelItem
+@(
+ Html.X().Window()
+    .ID("winChoseDocCate")
+    .Title("Chọn Danh mục Tài liệu")
+    .Icon(Icon.ApplicationSideList)
+    .Width(850)
+    .Height(500)
+    .Layout(LayoutType.Border)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(2)
+    .Items(
+        Html.X().DepartmentPanel().Handler("selectDepartmentTask"),
+            //Html.X().Panel()
+            //                .Title("SƠ ĐỒ TỔ CHỨC").TitleAlign(TitleAlign.Center)
+            //                .Header(false)
+            //                .Collapsible(true)
+            //                .Region(Region.West).Width(300)
+            //                .MarginSpec("-1 0 -1 -1")
+            //                .Split(true)
+            //                .Layout(LayoutType.Fit)
+            //                        .ItemsFromAction("List", "Department", new { area = "Department" }),
+        Html.X().Hidden().ID("txtDeptName"),
+        Html.X().GridPanel()
+            .ID("grDocCateInfo")
+            .Region(Region.Center)
+            .Height(290)
+            .ColumnLines(true)
+            .Header(false)
+            .Store(
+                Html.X().Store()
+                    .RemotePaging(true)
+                    .AutoLoad(true)
+                    .ID("stDocCateInfo")
+                    .PageSize(20)
+                    .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                     Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                     Html.X().ModelField().Name("Name").Type(ModelFieldType.String),//Ten Ho so
+                                     Html.X().ModelField().Name("Note").Type(ModelFieldType.String)
+                                )
+                                )
+                                .Proxy(
+                                    Html.X().AjaxProxy()
+                                        .Url(Url.Action("LoadCateByDepartment"))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                    .Text("STT")
+                    .Align(Alignment.Center)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(33),
+
+                Html.X().Column()
+                    .DataIndex("Name")
+                    .Text("Tên danh mục")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Flex(1),
+                Html.X().Column()
+                    .Text("Ghi chú")
+                    .DataIndex("Note")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Flex(1)
+                  )
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                        .ShowHeaderCheckbox(false)
+                                .Mode(SelectionMode.Single)
+
+                                )
+            .BottomBar(Html.X().CustomPagingToolbar())
+                                 ).Buttons(
+
+                   Html.X().Button()
+                            .ID("btnAccept")
+                            .TabIndex(17)
+                            .Icon(Icon.Accept)
+                            .Text("Chọn")
+                            .Handler("fillDocumentCategory( App.grDocCateInfo.selModel.getSelection()[0].get('ID'));"),
+                    Html.X().Button()
+                            .ID("btnExit")
+                            .TabIndex(18)
+                            .Icon(Icon.Cancel)
+                            .Text("Thoát")
+                            .Handler("this.up('window').close();")
+            )
+)
+<script type="text/javascript">
+    function onDepartmentReady(records, value) {
+        if (value) {
+            App.txtDeptName.setValue(records[0].get('text'));
+            App.grDocCateInfo.getStore().reload({ params: { departmentID: records[0].get('id') } });
+        }
+    };
+    var selectDepartmentTask = function (records) {
+        App.txtDeptName.setValue(records[0].get('text'));
+        Ext.getCmp('grDocCateInfo').getStore().reload({ params: { departmentID: records[0].get('id') } });
+    };
+    var fillDocumentCategory = function (id) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn Danh mục Tài liệu?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            var dept = App.txtDeptName.getValue();
+            App.txtCategoryDept.setValue(dept);
+            App.cbCategory.setValue(parseInt(id));
+            App.winChoseDocCate.close();
+        }
+    };
+</script>

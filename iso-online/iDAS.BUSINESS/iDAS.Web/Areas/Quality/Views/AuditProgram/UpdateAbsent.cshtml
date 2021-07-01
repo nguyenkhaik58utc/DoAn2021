@@ -1,0 +1,193 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityAuditProgramItem
+@{
+    var programId = ViewData["programId"];
+}
+@(Html.X().Window()
+          .ID("winUpdateAbsent")
+          .Title("Cập nhật thành phần tham gia chương trình đánh giá")
+          .Icon(Icon.UserDelete)
+            .Height(470)
+              .Width(800)
+              .Maximizable(true)
+              .BodyPadding(0)
+              .Constrain(true)
+              .Modal(true)
+              .Layout(LayoutType.Fit)
+          .Items(
+             Html.X().FormPanel()
+                .ID("frAuditProgram")
+                .Layout(LayoutType.Fit)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .BodyPadding(0)
+                .Padding(0)
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                    Html.X().GridPanel()
+                        .ID("grMnObjectAbsent")
+                        .Border(false)
+                        .TopBar(
+                        Html.X().Toolbar()
+                                .Items(
+                                    Html.X().ButtonUpdate()
+                                            .ID("btnUpdateObjectAbsent")
+                                            .Disabled(true)
+                                                .Handler("updateRecordAbsent();"),
+                                                Html.X().ToolbarSeparator(),
+                                                    Html.X().ButtonView()
+                                                .ID("btnDetailObjectAbsent")
+                                                .Disabled(true)
+                                                    .Handler("detailRecordAbsent();")
+                                )
+                             )
+                    .Store(Html.X().Store()
+                            .ID("stMnObjectAbsent")
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetData", "AuditEmployee"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                                .Parameters(ps => ps.Add(new StoreParameter("auditProgramId", programId.ToString(), ParameterMode.Value)))
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                            Html.X().Model()
+                                    .Fields(
+
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("AuditID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("EmployeeName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("FileID").Type(ModelFieldType.Auto),
+                                        Html.X().ModelField().Name("FileName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Email").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("EmployeeID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("IsAuditor").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("IsCaptain").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("Phone").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Role").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("ObjectType").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("IsAbsent").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("AbsentReason").Type(ModelFieldType.String)
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Center)
+                                    .Width(33),
+                            Html.X().Column()
+                                    .Text("ID")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                                        Html.X().Column()
+                                            .Text("EmployeeID")
+                                            .DataIndex("EmployeeID")
+                                        .Hidden(true),
+                                         Html.X().TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+                              Html.X().XTemplate().Html(@<text>
+                                            <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                                 style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                            </text>)
+                        ),
+                            Html.X().Column()
+                                    .Text("Họ tên")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("EmployeeName")
+                                    .Width(130)
+                                    .Wrap(true),
+                               Html.X().Column()
+                                        .Text("Chức vụ")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("Role")
+                                       .Width(100)
+                                        .Wrap(true),
+                                                   Html.X().CheckColumn()
+                                                .Text("Trưởng nhóm")
+                                                .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("IsCaptain")
+                                               .Width(100)
+                                                .Wrap(true),
+                                                     Html.X().CheckColumn()
+                                                    .Text("Thành viên")
+                                                    .StyleSpec("font-weight: bold;text-align: center")
+                                                            .DataIndex("IsAuditor")
+                                                   .Width(100)
+                                                    .Wrap(true),
+                                                        Html.X().CheckColumn()
+                                                .Text("Vắng mặt")
+                                                .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("IsAbsent")
+                                               .Width(100)
+                                                .Wrap(true),
+                                                 Html.X().Column()
+                                        .Text("Lý do vắng")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("AbsentReason")
+                                       .Flex(1)
+                                        .Wrap(true)
+
+                    ).SelectionModel(
+                        Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                .Listeners(l =>
+                                {
+                                    l.Select.Handler = "App.btnUpdateObjectAbsent.setDisabled(false);App.btnDetailObjectAbsent.setDisabled(false);";
+                                })
+                                )
+                                .View(
+                                Html.X().GridView().MarkDirty(false)
+                                )
+                                .Plugins(Html.X().CellEditing())
+                                .BottomBar
+                                (
+                                             Html.X().CustomPagingToolbar()
+                         )
+                    )
+            )
+            .Buttons(
+            Html.X().ButtonSave()
+            .ID("btnxSaves")
+            .DirectEvents(de =>
+            {
+                de.Click.Before = @"if (!App.frAuditProgram.getForm().isValid()) { return false; } ";
+                de.Click.Action = "UpdateAbsent";
+                de.Click.ExtraParams.Add(new { arrObject = new JRawValue("getObjectPartialEdit()") });
+                de.Click.FormID = "frAuditProgram";
+                de.Click.Success = "if(result.result){this.up('window').close();}";
+            }),
+            Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var updateRecordAbsent = function () {
+        var record = App.grMnObjectAbsent.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmUpdateAbsent", "AuditProgram", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        } else {
+            MessageBox();
+        }
+    };
+    var detailRecordAbsent = function () {
+        var record = App.grMnObjectAbsent.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetailAbsent", "AuditProgram", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        } else {
+            MessageBox();
+        }
+    };
+</script>

@@ -1,0 +1,106 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCancelItem
+@{
+    var X = Html.X();
+}
+@(
+ Html.X().Window()
+    .ID("winNewCancelProfileDept")
+    .Title("Chọn thành phần tham gia hủy hồ sơ")
+    .Icon(Icon.UserAdd)
+    .Width(980)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .ID("frmNewCancelProfile")
+            .Items(
+                Html.X().Hidden().ID("hdfDepartmentID"),
+                Html.X().HiddenFor(m => m.CancelID).ID("hdfCancelID"),
+                Html.X().HiddenFor(m => m.DepartmentIDs).ID("hdfUserID"),
+                Html.X().Panel()
+                    .ID("TaskDepartmentPanel")
+                    .Height(430)
+                    .Header(false)
+                    .Split(true)
+                    .Border(false)
+                    .Padding(2)
+                    .Layout(LayoutType.Border)
+                    .Items(
+                        X.DepartmentPanel().Handler("onDepartmentReady"),
+                        X.GridPanel()
+                            .ID("GridEmployeeID")
+                            .Layout(LayoutType.Fit)
+                            .Border(true)
+                            .Split(true)
+                            .Region(Region.Center)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Store(
+                                Html.X().Store().ID("stEmployee")
+                                .AutoLoad(false)
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadUsers", "ProfileCancel", new { Area = "Profile" }, null))
+                                .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("departmentID", "App.hdfDepartmentID.getValue() > 0 ? App.hdfDepartmentID.getValue():0", ParameterMode.Raw));
+                                        ps.Add(new StoreParameter("cancelId", Model.CancelID.ToString(), ParameterMode.Raw));
+                                    })
+                                .Model(
+                                    X.Model().Fields(
+                                        X.ModelField().Name("ID"),
+                                        X.ModelField().Name("Name"),
+                                        X.ModelField().Name("FileName"),
+                                        X.ModelField().Name("FileID"),
+                                        X.ModelField().Name("Role"),
+                                        X.ModelField().Name("IsCheck")
+                                    )
+                                )
+                            )
+                            .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                X.TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+                                  X.XTemplate().Html(@<text>
+                                        <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                             style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                                </text>)
+                                ),
+                                X.Column().DataIndex("Name").Flex(1).Text("Họ Tên"),
+                                X.Column().DataIndex("Role").Width(150).Text("Chức vụ"),
+                                X.CheckColumn().DataIndex("IsCheck").Width(100).Text("Tham gia").Editable(true)
+                                     )
+                                .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditDepartment"))
+                                .BottomBar(Html.X().CustomPagingToolbar())
+                        )
+                )
+         )
+        .Buttons(
+                Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    function getUserSelected() {
+        var records = App.GridEmployeeID.selModel.getSelection();
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        App.hdfUserID.setValue(strId);
+    };
+    function onDepartmentReady(records) {
+        var cancelID = App.hdfCancelID.getValue();
+        App.hdfDepartmentID.setValue(records[0].get('id'));
+        Ext.getCmp('GridEmployeeID').getStore().reload({ params: { departmentID: records[0].get('id'), cancelId: cancelID } });
+    };
+</script>

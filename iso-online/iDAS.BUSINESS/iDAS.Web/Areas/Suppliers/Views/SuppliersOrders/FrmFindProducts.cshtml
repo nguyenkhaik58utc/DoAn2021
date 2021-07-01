@@ -1,0 +1,217 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable 
+  @(Html.X().Window()
+            .ID("frmProducts")
+            .Title("Chọn vật tư hàng hóa ")
+            .Width(850)
+            .Height(500)
+            .Constrain(true)
+            .Modal(true)
+            .Closable(true)
+            .Icon(Icon.Add)
+            .Resizable(true)
+            .Layout(LayoutType.Border)
+            .Items(
+            Html.X().Panel()
+                    .Region(Region.West)
+                    .Title("NHÓM VẬT TƯ HÀNG HÓA")
+                    .Header(true)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .TitleAlign(TitleAlign.Center)
+                    .Width(250)
+                    .Collapsible(false)
+                    .MinWidth(250)
+                    .MaxWidth(300)
+                    .MarginSpec("5 0 5 5")
+                    .Layout(LayoutType.Fit).Items(
+                    Html.X().GridPanel()
+                            .ID("gpProductGroup")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .ResizableConfig(new Resizer { Handles = ResizeHandle.East })
+                            .Store(Html.X().Store()
+                            .ID("stProductGroup")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .DataSource(Model)
+                            .Model(
+                                Html.X().Model()
+                                .Fields(
+                                new ModelField("ID", ModelFieldType.Int),
+                                new ModelField("Name", ModelFieldType.String),
+                                new ModelField("Description", ModelFieldType.String)
+                                )
+                            )
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataProductGroup"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        )
+                        .ColumnModel(
+                            Html.X().Column()
+                                    .Text("Mã")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                            Html.X().Column()
+                                    .Text("Tên nhóm")
+                                    .DataIndex("Name")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Flex(1)
+                        )
+                        .SelectionModel(
+                        Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi).Listeners(ls =>
+                                ls.Select.Handler = "showdataProducts1();"
+                        )
+                )
+                
+            ),
+    Html.X().Panel()
+            .Region(Region.Center)
+            .Title("Danh sách vật tư hàng hóa")
+            .Header(false)
+            .StyleSpec("border:none;")
+            .Layout(LayoutType.Fit)
+            .Icon(Icon.BookOpenMark)
+            .Width(250)
+            .MarginSpec("5 5 5 5")   
+            .Items(
+            Html.X().GridPanel()
+                    .ID("gpProducts")
+                    .Title("Danh mục vật tư hàng hóa")
+                    .ContextMenuID("cmMenuEvaluationCriteria")
+                    .ColumnLines(true)
+                    .Header(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .ResizableConfig(new Resizer { Handles = ResizeHandle.East })
+                    .Store(Html.X().Store()
+                    .ID("stProducts")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .DataSource(Model)
+                    .GroupField("Group_Name")
+                    .Model(
+                    Html.X().Model()
+                            .IDProperty("ID")
+                            .Fields(
+                        Html.X().ModelField()
+                                .Name("ID"),
+                        Html.X().ModelField()
+                                .Name("Code"),
+                        Html.X().ModelField()
+                                .Name("Name"),
+                        Html.X().ModelField()
+                                .Name("Group_Name"),
+                        Html.X().ModelField()
+                                .Name("Description"),
+                        Html.X().ModelField()
+                                .Name("Unit_Name") 
+                            )
+                    )
+                    .Proxy(Html.X().AjaxProxy()
+                                   .Url(Url.Action("GetDataOfProducts"))
+                                   .Reader(Html.X().JsonReader().Root("data"))
+                         )
+
+                )
+                .Plugins( Html.X().CellEditing().ClicksToEdit(1))
+                .ColumnModel(
+        Html.X().RowNumbererColumn()
+                .Text("STT")
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(33),
+                Html.X().Column()
+                .Width(100)
+                .Text("Mã")
+                .Wrap(true)
+                .DataIndex("Code")
+                .Align(Alignment.Center)
+                .StyleSpec("font-weight: bold; text-align: center;"),
+        Html.X().Column()
+                .Text("Tên vật tư hàng hóa")
+                .DataIndex("Name")
+                .Flex(1)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;"),
+        Html.X().Column()
+                .Text("Đơn vị tính")
+                .DataIndex("Unit_Name")
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(80),
+        Html.X().Column()
+                .Text("ID")
+                .DataIndex("ID")
+                .Hidden(true)
+                )        
+        .SelectionModel(
+        Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi).Listeners(ls =>
+        ls.Select.Handler = ""
+        )
+        )
+        .View(
+        Html.X().GridView().MarkDirty(false)
+        )
+        .Features(
+        Html.X().GroupingSummary()
+        .ID("GroupingSummary")
+        .GroupHeaderTplString("{name}")
+        .HideGroupedHeader(true)
+        .EnableGroupingMenu(false)
+        )
+      )
+   )   
+.Buttons(
+Html.X().ButtonChoice()
+        .ID("btnAccept")
+        .TabIndex(5)
+        .Handler("insertProductsToStempInward1();"),
+Html.X().ButtonExit()
+    )     
+)
+<script type="text/javascript">
+    var showdataProducts1 = function () {
+        var records = App.gpProductGroup.selModel.getSelection();
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("GetDataOfProducts_supplier", "Stock_Inward", new { Area = "Stock" }, null))',
+            params: { stringId: strId }
+        });
+    };
+    var insertProductsToStempInward1 = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Chờ trong giây lát ...." });
+        var records = App.gpProducts.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có vật tư hàng hóa nào được chọn!',
+                    iconCls: '#Exclamation',
+                    buttons: { yes: 'Đồng ý' }
+                });
+                break;
+            default:
+                mask.show();
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("GetProducts", "SuppliersOrders", new { Area = "Suppliers" }, null))',
+                    params: { stringId: strId },
+                    success: function (result) { mask.hide(); }
+                });
+                break;
+        }
+    };
+</script>

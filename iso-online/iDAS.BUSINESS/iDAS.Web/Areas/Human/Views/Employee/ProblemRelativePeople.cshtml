@@ -1,0 +1,190 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Problem.Models.RelativePeople.ProblemRelativePeopleChkCbo
+@(Html.X().FormPanel()
+    //.Layout(LayoutType.Form)
+    .Layout(LayoutType.VBox)
+    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+    .Border(false)
+    .ID("frmProblemRelativePeople")
+    .Padding(0)
+    .Header(false)
+    .TitleAlign(TitleAlign.Center)
+    .Margin(0)
+    .BodyBorder(0)
+    .FieldDefaults(fs => fs.LabelWidth = 90)
+    .StyleSpec("border: none;")
+    .Frame(true)
+    .Items(
+        // HungNM. tab Nhân sự liên quan
+        Html.X().HiddenFor(m => m.lstRelativeDeptsFilter).ID("hdfLstRelativeDeptsFilter"),
+        Html.X().Container()
+                .Layout(LayoutType.Column)
+                .ColSpan(1)
+                .MarginSpec("0 0 0 0")
+                .Items(
+                        Html.X().Label("Thêm nhân sự liên quan")
+                    ),
+        Html.X().Container()
+                .Layout(LayoutType.Column)
+                .ColSpan(6)
+                .MarginSpec("5 8 0 8")
+                .Items(
+                    //Html.X().CheckboxFor(m => m.chkView).HideLabel(true).ID("chkView").BoxLabel("Người theo dõi").MarginSpec("0 30 0 0").Listeners(ls => ls.Change.Handler = "ProblemRoleRelativePeople(this);"),
+                    //Html.X().CheckboxFor(m => m.chkUpdate).HideLabel(true).ID("chkUpdate").BoxLabel("Người xử lý").MarginSpec("0 30 0 0").Listeners(ls => ls.Change.Handler = "ProblemRoleRelativePeople(this);"),
+                    //Html.X().CheckboxFor(m => m.chkReview).HideLabel(true).ID("chkReview").BoxLabel("Người đánh giá").MarginSpec("0 30 0 0").Listeners(ls => ls.Change.Handler = "ProblemRoleRelativePeople(this);"),
+                    Html.X().CheckboxFor(m => m.chkView).HideLabel(true).ID("chkView").BoxLabel("Người theo dõi").MarginSpec("0 30 0 0"),
+                    Html.X().CheckboxFor(m => m.chkUpdate).HideLabel(true).ID("chkUpdate").BoxLabel("Người xử lý").MarginSpec("0 30 0 0"),
+                    Html.X().CheckboxFor(m => m.chkReview).HideLabel(true).ID("chkReview").BoxLabel("Người đánh giá").MarginSpec("0 30 0 0").Hidden(true),
+                    Html.X().Button().ID("btnSelectPeople").ToolTip("Chọn nhân sự từ các phòng ban").Text("Chọn nhân sự").Handler("FormSelectPeopleOfDepartment();")
+                    ),
+        Html.X().Container()
+                .Layout(LayoutType.Column)
+                .ColSpan(1)
+                .MarginSpec("20 0 0 0")
+                .Items(
+                        Html.X().Label("Danh sách nhân sự liên quan")
+                    ),
+        Html.X().Container()
+                .Layout(LayoutType.Column)
+                .ColSpan(3)
+                .MarginSpec("0 0 0 0")
+                .Items(
+                    Html.X().RadioGroupFor(m => m.rdbList,
+                            new List<Radio.Config> {
+                            new Radio.Config{BoxLabel = "Tất cả", InputValue = "rdbAll", Checked = true, ReadOnly = false, Width = 90},
+                            new Radio.Config{BoxLabel = "Người theo dõi", InputValue = "rdbView", ReadOnly = false, Width = 120},
+                            new Radio.Config{BoxLabel = "Người xử lý", InputValue = "rdbUpdate", ReadOnly = false, Width = 100},
+                            new Radio.Config{BoxLabel = "Người đánh giá", InputValue = "rdbReview", ReadOnly = false, Width = 120, Hidden = true}
+                            }
+                        ).FieldLabel("Vai trò").MarginSpec("5 0 0 5").LabelWidth(70)
+                        .ID("rabgrRole").ColumnWidth(0.7)
+                        .Listeners(l => l.Change.Handler = "if(App.rabgrRole.getChecked()[0].inputValue!= ''){App.stListRelativePeople.reload()}"),
+                    Html.X().Button().ID("btnDeleteProblemRelativePeople").Text("Xóa nhân sự liên quan").ToolTip("Xóa nhân sự liên quan đến sự cố")
+                                            .MarginSpec("2 0 0 0").ColumnWidth(0.2).Icon(Icon.Delete).Handler("getListDeleteSelectedRelativePeople();")
+                    ),
+        Html.X().GridPanel()
+                .Layout(LayoutType.Fit)
+                .Height(320)
+                .ID("grdRelativePeople")
+                .Header(false)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .Border(false)
+                .MarginSpec("0 0 10 0")
+                .Flex(1)
+                .Store(
+                    Html.X().Store().ID("stListRelativePeople")
+                    .AutoLoad(true)
+                    .RemotePaging(true)
+                    .PageSize(15)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetListRelativePeople", "Employee", new { Area = "Human" })).Reader(Html.X().JsonReader().Root("data")))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("problemEventID", "App.hdfProblemEventID.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("listType", "App.rabgrRole.getValue().rdbList", ParameterMode.Raw));
+                    })
+                    .Model(
+                        Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("userName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("depName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("txtVaiTro").Type(ModelFieldType.String)
+                        )
+                    )
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                    Html.X().Column().Text("ID").DataIndex("ID").Hidden(true),
+                    Html.X().Column().Text("Tên").DataIndex("userName").Flex(1),
+                    Html.X().Column().Text("Phòng ban").DataIndex("depName").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Left).Wrap(false).Width(300),
+                    Html.X().Column().Text("Vai trò").DataIndex("txtVaiTro").Flex(1)
+                )
+                .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi))
+                .BottomBar(Html.X().CustomPagingToolbar())
+    // End.HungNM.
+    )
+)
+<script type="text/javascript">
+
+    var ProblemRoleRelativePeople = function (obj) {
+        if (obj.hasFocus && obj.value == true) {
+            switch (obj) {
+                case App.chkView:
+                    App.chkView.setValue(true);
+                    App.chkUpdate.setValue(false);
+                    App.chkReview.setValue(false);
+                    break;
+                case App.chkUpdate:
+                    App.chkView.setValue(true);
+                    App.chkUpdate.setValue(true);
+                    App.chkReview.setValue(false);
+                    break;
+                case App.chkReview:
+                    App.chkView.setValue(true);
+                    App.chkUpdate.setValue(true);
+                    App.chkReview.setValue(true);
+                    break;
+                default:
+            }
+        }
+        else {
+            if (obj.hasFocus && obj.value == false) {
+                App.chkView.setValue(false);
+                App.chkUpdate.setValue(false);
+                App.chkReview.setValue(false);
+            }
+
+        }
+    };
+
+    var FormSelectPeopleOfDepartment = function () {
+        var lstRelativeDept = App.hdfLstRelativeDeptsFilter.getValue();
+        var lstRole = '' + (App.chkView.checked ? 'chkView' : '') + ',' + (App.chkUpdate.checked ? 'chkUpdate' : '') + ',' + (App.chkReview.checked ? 'chkReview' : '') + ',';
+        if (lstRole != ',,,') {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("EmployeeWindowNewVer3", "Employee", new { Area = "Human" }, null))',
+                params: {
+                    problemEventID: App.hdfProblemEventID.getValue(),
+                    lstRelativeDeptsFilter: lstRelativeDept,
+                    lstSelectedRole: lstRole
+                }
+            });
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có vai trò nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        };
+    };
+
+    var getListDeleteSelectedRelativePeople = function() {
+        try {
+            var lstResult = '';
+            var records = App.grdRelativePeople.selModel.selected.items;
+            if (records.length > 0) {
+                Ext.MessageBox.confirm('Thông báo', 'Bạn có chắc chắn muốn xóa nhân sự liên quan đã chọn?', function (btn) {
+                    if (btn == 'yes') {
+                        for (var i = 0; i < records.length; i++) {
+                            lstResult += records[i].data.ID + ',';
+                        }
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("DeleteRelativePeople", "Employee", new { Area = "Human" }, null))',
+                            params: {
+                                lstDeletedRelatePeople: lstResult
+                            }
+                        });
+                    }
+                })
+            }
+            else {
+                Ext.MessageBox.show({ title: 'Thông báo', msg: 'Bạn chưa chọn nhân sự nào!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+            };
+            return lstResult;
+        }
+        catch (err) {
+            alert('error = ' + err);
+        }
+    };
+
+</script>

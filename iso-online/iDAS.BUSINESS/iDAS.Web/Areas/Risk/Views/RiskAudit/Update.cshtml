@@ -1,0 +1,80 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.RiskAuditItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới kết quả đánh giá kết quả kiểm soát rủi ro";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Sửa kết quả đánh giá kết quả kiểm soát rủi ro";
+    }
+}
+@(Html.X().Window()
+.ID("winAuditRiskControl")
+.Title(title)
+.Icon(IconView)
+.Width(600)
+.Height(400)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+     X.FormPanel()
+            .ID("frmAuditRiskControl")
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .Frame(true)
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 100; })
+            .Items(
+                X.HiddenFor(m => m.ID),
+                X.HiddenFor(m => m.RiskControlID),
+                X.HiddenFor(m => m.QualityNCID),
+            Html.X().DateFieldFor(m => m.AuditTime)
+                .FieldLabel("Ngày đánh giá" + Html.Required())
+                .Value(actionForm == iDAS.Utilities.Form.Add?DateTime.Now:Model.AuditTime),
+            Html.X().ComboBoxFor(m => m.IsAccept)     
+                .FieldLabel("Kết quả" + Html.Required())
+                .Editable(false)
+                .Items(
+                    new ListItem("Đạt", true),
+                    new ListItem("Không đạt", false)
+                ),         
+                X.TextAreaFor(m => m.Note)
+                .Flex(1)
+                .FieldLabel("Nhận xét")
+                .EmptyText("Nhập nội dung thanh toán...")
+                .BlankText("Nội dung thanh toán không được bỏ trống!")
+                .AllowBlank(false)                
+    )
+)
+.Buttons(
+    Html.X().Button()
+            .Text("Lưu lại")
+            .Icon(Icon.DatabaseSave)
+            .DirectEvents(de =>
+            {
+                de.Click.Before = @"if (!App.frmAuditRiskControl.getForm().isValid()) { return false; }; ";
+                de.Click.ExtraParams.Add(new { exit = true });
+                de.Click.Url = Url.Action("Update");
+                de.Click.EventMask.ShowMask = true;
+                de.Click.FormID = "frmAuditRiskControl";
+                de.Click.Success = "this.up('window').close(); App.stAuditRisk.reload();";
+            }),
+    Html.X().ButtonExit()
+    )
+    )

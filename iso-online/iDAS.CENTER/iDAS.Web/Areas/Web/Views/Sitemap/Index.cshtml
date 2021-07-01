@@ -1,0 +1,129 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+    .Items(
+        Html.X().TreePanel()
+        .ID("SitemapPanel")
+        .Layout(LayoutType.Fit)
+        .Split(true)
+        .Region(Region.West).Width(300)
+        .Header(false)
+        .TitleAlign(TitleAlign.Center)
+        .Border(false)
+        .AutoScroll(true)
+        .RootVisible(false)
+        .RowLines(true)
+        .ColumnLines(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Layout(LayoutType.HBox)
+            .Items(
+                Html.X().Button().Icon(Icon.Add).Text("Thêm").ID("btnCreateSitemap").Handler("showCreateSitemap();").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Icon(Icon.Pencil).Text("Sửa").ID("btnUpdateSitemap").Handler("showUpdateSitemap();").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Icon(Icon.Delete).Text("Xóa").ID("btnDeleteSitemap").Handler("showDeleteSitemap()").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Icon(Icon.Zoom).Text("Xem chi tiết").ID("btnDetailSitemap").Handler("showDetailSitemap();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().TreeStore()
+            .AutoLoad(true)
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Sitemap", new { Area = "Web" }))
+            .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+            .Model(
+                Html.X().Model().Fields(
+                    Html.X().ModelField().Name("id"),
+                    Html.X().ModelField().Name("text"),
+                    Html.X().ModelField().Name("Tooltip").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsPageDynamic").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsMenuTop").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsMenuRight").Type(ModelFieldType.Boolean)
+                )
+            )
+        )
+        .ColumnModel(
+            Html.X().TreeColumn().Flex(1).DataIndex("text").Text(""),
+            Html.X().Column().DataIndex("Tooltip").Text("Chú thích").Width(300).Align(Alignment.Center),
+            Html.X().CheckColumn().DataIndex("IsPageDynamic").Text("Trang động").Width(80).Align(Alignment.Center),
+            Html.X().CheckColumn().DataIndex("IsMenuTop").Text("Menu Trên").Width(80).Align(Alignment.Center),
+            Html.X().CheckColumn().DataIndex("IsMenuRight").Text("Menu Phải").Width(80).Align(Alignment.Center),
+            Html.X().CheckColumn().DataIndex("IsActive").Text("Kích hoạt").Width(80).Align(Alignment.Center)
+        )
+        .Listeners(ls =>
+        {
+            ls.SelectionChange.Handler = "selectionChangeSitemap();";
+        })
+    )
+)
+<script>
+    var urlCreateSitemap = '@Url.Action("Create", "Sitemap", new { area = "Web"})';
+    var urlUpdateSitemap = '@Url.Action("Update", "Sitemap", new { area = "Web" })';
+    var urlDeleteSitemap = '@Url.Action("Delete", "Sitemap", new { area = "Web" })';
+    var urlDetailSitemap = '@Url.Action("Detail", "Sitemap", new { area = "Web" })';
+    
+    var getSitemapSelection = function () {
+        return App.SitemapPanel.getSelectionModel().getLastSelected();
+    };
+    var removeSitemapNode = function () {
+        var node = getSitemapSelection();
+        App.SitemapPanel.removeNode(node);
+        selectionChangeSitemap();
+    };
+    var showCreateSitemap = function () {
+        var url = urlCreateSitemap;
+        var record = getSitemapSelection();
+        var sitemapId = record == null ? 0 : record.data.id;
+        var params = { sitemapId: sitemapId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateSitemap = function () {
+        var url = urlUpdateSitemap;
+        var record = getSitemapSelection();
+        var sitemapId = record == null ? 0 : record.data.id;
+        var params = { sitemapId: sitemapId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteSitemap = function () {
+        var url = urlDeleteSitemap;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getSitemapSelection();
+                            var sitemapId = record == null ? 0 : record.data.id;
+                            var params = { sitemapId: sitemapId };
+                            onDirectMethod(url, params, 'post', removeSitemapNode);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailSitemap = function () {
+        var url = urlDetailSitemap;
+        var record = getSitemapSelection();
+        var sitemapId = record == null ? 0 : record.data.id;
+        var params = { sitemapId: sitemapId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeSitemap = function () {
+        var record = getSitemapSelection();
+        App.btnCreateSitemap.setDisabled(record == null);
+        App.btnUpdateSitemap.setDisabled(record == null || record.data.id == 0);
+        App.btnDeleteSitemap.setDisabled(record == null || record.data.id == 0);
+        App.btnDetailSitemap.setDisabled(record == null || record.data.id == 0);
+    };
+</script>

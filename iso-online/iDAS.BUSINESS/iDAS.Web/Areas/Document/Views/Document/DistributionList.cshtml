@@ -1,0 +1,124 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.DocumentDistributionItem
+@(Html.X().Window()
+.ID("winRequirementList")
+.Title("Phòng ban được phân phối tài liệu")
+.Layout(LayoutType.Fit)
+    .Width(800)
+    .Height(400)
+    .Icon(Icon.User)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+                    Html.X().HiddenFor(m => m.DocumentID).ID("hdfDocumentID"),
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrRequirementList")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().ButtonCreate().Handler("AddNewPartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonUpdate().ID("btnUpdatePartial").Handler("UpdatePartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete().ID("btnDeletePartial").Handler("onDelete(App.GrRequirementList.selModel.getSelection()[0].get('ID'));"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonTutorial()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreDocumentDistributionList")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDocumentDistributionList")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("docId", "App.hdfDocumentID.value", ParameterMode.Raw));
+                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("DocumentDeptName"),
+                                                    Html.X().ModelField().Name("Number"),
+                                                    Html.X().ModelField().Name("DistributionDate"),
+                                                    Html.X().ModelField().Name("Note")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("DocumentDeptName").Text("Phòng ban phân phối").Width(200),
+                                        Html.X().Column().DataIndex("Number").Text("Số lượng").Width(80),
+                                        Html.X().DateColumnExtend().DataIndex("DistributionDate").Text("Thời gian").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("Note").Text("Ghi Chú").Wrap(true).Width(400)
+        //Html.X().ComponentColumn().Text("Hình thức phân phối")
+        //     .Columns(
+
+                                    //        Html.X().DateColumnExtend().DataIndex("EndTime").Text("kết thúc").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center)
+        //        )
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+            )
+.Buttons(
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var deleteUrl = '@(Url.Action("Delete", "DocumentDistribution", new { Area = "Document" }, null))';
+    function CheckStatus() {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDeletePartial, App.btnUpdatePartial);
+        }
+        else {
+            SetDisabled(App.btnDeletePartial, App.btnUpdatePartial);
+        };
+    };
+
+    var UpdatePartial = function () {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateDistribution"))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AddNewPartial = function () {
+        if (App.hdfDocumentID.value > 0) {
+            var url = '@(Url.Action("AddDistribution"))';
+            var params = { DocID: App.hdfDocumentID.value };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+        @*Ext.net.DirectMethod.request({
+            url: '@(Url.Action("AddForm", "TrainingRequirementList", new { Area = "Human" }, null))',
+            params: {
+                id: App.hdfRequirementID.value
+            }
+        });*@
+    };
+
+</script>

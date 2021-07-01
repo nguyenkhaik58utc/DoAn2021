@@ -1,0 +1,33 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityCriteriaCategoryItem
+@(Html.X().CustomWindow()
+            .ID("winEditCriteriaCategory")
+            .Title("Sửa thông tin bộ tiêu chí đánh giá")
+            .Icon(Icon.Pencil)
+            .Items(
+                    Html.X().CustomFormPanel().ID("frCriteriaCategory")
+                            .Items(
+                                    Html.X().HiddenFor(m => m.ID),
+                                    Html.X().HiddenFor(m => m.ParentID),
+                                    Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên bộ tiêu chí" + Html.Required()).LabelAlign(LabelAlign.Top)
+                                        .BlankText("Tên bộ tiêu chí không được trống!").AllowOnlyWhitespace(false),
+                                    Html.X().EmployeeFieldFor(m => m.Audit).Title("Người đánh giá"),
+                                    Html.X().CheckboxFor(m => m.IsUse).BoxLabel("Sử dụng").HideLabel(true)
+
+                            )
+            )
+            .Buttons(
+                        Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frCriteriaCategory.getForm().isValid()) { return false; } ";
+                            de.Click.Action = "UpdateCategory";
+                            de.Click.FormID = "frCriteriaCategory";
+                            de.Click.Success = "this.up('window').close();App.trCriteriaCategory.store.reload();";
+                        }),
+                        Html.X().ButtonExit()
+            )
+)

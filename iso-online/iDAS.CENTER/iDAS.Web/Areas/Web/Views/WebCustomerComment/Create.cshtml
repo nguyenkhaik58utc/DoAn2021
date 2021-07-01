@@ -1,0 +1,75 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.WebCustomerCommentItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin ý kiến đánh giá")
+    .Icon(Icon.Add)
+    .Height(380)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .FieldDefaults(f => f.LabelWidth = 120)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).EmptyText("Tên Khách hàng").AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Tên Khách hàng *"),
+                            Html.X().TextFieldFor(m => m.Email).FieldLabel("Email"),
+                            Html.X().TextFieldFor(m => m.Phone).FieldLabel("Điện thoại"),
+                            Html.X().TextFieldFor(m => m.Role).FieldLabel("Chức danh"),
+                            Html.X().TextFieldFor(m => m.Company).FieldLabel("Đơn vị")
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true)
+                        )
+                    ),
+                    Html.X().TextAreaFor(m => m.Comment).FieldLabel("Ý kiến đánh giá").Height(60),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().DateFieldFor(m => m.RefreshAt).ColumnWidth(0.45).FieldLabel("Ngày đánh giá").Value(DateTime.Now),
+                        Html.X().Container().ColumnWidth(0.15),
+                        Html.X().CheckboxFor(m => m.IsFirst).ColumnWidth(0.2).HideLabel(true).BoxLabel("Luôn ở đầu"),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.2).HideLabel(true).Value(true).BoxLabel("Kích hoạt")
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "this.up('window').close(); reloadWebCustomerComment();";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+

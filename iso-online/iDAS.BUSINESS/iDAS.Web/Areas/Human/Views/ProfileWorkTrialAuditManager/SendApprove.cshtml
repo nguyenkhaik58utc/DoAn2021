@@ -1,0 +1,259 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.HumanProfileWorkTrialItem
+@(
+ Html.X().ApprovalSendWindow()
+        .UrlSubmit(Url.Action("SendApprove"))
+        .ItemsExtend(
+                     Html.X().TabPanel()
+                            .ID("TabPanel1")
+                            .ActiveTabIndex(0)
+                            .Border(true)
+                            .Items(
+                                    Html.X().FormPanel().Title("Đề xuất tuyển dụng")
+                                        .AutoScroll(true)
+                                        .Layout(LayoutType.VBox)
+                                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                                        .Frame(true)
+                                        .FieldDefaults(df => { df.LabelWidth = 120; df.LabelStyle = "padding-left: 5px;"; })
+                                        .PaddingSpec("5 10 0 0")
+                                        .StyleSpec("border: none;")
+                                        .Items(
+                                                            Html.X().HiddenFor(m => m.ID).ID("txtID"), Html.X().HiddenFor(m => m.HumanEmployeeID).ID("employeeId"),
+                                                    Html.X().TextFieldFor(m => m.HumanEmployee.Name).FieldLabel("Họ tên nhân sự").ReadOnly(true),
+                                                Html.X().Container().Layout(LayoutType.Column)
+                                                        .Items(
+                                                                    Html.X().DateFieldFor(m => m.HumanEmployee.Birthday).FieldLabel("Ngày sinh").ColumnWidth(0.55).ReadOnly(true),
+                                                                        Html.X().ComboBoxFor(m => m.HumanEmployee.Gender).FieldLabel("Giới tính").LabelWidth(80).ColumnWidth(0.45).ReadOnly(true).Items(new ListItem("Nam", true), new ListItem("Nữ", false))
+                                                        ),
+                                                                Html.X().RoleFieldFor(m => m.Role).FieldLabel("Vị trí").ReadOnly(true).PaddingSpec("5 2 0 0"),
+                                                     Html.X().Container().Layout(LayoutType.Column).PaddingSpec("5 0 0 0")
+                                                        .Items(
+                                                                    Html.X().DateFieldFor(m => m.FromDate).ID("txtFromDate").FieldLabel("Ngày bắt đầu").ColumnWidth(0.55).ReadOnly(true),
+                                                                        Html.X().DateFieldFor(m => m.ToDate).ID("txtToDate").FieldLabel("Ngày kết thúc").LabelWidth(80).ColumnWidth(0.45).ReadOnly(true)
+                                                        ),
+                                                    Html.X().TextAreaFor(m => m.Note).FieldLabel("Nội dung").MinHeight(150).Flex(1).ReadOnly(true).PaddingSpec("5 0 0 0"),
+                                                    Html.X().Container().Layout(LayoutType.Column)
+                                                            .Items(
+                                                                                        Html.X().ComboBoxFor(m => m.ContractType).FieldLabel("Loại hợp đồng " + Html.Required()).ColumnWidth(0.55).AllowOnlyWhitespace(false)
+                                                                                            .EmptyText("Loại hợp đồng")
+                                                                                        .Items(
+                                                                                                new ListItem("Một năm", 1),
+                                                                                                new ListItem("Hai năm", 2),
+                                                                                                new ListItem("Dài hạn", 3)
+                                                                                               ),
+                                                                                    Html.X().DateFieldFor(m => m.ContractStartTime).FieldLabel("Ngày bắt đầu" + Html.Required()).LabelWidth(100).ColumnWidth(0.45).AllowOnlyWhitespace(false)
+                                                            )
+                                            ),
+                                    Html.X().FormPanel().Layout(LayoutType.Fit).Title("Danh sách công việc").Border(false)
+                                            .Items(
+                                                        Html.X().TreePanel()
+                    .Split(true)
+                    .AutoScroll(true)
+                    .RootVisible(false)
+                    .UseArrows(true)
+                    .MultiSelect(true)
+                    .SingleExpand(true)
+                    .FolderSort(true)
+                    .RowLines(true)
+                    .SyncFx()
+                    .ColumnLines(true)
+                    .ID("GridTaskView")
+                    .Border(false)
+                    .Listeners(ls => ls.SelectionChange.Handler = "checkConMenuPerson(this);")
+                .Store(
+                    Html.X().TreeStore()
+                    .ID("stTask")
+                    .AutoSync(false)
+                    .AutoDataBind(false)
+                    .AutoLoad(false)
+                    .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("LoadTreeTaskPersonal", "TaskPerson", new { area = "Task" }))
+                    .Reader(
+                        Html.X().JsonReader().Root("data"))
+                            .IDParam("id"))
+                            .Parameters(ps =>
+                            {
+
+                                ps.Add(new StoreParameter("employeeId", "App.employeeId.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("fromdate", "App.txtFromDate.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("todate", "App.txtToDate.getValue()", ParameterMode.Raw));
+                            })
+                        .Model(Html.X().Model()
+                        .Fields(
+                            new ModelField("id"),
+                            new ModelField("text", ModelFieldType.String),
+                            new ModelField("IsRequireCheck", ModelFieldType.Boolean),
+                            new ModelField("LevelName", ModelFieldType.String),
+                            new ModelField("CategoryName", ModelFieldType.String),
+                            new ModelField("LevelColor", ModelFieldType.String),
+                            new ModelField("StartTime", ModelFieldType.String),
+                            new ModelField("EndTime", ModelFieldType.String),
+                            new ModelField("IsNew", ModelFieldType.Boolean),
+                            new ModelField("IsEdit", ModelFieldType.Boolean),
+                            new ModelField("IsAccept", ModelFieldType.Boolean),
+                            new ModelField("IsComplete", ModelFieldType.Boolean),
+                            new ModelField("IsPass", ModelFieldType.Boolean),
+                            new ModelField("IsPause", ModelFieldType.Boolean),
+                            new ModelField("IsOverTime", ModelFieldType.Boolean),
+                            new ModelField("PerformBy", ModelFieldType.Int),
+                            new ModelField("Status", ModelFieldType.String),
+                            new ModelField("Rate", ModelFieldType.Float),
+                            new ModelField("IsNew", ModelFieldType.Boolean),
+                            new ModelField("IsCreate", ModelFieldType.Boolean),
+                            new ModelField("IsPerform", ModelFieldType.Boolean),
+                            new ModelField("TaskID", ModelFieldType.Int)
+                        )
+                    )
+                )
+                .ColumnModel(
+                                Html.X().RowNumbererColumn()
+                                    .Text("STT.")
+                                    .Width(33)
+                                    .Align(Alignment.Center),
+                                Html.X().TreeColumn()
+                                    .Text("Tên công việc")
+                                    .DataIndex("text")
+                                    .Width(300).Locked(true)
+                                    .HeaderItems(
+                                        Html.X().TriggerField()
+                                                .EnableKeyEvents(true)
+                                                .Triggers(Html.X().FieldTrigger().Icon(TriggerIcon.Clear))
+                                                .Listeners(l =>
+                                                {
+                                                    l.KeyUp.Fn = "filterTree";
+                                                    l.KeyUp.Buffer = 350;
+                                                    l.TriggerClick.Fn = "clearFilter";
+                                                })
+                                                ),
+                                Html.X().Column()
+                                    .Text("Thời gian thực hiện")
+                                    .Columns(
+                                        Html.X().Column()
+                                            .Width(120)
+                                            .Text("Bắt đầu")
+                                            .Align(Alignment.Center)
+                                            .DataIndex("StartTime"),
+                                        Html.X().Column()
+                                            .Width(120)
+                                            .Text("Kết thúc")
+                                            .Align(Alignment.Center)
+                                            .DataIndex("EndTime")
+                                    ),
+                                Html.X().ComponentColumn()
+                                        .Text("Tiến độ")
+                                        .Component(Html.X().ProgressBar().Text("%"))
+                                        .Listeners(ls => ls.Bind.Handler = "cmp.updateProgress(record.get('Rate')/100, record.get('Rate') + '%'); "),
+                                Html.X().Column()
+                                        .Width(100)
+                                        .Text("Trạng thái")
+                                        .Align(Alignment.Center)
+                                        .DataIndex("Status"),
+                                Html.X().Column()
+                                        .Width(100)
+                                        .Text("Mức độ")
+                                        .DataIndex("LevelName")
+                                        .Align(Alignment.Center)
+                                        .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('LevelColor') + ';'; return value; }" }),
+                                Html.X().Column()
+                                        .Text("Trách nhiệm")
+                                        .Columns(
+                                            Html.X().CheckColumn()
+                                                .Text("Tạo mới")
+                                                .DataIndex("IsCreate")
+                                                .Width(70),
+                                            Html.X().CheckColumn()
+                                                .Text("Thực hiện")
+                                                .DataIndex("IsPerform")
+                                                .Width(70)
+                                                )
+                         )
+                                                         ),
+                                             Html.X().Panel().Layout(LayoutType.Fit)
+                                                    .Title("Đánh giá")
+                                                    .Border(false)
+                                                    .Items(
+                                                           Html.X().GridPanel().MarginSpec("5 0 0 0")
+                                                                        .Margin(1)
+                            .Header(false)
+                            .ID("grAuditResult")
+
+                            .ColumnLines(true)
+                            .ForceFit(true)
+
+                        .Store(
+                            Html.X().Store()
+                                    .ID("StoreAditResult")
+                                    .RemotePaging(true)
+                                    .AutoLoad(true)
+                                                               .GroupField("QualityCriteriaCateName")
+                                                            .Sorters(Html.X().DataSorter().Property("QualityCriteriaCateName").Direction(Ext.Net.SortDirection.ASC))
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetAuditResult"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                    .IDParam("ID"))
+                                    .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("humanProfileWorkTrialID", "App.txtID.getValue()", ParameterMode.Raw));
+                                    })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("QualityCriteriaName"),
+                                            Html.X().ModelField().Name("ManagerPoint"),
+                                                Html.X().ModelField().Name("EmployeePoint"),
+                                                Html.X().ModelField().Name("QualityCriteriaCateName"),
+                                        Html.X().ModelField().Name("Note")
+
+                                    )
+                                 )
+                        )
+                        .ColumnModel(
+                                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                            Html.X().Column().DataIndex("ID").Hidden(true),
+                                                            Html.X().Column().DataIndex("QualityCriteriaName").Text("Tiêu chí").Width(300).StyleSpec("font-weight: bold;text-align: center"),
+                                                                    Html.X().Column().Text("Điểm tự đánh giá").Width(150).Align(Alignment.Right).DataIndex("EmployeePoint"),
+                                                                            Html.X().Column().Text("Điểm quản lý đánh giá").Align(Alignment.Right).Width(160).DataIndex("ManagerPoint"),
+                                                        Html.X().Column().DataIndex("Note").Text("Ghi chú").Width(300).Flex(1).StyleSpec("font-weight: bold;text-align: center")
+                                )
+
+                         .Features(
+                                            Html.X().GroupingSummary()
+                                            .ID("GroupingSummarySupplier")
+                                            .GroupHeaderTplString("{name}")
+                                            .HideGroupedHeader(true)
+                                            .EnableGroupingMenu(false)
+                                    )
+        
+                        
+
+                                                    )
+                                   )
+                     )
+)
+<script>
+    var filterTree = function (tf, e) {
+        var tree = this.up("treepanel"),
+            text = tf.getRawValue();
+        tree.clearFilter();
+        if (Ext.isEmpty(text, false)) {
+            return;
+        }
+        if (e.getKey() === Ext.EventObject.ESC) {
+            clearFilter();
+        } else {
+            var re = new RegExp(".*" + text + ".*", "i");
+            tree.filterBy(function (node) {
+                return re.test(node.data.text);
+            });
+        }
+    };
+    var clearFilter = function () {
+        var field = this,
+            tree = this.up("treepanel");
+        field.setValue("");
+        tree.clearFilter(true);
+        tree.getView().focus();
+    };
+</script>

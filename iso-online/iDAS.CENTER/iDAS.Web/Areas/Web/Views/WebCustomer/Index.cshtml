@@ -1,0 +1,122 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.WebCustomerItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("WebCustomerPanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateWebCustomer").Icon(Icon.Add).Handler("showCreateWebCustomer();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateWebCustomer").Icon(Icon.Pencil).Handler("showUpdateWebCustomer();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteWebCustomer").Icon(Icon.Delete).Handler("showDeleteWebCustomer();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailWebCustomer").Icon(Icon.Zoom).Handler("showDetailWebCustomer();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("FileID").Type(ModelFieldType.Object),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Email").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Address").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectWebCustomer()")
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeWebCustomer();")
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex(Model, m => m.ID).Hidden(true),
+            Html.X().ImageColumn().DataIndex(Model, m => m.FileID),
+            Html.X().Column().Text("Tên khách hàng").DataIndex(Model, m => m.Name).StyleSpec("font-weight: bold;text-align: center").Flex(1).Align(Alignment.Center),
+            Html.X().Column().Text("Email").DataIndex(Model, m => m.Email).StyleSpec("font-weight: bold;text-align: center").Width(190).Align(Alignment.Center),
+            Html.X().Column().Text("Địa chỉ").DataIndex(Model, m => m.Address).StyleSpec("font-weight: bold;text-align: center").Width(280).Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex(Model, m => m.CreateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script type="text/javascript">
+    var urlCreateWebCustomer = '@Url.Action("Create", "WebCustomer", new { area = "Web" })';
+    var urlUpdateWebCustomer = '@Url.Action("Update", "WebCustomer", new { area = "Web" })';
+    var urlDeleteWebCustomer = '@Url.Action("Delete", "WebCustomer", new { area = "Web" })';
+    var urlDetailWebCustomer = '@Url.Action("Detail", "WebCustomer", new { area = "Web" })';
+
+    var getWebCustomerSelection = function () {
+        return App.WebCustomerPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadWebCustomer = function () {
+        App.WebCustomerPanel.getStore().reload();
+        deSelectWebCustomer();
+    }
+    var deSelectWebCustomer = function () {
+        App.WebCustomerPanel.selModel.lastSelected = null;
+        selectionChangeWebCustomer();
+    }
+    var showCreateWebCustomer = function () {
+        var url = urlCreateWebCustomer;
+        onDirectMethod(url, null, 'get');
+    };
+    var showUpdateWebCustomer = function () {
+        var url = urlUpdateWebCustomer;
+        var record = getWebCustomerSelection();
+        var WebCustomerId = record == null ? 0 : record.data.ID;
+        var params = { WebCustomerId: WebCustomerId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteWebCustomer = function () {
+        var url = urlDeleteWebCustomer;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getWebCustomerSelection();
+                            var WebCustomerId = record == null ? 0 : record.data.ID;
+                            var params = { WebCustomerId: WebCustomerId };
+                            onDirectMethod(url, params, 'post', reloadWebCustomer);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailWebCustomer = function () {
+        var url = urlDetailWebCustomer;
+        var record = getWebCustomerSelection();
+        var WebCustomerId = record == null ? 0 : record.data.ID;
+        var params = { WebCustomerId: WebCustomerId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeWebCustomer = function () {
+        var record = getWebCustomerSelection();
+        App.btnUpdateWebCustomer.setDisabled(record == null);
+        App.btnDeleteWebCustomer.setDisabled(record == null);
+        App.btnDetailWebCustomer.setDisabled(record == null);
+    };
+</script>

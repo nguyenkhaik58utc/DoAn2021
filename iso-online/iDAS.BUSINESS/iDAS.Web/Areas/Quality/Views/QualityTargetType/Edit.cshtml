@@ -1,0 +1,96 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.QualityTargetTypeItem
+@(Html.X().Window()
+              .ID("winEditTargetCategory")
+          .Title("Sửa thông tin loại mục tiêu")
+          .Icon(Icon.Pencil)
+          .Height(300)
+          .Width(500)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().FormPanel()
+                    .ID("frTargetCategory")
+                .Layout(LayoutType.Form)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+        .Items(
+        Html.X().HiddenFor(m=>m.ID),
+            Html.X().ComboBoxFor(m => m.QualityTargetCategoryID)
+                           .ID("cbCategoryID").LabelWidth(120)
+                       .FieldLabel("Nhóm mục tiêu" + Html.Required())
+                       .BlankText("Nhóm mục tiêu không được trống")
+                       .AnchorHorizontal("100%")
+                       .Editable(false)
+                       .AllowBlank(false)
+                       .TabIndex(1)
+                       .QueryMode(DataLoadMode.Local)
+                       .ForceSelection(true)
+                       .DisplayField("Name")
+                       .ValueField("ID")
+                       .Store(Html.X().Store()
+                       .ID("stTypeTarget")
+                       .AutoLoad(true)
+                       .Model(Html.X().Model()
+                       .IDProperty("ID")
+                       .Fields(
+                               new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                               new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                               )
+                               )
+                               .Proxy(Html.X().AjaxProxy()
+                               .Url(Url.Action("GetData", "TargetCategory"))
+                               .Reader(Html.X().JsonReader().Root("data")
+                               )
+                               )
+                              ),                              
+            Html.X().TextFieldFor(m => m.Name)
+                .FieldLabel("Tên loại mục tiêu" + Html.Required())
+                .ID("txtName")
+                .AllowBlank(false)
+                .LabelWidth(120)
+                .BlankText("Tên loại mục tiêu không được trống")
+                .AllowOnlyWhitespace(false),
+        Html.X().ComboBoxFor(m => m.IsActive)
+                .TabIndex(4)
+                .LabelWidth(120)
+                .Editable(false)
+                .FieldLabel("Tình trạng" + Html.Required())
+                .ID("cbIsUse")
+                .Items(
+                    new ListItem("Sử dụng", true),
+                    new ListItem("Không sử dụng", false)
+                 ),
+                         
+         Html.X().TextAreaFor(m => m.Note)
+                 .FieldLabel("Diễn giải")
+                 .Height(130)
+                 .LabelWidth(120)
+             )
+            )
+            .Buttons(
+            Html.X().ButtonSave()
+            .ID("btnSave")
+            .DirectEvents(de =>
+            {
+                de.Click.Before = @"if (!App.frTargetCategory.getForm().isValid()) { return false; } ";
+                de.Click.Action = "Update";
+                de.Click.FormID = "frTargetCategory";
+                de.Click.Success = "this.up('window').close();";
+            }),            
+            Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var showFrmListCateEdit = function () {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmListCriteriaCategory", "TargetCategory", new { Area = "Quality" }, null))'
+            });
+    };
+</script>

@@ -1,0 +1,91 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.ProductionStageItem
+@(Html.X().CustomWindow()
+        .ID("winStage")
+        .Maximizable(false).Maximized(true)
+        .Height(1)
+        .Title("Nhật ký sản xuất")
+        .Icon(Icon.BookAdd)
+        .Items(   Html.X().GridPanel().ID("GrShiftProduct")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .TopBar(
+                                    Html.X().Toolbar()
+                                        .Layout(LayoutType.HBox)
+                                        .Items(
+                                            Html.X().ButtonCreate().Handler("ShowAdd();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonUpdate().ID("btnUpdateHistory").Handler("ShowUpdate();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonDelete().ID("btnDeleteHistory").Handler("onDelete(App.GrHistory.selModel.getSelection()[0].get('ID'));"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonView().ID("btnDetailHistory").Handler("ShowView();")
+                                            )
+                                        )
+                            .Store(
+                                Html.X().Store()
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .GroupField("ProductName")
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("IsUse")
+                                            )
+                                        )
+                                    )
+                                    .ColumnModel(
+                                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("Name").Text("Tên nguyên liệu").Align(Alignment.Center).Flex(1),
+                                            Html.X().Column().DataIndex("Name").Text("Chất lượng nguyên liệu").Align(Alignment.Center).Width(180).Wrap(true),
+                                            Html.X().Column().DataIndex("Name").Text("Sự cố").Align(Alignment.Center).Width(180).Wrap(true),
+                                            Html.X().Column().DataIndex("Name").Text("Nguyên nhân").Align(Alignment.Center).Width(180).Wrap(true),
+                                            Html.X().Column().DataIndex("Name").Text("Biện pháp").Align(Alignment.Center).Width(180).Wrap(true)
+                                        )
+                                .BottomBar(Html.X().CustomPagingToolbar())
+)
+.Buttons(
+            Html.X().ButtonExit()
+      )
+)
+<script>
+    function CheckValueChange(obj) {
+        if (obj.value == true) {
+
+            switch (obj) {
+                case App.cbxPlanByCommand:
+                    App.cbxPlanByPlan.setValue(false);
+                    App.fsPlanByCommand.show();
+                    App.fsPlanByPlan.hide();
+                    break;
+                case App.cbxPlanByPlan:
+                    App.cbxPlanByCommand.setValue(false);
+                    App.fsPlanByPlan.show();
+                    App.fsPlanByCommand.hide();
+                    break;
+            }
+        };
+        if (!App.cbxPlanByPlan.value && !App.cbxPlanByCommand.value) {
+            switch (obj) {
+                case App.cbxPlanByCommand:
+                    App.cbxPlanByPlan.setValue(true);
+                    App.fsPlanByPlan.show();
+                    App.fsPlanByCommand.hide();
+                    break;
+                case App.cbxPlanByPlan:
+                    App.cbxPlanByCommand.setValue(true);
+                    App.fsPlanByCommand.show();
+                    App.fsPlanByPlan.hide();
+                    break;
+            }
+        };
+    };
+</script>

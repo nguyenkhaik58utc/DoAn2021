@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateCertificateLevel = '@(Url.Action("Create", "v3_CertificateLevel", new { area = "Human" }))';
+    var urlUpdateCertificateLevel = '@(Url.Action("Update", "v3_CertificateLevel", new { area = "Human" }))';
+    var urlDeleteCertificateLevel = '@(Url.Action("Delete", "v3_CertificateLevel", new { Area = "Human" }))';
+    var urlDetailCertificateLevel = '@(Url.Action("ShowFrmDetail", "v3_CertificateLevel", new { Area = "Human" }))';
+    var sortCertificateLevelIndex = null;
+    var showCreateCertificateLevel = function () {
+        var url = urlCreateCertificateLevel;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateCertificateLevel = function () {
+        var url = urlUpdateCertificateLevel;
+        var record = getCertificateLevelSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getCertificateLevelSelection = function () {
+        var records = App.CertificateLevelPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setCertificateLevelSelection = function () {
+        if (sortCertificateLevelIndex != null) {
+            App.CertificateLevelPanel.selModel.select(sortCertificateLevelIndex);
+        }
+    };
+
+    var showDeleteCertificateLevel = function () {
+        var url = urlDeleteCertificateLevel;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ xếp loại này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getCertificateLevelSelection();
+                            var CertificateLevelId = record == null ? 0 : record.data.ID;
+                            var params = { ID: CertificateLevelId };
+                            onDirectMethod(url, params, 'post', reloadCertificateLevel);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailCertificateLevel = function () {
+        var url = urlDetailCertificateLevel;
+        var record = getCertificateLevelSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadCertificateLevel = function () {
+        App.CertificateLevelPanel.store.reload();
+    };
+
+    var selectionChangeCertificateLevel = function () {
+        var record = getCertificateLevelSelection();
+        var isDisabled = record == null;
+        App.btnUpdateCertificateLevel.setDisabled(isDisabled);
+        App.btnDeleteCertificateLevel.setDisabled(isDisabled);
+        App.btnDetailCertificateLevel.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý xếp loại chứng chỉ").Header(false)
+                    .ID("CertificateLevelPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateCertificateLevel").ID("btnCreateCertificateLevel()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateCertificateLevel").Handler("showUpdateCertificateLevel();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteCertificateLevel").Handler("showDeleteCertificateLevel()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailCertificateLevel").Handler("showDetailCertificateLevel();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreCertificateLevel")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setCertificateLevelSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên xếp loại").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeCertificateLevel();")
+    )
+    )

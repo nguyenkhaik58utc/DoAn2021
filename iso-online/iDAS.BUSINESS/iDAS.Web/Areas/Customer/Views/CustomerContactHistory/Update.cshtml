@@ -1,0 +1,142 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerContactHistoryItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới liên hệ";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật liên hệ";
+    }
+    string result = (Model.IsOfficial || Model.IsPotential) ? "có hợp đồng" : "có nhu cầu";
+    bool hideRequirement = true;
+    string requirementField = "";
+    if (!string.IsNullOrEmpty(Model.RequirementField))
+    {
+        hideRequirement = false;
+        requirementField = Model.RequirementField;
+    }
+}
+@(Html.X().CustomWindow()
+.ID("winCustomerContactHistoryUpdate")
+.Title(title)
+.Icon(IconView)
+ .Border(false)
+.Items(
+        X.FormPanel().ID("frmContactHistoryUpdate")
+            .Layout(LayoutType.Fit)
+            .Frame(true)
+            .Border(false)
+            .Padding(0)
+            .StyleSpec("border: none;")
+            .Items(
+                    X.TabPanel().ActiveTabIndex(0).Border(true)
+                        .Items(
+                                X.CustomFormPanel().ID("contactHistoryInfoID").Title("Thông tin liên hệ")
+                                    .StyleSpec("border: none;")
+                                    .Frame(true)
+                                    .Items(
+                                                X.HiddenFor(m => m.ID), X.HiddenFor(m => m.CustomerID).ID("hdfCustomerID"),
+                                                X.EmployeeFieldFor(m => m.Employee).ReadOnly(true).AllowBlank(false)
+                                                    .ColumnWidth(1).ID("ebfContactHistoryEmployeeBoxFor"),
+                                                X.DateFieldFor(m => m.Time).FieldLabel("Thời gian" + Html.Required()).EmptyValue(DateTime.Now).ID("dffContactHistoryTime")
+                                                        .AllowBlank(false),
+                                                Html.X().Container().Layout(LayoutType.Column)
+                                                            .Items(
+                                                                    X.ComboBoxFor(m => m.FormID).ID("cbxContactHistoryFormID")
+                                                                                .QueryMode(DataLoadMode.Local)
+                                                                                .DisplayField("Name")
+                                                                                .ValueField("ID")
+                                                                                .Store(
+                                                                                    Html.X().Store().ID("stContactHistoryForm")
+                                                                                    .RemotePaging(true)
+                                                                                    .AutoDataBind(true)
+                                                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDataActived", "CustomerForm", new { Area = "Customer" }, null))
+                                                                                    .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                                                    .Model(
+                                                                                        Html.X().Model().IDProperty("ID").Fields(
+                                                                                            Html.X().ModelField().Name("ID"),
+                                                                                            Html.X().ModelField().Name("Name"),
+                                                                                            Html.X().ModelField().Name("Color"),
+                                                                                            Html.X().ModelField().Name("RequirementField")
+                                                                                            )
+                                                                                        )
+                                                                                )
+                                                                                .Tpl(
+                                                                                @<text>
+                                                                                    <tpl for=".">
+                                                                                        <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                                                                            <div style="width: 20px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left; font-size: 0.9em;">&nbsp;{Name}</div>
+                                                                                        </div>
+                                                                                    </tpl>
+                                                                                </text>)
+                                                                                .Listeners(l => l.Select.Handler = "formChange(this);")
+                                                                                .AllowBlank(false)
+                                                                                .FieldLabel("Hình thức" + Html.Required()).ColumnWidth(0.5),
+                                                                    X.NumberFieldFor(m=>m.Cost).FieldLabel("Chi phí").MinValue(0).EmptyValue(0).LabelWidth(70).MarginSpec("0 0 0 5").Icon(Icon.Money).ColumnWidth(0.5),
+                                                                    X.CheckboxFor(m => m.IsSuccess).BoxLabel(result).FieldLabel("Kết quả").ID("cbxContactHistoryIsSuccess")
+                                                                                .ID("SuccessID").ColumnWidth(0.5)
+                                                                ),
+                                                X.TextFieldFor(m => m.Requirment).ID("tfRequirment").AllowBlank(hideRequirement).FieldLabel(requirementField + Html.Required()).Hidden(hideRequirement),
+                                                X.FileUploadFieldFor(m => m.AttachmentFile),
+                                                X.TextAreaFor(m => m.Content).ID("ContactHistoryContent").FieldLabel("Nội dung" + Html.Required())
+                                                        .AllowOnlyWhitespace(false)
+                                                        .EmptyText("Nhập nội dung...").MinHeight(100).Flex(1)
+                                            ),
+                               X.Panel().ID("NoteId").Title("Ghi chú")
+                                        .Layout(LayoutType.VBox).Listeners(ls => ls.AfterRender.Handler = "this.setHeight(App.contactHistoryInfoID.getHeight());")
+                                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                                        .Padding(2)
+                                        .Items(
+                                                X.TextAreaFor(m => m.Note).ID("ContactHistoryNote").HideLabel(true)
+                                                            .EmptyText("Nhập ghi chú...").MinHeight(100).Flex(1)
+                                               )
+                            )
+                )
+)
+.Buttons(
+    Html.X().ButtonSave()
+            .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmContactHistoryUpdate.getForm().isValid()) { return false; }; ";
+                            de.Click.ExtraParams.Add(new { exit = true });
+                            de.Click.Url = Url.Action("Update");
+                            de.Click.FormID = "frmContactHistoryUpdate";
+                        })
+    , Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var formChange = function (obj) {
+        App.tfRequirment.show();
+        var requirment = "<span style='color:red'> (*)</span>";
+        var id = obj.getValue();
+        var record = obj.store.getById(id);
+        var requirementField = record.get('RequirementField');
+        if (requirementField != null)
+        {
+            App.tfRequirment.setFieldLabel(requirementField + requirment);
+        }
+        else
+        {
+            App.tfRequirment.hide();
+        }
+        getColor(obj, obj.store);
+    };
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+</script>

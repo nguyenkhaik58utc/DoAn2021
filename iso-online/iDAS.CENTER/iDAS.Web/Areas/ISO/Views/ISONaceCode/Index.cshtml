@@ -1,0 +1,195 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ISONaceCodeItem
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+    int insert = (int)Common.FormName.Insert;
+    int detail = (int)Common.FormName.Detail;
+    int edit = (int)Common.FormName.Edit;
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+         Html.X().Menu()
+                    .ID("cmMenu")
+                    .Items(
+                            new MenuItem { Text = "Xem chi tiết", ID = "cmViewDetail", Icon = Icon.Zoom, Handler = "showForm('" + detail + "');" },
+                             Html.X().MenuSeparator(),
+                            new MenuItem { Text = "Thêm mới", ID = "cmInsert", Icon = Icon.Add, Handler = "showForm('" + insert + "');" },
+                            new MenuItem { Text = "Sửa", ID = "cmUpdate", Icon = Icon.Pencil, Handler = "showForm('" + edit + "');" },
+                            new MenuItem { Text = "Xóa", ID = "cmDelete", Icon = Icon.Delete, Handler = "deleteRecord();" }
+                        ),
+        Html.X().GridPanel()
+            .ID("grISONaceCode")
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Header(false)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button()
+                            .Text("Thêm mới")
+                            .Icon(Icon.Add)
+                            .ID("btnInsert")
+                            .Handler("showForm('" + insert + "');"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Sửa")
+                            .Icon(Icon.Pencil)
+                            .Disabled(true)
+                            .ID("btnEdit")
+                            .Handler("showForm('" + edit + "');"),
+                             Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Xóa")
+                            .Icon(Icon.Delete)
+                            .Disabled(true)
+                            .ID("btnDelete")
+                                .Handler("deleteRecord();"),
+                             Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Xem chi tiết")
+                            .Icon(Icon.Zoom)
+                            .ID("btnDetail")
+                                .Disabled(true)
+                            .Handler("showForm('" + detail + "');")
+                    )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                    .ID("stISONaceCode")
+                    .PageSize(10)
+                        .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("LoadISONaceCode"))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        .IDParam("ID"))
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .Width(30)
+                        .Align(Alignment.Center)
+                        .Wrap(true),
+                Html.X().Column()
+                        .DataIndex(Model, m => m.ID)
+                        .Text("ID")
+                        .Hidden(true),
+                     Html.X().Column()
+                        .DataIndex(Model, m => m.Code)
+                        .Text("Mã nghành nghề")
+                        .Width(150)
+                        .Wrap(true),        
+                Html.X().Column()
+                        .DataIndex(Model, m => m.Name)
+                        .Text("Tên lĩnh vực")                             
+                        .Flex(1)
+                        .Wrap(true),
+                Html.X().CheckColumn().DataIndex(Model, m => m.IsActive).Text("Kích hoạt").Wrap(true).Width(60).Align(Alignment.Center)
+            )
+            .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+            .View(Html.X().GridView().TrackOver(false))
+            .BottomBar(Html.X().CustomPagingToolbar())
+            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                        .Listeners(ls => ls.Select.Handler = "checkStatus();")     
+                            )
+    )
+)
+<script type="text/javascript">
+    var rootImg = '@Url.Content(iDAS.Utilities.ConstantPath.UploadImageServiceAvatar)';
+    var id = 0; var active = 0;
+    var showForm = function (cmd) {
+        var records = App.grISONaceCode.selModel.getSelection();
+        if (records.length > 0) {
+            id = records[0].get('ID');
+            active = records[0].get('IsActive');
+
+        }
+        else if (cmd != '@insert') {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn chưa chọn bản ghi cần sửa!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+
+            });
+        }
+
+        showFormInRow(cmd, id, active);
+
+    };
+    var showFormInRow = function (cmd, id, status) {
+        var type = 0; var store = '';
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrm", "ISONaceCode", new { Area = "ISO" }, null))',
+            params: { id: id, type: cmd }
+        });
+    }
+    var checkStatus = function () {
+        var records = App.grISONaceCode.selModel.getSelection();
+        if (records.length > 0) {
+            App.cmDelete.setDisabled(false);
+            App.cmUpdate.setDisabled(false);
+            App.cmViewDetail.setDisabled(false);
+            App.btnEdit.setDisabled(false);
+            App.btnDelete.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+        }
+        else {
+            App.cmUpdate.setDisabled(true);
+            App.cmViewDetail.setDisabled(true);
+            App.cmDelete.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+        }
+    };
+    var deleteRecord = function () {
+        var records = App.grISONaceCode.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận',
+                msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Help',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "ISONaceCode", new { Area = "ISO" }, null))', params: { ID: id },
+                            success: function (result) {
+                                if (result == 'Error') {
+                                    Ext.MessageBox.show({
+                                        title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa Dữ liệu phát sinh lỗi. Đề nghị liên hệ với Admin!',
+                                        buttons: { yes: 'Đồng ý' },
+                                        iconCls: '#Cancel',
+                                        fn: function (btn) {
+                                            records[0].reject();
+                                            return false;
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn chưa chọn bản ghi cần xóa!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclution'
+            });
+        }
+
+    };
+</script>

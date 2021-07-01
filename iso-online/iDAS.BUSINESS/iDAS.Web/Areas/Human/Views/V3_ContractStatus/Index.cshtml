@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateContractStatus = '@(Url.Action("Create", "V3_ContractStatus", new { area = "Human" }))';
+    var urlUpdateContractStatus = '@(Url.Action("Update", "V3_ContractStatus", new { area = "Human" }))';
+    var urlDeleteContractStatus = '@(Url.Action("Delete", "V3_ContractStatus", new { Area = "Human" }))';
+    var urlDetailContractStatus = '@(Url.Action("ShowFrmDetail", "V3_ContractStatus", new { Area = "Human" }))';
+    var sortContractStatusIndex = null;
+    var showCreateContractStatus = function () {
+        var url = urlCreateContractStatus;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateContractStatus = function () {
+        var url = urlUpdateContractStatus;
+        var record = getContractStatusSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getContractStatusSelection = function () {
+        var records = App.ContractStatusPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setContractStatusSelection = function () {
+        if (sortContractStatusIndex != null) {
+            App.ContractStatusPanel.selModel.select(sortContractStatusIndex);
+        }
+    };
+
+    var showDeleteContractStatus = function () {
+        var url = urlDeleteContractStatus;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ tình trạng hợp đồng này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getContractStatusSelection();
+                            var ContractStatusId = record == null ? 0 : record.data.ID;
+                            var params = { ContractStatusId: ContractStatusId };
+                            onDirectMethod(url, params, 'post', reloadContractStatus);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailContractStatus = function () {
+        var url = urlDetailContractStatus;
+        var record = getContractStatusSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadContractStatus = function () {
+        App.ContractStatusPanel.store.reload();
+    };
+
+    var selectionChangeContractStatus = function () {
+        var record = getContractStatusSelection();
+        var isDisabled = record == null;
+        App.btnUpdateContractStatus.setDisabled(isDisabled);
+        App.btnDeleteContractStatus.setDisabled(isDisabled);
+        App.btnDetailContractStatus.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý tình trạng hợp đồng").Header(false)
+                    .ID("ContractStatusPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateContractStatus").ID("btnCreateContractStatus()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateContractStatus").Handler("showUpdateContractStatus();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteContractStatus").Handler("showDeleteContractStatus()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailContractStatus").Handler("showDetailContractStatus();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreContractStatus")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setContractStatusSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên tình trạng hợp đồng").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeContractStatus();")
+    )
+    )

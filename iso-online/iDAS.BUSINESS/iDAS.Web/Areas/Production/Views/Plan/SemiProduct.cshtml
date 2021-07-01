@@ -1,0 +1,41 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductionPlanProductItem
+@(Html.X().Window()
+    .Title("Cập nhật kế hoạch sản xuất bán thành phẩm")
+    .Icon(Icon.Pencil)
+    .BodyPadding(0)
+    .Width(400)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+            Html.X().CustomFormPanel().ID("frmSemiProductUpdate")
+                        .Items(
+                                Html.X().HiddenFor(m => m.ID).ID("SemiProductId"),
+                                Html.X().TextFieldFor(m => m.StageName).ReadOnly(true).ID("SemiProductStageName")
+                                            .FieldLabel("Tên công đoạn"),
+                                Html.X().TextFieldFor(m => m.ProductResult.Name).ID("SemiProductName")
+                                            .FieldLabel("Bán thành phẩm"),
+                                Html.X().DateFieldFor(m=>m.StartTime).ID("SemiProductStartTime").AllowBlank(false).FieldLabel("Bắt đầu" + Html.Required()),
+                                Html.X().DateFieldFor(m => m.EndTime).ID("SemiProductEndTime").AllowBlank(false).FieldLabel("Kết thúc" + Html.Required()),
+                                Html.X().NumberFieldFor(m => m.QuantityCalculator).FieldLabel("Số lượng tính toán").ReadOnly(true),
+                                Html.X().NumberFieldFor(m => m.Quantity).MinValue(1).FieldLabel("Số lượng" + Html.Required())
+                                            .EmptyText("Nhập số lượng cần")
+                                            .AllowBlank(false).BlankText("Bắt buộc nhập số lượng bán thành phẩm")
+                        )
+    )
+    .Buttons(
+                Html.X().ButtonSave()
+                            .DirectEvents(de =>
+                                            {
+                                                de.Click.Before = @"if (!App.frmSemiProductUpdate.getForm().isValid()) { return false; };";
+                                                de.Click.Url = Url.Action("SemiProduct");
+                                                de.Click.FormID = "frmSemiProductUpdate";
+                                                de.Click.Success = "this.up('window').close();";
+                                            }),
+                Html.X().ButtonExit()
+    )
+)

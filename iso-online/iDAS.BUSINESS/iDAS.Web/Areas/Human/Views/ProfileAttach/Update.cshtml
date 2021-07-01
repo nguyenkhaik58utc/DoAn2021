@@ -1,0 +1,34 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Utilities;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanProfileAttachItem
+@{
+    var X = Html.X();
+}
+@(Html.X().CustomWindow()
+.ID("WinAttachUpdate")
+.Title("Hồ sơ đính kèm")
+.Icon(Icon.Pencil)
+.Items(
+    Html.X().CustomFormPanel()
+    .ID("frmAttachmentUpdate")
+    .Items(
+               X.HiddenFor(m => m.ID).ID("ProfileAttachmentId"),
+                X.HiddenFor(m => m.EmployeeID).ID("ProfileEmployeeId"),
+               X.TextFieldFor(m => m.Name).FieldLabel("Tên tài liệu" + Html.Required()).AllowOnlyWhitespace(false).MaxLength(199),
+               X.FileUploadFieldFor(m=>m.AttachmentFiles).Multiple(false),
+               X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú").MinHeight(100).Flex(1)
+           )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                .DirectEvents(de =>
+                    {
+                        de.Click.Before = @"if (!App.frmAttachmentUpdate.getForm().isValid()) { return false; } ";
+                        de.Click.Url = Url.Action("Update");
+                        de.Click.FormID = "frmAttachmentUpdate";
+                    })
+        , Html.X().ButtonExit())
+)
+

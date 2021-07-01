@@ -1,0 +1,263 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.QualityMeetingResultItem
+@{
+    var urlSubmitTask = Url.Action("Insert", "MeetingTask", new { area = "Quality" });
+    var urlStoreTask = Url.Action("LoadTasks", "MeetingTask", new { area = "Quality" });
+    var paramStoreTask = Html.X().StoreParameter().Name("MeetingID").Value("getParamID()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Window()
+.ID("winMeetingResult")
+.Title("Biên bản cuộc họp")
+.Icon(Icon.PageWhiteWord)
+.Maximizable(true)
+.Width(800)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.BodyPadding(0)
+.Border(false)
+.Items(
+    Html.X().TabPanel()
+    .ID("TabPanel1")
+    .ActiveTabIndex(0)
+    .Region(Region.Center)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Items(
+        Html.X().FormPanel()
+                .ID("frResult")
+                .Title("Thông tin chung")
+                .Icon(Icon.TextListBullets)
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .FieldDefaults(df => { df.LabelWidth = 120; })
+                .StyleSpec("border: none;")
+                .TopBar(
+                     Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().Button().Text("Sử dụng dữ liệu của kế hoạch").ToolTip("Sử dụng dữ liệu của kế hoạch").ID("btnUse").Icon(Icon.ApplicationGet)
+                                .Handler("UseMeetingInfo();")
+                            )
+                )
+                .Items(
+                        Html.X().HiddenFor(m => m.ID).ID("hdfId"),
+                        Html.X().HiddenFor(m => m.MeetingID).ID("hdfMeetingID").MarginSpec("5 0 0 0"),
+                        Html.X().TextFieldFor(m => m.MeetingName).FieldLabel("Tên cuộc họp").ReadOnly(true),
+                        Html.X().Container().MarginSpec("0 0 2 0")
+                                .Layout(LayoutType.Column)
+                                .Items(
+                                                Html.X().TextFieldFor(m => m.DepartmentName).ID("txtDepartmentName").FieldLabel("Phòng ban")
+                                                            .ColumnWidth(0.52).ReadOnly(true),
+                                        Html.X().NumberFieldFor(m => m.Cost).FieldLabel("Chi phí" + Html.Required()).ID("nfCost").LabelWidth(70)
+                                                                .PaddingSpec("0 0 0 20").AllowBlank(false).ColumnWidth(0.48)
+                                    ),
+                        Html.X().Container().MarginSpec("2 0 4 0")
+                                .Layout(LayoutType.Column)
+                                .Items(
+                                    Html.X().DateTimeFieldFor(m => m.StartTime).AllowBlank(false).FieldLabel("Bắt đầu" + Html.Required()).ColumnWidth(0.52).MarginSpec("0 -1 0 0"),
+                                    Html.X().DateTimeFieldFor(m => m.EndTime).AllowBlank(false).FieldLabel("Kết thúc" + Html.Required()).LabelWidth(70).PaddingSpec("0 0 0 20").ColumnWidth(0.48).MarginSpec("0 -2 0 0")
+                                    ),
+                        Html.X().TextFieldFor(m => m.Address).FieldLabel("Địa chỉ"),
+                        Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung").ID("Content1").Height(100),
+                        Html.X().TextAreaFor(m => m.Note).FieldLabel("Ghi chú").MinHeight(100).Flex(1),
+                        Html.X().FileUploadFieldFor(m => m.AttachmentFile)
+                     ),
+                   Html.X().GridPanel()
+                            .Title("Vấn đề cuộc họp")
+                            .Layout(LayoutType.Fit)
+                            .Height(378)
+                            .ID("GrMeetingProblem")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                    Html.X().Toolbar()
+                                    .Layout(LayoutType.HBox)
+                                    .Items(
+                                        Html.X().Button().Text("Thêm vấn đề").ID("btnSelect").Icon(Icon.Add).Disabled(false).Handler("SelectProblem();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button().Text("Cập nhật nội dung họp").ID("btnEditProblem").Icon(Icon.Pencil).Disabled(true).Handler("EditProblem();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button().Text("Xóa").Icon(Icon.Delete).ID("btnDeleteProblem").Handler("onDeleteProblem();").Disabled(true),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask().ID("btnTaskProblem").Disabled(true)
+                                        )
+                                    )
+                            .Store(
+                                    Html.X().Store().ID("storeMeetingProblem")
+                                    .RemotePaging(true)
+                                    .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMeetingProblem", "MeetingProblem", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                                    .Parameters(ps => ps.Add(new StoreParameter("meetingID", "App.hdfMeetingID.getValue()", ParameterMode.Raw)))
+                                    .Model(
+                                        Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                    Html.X().ModelField().Name("ID"),
+                                                    Html.X().ModelField().Name("Name"),
+                                                    Html.X().ModelField().Name("Content"),
+                                                    Html.X().ModelField().Name("IsoName")
+                                        )
+                                    )
+                                )
+                            .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("IsoName").Width(150).Text("Iso"),
+                                    Html.X().Column().DataIndex("Name").Width(200).Text("Tên vấn đề")
+                                )
+                            .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi))
+                            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusProblem();")
+                            .BottomBar(Html.X().CustomPagingToolbar()),
+                 Html.X().GridPanel()
+                            .ID("GrMeetingObject")
+                            .Title("Thành phần tham gia")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Height(378)
+                            .Icon(Icon.TextListBullets)
+                            .Store(
+                                    Html.X().Store().ID("storeMeetingObject")
+                                    .RemotePaging(true)
+                                    .PageSize(20)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMeetingPlanObjectHasMeeting", "MeetingPlan", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                                    .Parameters(ps => ps.Add(new StoreParameter("meetingID", "App.hdfMeetingID.getValue()", ParameterMode.Raw)))
+                                    .Model(
+                                            Html.X().Model().Fields(
+                                               Html.X().ModelField().Name("ID"),
+                                               Html.X().ModelField().Name("Name"),
+                                               Html.X().ModelField().Name("Avatar"),
+                                               Html.X().ModelField().Name("RoleName"),
+                                               Html.X().ModelField().Name("MeetingID"),
+                                               Html.X().ModelField().Name("Email"),
+                                               Html.X().ModelField().Name("RoleName"),
+                                               Html.X().ModelField().Name("Phone"),
+                                               Html.X().ModelField().Name("EmployeeID"),
+                                               Html.X().ModelField().Name("IsSelect"))))
+                            .ColumnModel(
+                                       Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                                Html.X().TemplateColumn().DataIndex("EmployeeID").Width(30).TdCls("AvatarColumn").Tpl(
+                                                            Html.X().XTemplate().Html(@<text>
+                                                            <img src='{Avatar}' style='width:30px;height:40px;' />
+                                                        </text>)
+                                                        ),
+                               Html.X().Column().DataIndex("Name").Width(150).Text("Họ tên"),
+                               Html.X().Column().DataIndex("RoleName").Flex(1).Text("Chức danh"),
+                               Html.X().Column().DataIndex("Phone").Width(110).Text("Điện thoại"),
+                               Html.X().Column().DataIndex("Email").Width(110).Text("Email")
+                                        )
+
+                            .BottomBar(Html.X().CustomPagingToolbar())           
+            )
+        )
+            .Buttons(
+                Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frResult.getForm().isValid()) { return false; } ";
+                            de.Click.Action = "UpdateResult";
+                            de.Click.FormID = "frResult";
+                            de.Click.Success = "this.up('window').close();";
+                        }),
+                Html.X().ButtonExit()
+                    )
+)
+<script>
+    var UseMeetingInfo = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UseMeetingInfo", "MeetingPerform", new { Area = "Quality" }, null))',
+            params: {
+                ID: App.hdfId.getValue(),
+                meetingID: App.hdfMeetingID.getValue()
+            }
+        });
+    };
+    var SaveContent = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("Update", "MeetingProblem", new { Area = "Quality" }))',
+                params: {
+                    data: e.record.data
+                }
+            });
+        }
+    };
+    var CheckStatusProblem = function () {
+        var records = App.GrMeetingProblem.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDeleteProblem.setDisabled(false);
+            App.btnEditProblem.setDisabled(false);
+            App.btnTaskProblem.setDisabled(false);
+        }
+        else {
+            App.btnEditProblem.setDisabled(true);
+            App.btnDeleteProblem.setDisabled(true);
+            App.btnTaskProblem.setDisabled(true);
+        };
+    };
+    var getParamID = function () {
+        var MeetingID = 0;
+        var records = App.GrMeetingProblem.selModel.getSelection();
+        if (records.length > 0) {
+            MeetingID = records[0].get('ID');
+        }
+        return MeetingID;
+    };
+    var SelectProblem = function () {
+        var meettingId = App.hdfMeetingID.getValue();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("LoadIsoProblemPartialView", "MeetingProblem", new { Area = "Quality" }, null))',
+            params: { meetingId: meettingId }
+        });
+    };
+    var EditProblem = function () {
+        var records = App.GrMeetingProblem.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ProblemForm", "MeetingPerform", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var onSelectedProblem = function (strId) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateMeetingProblem", "MeetingProblem", new { Area = "Quality" }, null))',
+            params: { stringId: strId, meetingId: App.hdfMeetingID.getValue() }
+        });
+
+    };
+    var onDeleteProblem = function () {
+        var records = App.GrMeetingProblem.selModel.getSelection();
+        if (records.length > 0) {
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = records[i]; i++) {
+                aId[i] = records[i].get('ID');
+            }
+            strId = aId.join();
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có chắc chắn muốn xóa vấn đề này?', function (btn) {
+                if (btn == 'yes')
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("DeleteProblem", "MeetingProblem", new { Area = "Quality" }, null))',
+                        params: {
+                            listId: strId,
+                        }
+                    });
+            })
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

@@ -1,0 +1,72 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerFormItem
+@{
+    var X = Html.X();
+}
+@(Html.X().CustomWindow()
+    .Title("Chi tiết hình thức liên hệ")
+    .Icon(Icon.Zoom)
+    .Items(
+            X.CustomFormPanel()
+                .Items(
+                         X.TextFieldFor(m => m.Name).FieldLabel("Tên loại").ReadOnly(true)
+                                .EmptyText("Tên loại...")
+                                .BlankText("Tên loại không được bỏ trống!")
+                                .AllowOnlyWhitespace(false),
+                                  Html.X().ComboBoxFor(m=>m.Color).FieldLabel("Màu sắc")
+                                                .ID("cbColor")
+                                                .ReadOnly(true)
+                                                .TabIndex(3)
+                                                .QueryMode(DataLoadMode.Local)
+                                                .ForceSelection(true)
+                                                .AllowBlank(false)
+                                                .TriggerAction(TriggerAction.All)
+                                                .DisplayField("Name")
+                                                .Editable(false)
+                                                    .ValueField("Id")
+                                                .Store(
+                                                    Html.X().Store()
+                                                    .ID("stColor")
+                                                        .AutoLoad(true)
+                                                        .Model(
+                                                            Html.X().Model()
+                                                                .IDProperty("Id")
+                                                                .Fields(
+                                                                    new ModelField("Id", ModelFieldType.String) { Mapping = "Id" },
+                                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                )
+                                                        )
+                                                        .Proxy(
+                                                            Html.X().AjaxProxy()
+                                                                .Url(Url.Action("FillColor"))
+                                                                .Reader(Html.X().JsonReader().Root("data")
+                                                                )
+                                                        )
+                                                )
+                            .Tpl(
+                            @<text>
+                                <tpl for=".">
+                                    <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                        <div style="width: 20px; height: 20px; float: left; background-color: {Id}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left; font-size: 0.9em;">&nbsp;{Name}</div>
+                                    </div>
+                                </tpl>
+                            </text>)
+                        .Listeners(l => l.Change.Handler = "getColor(App.cbColor, App.stColor);"),
+                        X.TextFieldFor(m => m.RequirementField).FieldLabel("Định danh").ReadOnly(true),
+                        X.CheckboxFor(m => m.IsActive).FieldLabel("Kích hoạt").ReadOnly(true),
+                        X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú").ReadOnly(true)
+                                .EmptyText("Nhập ghi chú...").Height(100).Flex(1)
+                    )
+)
+.Buttons( Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Name');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+</script>

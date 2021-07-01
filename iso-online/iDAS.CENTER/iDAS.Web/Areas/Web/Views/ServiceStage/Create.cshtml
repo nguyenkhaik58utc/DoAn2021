@@ -1,0 +1,76 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceStageItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin công đoạn dịch vụ")
+    .Icon(Icon.Add)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.WebServiceID).Value(ViewData["ServiceID"]),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).AllowBlank(false).EmptyText("Nhập tên công đoạn").BlankText("Bắt buộc nhập !").FieldLabel("Công đoạn *"),
+                            Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").Height(90)
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true)
+                        )
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.Position).ColumnWidth(0.4).FieldLabel("Vị trí hiển thị").Value(0),
+                        Html.X().Container().ColumnWidth(0.1),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.2).HideLabel(true).Value(true).BoxLabel("Kích hoạt")
+                    )
+                ),
+                Html.X().Panel().Title("Nội dung").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Fit)
+                .Items(
+                    Html.X().HtmlEditorFieldFor(m => m.Html)
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if (result.result){this.up('window').close(); reloadServiceStage();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+
+

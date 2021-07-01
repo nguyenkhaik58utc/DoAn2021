@@ -1,0 +1,467 @@
+﻿
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    var formId = "formDocument";
+    var _documentId = (int)ViewData["documentId"];
+    var _isPublic = (bool)ViewData["isPublic"];
+}
+@(X.Window()
+            .ID("windowAddDocumentPermission")
+            .Icon(Icon.Application)
+            .Height(595)
+            .Width(660)
+            .BodyPadding(0)
+            .Modal(true)
+            .Listeners(ls =>
+            {
+                ls.BeforeClose.Handler = "closeWindow();";
+                ls.BeforeShow.Handler = "this.setHeight(App.ctDesktop.getHeight());this.setWidth(App.ctDesktop.getWidth()*1/2);this.alignTo(App.ctDesktop,'tr-tr'); this.el.slideIn('r',{duration : 500});";
+            })
+            .Title("Phân quyền tài liệu")
+            .Buttons(
+            X.Button().Text("Lưu").ID("btnSave").Icon(Icon.DatabaseSave).Handler("onReloadData")
+            .DirectEvents(de =>
+            {
+                de.Click.FormID = formId;
+                de.Click.ExtraParams.Add(new { DocumentId = new JRawValue(_documentId) });
+                de.Click.ExtraParams.Add(new Parameter("dataPerform", "App.grdEmp.getStore().getChangedData()", ParameterMode.Raw));
+                de.Click.ExtraParams.Add(new Parameter("checkAll", "App.cbPublic.getValue()", ParameterMode.Raw));
+                de.Click.Url = Url.Action("UpdatePermission", "Document", new { Area = "Document" });
+
+            }),
+        X.Button().ID("btnRemoveAccess").Text("Xóa").Handler("onRemoveEmployeeAccess").Disabled(false).Icon(Icon.Delete),
+
+        X.Button().Text("Lưu").ID("btnDepartmentSave").Hidden(true).Icon(Icon.DatabaseSave).Handler("onReloadData")
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { DocumentId = new JRawValue(_documentId) });
+                de.Click.ExtraParams.Add(new Parameter("dataPerform", "App.StoreDepartments11.getChangedData()", ParameterMode.Raw));
+                de.Click.ExtraParams.Add(new Parameter("checkAll", "App.cbPublic.getValue()", ParameterMode.Raw));
+                de.Click.Url = Url.Action("UpdateDepartmentPermission", "Document", new { Area = "Document" });
+            }),
+            X.Button().Text("Lưu").ID("btnPulicSave").Hidden(true).Icon(Icon.DatabaseSave).Handler("onReloadData")
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { DocumentId = new JRawValue(_documentId) });
+                de.Click.ExtraParams.Add(new Parameter("dataPerform", "App.cbPublic.getValue()", ParameterMode.Raw));
+                de.Click.Url = Url.Action("UpdatePulicPermission", "Document", new { Area = "Document" });
+            }),
+             X.Button().Text("Thoát").Handler("onExit").ID("btnExit").Icon(Icon.DoorOut)
+
+            )
+            .Items(
+            X.FormPanel()
+            .ID(formId)
+             .Layout(LayoutType.Fit)
+            .Items(
+              X.Container()
+              //.MarginSpec("10 5 0 5")
+              .AnchorHorizontal("100%").StyleSpec("background-color: #dfe8f6")
+                    .Layout(LayoutType.HBox)
+      .Items(
+
+           X.Container().ID("Container3").Width(650).Hidden(false)
+        .Height(50)
+        .MarginSpec("5 5 5 5")
+        .Items(
+                   Html.X().Checkbox().ID("cbPublic").Checked(true)
+                            .ColumnWidth(0.25)
+                            .Flex(1)
+                            .BoxLabel("Tất cả được truy cập")
+                            .Listeners(l =>
+                            {
+                                l.Change.Handler = "changePublic()";
+                                l.AfterRender.Handler = "AfterRender('" + _isPublic + "')";
+                            })
+                            .Value(_isPublic)
+                            ,
+                  X.Container()
+        .ID("Container4").Width(350)
+        .Layout(LayoutType.HBox)
+        .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Top })
+        .Items(
+           X.Label().StyleSpec("color: #031c5e;font: normal 11px/14px tahoma,arial,verdana,sans-serif;")
+          .Text("Mức độ truy cập: "),
+          X.ComboBox()
+          .ID("cbbSelectProfileRole")
+          .Flex(1)
+          .MarginSpec("0 0 0 10")
+          .ValueField("Value")
+          .DisplayField("Text")
+          .Editable(false)
+          .SelectedItems(new ListItem("Người dùng", "0"))
+          .Listeners(l =>
+          {
+              l.Select.Handler = "changeRoleType()";
+          })
+          .Items(
+                  new ListItem("Người dùng", "0"),
+                  new ListItem("Phòng ban", "1")
+                  )
+                )
+            )
+     )
+                 ,
+                  X.Container()
+                 .MarginSpec("0 0 5 0")
+                  .ID("Container1")
+                  .Flex(1)
+                  .Height(525)
+                  .Items(
+                      X.GridPanel().ID("grdEmp")
+                      .Height(495)
+                      .ColumnLines(true)
+                      .AutoScroll(true)
+                       .Header(false)
+                        .Title("Danh sách quyền nhân sự với tài liệu")
+                        .TopBarItem(
+                            X.Button().ID("btnUpdateListEmp").Text("Lựa chọn nhân sự").Handler("onCallPopupChooseEmp('" + _documentId + "')").Icon(Icon.Accept)
+                        )
+                        .Store(
+                            X.Store()
+                            .AutoLoad(true)
+                            .ID("stEmpList1")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetEmployeePerformedDocument", "Document", new { Area = "Document" }))
+                            .Reader(Html.X().JsonReader().Root("data")))
+                            .Parameters(pr =>
+                            {
+                                //pr.Add(new StoreParameter("documentId", '1', ParameterMode.Value));
+                                pr.Add(new StoreParameter("documentId", _documentId + "", ParameterMode.Raw));
+                            })
+                            .Model(X.Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                         Html.X().ModelField().Name("BirthDay").Type(ModelFieldType.String),
+                                         Html.X().ModelField().Name("CheckedShow").Type(ModelFieldType.Boolean),
+                                         Html.X().ModelField().Name("CheckedEdit").Type(ModelFieldType.Boolean)
+                                    )
+                                )
+                            )
+                        .ColumnModel(
+                            X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                            X.Column().DataIndex("ID").Hidden(true),
+                            X.Column().DataIndex("Name").Text("Người thực hiện").Flex(1),
+                            X.DateColumnExtend().DataIndex("BirthDay").Text("Ngày sinh").Align(Alignment.Right).Width(100).StyleSpec("font-weight: bold;text-align: center"),
+                            X.CheckColumn().DataIndex("CheckedShow").Text("Xem").Editable(true).ID("ColumShow"),
+                            X.CheckColumn().DataIndex("CheckedEdit").Text("Sửa").Editable(true)
+                     )
+                ),
+                X.Container().ID("Container2").Hidden(true)
+                .MarginSpec("0 0 5 0")
+                .Items(
+                Html.X().TreePanel()
+                .Title("Danh sách quyền phòng ban với tài liệu")
+                .ID("DepartmentPanel1")
+                .Width(650)
+                .Height(585)
+                .Header(false)
+                .RowLines(true)
+                .Icon(Icon.TextListBullets)
+                .ForceFit(true)
+                .RootVisible(false)
+                .SingleExpand(false)
+                .Split(true)
+                .Collapsible(true)
+                .MarginSpec("1 0 1 1")
+                .Listeners(ls =>
+                {
+                    ls.Load.Handler = "expandDepartment(records);";
+                    ls.AfterRender.Handler = "this.getRootNode().expand(true);";
+                })
+                .Store(
+                    Html.X().TreeStore()
+                         .AutoLoad(false)
+                     .Parameters(pr =>
+                     {
+                         pr.Add(new StoreParameter("documentId", _documentId + "", ParameterMode.Raw));
+                     })
+                        .ID("StoreDepartments11")
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDocumentDepartment", "Document", new { area = "Document" })).Reader(Html.X().JsonReader().Root("data")))
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("id"),
+                                Html.X().ModelField().Name("text"),
+                                Html.X().ModelField().Name("ParentID"),
+                                Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsMerge").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsAccess").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsUpdate").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsShow").Type(ModelFieldType.Boolean)
+                            )
+                        )
+                )
+                .ColumnModel(
+                    Html.X().TreeColumn().Text("Cơ cấu tổ chức").StyleSpec("font-weight: bold;text-align: center")
+                        .DataIndex("text").Flex(1).Filterable(false).Sortable(false),
+                    X.CheckColumn().DataIndex("IsShow").Text("Xem").Width(80).Editable(true).ID("ColumShowDep"),
+                    X.CheckColumn().DataIndex("IsUpdate").Text("Sửa").Width(80).Editable(true)
+                )
+              )
+            )
+        )
+)
+
+<script>
+    var onCallPopupChooseEmp = function (_documentId) {
+        var url = '@Url.Action("EmployeeForDocument", "V3_Employee", new { Area = "Human" })';
+        var params = { documentId: _documentId};
+        onDirectMethod(url, params);
+    };
+
+    var AfterRender = function (isPublic) {
+
+        changePublic();
+    };
+
+    var changePublic = function () {
+
+        var checked = App.cbPublic.getValue();
+        if (checked) {
+            App.ColumShow.setVisible(false);
+            App.ColumShowDep.setVisible(false);
+        }
+        else {
+            App.ColumShow.setVisible(true);
+            App.ColumShowDep.setVisible(true);
+        }
+    };
+
+       @* var checked = App.cbPublic.getValue();
+        if (checked) {
+            if (App.Container1)
+                App.Container1.setVisible(false);
+            if (App.Container2)
+                App.Container2.setVisible(false);
+            if (App.Container4)
+                App.Container4.setVisible(false);
+            if (App.btnPulicSave)
+                App.btnPulicSave.setVisible(true);
+            if (App.btnSave)
+                App.btnSave.setVisible(false);
+            if (App.btnRemoveAccess)
+                App.btnRemoveAccess.setVisible(false);
+            if (App.btnDepartmentSave)
+                App.btnDepartmentSave.setVisible(false);
+
+        } else {
+            if (App.Container1)
+                App.Container1.setVisible(true);
+            if (App.Container2)
+                App.Container2.setVisible(false);
+            if (App.Container4)
+                App.Container4.setVisible(true);
+            if (App.btnPulicSave)
+                App.btnPulicSave.setVisible(false);
+            if (App.Container1)
+                App.Container1.setVisible(true);
+            if (App.btnSave)
+                App.btnSave.setVisible(true);
+            if (App.btnRemoveAccess)
+                App.btnRemoveAccess.setVisible(true);
+            if (App.btnExit)
+                App.btnExit.setVisible(true);
+            if (App.Container2)
+                App.Container2.setVisible(false);
+            if (App.btnDepartmentSave)
+                App.btnDepartmentSave.setVisible(false);
+            if (App.btnPulicSave)
+                App.btnPulicSave.setVisible(false);
+        }
+    }; *@
+    var changeRoleType = function () {
+        changePublic();
+        if (App.cbbSelectProfileRole.getValue() == "0") {
+            if (App.Container1)
+                App.Container1.setVisible(true);
+            if (App.btnSave)
+                App.btnSave.setVisible(true);
+            if (App.btnRemoveAccess)
+                App.btnRemoveAccess.setVisible(true);
+            if (App.btnExit)
+                App.btnExit.setVisible(true);
+
+            if (App.Container2)
+                App.Container2.setVisible(false);
+            if (App.btnDepartmentSave)
+                App.btnDepartmentSave.setVisible(false);
+            if (App.btnPulicSave)
+                App.btnPulicSave.setVisible(false);
+        }
+        if (App.cbbSelectProfileRole.getValue() == "1")
+        {
+            App.StoreDepartments11.reload();
+            if (App.Container1)
+                App.Container1.setVisible(false);
+            if (App.btnSave)
+                App.btnSave.setVisible(false);
+            if (App.btnRemoveAccess)
+                App.btnRemoveAccess.setVisible(false);
+            if (App.btnExit)
+                App.btnExit.setVisible(true);
+            if (App.Container2)
+                App.Container2.setVisible(true);
+            if (App.btnDepartmentSave)
+                App.btnDepartmentSave.setVisible(true);
+            if (App.btnPulicSave)
+                App.btnPulicSave.setVisible(false);
+        }
+        if (App.cbbSelectProfileRole.getValue() == "2") {
+            if (App.Container1)
+                App.Container1.setVisible(false);
+            if (App.btnSave)
+                App.btnSave.setVisible(false);
+            if (App.btnRemoveAccess)
+                App.btnRemoveAccess.setVisible(false);
+            if (App.btnExit)
+                App.btnExit.setVisible(true);
+            if (App.Container2)
+                App.Container2.setVisible(false);
+            if (App.btnDepartmentSave)
+                App.btnDepartmentSave.setVisible(false);
+            if (App.btnPulicSave)
+                App.btnPulicSave.setVisible(true);
+        }
+
+    };
+    var changeHM = function () {
+        console.log(App.EmployDocumentReceiveId.getValue());
+    };
+    var selectColor = function (item, newValue, oldValue) {
+        var selectItem = App.storeSecurity.data.find('Id', newValue).data;
+        if (App.btnSelectSecurityColor) {
+            App.btnSelectSecurityColor.getEl().dom.style.background = selectItem.Color;
+            App.btnSelectSecurityColor.getEl().dom.style.borderRadius = "50%";
+            App.btnSelectSecurityColor.getEl().dom.style.margin = "6px 0 0 5px";
+            App.btnSelectSecurityColor.getEl().dom.style.width = "20px";
+            App.btnSelectSecurityColor.getEl().dom.style.height = "20px";
+        }
+    };
+
+    var expandDepartment = function (records) {
+        changePublic();
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+        var count = App.DepartmentPanel1.selModel.getCount();
+        if (count <= 0) {
+            App.DepartmentPanel1.selModel.select(0);
+        }
+    };
+    var onRemoveEmployeeAccess = function () {
+        Ext.MessageBox.show({
+            title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ nhân viên này hay không?',
+            buttons: { yes: 'Đồng ý', no: 'Không' },
+            iconCls: '#Information',
+            fn: function (btn) {
+                if (btn == 'yes') {
+                    var ids = '';
+                    var records = App.grdEmp.selModel.getSelection();
+                    Ext.each(records, function (record) {
+                        ids += record.data.ID + ',';
+                    });
+                    if (ids == '')
+                        return;
+                    ids = ids.substring(0, ids.length - 1);
+                    var url = '@Url.Action("RemoveEmployeePerformDocument", "V3_Employee", new { Area = "Human"})';
+                    Ext.net.DirectMethod.request({
+                        url: url,
+                        params: { empIds: ids },
+                        success: function (result) {
+                            App.grdEmp.getStore().reload();
+                        }
+                    });
+                }
+            }
+        });
+    };
+
+    var onRemoveDepartmentAccess = function () {
+        var ids = '';
+        var records = App.grdEmp.selModel.getSelection();
+        Ext.each(records, function (record) {
+            ids += record.data.ID + ',';
+        });
+        if (ids == '')
+            return;
+        ids = ids.substring(0, ids.length - 1);
+        var url = '@Url.Action("RemoveEmployeePerformDocument", "V3_Employee", new { Area = "Human"})';
+        Ext.net.DirectMethod.request({
+        url: url,
+            params: { empIds: ids },
+            success: function (result) {
+                App.grdEmp.getStore().reload();
+            }
+        });
+    };
+
+    var SecurityForm = function (btn) {
+        changePublic();
+        var securityId = btn.up("combobox").getId();
+        var storeId = btn.up("combobox").getStore().storeId;
+        var url = '@Url.Action("Form","Security")';
+        var params = { alignTo: securityId, renderTo: "windowAddDocument", storeId: storeId };
+        onDirectMethod(url, params);
+    };
+    var getDepartmentId = function () {
+        changePublic();
+        var d = App.cbbDepartmentDocument.getValue();
+        if (d) {
+            if (d.indexOf("Department_") >= 0) {
+                var departmentId = d.replace('Department_', '');
+                App.hdfDepartmentArchiveId.setValue(departmentId);
+            } else {
+                App.hdfDepartmentArchiveId.setValue(d);
+            }
+        } else {
+            return null;
+        }
+    };
+
+            function onDepartmentExit() {
+        var url = '@Url.Action("ReturnEmployeeDocumentWhenExit", "V3_Employee", new { Area = "Human"})';
+        Ext.net.DirectMethod.request({
+            url: url,
+            success: function (result) {
+
+            }
+        });
+        this.up('window').close();
+    }
+    function closeWindow() {
+        var url = '@Url.Action("ReturnEmployeeDocumentWhenExit", "V3_Employee", new { Area = "Human"})';
+        Ext.net.DirectMethod.request({
+            url: url,
+            success: function (result) {
+
+            }
+        });
+    }
+
+    var onReloadData = function () {
+        setTimeout(function () {
+            App.grdDocument.store.reload();
+        }, 1000);
+
+    };
+
+    var onExit = function () {
+        var url = '@Url.Action("ReturnEmployeeDocumentWhenExit", "V3_Employee", new { Area = "Human"})';
+        Ext.net.DirectMethod.request({
+            url: url,
+            success: function (result) {
+
+            }
+        });
+        this.up('window').close();
+    }
+</script>

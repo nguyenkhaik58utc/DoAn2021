@@ -1,0 +1,118 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductCategoryItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("ProductCategoryPanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateProductCategory").Icon(Icon.Add).Handler("showCreateProductCategory();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateProductCategory").Icon(Icon.Pencil).Handler("showUpdateProductCategory();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteProductCategory").Icon(Icon.Delete).Handler("showDeleteProductCategory();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailProductCategory").Icon(Icon.Zoom).Handler("showDetailProductCategory();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectProductCategory()")
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProductCategory();")
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex(Model, m => m.ID).Hidden(true),
+            Html.X().Column().Text("Tên danh mục").DataIndex(Model, m => m.Name).StyleSpec("font-weight: bold;text-align: center").Width(250),
+            Html.X().Column().Text("Mô tả").DataIndex(Model, m => m.Description).StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex(Model, m => m.CreateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script type="text/javascript">
+    var urlCreateProductCategory = '@Url.Action("Create", "ProductCategory", new { area = "Web" })';
+    var urlUpdateProductCategory = '@Url.Action("Update", "ProductCategory", new { area = "Web" })';
+    var urlDeleteProductCategory = '@Url.Action("Delete", "ProductCategory", new { area = "Web" })';
+    var urlDetailProductCategory = '@Url.Action("Detail", "ProductCategory", new { area = "Web" })';
+
+    var getProductCategorySelection = function () {
+        return App.ProductCategoryPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadProductCategory = function () {
+        App.ProductCategoryPanel.getStore().reload();
+        deSelectProductCategory();
+    }
+    var deSelectProductCategory = function () {
+        App.ProductCategoryPanel.selModel.lastSelected = null;
+        selectionChangeProductCategory();
+    }
+    var showCreateProductCategory = function () {
+        var url = urlCreateProductCategory;
+        onDirectMethod(url, null, 'get');
+    };
+    var showUpdateProductCategory = function () {
+        var url = urlUpdateProductCategory;
+        var record = getProductCategorySelection();
+        var productCategoryId = record == null ? 0 : record.data.ID;
+        var params = { productCategoryId: productCategoryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteProductCategory = function () {
+        var url = urlDeleteProductCategory;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProductCategorySelection();
+                            var productCategoryId = record == null ? 0 : record.data.ID;
+                            var params = { productCategoryId: productCategoryId };
+                            onDirectMethod(url, params, 'post', reloadProductCategory);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProductCategory = function () {
+        var url = urlDetailProductCategory;
+        var record = getProductCategorySelection();
+        var productCategoryId = record == null ? 0 : record.data.ID;
+        var params = { productCategoryId: productCategoryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeProductCategory = function () {
+        var record = getProductCategorySelection();
+        App.btnUpdateProductCategory.setDisabled(record == null);
+        App.btnDeleteProductCategory.setDisabled(record == null);
+        App.btnDetailProductCategory.setDisabled(record == null);
+    };
+</script>

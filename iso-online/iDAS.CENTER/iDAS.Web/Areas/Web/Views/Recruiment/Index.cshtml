@@ -1,0 +1,129 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.RecruimentItem
+
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("RecruimentPanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateRecruiment").Icon(Icon.Add).Handler("showCreateRecruiment();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateRecruiment").Icon(Icon.Pencil).Handler("showUpdateRecruiment();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteRecruiment").Icon(Icon.Delete).Handler("showDeleteRecruiment();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailRecruiment").Icon(Icon.Zoom).Handler("showDetailRecruiment();").Disabled(true),
+                Html.X().Button().Text("Hồ sơ").ID("btnViewRecruimentProfile").Icon(Icon.PageLandscape).Handler("showViewRecruimentProfile();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .AutoLoad(true)
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Title").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Quatity").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("RefreshAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("FinishAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectRecruiment()")
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex("ID").Hidden(true),
+            Html.X().Column().Text("Chủ đề").DataIndex(Model, m => m.Title).StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().Column().Text("Số lượng").DataIndex(Model, m => m.Quatity).StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Right),
+            Html.X().DateColumn().Text("Ngày đăng").DataIndex(Model, m => m.RefreshAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày kết thúc").DataIndex(Model, m => m.FinishAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(100),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeRecruiment()")
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var urlCreateRecruiment = '@Url.Action("Create", "Recruiment", new { area = "Web" })';
+    var urlUpdateRecruiment = '@Url.Action("Update", "Recruiment", new { area = "Web" })';
+    var urlDeleteRecruiment = '@Url.Action("Delete", "Recruiment", new { area = "Web" })';
+    var urlDetailRecruiment = '@Url.Action("Detail", "Recruiment", new { area = "Web" })'; 
+    var urlViewRecruimentProfile = '@Url.Action("index", "RecruimentProfile", new { area = "Web" })'; 
+
+    var getRecruimentSelection = function () {
+        return App.RecruimentPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadRecruiment = function () {
+        App.RecruimentPanel.getStore().reload();
+        deSelectRecruiment();
+    }
+    var deSelectRecruiment = function () {
+        App.RecruimentPanel.selModel.lastSelected = null;
+        selectionChangeRecruiment();
+    }
+    var showCreateRecruiment = function () {
+        var url = urlCreateRecruiment;
+        onDirectMethod(url, null, 'get');
+    };
+    var showUpdateRecruiment = function () {
+        var url = urlUpdateRecruiment;
+        var record = getRecruimentSelection();
+        var RecruimentId = record == null ? 0 : record.data.ID;
+        var params = { RecruimentId: RecruimentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteRecruiment = function () {
+        var url = urlDeleteRecruiment;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getRecruimentSelection();
+                            var RecruimentId = record == null ? 0 : record.data.ID;
+                            var params = { RecruimentId: RecruimentId };
+                            onDirectMethod(url, params, 'post', reloadRecruiment);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailRecruiment = function () {
+        var url = urlDetailRecruiment;
+        var record = getRecruimentSelection();
+        var RecruimentId = record == null ? 0 : record.data.ID;
+        var params = { RecruimentId: RecruimentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showViewRecruimentProfile = function () {
+        var url = urlViewRecruimentProfile;
+        onDirectMethod(url, null, 'get');
+    };
+    var selectionChangeRecruiment = function () {
+        var record = getRecruimentSelection();
+        App.btnUpdateRecruiment.setDisabled(record == null);
+        App.btnDeleteRecruiment.setDisabled(record == null);
+        App.btnDetailRecruiment.setDisabled(record == null); 
+        App.btnViewRecruimentProfile.setDisabled(record == null);
+    };
+</script>

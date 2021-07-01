@@ -1,0 +1,317 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@model iDAS.Items.SystemItem
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@{
+    int detail = (int)Common.FormName.Detail;
+    int edit = (int)Common.FormName.Edit;
+}
+
+
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+         Html.X().Menu()
+            .ID("cmMenu")
+            .Items(
+                new MenuItem { Text = "Xem chi tiết", ID = "cmDetail", Icon = Icon.Zoom, Handler = "showForm('" + detail + "');" },
+                Html.X().MenuSeparator(),
+                new MenuItem { Text = "Cập nhật thông tin", ID = "cmUpdate", Icon = Icon.Pencil, Handler = "showForm('" + edit + "');" },
+                new MenuItem { Text = "Xóa thông tin", ID = "cmDelete", Icon = Icon.Delete, Handler = "deleteRecord();" },
+                Html.X().MenuSeparator(),               
+                new MenuItem { Text = "Kích hoạt", ID = "cmActive", Icon = Icon.Accept, Handler = "changeActive('" + true + "');" },
+                new MenuItem { Text = "Ngừng kích hoạt", ID = "cmDeActive", Icon = Icon.Decline, Handler = "changeActive('" + false + "');" }
+                ),
+        Html.X().GridPanel()
+        .Header(false)
+            .ID("grCenterSystem")       
+            .ColumnLines(true)
+            .Border(false)
+            .ForceFit(true)        
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button()
+                            .Text("Sửa")
+                            .Icon(Icon.Pencil)
+                            .ID("btnEdit")
+                            .Disabled(true)
+                            .Handler("showForm('" + edit + "');"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Xóa")
+                            .Icon(Icon.Delete)
+                            .ID("btnDel")
+                            .Handler("deleteRecord();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Xem chi tiết")
+                            .Icon(Icon.Zoom)
+                            .ID("btnDetail")
+                            .Disabled(true)
+                            .Handler("showForm('" + detail + "');"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Cập nhật hệ thống")
+                            .Icon(Icon.TransmitGo)
+                        .ID("btnUpdateSystem")
+                        .Handler("UpdateSystem();")    
+                )
+        )
+        .Store(
+            Html.X().StoreForModel()
+                .ID("stCenterSystem")
+                .PageSize(10)
+                .Proxy(
+                    Html.X().AjaxProxy()
+                        .Url(Url.Action("LoadSystems"))
+                        .ActionMethods(actions =>
+                        {
+                            actions.Read = HttpMethod.POST;
+                        })
+                        .Reader(
+                            Html.X().JsonReader().Root("data")
+                        )
+                        )
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().DataIndex(Model, m => m.ID).Text("ID").Hidden(true),
+            Html.X().Column().DataIndex(Model, m => m.Code).Text("Mã hệ thống").Width(120).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().DataIndex(Model, m => m.Name).Text("Tên hệ thống").Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().DataIndex(Model, m => m.Url).Text("Url").Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().DataIndex(Model, m => m.DBSource).Text("Database").Flex(1).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().CheckColumn().DataIndex(Model, m => m.IsActive).Text("Kích hoạt").Width(100).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;")
+                   
+
+        )
+        .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+        .View(Html.X().GridView().TrackOver(false))
+        .Features(
+                Html.X().GridFilters()
+                    .Filters(
+                        Html.X().NumericFilter().DataIndex("Id"),
+                        Html.X().StringFilter().DataIndex("Code"),
+                        Html.X().StringFilter().DataIndex("Name"),
+                        Html.X().BooleanFilter().DataIndex("IsActive")
+                            .YesText("<span style='color:blue'>Kích hoạt</span>")
+                            .NoText("Ngừng kích hoạt")
+                        ,
+                        Html.X().BooleanFilter().DataIndex("IsShow")
+                            .YesText("<span style='color:blue'>Có</span>")
+                            .NoText("Không")
+                        ,
+                        Html.X().StringFilter().DataIndex("Description"),
+                        Html.X().DateFilter().DataIndex("CreateAt")
+                            .DatePickerOptions(options =>
+                            {
+                                options.TodayText = "Now";
+                            })
+                           
+                    )
+        )
+        .BottomBar(
+            Html.X().PagingToolbar()
+                .EmptyMsg("Hiện không có dữ liệu")
+                .NextText("Trang kế tiếp")
+                .PrevText("Trang trước")
+                .LastText("Trang cuối cùng")
+                .FirstText("Trang đầu tiên")
+                .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                .BeforePageText("Trang")
+                .AfterPageText("của {0}")
+                .RefreshText("Tải lại Dữ liệu")
+                .Items(
+                    Html.X().Label("Số bản ghi trên 1 trang"),
+                    Html.X().ToolbarSpacer(10),
+                    Html.X().ComboBox()
+                        .Width(50)
+                        .Items("10", "20", "30", "50", "100")
+                        .SelectedItems("10")
+                        .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                )
+                .Plugins(Html.X().ProgressBarPager())
+            )
+            .Listeners(ls => ls.SelectionChange.Handler = "checkStatus();")
+    )
+)
+
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+
+    var showForm = function (cmd) {
+        var records = App.grCenterSystem.selModel.getSelection();
+
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            var active = records[0].get('IsActive');
+            
+        } else if (cmd == '@edit' || cmd == '@detail') {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn chưa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation'
+            });
+
+            return;
+        }
+
+        showFormInRow(cmd, id, active);
+    };
+
+
+    var showFormInRow = function (cmd, id, status) {
+        var type = 0; var store = '';
+
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrm", "CenterSystem", new { Area = "Systems" }, null))',
+            params: { id: id, type: cmd }
+        });
+
+    };
+    //
+    var deleteRecord = function () {
+        var records = App.grCenterSystem.selModel.getSelection();
+
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            //
+            Ext.MessageBox.show({
+                title: 'Xác nhận',
+                msg: 'Bạn có chắc chắn muốn xóa Hệ thống đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Help',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        //
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "CenterSystem", new { Area = "Systems" }, null))', params: { ID: id },
+                            success: function (result) {
+                                if (result == 'Error') {
+                                    Ext.MessageBox.show({
+                                        title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa Dữ liệu phát sinh lỗi. Đề nghị liên hệ với Admin!',
+                                        buttons: { yes: 'Đồng ý' },
+                                        iconCls: '#Exclamation',
+                                        fn: function (btn) {
+                                            records[0].reject();
+                                            return false;
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+            }else
+            {
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Bạn chưa chọn bản ghi cần xóa!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation'                
+                });
+            }
+
+    };
+
+    var checkStatus = function () {
+        var records = App.grCenterSystem.selModel.getSelection();
+        if (records.length > 0)
+        {
+            App.btnEdit.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+            var code = records[0].get('IsActive').toString();
+            if (code == 'true') {
+                App.cmDeActive.setDisabled(false);
+                App.cmActive.setDisabled(true);
+                App.btnDel.setDisabled(true);
+                App.cmDelete.setDisabled(true);
+                return;
+            } else if (code == 'false') {
+                App.cmDeActive.setDisabled(true);
+                App.cmActive.setDisabled(false);
+                App.btnDel.setDisabled(false);
+                App.cmDelete.setDisabled(false);
+            }
+        }        
+    };
+
+    var changeActive = function (stactive) {
+        var records = App.grCenterSystem.selModel.getSelection();
+
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo',
+                    msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var active = records[0].get('IsActive');
+                var lbl = '';
+                lbl = 'Kích hoạt';
+                if (active)
+                { lbl = 'Ngừng kích hoạt'; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn muốn ' + lbl + ' Hệ thống đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Help',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            strId = records[0].get('ID');
+
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("UpdateStatus", "CenterSystem", new { Area = "Systems" }, null))', params: { ID: strId, Active: stactive },
+                                success: function (result) {
+                                    if (result == 'Error') {
+                                        Ext.MessageBox.show({
+                                            title: 'Cảnh báo', msg: 'Quá trình thực hiện cập nhật Dữ liệu phát sinh lỗi. Đề nghị liên hệ với Admin!',
+                                            buttons: { yes: 'Đồng ý' },
+                                            iconCls: '#Exclamation',
+                                            fn: function (btn) {
+                                                records[0].reject();
+                                                return false;
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var UpdateSystem = function () {
+        var records = App.grCenterSystem.selModel.getSelection();
+        var record = records[0];
+        Ext.MessageBox.show({
+            title: 'Xác nhận',
+            msg: 'Bạn có chắc chắn muốn Cập nhât hệ thống đã chọn không?',
+            buttons: { yes: 'Đồng ý', no: 'Không' },
+            iconCls: '#Help',
+            fn: function (btn) {
+                if (btn == 'yes') {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("UpdateSystem"))',
+                        params: { url: record.data.Url },
+                    });
+                }
+            }
+        });
+    }
+</script>

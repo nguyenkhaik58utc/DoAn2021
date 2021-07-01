@@ -1,0 +1,39 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitTask = Url.Action("Insert");
+    var urlStoreTask = Url.Action("LoadTreeTasks");
+    var paramStoreTask = new StoreParameter() { Name = "dpId", Value = "App.TaskDepartmentID.value", Mode = ParameterMode.Raw };
+    var style = ViewBag.Style;
+    var data = ViewBag.Calendar;
+}
+<style>
+    @style
+</style>
+@(Html.X().Viewport()
+          .Layout(LayoutType.Border)
+          .ID("vpGridTaskDepartment")
+          .Items(     
+        Html.X().Panel()
+            .ID("TaskPanel")
+            .Region(Region.Center)
+            .Split(true)
+            .Border(true)
+            .Margin(1)
+            .TitleAlign(TitleAlign.Center)
+            .Layout(LayoutType.Fit)
+            .Collapsible(true)
+            .Header(false)
+                .ItemsFromAction("ListByServer", "Task", new { area = "Task", urlSubmit = urlSubmitTask, urlStore = urlStoreTask, paramStore = paramStoreTask}),
+        Html.X().DepartmentPanel().Handler("selectDepartmentTask")
+        .Margin(1)
+    )
+)
+<script type="text/javascript">
+    var selectDepartmentTask = function (records) {
+        App.TaskDepartmentID.setValue(records[0].get('id'));       
+        App.TaskPanel.down('treepanel').getStore().load();
+    };    
+</script>

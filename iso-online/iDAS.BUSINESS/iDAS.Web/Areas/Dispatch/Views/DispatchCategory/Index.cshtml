@@ -1,0 +1,311 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Menu()
+        .ID("cmMenu")
+        .Width(150)
+        .Items(
+          new MenuItem
+                {
+                    Text = "Xem",
+                    ID = "cmDetail",
+                    Icon = Icon.Zoom,
+                    Handler = "viewRecord();"
+                },
+            new MenuItem
+                {
+                    Text = "Thêm",
+                    ID = "cmAdd",
+                    Icon = Icon.Add,
+                    Handler = "addRecord(App.GrDispatchCate);"
+                },
+            new MenuItem
+                {
+                    Text = "Xóa",
+                    ID = "cmDelete",
+                    Icon = Icon.Delete,
+                    Disabled = true,
+                    Handler = "deleteRecord();"
+                }
+        )
+)
+@(Html.X().Viewport()
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().GridPanel()
+                .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                .ID("GrDispatchCate")
+                .Height(400)
+                .Border(false)
+                .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonCreate()
+                                .ID("btnAdd")
+                                .Handler("addRecord(this.up('grid'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                .ID("butDelete")
+                                .Disabled(true)
+                                .Handler("deleteRecord();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView()
+                                .ID("butDetail")
+                                .Disabled(true)
+                                .Handler("viewRecord();"),
+                                        Html.X().ToolbarFill(),
+                                 Html.X().ButtonTutorial()
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                        .ID("stDispatchCate")
+                        .Proxy(
+                            Html.X().AjaxProxy()
+                                .Url(Url.Action("LoadData"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .RemoteSort(false)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("CreateName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("UpdateName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("UpdateByTime").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("UpdateByName").Type(ModelFieldType.String)
+                                )
+                        )
+
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(33)
+                        .Align(Alignment.Center),
+                    Html.X().Column()
+                        .Text("Nhóm công văn")
+                        .DataIndex("Name")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Flex(1)
+                        .Wrap(true)
+                        .Editor(
+                            Html.X().TextField()
+                                .MaxLength(100)
+                                .AllowBlank(false).AllowOnlyWhitespace(false)
+                                .BlankText("Nhóm công văn không được để trống")
+                                .MaxLength(200).MaxLengthText("Số lượng kí tự tối đa của ô này là 200!")
+                        ),
+                    Html.X().Column()
+                        .Text("Mô tả")
+                        .DataIndex("Note")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Flex(2)
+                        .Wrap(true)
+                        .Editor(
+                            Html.X().TextField()
+                                .TabIndex(4)
+                                .MaxLength(300)
+                        ),
+                        Html.X().Column()
+                            .Text("Tình trạng")
+                            .DataIndex("IsUse")
+                            .Align(Alignment.Center)
+                            .Width(100)
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Renderer("GetBooleanChar")
+                            .Editor(
+                                Html.X().ComboBox()
+                                    .TabIndex(5)
+                                    .Items(
+                                        new ListItem("Sử dụng", true),
+                                        new ListItem("Không sử dụng", false)
+                                    )
+                            ),
+                    Html.X().CommandColumn()
+                        .ID("commandCol")
+                        .Text("Chức năng")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(70)
+                        .Commands(
+                            Html.X().GridCommand()
+                                .CommandName("save")
+                                .Icon(Icon.Disk)
+                                .ToolTip(tt => tt.Text = "Lưu"),
+                            Html.X().GridCommand()
+                                .CommandName("reject")
+                                .Icon(Icon.ArrowUndo)
+                                .ToolTip(tt => tt.Text = "Hủy")
+                        )
+                        .Listeners(ls => ls.Command.Handler = "handlecmd(command,this.up('grid'),record );")
+                )
+                .SelectionModel(
+               Html.X().RowSelectionModel()
+                       .Mode(SelectionMode.Single).Listeners(l => l.Select.Handler = "checkStatus();")
+                )
+                .Plugins(Html.X().CellEditing())
+                .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+<script type="text/javascript">
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var GetBooleanChar = function (value, p, record) {
+        var sUse = "Sử dụng";
+        var sNot = "<font style='color:red'>Không sử dụng</font>";
+        if (value == "1") {
+            return sUse;
+        } else {
+            return sNot;
+        }
+    };
+    var checkStatus = function () {
+        var records = App.GrDispatchCate.selModel.getSelection();
+        if (records.length > 0) {
+            App.butDetail.setDisabled(false);
+            App.cmDelete.setDisabled(false);
+            App.butDelete.setDisabled(false);
+        }
+        else {
+            App.cmDelete.setDisabled(true);
+            App.butDelete.setDisabled(true);
+            App.butDetail.setDisabled(true);
+        }
+    };
+    function addRecord(grid) {
+        grid.store.insert(0, { Name: '', IsUse: true });
+        grid.editingPlugin.startEditByPosition({ row: 0, column: 0 });
+    }
+    function viewRecord() {
+        var records = App.GrDispatchCate.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrm", "DispatchCategory", new { Area = "Dispatch" }, null))', params: { id: id }
+            });
+        }
+    }
+    var deleteRecord = function () {
+        var records = App.GrDispatchCate.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo',
+                    msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn muốn xóa Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Help',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+
+                            var strId = records[0].get('ID');
+
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "DispatchCategory", new { Area = "Dispatch" }, null))', params: { id: strId },
+                                success: function (result) {
+                                    if (result == 'Error') {
+                                        Ext.MessageBox.show({
+                                            title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa Dữ liệu phát sinh lỗi do Dữ liệu này có thể đã được sử dụng. Đề nghị kiểm tra lại!',
+                                            buttons: { yes: 'Đồng ý' },
+                                            iconCls: '#Cancel',
+                                            fn: function (btn) {
+                                                records[0].reject();
+                                                return false;
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var handlecmd = function (cmd, grid, record) {
+        if (cmd == 'save') {
+            var id = record.get('ID'), name = record.get('Name'), des = record.get('Note'), isUse = record.get('IsUse');
+            if (name == '') {
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Nhóm công văn không được để trống!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                return;
+            }
+            if (id != null && id > 0 && name != '') {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("Update", "DispatchCategory", new { Area = "Dispatch" }, null))',
+                    params: { id: id, name: name, des: des, isUse: isUse },
+                    success: function (result) {
+                        if (result == 'Error') {
+                            Ext.MessageBox.show({
+                                title: 'Lỗi', msg: 'Nhóm công văn có tên là: ' + name + ' đã tồn tại',
+                                buttons: { yes: 'Đồng ý' },
+                                iconCls: '#Cancel',
+                                fn: function (btn) {
+                                    record.reject();
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            else {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("Insert", "DispatchCategory", new { Area = "Dispatch" }, null))',
+                    params: { name: name, des: des, isUse: isUse },
+                    success: function (result) {
+                        if (result == 'ErrorExisted') {
+                            Ext.MessageBox.show({
+                                title: 'Lỗi', msg: 'Nhóm công văn có tên là: ' + name + ' đã tồn tại',
+                                buttons: { yes: 'Đồng ý' },
+                                iconCls: '#Cancel',
+                                fn: function (btn) {
+                                    record.reject();
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+        }
+        if (cmd == 'reject') {
+            record.reject();
+        }
+    };
+</script>              

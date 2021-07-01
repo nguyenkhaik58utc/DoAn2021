@@ -1,0 +1,124 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@model iDAS.Items.HumanProfileCuriculmViateItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false)
+ .Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .DirectEvents(dr => dr.AddScript("BeforeRenderForm();"))
+    .Layout(LayoutType.Form)
+    .Frame(true)
+    .AutoScroll(true)
+    .StyleSpec("border: none;")
+    .Padding(1)
+    .TopBar(X.Toolbar().Layout(LayoutType.HBox)
+                        .Items(
+                                X.Button().Text("Cập nhật").ID("btnEdit")
+                                .Icon(Icon.Pencil).Handler("AllowEditor();"),
+                                 X.ToolbarSeparator(),
+                                 X.Button().Text("Lưu").ID("btnSave")
+                                     .Icon(Icon.DatabaseSave)
+                                        .DirectEvents(de =>
+                                        {
+                                            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                            de.Click.ExtraParams.Add(new { exit = true });
+                                            de.Click.Url = Url.Action("Update");
+                                            de.Click.EventMask.ShowMask = true;
+                                            de.Click.FormID = "frmUpdate";
+                                            de.Click.Complete = "StatusSaveComplete();";
+                                        }) ,
+                                 X.ToolbarSeparator(),
+                                     X.Button().Text("Hủy").Icon(Icon.Cancel).ID("btnCancel").Handler("StatusSaveComplete();")
+                              )
+               )
+                  
+    .Items(
+                X.FieldSet().Title("Thông tin cơ bản").Border(false)
+                .Layout(LayoutType.Column)
+                .FieldDefaults(df => df.LabelWidth = 100)
+                .Items(
+                            X.HiddenFor(m => m.ID).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                            X.HiddenFor(m => m.EmployeeID).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.Aliases).FieldLabel("Bí danh").ColumnWidth(1).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.Nationality).FieldLabel("Quốc tịch").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.People).FieldLabel("Dân tộc").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.Religion).FieldLabel("Tôn giáo").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.PlaceOfBirth).FieldLabel("Nơi sinh").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.HomePhone).FieldLabel("Điện thoại nhà riêng").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.OfficePhone).FieldLabel("Điện thoại cá nhân").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.NumberOfIdentityCard).FieldLabel("Số CMT").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateIssueOfIdentityCard).FieldLabel("Ngày cấp CMT").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.PlaceIssueOfIdentityCard).FieldLabel("Nơi cấp CMT").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.TaxCode).FieldLabel("Mã số thuế").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.NumberOfBankAccounts).FieldLabel("Số tài khoản").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.Bank).FieldLabel("Ngân hàng").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.NumberOfPassport).FieldLabel("Số hộ chiếu").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.PlaceOfPassport).FieldLabel("Nơi cấp hộ chiếu").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateOfIssuePassport).FieldLabel("Ngày cấp hộ chiếu").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.PassportExpirationDate).FieldLabel("Ngày hết hạn hộ chiếu").ColumnWidth(0.5).MarginSpec("5 8 0 8")
+                    ),
+                X.FieldSet().Title("Thông tin lý lịch chính trị").Border(false)
+                .Layout(LayoutType.Column)
+                .FieldDefaults(df => df.LabelWidth = 100)
+                .Items(
+                            X.DateFieldFor(m => m.DateOnGroup).FieldLabel("Ngày vào đoàn").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.PositionGroup).FieldLabel("Chức vụ đoàn").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.PlaceOfLoadedGroup).FieldLabel("Nơi kết nạp đoàn").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateJoinRevolution).FieldLabel("Ngày tham gia cách mạng").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateAtParty).FieldLabel("Ngày vào Đảng").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateOfJoinParty).FieldLabel("Ngày vào Đảng chính thức").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.PlaceOfLoadedParty).FieldLabel("Nơi kết nạp").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.PosititonParty).FieldLabel("Chức vụ Đảng").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.NumberOfPartyCard).FieldLabel("Số thẻ Đảng").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateOnArmy).FieldLabel("Ngày nhập ngũ").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.PositionArmy).FieldLabel("Chức vụ quân đội").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.ArmyRank).FieldLabel("Cấp bậc quân đội").ColumnWidth(0.5).MarginSpec("5 8 0 8")
+                        ),
+                X.FieldSet().Title("Thông tin khác").Border(false)
+                .Layout(LayoutType.Column).FieldDefaults(df => df.LabelWidth = 100)
+                .Items(
+                            X.TextAreaFor(m => m.Likes).FieldLabel("Sở thích").Height(100).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                            X.TextAreaFor(m => m.Forte).FieldLabel("Ưu điểm").Height(100).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                            X.TextAreaFor(m => m.Defect).FieldLabel("Nhược điểm").Height(100).ColumnWidth(1).MarginSpec("5 8 0 8")
+                    )
+        )
+    )
+)
+<script>
+    var BeforeRenderForm = function () {
+        App.btnSave.setDisabled(true);
+        App.btnCancel.setDisabled(true);
+        var form = App.frmUpdate.query("textfield");
+        for (var i = 0; i < form.length; i++) {
+            form[i].setReadOnly(true);
+            form[i].setIconCls("");
+        };
+    };
+   
+    var AllowEditor = function () {
+        App.btnSave.setDisabled(false);
+        App.btnCancel.setDisabled(false);
+        App.btnEdit.setDisabled(true);
+        var form = App.frmUpdate.query("textfield");
+        for (var i = 0; i < form.length; i++)
+        {
+            form[i].setReadOnly(false);
+            form[i].setIconCls("icon-pencil");
+        }
+    };
+    var StatusSaveComplete = function () {
+        App.btnSave.setDisabled(true);
+        App.btnCancel.setDisabled(true);
+        App.btnEdit.setDisabled(false);
+        var form = App.frmUpdate.query("textfield");
+        for (var i = 0; i < form.length;i++) {
+            form[i].setReadOnly(true);
+            form[i].setIconCls("");
+        }
+    };
+</script>

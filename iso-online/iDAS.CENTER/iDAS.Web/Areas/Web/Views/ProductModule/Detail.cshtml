@@ -1,0 +1,82 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductModuleItem
+
+@(Html.X().Window()
+    .Title("Thông tin chi tiết module sản phẩm")
+    .Icon(Icon.Zoom)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().ComboBoxFor(m => m.CenterModuleID).FieldLabel("Module")
+                            .ID("cboModule")
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .ReadOnly(true)
+                            .Store(
+                                Html.X().Store().AutoLoad(true)
+                                .Parameters(Html.X().StoreParameter().Name("productId").Value("getProductId()").Mode(ParameterMode.Raw))
+                                .Parameters(Html.X().StoreParameter().Name("moduleId").Value(Model.CenterModuleID.ToString()).Mode(ParameterMode.Value))
+                                .Model(
+                                    Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                    )
+                                )
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadModules")).Reader(Html.X().JsonReader().Root("data")))
+                                .Listeners(ls => ls.Load.Handler = "App.cboModule.select(App.cboModule.store.getAt(0))")
+                            ),
+                            Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").Height(80)
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true).ReadOnly(true)
+                        )
+                    ),
+                    Html.X().TextFieldFor(m => m.Tags).FieldLabel("Tags").ReadOnly(true),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.Position).FieldLabel("Thứ tự hiển thị").ReadOnly(true),
+                        Html.X().Container().ColumnWidth(0.1),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.3).FieldLabel("Kích hoạt").ReadOnly(true)
+                    )
+                ),
+                 Html.X().Panel().Title("Nội dung").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Fit)
+                .Items(
+                    Html.X().HtmlEditorFor(m => m.Html).ReadOnly(true)
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+

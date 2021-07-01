@@ -1,0 +1,93 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerCampaignItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới chiến dịch";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật chiến dịch";
+    }
+}
+@(Html.X().Window()
+.ID("WinCustomerCompaignUpdate")
+.Title(title)
+.Icon(IconView)
+.Width(800)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+         X.FormPanel().ID("frmUpdate")
+         .StyleSpec("border: none;")
+        .Layout(LayoutType.Column)
+        .Frame(true)
+        .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 120; })
+        .Items(
+                            X.HiddenFor(m => m.ID),
+                            X.TextFieldFor(m => m.Name)
+                                    .FieldLabel("Chiến dịch" + Html.Required())
+                                    .EmptyText("Nhập tên chiến dịch ...")
+                                    .BlankText("Tên Chiến dịch không được bỏ trống!")
+                                    .AllowBlank(false)
+                                    .ColumnWidth(1)
+                                    .MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.StartTime).FieldLabel("Bắt đầu" + Html.Required())
+                                    .AllowBlank(false)
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.EndTime).FieldLabel("Kết thúc" + Html.Required())
+                                    .AllowBlank(false)
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("5 8 0 8"),
+                            X.NumberFieldFor(m => m.Cost).FieldLabel("Chi phí").MinValue(0)
+                                    .AllowBlank(false)
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("5 8 0 8"),
+                            X.NumberFieldFor(m => m.Income).FieldLabel("Doanh thu").MinValue(0)
+                                    .AllowBlank(false)
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("5 8 0 8"),
+                            X.RadioGroupFor(m => m.StatusValue, new List<Radio.Config>() { 
+                                    new Radio.Config{BoxLabel = "Đang tiến hành", InputValue = CustomerStatus.New,Checked=true,ColumnWidth=0.3},
+                                    new Radio.Config{BoxLabel = "Tạm dừng", InputValue = CustomerStatus.Pause,ColumnWidth=0.3},
+                                    new Radio.Config{BoxLabel = "Hoàn thành", InputValue = CustomerStatus.Finish,ColumnWidth=0.3}})
+                                        .ID("CustomerStatus").Layout(LayoutType.Column).Hidden(actionForm == iDAS.Utilities.Form.Add)
+                                    .FieldLabel("Hoạt động" + Html.Required()).AllowBlank(false)
+                                .ColumnWidth(1)
+                                .MarginSpec("5 8 0 8"),
+                            X.TextAreaFor(m => m.Note)
+                                .FieldLabel("Ghi chú")
+                                .ColumnWidth(1)
+                                    .MarginSpec("5 8 0 8")
+                                .Height(100)
+                                .EmptyText("Nhập nội ghi chú thông tin Chiến dịch ...")
+
+                            )
+)
+.Buttons(
+    Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.ExtraParams.Add(new { exit = true });
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.FormID = "frmUpdate";
+                                })
+    , Html.X().ButtonExit())
+)

@@ -1,0 +1,143 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityAuditEmployeeItem
+@(  
+        Html.X().GridPanel()
+                    .ID("grMnObject")
+                    .Border(false)
+                    .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                    .TopBar(
+                    Html.X().Toolbar()
+                            .Items(
+                                Html.X().Button()
+                                        .Text("Thành phần tham gia")
+                                        .ID("btnChoice")
+                                        .Icon(Icon.User)
+                                                .DirectClickAction("ChoiceObjectAdd", "AuditEmployee"), 
+                                             Html.X().ToolbarSeparator(), 
+                                Html.X().ButtonUpdate()                                   
+                                        .ID("btnUpdateObject")
+                                             .Disabled(false)                                    
+                                        .Handler("updateRecord();"),                          
+                                Html.X().ToolbarSeparator(), 
+                                Html.X().ButtonDelete()
+                                     .Disabled(false)
+                                            .ID("btnDeleteObject")
+                                            .Handler("this.up('grid').deleteSelected();")                          
+                               
+                            )
+                         )               
+                     .Store(
+                Html.X().StoreForModel()
+                   .ID("stM")
+                    .AutoLoad(false)
+                    .ShowWarningOnFailure(false)                 
+                   
+            )
+             .ColumnModel(
+                Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Center)
+                        .Width(33),
+                Html.X().Column()
+                        .Text("ID")
+                        .DataIndex("ID")
+                        .Hidden(true),                         
+                        Html.X().TemplateColumn().DataIndex(Model, m => m.FileID).Width(31).Tpl(
+                              Html.X().XTemplate().Html(@<text>
+                            <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                 style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                        </text>)
+                        ),
+                Html.X().Column()
+                        .Text("Họ tên")
+                        .StyleSpec("font-weight: bold;text-align: center")
+                                .DataIndex("EmployeeName")
+                       .Flex(1)
+                        .Wrap(true),
+                   Html.X().Column()
+                            .Text("Chức vụ")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                                .DataIndex("Role")
+                           .Width(100)
+                            .Wrap(true),
+                                 Html.X().Column()
+                                .Text("Số điện thoại")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Phone")
+                               .Width(100)
+                                .Wrap(true),
+                                     Html.X().Column()
+                                .Text("Email")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Email")
+                               .Width(130)
+                                .Wrap(true),
+                                       Html.X().CheckColumn()
+                                    .Text("Trưởng nhóm")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("IsCaptain")
+                                   .Width(100)
+                                    .Wrap(true),
+                                           Html.X().CheckColumn()
+                                    .Text("Thành viên")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("IsAuditor")
+                                       .Width(100)
+                                        .Wrap(true)
+                                              
+                   
+                ).SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "checkStatus()";
+                            })
+                            )
+                            .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                            .Plugins(Html.X().CellEditing())
+                            .BottomBar
+                            (
+                                     Html.X().CustomPagingToolbar()
+                            )
+                       )
+   
+<script type="text/javascript">   
+    var deleteRecord = function () {
+        var record = App.grMnObject.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa đối tượng tham gia đánh giá không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "AuditEmployee", new { Area = "Quality" }, null))',
+                            params: { id: id },
+                            success: function () {
+
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    };
+    var updateRecord = function () {        
+        var record = App.grMnObject.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');          
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmUpdateObject", "AuditProgram", new { Area = "Quality" }, null))',
+                params: { employeeId: id, auditor: record[0].get('EmployeeName'), email: record[0].get('Email'), phone: record[0].get('Phone'), fileId: record[0].get('FileID'), fileName: record[0].get('FileName'), isCaptain: record[0].get('IsCaptain'), role: record[0].get('Role'), isAuditor: record[0].get('IsAuditor') }
+            });
+        }
+    };
+    </script>

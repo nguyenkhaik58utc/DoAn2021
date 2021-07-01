@@ -1,0 +1,95 @@
+﻿@*@model System.Collections.IEnumerable*@
+@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@using iDAS.Utilities
+@model iDAS.Items.ProfileBorrowItem
+@(
+ Html.X().Window()
+    .ID("winPaidProfile")
+    .Title("Cập nhật thông tin trả hồ sơ")
+    .Icon(Icon.PageWhiteGo)
+    .Width(600)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+                .ID("frPaidProfile")
+                  .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .FieldDefaults(f => f.LabelWidth = 100)
+            .Items(
+                Html.X().HiddenFor(m => m.ID).Hidden(true),
+                Html.X().HiddenFor(m => m.ProfileID).Hidden(true),
+                Html.X().TextFieldFor(m => m.Category)
+                    .ID("cbCate")
+                    .ReadOnly(true)
+                    .FieldLabel("Sổ mượn hồ sơ")
+                    .TabIndex(4),
+                Html.X().TextFieldFor(m => m.Name)
+                    .ID("cbProfile")
+                    .ColumnWidth(0.5)
+                    .FieldLabel("Hồ sơ mượn")
+                    .ReadOnly(true)
+                    .TabIndex(4),
+                    Html.X().EmployeeFieldFor(m => m.EmployeeInfo).ReadOnly(true).Title("Người mượn" + Html.Required()).ID("fsEmployee").MarginSpec("-3 0 5 105"),
+                Html.X().Container()
+                    .Layout(LayoutType.Column)
+                    .MarginSpec("0 0 5 0")
+                    .Items(
+                        Html.X().DateFieldFor(m => m.BorrowAt)
+                            .ColumnWidth(0.5)
+                            .FieldLabel("Ngày mượn")
+                            .ReadOnly(true)
+                            .TabIndex(2)
+                            .AllowBlank(false)
+                            .BlankText("Ngày mượn bắt buộc nhập/chọn !")
+                            .Format("dd/MM/yyyy"),
+                        Html.X().DateFieldFor(m => m.LimitAt)
+                            .ID("dt")
+                            .TabIndex(4)
+                            .ColumnWidth(0.5)
+                            .FieldLabel("Ngày hẹn trả")
+                            .MarginSpec("0 0 0 10")
+                            .Format("dd/MM/yyyy")
+                            .ReadOnly(true)
+                            .AllowBlank(false)
+                            .BlankText("Ngày hẹn trả bắt buộc nhập/chọn !")
+                            ),
+                  Html.X().DateFieldFor(m => m.ReturnAt)
+                            .ID("dtReturn")
+                            .TabIndex(4)
+                            .FieldLabel("Ngày trả" + Html.Required())
+                            .MaxDate(DateTime.Now).MaxText("Ngày trả không được lớn hơn ngày hiện tại!")                    
+                            .Format("dd/MM/yyyy")                         
+                            .AllowBlank(false)
+                            .EmptyText("dd/MM/yyyy")                                             
+                            .BlankText("Ngày trả bắt buộc nhập/chọn !"),
+                  Html.X().TextAreaFor(m => m.Note)
+                    .ID("txtResultNote")
+                    .TabIndex(6)
+                    .MarginSpec("0 0 10 0")
+                    .FieldLabel("Ghi chú")
+               )
+    )
+    .Buttons(
+        Html.X().Button()
+            .ID("btnSaves")
+            .Icon(Icon.Disk)
+            .Text("Lưu lại")
+            .TabIndex(7)
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frPaidProfile";
+                    de.Click.Url = Url.Action("UpdateProfilePaid");
+                    de.Click.Before = @"if (!#{frPaidProfile}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                }),
+        Html.X().ButtonExit()
+    )
+)

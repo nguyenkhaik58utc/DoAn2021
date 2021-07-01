@@ -1,0 +1,166 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.Problem.ProblemGroupItem
+
+@{
+    var formId = Html.X().GetComponentID();
+}
+@(Html.X().Window()
+    .ID("CreateProblemGroupWindow")
+    .Title("Thêm mới nhóm sự cố")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreateProblemGroupForm")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Items(
+                Html.X().TabPanel().ID("TabMain").ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Frame(true)
+                            .BodyPadding(5)
+                            .ID("tabGroupCreate")
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin chi tiết")
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().TextFieldFor(m => m.ProblemGroupName).FieldLabel("Tên nhóm sự cố" + Html.Required())
+                                    .EmptyText("Nhập tên nhóm sự cố")
+                                    .BlankText("Bạn phải nhập tên nhóm sự cố!")
+                                    .AllowBlank(false).AllowOnlyWhitespace(false),
+                                Html.X().TextFieldFor(m => m.Code).FieldLabel("Mã nhóm sự cố" + Html.Required())
+                                    .EmptyText("Nhập mã nhóm sự cố").BlankText("Bạn phải nhập nhóm sự cố").AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").EmptyText("Nhập mô tả"),
+                                Html.X().ComboBoxFor(m => m.ParentID)
+                                    .FieldLabel("Nhóm cha" + Html.Required())
+                                    .Editable(false)
+                                    .EmptyText("Chọm nhóm cha")
+                                    .SelectedItems(new ListItem("Không", "0"))
+                                    .Items(
+                                        new ListItem("Không", "0")
+                                    )
+                                        .Store(
+                                            Html.X().Store()
+                                            .AutoLoad(true)
+                                            .ID("GroupCbox")
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadData", "ProblemGroup", new { area = "Problem" }))
+                                                    .Reader(
+                                                        Html.X().JsonReader().Root("data"))
+                                        )
+                                        .Model(
+                                            Html.X().Model()
+                                                .Fields(
+                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("ProblemGroupName").Type(ModelFieldType.String)
+                                                )
+                                        )
+                                    )
+                                    .DisplayField("ProblemGroupName")
+                                    .ValueField("ID"),
+                                Html.X().GridPanel()
+                                .Region(Region.Center)
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .ID("GridPanel1")
+                                .Title("Loại sự cố")
+                                .Icon(Icon.TextListBullets)
+                                .Store(Html.X().Store()
+                                    .ID("stProblemTypePanel")
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "ProblemType", new { area = "Problem" })).Reader(Html.X().JsonReader().Root("data")))
+                                    .Model(
+                                        Html.X().Model()
+                                            .Fields(
+                                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("ProblemTypeName").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("IsSelect").Type(ModelFieldType.Boolean)
+                                            )
+                                    )
+                                )
+                                .SortableColumns(false)
+                                .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                                    Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                                    Html.X().Column().DataIndex("ProblemTypeName").Text("Tên loại sự cố").Flex(1).MenuDisabled(true),
+                                    Html.X().CheckColumn().DataIndex("IsSelect").Text("Chọn").Width(150).Editable(true)
+                                 )
+                                .SelectionModel(
+                                        Html.X().RowSelectionModel()
+                                            .Mode(SelectionMode.Multi)
+                                    )
+                            )
+                    )
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createProblemGroupSubmit(false)")
+        .FormID(formId)
+            .DirectEvents(de =>
+            {
+                de.Click.FormID = formId;
+                de.Click.Success = "this.up('window').down('#loadMask').hide();";
+                de.Click.ExtraParams.Add(new Parameter("dataMenuRole", "App.stProblemTypePanel.getChangedData()", ParameterMode.Raw));
+            }),
+        Html.X().ButtonSaveAndExit()
+            .Handler("createProblemGroupSubmit(true)")
+            .FormID(formId)
+            .DirectEvents(de =>
+            {
+                de.Click.FormID = formId;
+                de.Click.Success = "this.up('window').down('#loadMask').hide();";
+                de.Click.ExtraParams.Add(new Parameter("dataMenuRole", "App.stProblemTypePanel.getChangedData()", ParameterMode.Raw));
+            }),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    ))
+<script>
+    var createProblemGroupSubmit = function (exit) {
+        var records = App.stProblemTypePanel.getChangedData();
+        if (records['Updated'] != null) {
+            var lstId = new Array();
+            for (var i = 0; i < records['Updated'].length; i++) {
+                lstId.push(records['Updated'][i].ID);
+            }
+            App.CreateProblemGroupForm.submit({
+                params: {
+                    dataMenuRole: lstId
+                    },
+                waitMsg: "Đang thực hiện ....",
+                success: function (result) {
+                    if (result) {
+                        reloadProblemGroupNode();
+                        refreshProblemGroup();
+                        reloadProblemGroup();
+                        if (exit) {
+                            App.CreateProblemTypeWindow.close();
+                        }
+                        else {
+                            App.CreateProblemTypeForm.reset();
+                            App.TabMain.setActiveTab('tabGroupCreate');
+                        }
+                    }
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Chưa lựa chọn loại sự cố nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+</script>

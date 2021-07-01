@@ -1,0 +1,324 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Base;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Hidden().ID("Code").Value("root"))
+@(Html.X().Hidden().ID("IsModule").Value(false))
+@(Html.X().Hidden().ID("IsGroup").Value(false))
+@(Html.X().Hidden().ID("IsFunction").Value(false))
+@(Html.X().Hidden().ID("IsPermission").Value(false))
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Border(false)
+    .AutoScroll(false)
+    .Items(
+        Html.X().TreePanel()
+            .ID("DepartmentPanel")
+            .Region(Region.West)
+            .Width(360)
+            .Header(false)
+            .Border(true)
+            .RowLines(true)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)
+            .SingleExpand(false)
+            .Split(true)
+            .Collapsible(true)
+            .MarginSpec("1 0 1 1")
+            .Listeners(ls =>
+            {
+                ls.Load.Handler = "expandDepartment(records);";
+                ls.Select.Handler = "reloadPermissionStore();";
+            })
+            .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                        Html.X().Button().Text("Mở rộng").Icon(Icon.ControlAddBlue).Handler("this.up('treepanel').expandAll();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Thu gọn").Icon(Icon.ControlRemoveBlue).Handler("this.up('treepanel').collapseAll();")
+                    )
+            )
+            .Store(
+                Html.X().TreeStore()
+                    .ID("StoreDepartments")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Department", new { area = "Department"})).Reader(Html.X().JsonReader().Root("data")))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("id"),
+                            Html.X().ModelField().Name("text"),
+                            Html.X().ModelField().Name("ParentID"),
+                            Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsMerge").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().TreeColumn().Text("Cơ cấu tổ chức").StyleSpec("font-weight: bold;text-align: center")
+                    .DataIndex("text").Flex(1).Filterable(false).Sortable(false)
+            ),
+        Html.X().GridPanel()
+            .ID("PermissionPanel")
+            .ColumnLines(true)
+            .MarginSpec("1 1 1 0")
+            .Icon(Icon.TextListBullets)
+            .Region(Region.Center)
+            .Header(false)
+            .Border(true)
+            .Collapsible(true)
+            .ForceFit(true)
+            .EnableLocking(true)
+            .TopBarItem(
+                //Html.X().Button().Text("Phân quyền").Handler("showModuleFunction()").Icon(Icon.TableGear),
+                //Html.X().ToolbarFill(),
+                //Html.X().ButtonTutorial(),
+                //Html.X().Button().Text("Danh sách chức năng").Handler("showModuleFunction()").Icon(Icon.TableGear),
+                //Html.X().ToolbarSeparator(),
+                //Html.X().Button().Text("Chọn quyền tất cả").Handler("setPermissionAll(true)").Icon(Icon.ControlStopBlue).ID("btnSelectPermissionAll").Disabled(true),
+                //Html.X().ToolbarSeparator(),
+                //Html.X().Button().Text("Bỏ quyền tất cả").Handler("setPermissionAll(false)").Icon(Icon.ControlBlankBlue).ID("btnDeselectPermissionAll").Disabled(true),
+                Html.X().Button().Text("Phân quyền v3").DirectEvents(
+                    de =>
+                    {
+                        //de.Click.ExtraParams.Add(new { departmentId = new JRawValue("App.DepartmentPanel.getSelectionModel().getLastSelected().data.id") });
+                        //de.Click.Url = Url.Action("Index", "DepartmentTitle");
+                        //de.Click.ExtraParams.Add(new { titleId = new JRawValue("App.PermissionPanel.selModel.getSelection()[0].data.Id") });
+                        //de.Click.ExtraParams.Add(new { deptId = new JRawValue("App.DepartmentPanel.getSelectionModel().getLastSelected().data.id") });
+                        de.Click.ExtraParams.Add(new { DepartmentID = new JRawValue("App.PermissionPanel.selModel.getSelection()[0].data.departmentID") });
+                        de.Click.ExtraParams.Add(new { TitleID = new JRawValue("App.PermissionPanel.selModel.getSelection()[0].data.titleID") });
+                        de.Click.Url = Url.Action("PermissionTitleNew1", "v3_Permission", new { area = "Department" });
+                    }),
+                Html.X().ToolbarFill(),
+                Html.X().ButtonTutorial()
+            //,
+            //Html.X().Button().ID("btnPhanQuyen1").Text("Phân quyền 1")
+            //    .Handler("fnPhanQuyen1();").Icon(Icon.Money).Disabled(false)
+            )
+            .Store(
+                Html.X().Store()
+                    .ID("StorePermissions")
+                    .AutoLoad(false)
+                    .RemoteSort(true)
+                    .Model(Html.X().Model()
+                        .Fields(
+                            //Html.X().ModelField().Name("RoleID"),
+                            //Html.X().ModelField().Name("RoleName"),
+                            Html.X().ModelField().Name("id"),
+                            Html.X().ModelField().Name("titleID"),
+                            Html.X().ModelField().Name("titleName"),
+                            Html.X().ModelField().Name("departmentID")
+                        )
+                    )
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                    //.GroupField("DepartmentName")
+                    .SortOnLoad(false)
+                    .Parameters(ps =>
+                    {
+                        //ps.Add(new StoreParameter("code", "App.Code.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("departmentId", "getDepartmentSelection().data.id", ParameterMode.Raw));
+                        //ps.Add(new StoreParameter("isModule", "App.IsModule.getValue()", ParameterMode.Raw));
+                        //ps.Add(new StoreParameter("isGroup", "App.IsGroup.getValue()", ParameterMode.Raw));
+                        //ps.Add(new StoreParameter("isFunction", "App.IsFunction.getValue()", ParameterMode.Raw));
+                    })
+                    .Listeners(ls => ls.Load.Handler = "setPermissionAllDisabled(true)")
+            )
+            .Listeners(ls => {
+                ls.Select.Handler = "setPermissionAllDisabled(false)";
+            })
+            .ColumnModel(
+                //Html.X().Column().DataIndex("RoleID").Hidden(true),
+                //Html.X().Column().DataIndex("RoleName").Text("Chức danh").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("id").Hidden(true),
+                Html.X().Column().DataIndex("titleID").Hidden(true),
+                Html.X().Column().DataIndex("titleName").Text("Chức danh").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("departmentID").Hidden(true)
+            )
+            .Features(Html.X().Grouping().GroupHeaderTplString("{name}").HideGroupedHeader(true))
+            .Plugins(Html.X().CellEditing())
+    )
+)
+
+<script>
+    var urlConfigPermission = '@Url.Action("Config", "v3_Permission", new { area = "Department"})';
+    var urlPermission = '@Url.Action("SetPermission", "v3_Permission", new { area = "Department" })';
+    var multiDepartment = '@ViewData["Multi"]';
+    var getDepartmentSelection = function () {
+        //debugger;
+        //alert('App.DepartmentPanel.getSelectionModel().getLastSelected() = ' + App.DepartmentPanel.getSelectionModel().getLastSelected().data.id);
+        return App.DepartmentPanel.getSelectionModel().getLastSelected();
+    };
+    var expandDepartment = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+        var count = App.DepartmentPanel.selModel.getCount();
+        if (count <= 0) {
+            App.DepartmentPanel.selModel.select(0);
+        }
+    };
+
+    // HungNM.
+    //var expandDepartment1 = function (records) {
+    //    if (records.length > 0) {
+    //        for (var i = 0; i < records.length; i++) {
+    //            if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+    //                records[i].expand();
+    //            }
+    //        }
+    //    }
+    //    var count = App.ModuleFunctionPanel.selModel.getCount();
+    //    if (count <= 0) {
+    //        App.ModuleFunctionPanel.selModel.select(0);
+    //    }
+    //};
+
+    //var expandFunctionsWindow = function (records) {
+    //    debugger;
+    //    if (records.length > 0) {
+    //        for (var i = 0; i < records.length; i++) {
+    //            var node = records[i];
+    //            if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+    //                node.expand();
+    //            }
+    //        }
+    //    }
+    //};
+
+    //var setChoiceDepartmentWindow = function (record) {
+    //    debugger;
+    //    var data = getListDepartmentWindow(record);
+    //    App.btnSelected.setDisabled(!(data.length > 0));
+    //};
+    //var getListDepartmentWindow = function (record) {
+    //    debugger;
+    //    var data = [];
+    //    var records = App.ModuleFunctionPanel.view.store.getRange();
+    //    records.forEach(function (obj) {
+    //        if (multiDepartment == 'False' && record != null) {
+    //            if (!obj.data.IsSelected || obj.data.id != record.data.id) {
+    //                obj.data.IsSelected = false;
+    //            }
+    //        };
+    //        if (obj.data.IsSelected) {
+    //            data.push(obj);
+    //        }
+    //    });
+    //    App.ModuleFunctionPanel.view.refresh();
+    //    return data;
+    //};
+    //var saveListSelectedFunctions = function () {
+    //    debugger;
+    //    var lstDepartmentID = '';
+    //    var lstCode = '';
+    //    var lstIsModule = '';
+    //    var lstIsGroup = '';
+    //    var lstIsFunction = '';
+    //    var url = urlConfigPermission;
+    //    var records = App.ModuleFunctionPanel.view.store.getRange();
+    //    records.forEach(function (obj) {
+    //        if (obj.data.IsSelected) {
+    //            lstDepartmentID += obj.data.id + ',';
+    //            lstCode += obj.data.Code + ',';
+    //            lstIsModule += obj.data.IsModule + ',';
+    //            lstIsGroup += obj.data.isGroup + ',';
+    //            lstIsFunction += obj.data.isFunction + ',';
+    //        }
+    //    });
+    //    App.Code.setValue(lstCode);
+    //    App.IsModule.setValue(lstIsModule);
+    //    App.IsGroup.setValue(lstIsGroup);
+    //    App.IsFunction.setValue(lstIsFunction);
+    //    App.IsPermission.setValue(true);
+    //    var params = { departmentId: lstDepartmentID, code: App.Code.value, isModule: App.IsModule.value, isGroup: App.IsGroup.value, isFunction: App.IsFunction.value };
+    //    onDirectMethod(url, params, 'get');
+    //};
+    // End.
+
+    var reloadPermissionStore = function () {
+        App.PermissionPanel.store.reload();
+        App.PermissionPanel.selModel.deselectAll();
+        //App.btnSelectPermissionAll.setDisabled(true);
+        //App.btnDeselectPermissionAll.setDisabled(true);
+    };
+    var showModuleFunction = function () {
+        App.ModuleFunctionWindow.show();
+    };
+    //var getPermissionSelection = function () {
+    //    return App.PermissionPanel.getSelectionModel().getLastSelected();
+    //}
+    //var getFunctionSelection = function () {
+    //    return App.ModuleFunctionPanel.getSelectionModel().getLastSelected();
+    //};
+    //var onFunctionSelected = function () {
+    //    debugger;
+    //    var node = getFunctionSelection();
+    //    App.Code.setValue(node.data.id);
+    //    App.IsModule.setValue(!node.data.IsGroup && !node.data.leaf);
+    //    App.IsGroup.setValue(node.data.IsGroup);
+    //    App.IsFunction.setValue(node.data.leaf);
+    //    App.IsPermission.setValue(true);
+    //    configPermission();
+    //};
+    //var configPermission = function () {
+    //    var url = urlConfigPermission;
+    //    var record = getDepartmentSelection();
+    //    var departmentId = record == null ? 0 : record.data.id;
+    //    var code = App.Code.value;
+    //    var isModule = App.IsModule.value;
+    //    var isGroup = App.IsGroup.value;
+    //    var isFunction = App.IsFunction.value;
+    //    var params = { departmentId: departmentId, code: code, isModule:isModule, isGroup:isGroup, isFunction: isFunction };
+    //    onDirectMethod(url, params, 'get');
+    //};
+    //var setPermission = function (code, roleId, isPermission) {
+    //    var url = urlPermission;
+    //    var params = { code: code, roleId: roleId, isPermission: isPermission };
+    //    onDirectMethod(url, params, 'post', null, true);
+    //};
+    //var setPermissionAll = function (isPermission) {
+    //    var url = urlPermissionAll;
+    //    var record = getPermissionSelection();
+    //    if (record == null) return false;
+    //    var code = App.Code.value;
+    //    var isModule = App.IsModule.value;
+    //    var isGroup = App.IsGroup.value;
+    //    var isFunction = App.IsFunction.value;
+    //    var roleId = record.data.RoleID;
+    //    var params = { code: code, roleId: roleId, isPermission: isPermission, isModule: isModule, isGroup: isGroup, isFunction: isFunction };
+    //    onDirectMethod(url, params, 'get', reloadPermissionStore);
+    //};
+    var setPermissionAllDisabled = function (disabled) {
+        if (!App.IsPermission.value)
+        {
+            disabled = true;
+        }
+        //App.btnSelectPermissionAll.setDisabled(disabled);
+        //App.btnDeselectPermissionAll.setDisabled(disabled);
+    };
+
+    var fnPhanQuyen1 = function () {
+        //var records = App.GrCustomerContract.selModel.getSelection();
+        //if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("PermissionTitleNew1", "v3_Permission", new { Area = "Department" }, null))'
+                //,
+                //params: {
+                //    ID: records[0].get('ID'),
+                //}
+            });
+        //}
+        //else {
+        //     MessageBox();
+        //};
+    };
+
+</script>

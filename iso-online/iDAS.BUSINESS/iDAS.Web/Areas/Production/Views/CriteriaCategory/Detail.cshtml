@@ -1,0 +1,58 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductionCriteriaItem
+@(Html.X().Window()
+                .ID("winDetailCriteria")
+                .Title("Xem chi tiết thông tin tiêu chí đánh giá")
+                .Icon(Icon.Zoom)      
+                .Width(500)
+                .BodyPadding(6)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                Html.X().FormPanel()
+                .ID("frCriteria")
+                .Layout(LayoutType.Form)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                        Html.X().HiddenFor(m => m.ID),  
+                        Html.X().TextFieldFor(m => m.Name)
+                                .FieldLabel("Tên tiêu chí")
+                                .AllowBlank(false)
+                                      .ReadOnly(true)
+                                .BlankText("Tên tiêu chí đánh giá không được trống!")
+                                .AllowOnlyWhitespace(false),
+                        Html.X().ComboBoxFor(m => m.EquipmentMeasureCategoryID).FieldLabel("Thiết bị đo")
+                                        .Store(
+                                                Html.X().Store().ID("StoreEquipmentMeasureCategory")
+                                                                .AutoLoad(true)
+                                                                .Proxy(Html.X().AjaxProxy()
+                                                                            .Url(Url.Action("LoadAll", "EquipmentMeasureCategory", new { area = "Equipment" }))
+                                                                            .ActionMethods(am => am.Read = HttpMethod.POST)
+                                                                            .Reader(Html.X().JsonReader().Root("data")))
+                                                                .Model(Html.X().Model()
+                                                                            .IDProperty("ID")
+                                                                            .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                                    new ModelField("Name", ModelFieldType.String)))
+                                        )
+                                        .DisplayField("Name")
+                                        .ValueField("ID").ReadOnly(true),
+                        Html.X().TextFieldFor(m => m.Offten).FieldLabel("Tần suất").ReadOnly(true),             
+                        Html.X().NumberFieldFor(m => m.Factory).FieldLabel("Hệ số").AllowBlank(false).BlankText("Hệ số không được trống!").ReadOnly(true),
+                        Html.X().NumberFieldFor(m => m.MinPoint).FieldLabel("Điểm tối thiểu").AllowBlank(false).BlankText("Điểm tối thiểu không được trống!").ReadOnly(true),
+                                   Html.X().NumberFieldFor(m => m.MaxPoint).FieldLabel("Điểm tối đa").AllowBlank(false).BlankText("Điểm tối đa không được trống!").ReadOnly(true),                    
+                        Html.X().CheckboxFor(m => m.IsUse)
+                                .BoxLabel("Sử dụng")
+                                .HideLabel(true)
+                                .ReadOnly(true)
+                                .MarginSpec("0 0 0 105")
+               )
+            )
+            .Buttons(           
+            Html.X().ButtonExit()
+            )
+)

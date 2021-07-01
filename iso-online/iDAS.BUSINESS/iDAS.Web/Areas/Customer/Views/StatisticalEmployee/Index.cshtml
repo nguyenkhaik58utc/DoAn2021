@@ -1,0 +1,482 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+          .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+            .Items(
+        Html.X().Panel()
+                .MarginSpec("1 0 1 1")
+                .Region(Region.West)
+                .Title("XEM THỐNG KÊ DƯỚI DẠNG DỮ LIỆU")
+                .TitleAlign(TitleAlign.Center)
+                .Icon(Icon.ApplicationViewDetail)
+                .Collapsible(true)
+                .Split(true)
+                .Header(false)
+                .Border(true)
+                .Layout(LayoutType.Fit)
+                .Width(700)
+                .Items(
+            Html.X().Panel()
+                .Border(false)             
+                .Layout(LayoutType.Border)
+                .Items (
+                        Html.X().TreePanel()
+                                    .Title("PHÒNG BAN KINH DOANH")
+                                    .Collapsed(true)
+                                    .ID("TreePanelDepartmentID")
+                                    .Tools(
+                                        Html.X().Tool().Type(ToolType.Plus).Handler("App.TreePanelDepartmentID.expandAll();").ToolTip("Mở rộng"),
+                                        Html.X().Tool().Type(ToolType.Minus).Handler("App.TreePanelDepartmentID.collapseAll();").ToolTip("Thu gọn"),
+                                        Html.X().Tool().Type(ToolType.Refresh).Handler("App.TreePanelDepartmentID.store.reload();").ToolTip("Tải lại")
+                                       )
+                                    .Split(true)
+                                    .Region(Region.West).Width(300)
+                                    .MarginSpec("-1 0 -1 -1")
+                                    .TitleAlign(TitleAlign.Center)
+                                    .Layout(LayoutType.Fit)
+                                    .ForceFit(true)
+                                    .RootVisible(false)
+                                    .RowLines(true)
+                                    .SingleExpand(false)
+                                    .HideHeaders(true)
+                                    .Collapsible(true)
+                                    .HideCollapseTool(true)
+                                    .Listeners(ls =>
+                                    {
+                                        ls.SelectionChange.Handler = "onSelectChangeDepartment(this);";
+                                        ls.Load.Handler = "expandDepartmentCustomer(records);";
+                                    })
+                                    .Store(
+                                        Html.X().TreeStore()
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDepartment")).Reader(Html.X().JsonReader().Root("data")))
+                                            .Model(
+                                                Html.X().Model().Fields(
+                                                    Html.X().ModelField().Name("id"),
+                                                    Html.X().ModelField().Name("text"),
+                                                    Html.X().ModelField().Name("ParentID"),
+                                                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean)
+                                                )
+                                            )
+                                    )
+                                    .ColumnModel(
+                                        Html.X().TreeColumn()
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Align(Alignment.Left)
+                                            .DataIndex("text")
+                                            .Flex(1)
+                                    ),
+                        Html.X().Panel().Region(Region.Center)
+                                    .Layout(LayoutType.Fit)
+                                    .MarginSpec("-1 -1 -1 0")
+                                    .Items(
+                                            Html.X().GridPanel()
+                                                    .Header(false)
+                                                    .ID("GrStatisticalEmployee")
+                                                    .ColumnLines(true)
+                                                    .ForceFit(true)
+                                                    .Border(false)
+                                                    .Icon(Icon.TextListBullets)
+                                                    .TopBar(
+                                                    Html.X().Toolbar().Items(
+                                                        Html.X().Hidden().ID("hdfGroupCustomerID").Value(0),
+                                                        Html.X().SearchByDate("Statistical();").FromDateID("dfFromDate").ToDateID("dfToDate"),
+                                                        Html.X().ToolbarSeparator(),
+                                                        Html.X().ButtonExportExcelFile().GridIDGetFile("GrStatisticalEmployee"),
+                                                        Html.X().ToolbarFill()
+                                                      )
+                                                    )
+                                                    .Store(
+                                                        Html.X().Store()
+                                                            .ID("StoreCustomerStatistical")
+                                                            .PageSize(20)
+                                                            .AutoLoad(false)
+                                                            .RemotePaging(true)
+                                                            .Proxy(
+                                                                Html.X().AjaxProxy().Url(Url.Action("LoadEmployees"))
+                                                                    .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                            .Parameters(ps =>
+                                                                {
+                                                                    ps.Add(new StoreParameter("id", "App.hdfGroupCustomerID.getValue()", ParameterMode.Raw));
+                                                                    ps.Add(new StoreParameter("startTime", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                                    ps.Add(new StoreParameter("endTime", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                                                })
+                                                            .Model(
+                                                                    Html.X().Model().IDProperty("EmployeeID").Fields(
+                                                                    Html.X().ModelField().Name("EmployeeID"),
+                                                                    Html.X().ModelField().Name("UserID"),
+                                                                    Html.X().ModelField().Name("Avatar"),
+                                                                    Html.X().ModelField().Name("EmployeeName"),
+                                                                    Html.X().ModelField().Name("CustomerNormal"),
+                                                                    Html.X().ModelField().Name("CustomerNormalContacts"),
+                                                                    Html.X().ModelField().Name("CustomerNormalNeed"),
+                                                                    Html.X().ModelField().Name("CustomerPotentialSendPrice"),
+                                                                    Html.X().ModelField().Name("CustomerPotentialSignContract"),
+                                                                    Html.X().ModelField().Name("CustomerOfficialContacts"),
+                                                                    Html.X().ModelField().Name("CustomerOfficialContract"),
+                                                                    Html.X().ModelField().Name("NumberContract"),
+                                                                    Html.X().ModelField().Name("TotalContract"),
+                                                                    Html.X().ModelField().Name("NumberContractSucess"),
+                                                                    Html.X().ModelField().Name("TotalContractSucess")
+                                                                )
+                                                            )
+                                                        )
+                                                    .ColumnModel(
+                                                                  Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                          Html.X().Column().DataIndex("UserID").Hidden(true),
+                                                                  Html.X().TemplateColumn().DataIndex("AttachmentFileID").Width(30).TdCls("AvatarColumn").Tpl(
+                                                                      Html.X().XTemplate().Html(@<text>
+                                                                    <img src='{Avatar}' style='width:30px;height:40px;' />
+                                                                    </text>)
+                                                                                            ).Locked(true),
+                                                                  Html.X().Column().DataIndex("EmployeeName").Text("Nhân sự").Width(250).Locked(true),
+                                                                  Html.X().Column().Text("Khách hàng tiếp cận")
+                                                                            .Columns(
+                                                                                Html.X().Column().DataIndex("CustomerNormal")
+                                                                                        .Renderer("CustomerNormalRenderer")
+                                                                                        .Text("Số lượng").Width(80).Align(Alignment.Right),
+                                                                                Html.X().Column().DataIndex("CustomerNormalContacts").Text("Đã liên hệ").Renderer("CustomerNormalContactRenderer")
+                                                                                        .Width(80).Align(Alignment.Right),
+                                                                                Html.X().Column().DataIndex("CustomerNormalNeed").Text("Có nhu cầu").Renderer("CustomerNormalNeedRenderer")
+                                                                                        .Width(90).Align(Alignment.Right)
+                                                                            ),
+                                                                   Html.X().Column().Text("Khách hàng tiềm năng")
+                                                                        .Columns(
+                                                                                    Html.X().Column().DataIndex("CustomerPotentialSendPrice").Text("Đã liên hệ").Renderer("CustomerPotentialSendPriceRenderer")
+                                                                                            .Width(80).Align(Alignment.Right),
+                                                                                    Html.X().Column().DataIndex("CustomerPotentialSignContract").Text("Có hợp đồng").Renderer("CustomerPotentialSignContractRenderer")
+                                                                                            .Width(80).Align(Alignment.Right)
+                                                                        ),
+                                                                   Html.X().Column().Text("Khách hàng thực tế")
+                                                                        .Columns(
+                                                                                    Html.X().Column().DataIndex("CustomerOfficialContacts").Renderer("CustomerOfficialContactsRenderer")
+                                                                                            .Text("Đã liên hệ").Width(80).Align(Alignment.Right),
+                                                                                    Html.X().Column().DataIndex("CustomerOfficialContract").Text("Có hợp đồng").Renderer("CustomerOfficialContractRenderer")
+                                                                                            .Width(80).Align(Alignment.Right)
+                                                                        ),
+                                                                    Html.X().ComponentColumn().Text("Hợp đồng")
+                                                                        .Columns(
+                                                                                    Html.X().Column().DataIndex("NumberContract").Text("Số lượng").Renderer("NumberContractRenderer").Width(80).Align(Alignment.Right),
+                                                                                    Html.X().Column().DataIndex("TotalContract").Text("Doanh số").Width(100).Align(Alignment.Right)
+                                                                                ),
+                                                                     Html.X().ComponentColumn().Text("Hợp đồng hoàn thành")
+                                                                        .Columns(
+                                                                            Html.X().Column().DataIndex("NumberContractSucess").Text("Số lượng").Renderer("NumberContractSucessRenderer").Width(80).Align(Alignment.Right),
+                                                                            Html.X().Column().DataIndex("TotalContractSucess").Text("Doanh số").Width(100).Align(Alignment.Right)
+                                                                        )
+                                                                )
+                                                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                                    .SelectedIndex(0)
+                                                    .Listeners(ls => ls.SelectionChange.Handler = "onSelect();")
+                                                    )
+                                                    .BottomBar(Html.X().CustomPagingToolbar())
+                                                    )
+                                                )
+                                         ),
+                        Html.X().Panel()
+                                .Layout(LayoutType.Fit)
+                                .MarginSpec("1 1 1 0")
+                                .Region(Region.Center)
+                                .AutoScroll(false)
+                                .Header(false)
+                                .Border(true)
+                                .TopBar(
+                            Html.X().Toolbar()
+                                .Items(
+                            Html.X().ComboBox()
+                                .FieldLabel("Biểu đồ")
+                                .Width(300)
+                                .MarginSpec("0 0 0 5")
+                                .LabelWidth(50)
+                                .SelectedItems("0")
+                                .ID("cbSelectChart")
+                                .Items(
+                                    new ListItem() { Value = "0", Text = "Biểu đồ cột(SL)" }
+                                    )
+                                .Listeners(ls => ls.Select.Handler = "onSelectCombobox(this);"),
+                                Html.X().ToolbarFill(),
+                                Html.X().ButtonTutorial()
+                                )
+                                )
+                            .Items(
+                            Html.X().Panel()
+                                .Layout(LayoutType.Fit)
+                                .ID("pChart0")
+                                .Title("<b>Biểu đồ cột(SL)</b>")
+                                .Border(false)
+                                .Header(false)
+                                .TopBar(Html.X().Toolbar()
+                                .Items(
+                            Html.X().Button()
+                                .Text("Tải lại")
+                                .Icon(Icon.ArrowRefresh)
+                                .Handler("#{Chart0}.getStore().reload()"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Text("Lưu biểu đồ")
+                                .Icon(Icon.Disk)
+                                .Handler("saveChart")
+                                     )
+                                )
+                                .Items(
+                            Html.X().Chart()
+                                .ID("Chart0")
+                               .Shadow(true)
+                               .InsetPadding(30)
+                                .StandardTheme(StandardChartTheme.Category1)
+                                .Background(new DrawBackground() { Fill = "White" })
+                                .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Top).LabelFont("8px Tahoma").BoxStroke("#084594"))
+                                .Animate(true)
+                                .Store(Html.X().Store().Data(Model)
+                                .AutoLoad(true)
+                                .Proxy(
+                                Html.X().AjaxProxy().Url(Url.Action("LoadChart"))
+                                        .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                        .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("id", "App.GrStatisticalEmployee.selModel.getSelection().length>0?App.GrStatisticalEmployee.selModel.getSelection()[0].get('EmployeeID'):0", ParameterMode.Raw));
+                                        })
+                                    .Model(Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("TimeFix"),
+                                        Html.X().ModelField().Name("CustomerNormal"),
+                                        Html.X().ModelField().Name("CustomerNormalNeed"),
+                                        Html.X().ModelField().Name("NumberContract"),
+                                        Html.X().ModelField().Name("NumberContractSucess")
+                                        )
+                                    ) 
+                            )
+                            .Axes(
+                    Html.X().NumericAxis()
+                                .Grid(true)
+                                .Fields(new string[] { "CustomerNormal", "CustomerNormalNeed", "NumberContract", "NumberContractSucess" })
+                                .Minimum(0)
+                                .Label(Html.X().AxisLabel()
+                                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                                ),
+                    Html.X().CategoryAxis().Position(Position.Bottom).AxisID("TimeFixID")
+                                .Fields("TimeFix")
+                                .Label(Html.X().AxisLabel()
+                                    .Font("9px Arial")
+                                    .Rotate(Html.X().RotateAttribute().Degrees(270))
+                                    .Renderer(r => r.Handler = "return Ext.String.ellipsis(value, 15, false);")
+                                    )
+                                .Title("Biểu đồ thống kê kinh doanh năm " + DateTime.Now.Year)
+                                )
+                            .Series(   
+                        Html.X().ColumnSeries()
+                                .Axis(Position.Bottom)
+                                .Highlight(true)
+                                .XField("TimeFix")
+                                .YField(new string[] { "CustomerNormal" })
+                                .Title("Khách hàng tiếp cận")
+                                .Tips(Html.X().ChartTip()
+                                                .TrackMouse(true)
+                                                .Width(210)
+                                                .Height(28)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('CustomerNormal') + ' khách hàng tiếp cận');")
+                                        ),
+                        Html.X().LineSeries()
+                                .XField("TimeFix")
+                                .YField("CustomerNormalNeed")
+                                .Title("Nhu cầu")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                .Tips(Html.X().ChartTip()
+                                        .Width(210)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                        .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('CustomerNormalNeed') + ' Nhu cầu');")
+                                        )
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Arrow, Size = 5, Radius = 5, StrokeWidth = 0 }),
+                        Html.X().LineSeries()
+                                .XField("TimeFix")
+                                .YField("NumberContract")
+                                .Title("Hợp đồng")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                .Tips(Html.X().ChartTip()
+                                        .Width(210)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                        .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('NumberContract') + ' hợp đồng');")
+                                    )
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Circle, Size = 5, Radius = 5, StrokeWidth = 0 }),
+                        Html.X().LineSeries()
+                                .XField("TimeFix")
+                                .YField("NumberContractSucess")
+                                .Title("Hợp đồng hoàn thành")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7})
+                                .Tips(Html.X().ChartTip()
+                                            .Width(210)
+                                            .Height(28)
+                                            .TrackMouse(true)
+                                            .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('NumberContractSucess') + ' hợp đồng hoàn thành');")
+                                    )
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Cross, Size = 5, Radius = 5, StrokeWidth = 0 })
+                                    )                 
+                                )
+                            )
+                        )
+                    )
+<style>
+    .AvatarColumn div {
+        padding: 0px;
+        height: 40px;
+    }
+
+    .DepartmentNotAllow {
+        opacity: 0.5;
+    }
+</style>
+<script>
+    var onSelect = function () {
+        var charId = "Chart" + App.cbSelectChart.getValue();
+        Ext.getCmp(charId).getStore().reload();
+    };
+    var onSelectCombobox = function (obj) {
+        var records = obj.store.getAllRange();
+        for (var i = 0; i < records.length; i++) {
+            var pcharId = "pChart" + records[i].data.field1;
+            Ext.getCmp(pcharId).hide();
+        };
+        Ext.getCmp("pChart" + obj.value).show();
+        Ext.getCmp("Chart" + obj.value).getStore().reload();
+    };
+    var tipRenderer = function (storeItem, item) {
+        this.setTitle(storeItem.get('Name'));
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+    var CustomerNormalRenderer = function (value) {
+        var storeUrl = "CustomerNormal";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerNormalContactRenderer = function (value) {
+        var storeUrl = "CustomerNormalContact";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerNormalNeedRenderer = function (value) {
+        var storeUrl = "CustomerNormalNeed";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerPotentialSendPriceRenderer = function (value) {
+        var storeUrl = "CustomerPotentialSendPrice";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerPotentialSignContractRenderer = function (value) {
+        var storeUrl = "CustomerPotentialSignContract";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerOfficialContactsRenderer = function (value) {
+        var storeUrl = "CustomerOfficialContacts";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerOfficialContractRenderer = function (value) {
+        var storeUrl = "CustomerOfficialContract";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.GrStatisticalEmployee.columns.length; i++) {
+            if (App.GrStatisticalEmployee.columns[i].dataIndex == 'ID')
+                arr.push({ dataIndex: 'ID', text: 'ID', hidden: App.GrStatisticalEmployee.columns[i].hidden, position: i + 1 });
+            else
+                arr.push({ dataIndex: App.GrStatisticalEmployee.columns[i].dataIndex, text: App.GrStatisticalEmployee.columns[i].text, hidden: App.GrStatisticalEmployee.columns[i].hidden, position: i + 1 });
+        }
+        return arr;
+    };
+    var ShowFrmExport = function () {
+        var url = '@(Url.Action("ShowFrmExport", "StatisticalEmployee", new { Area = "Customer" }, null))';
+        var params = {
+            currentPage: App.StoreCustomerStatistical.currentPage,
+            pageSize: App.StoreCustomerStatistical.pageSize,
+            arrObject: JSON.stringify(getObjectPartial()),
+            id: App.hdfGroupCustomerID.getValue(),
+            startTime: App.hdfStartTime.getValue(),
+            endTime: App.hdfEndTime.getValue()
+        };
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: params
+        });
+    };
+    var showCustomer = function (value) {
+        var records = App.GrStatisticalEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var record = records[0];
+            var startTime = App.dfFromDate.value;
+            var endTime = App.dfToDate.value;
+            var url = '@(Url.Action("Customer", "StatisticalEmployee", new { Area = "Customer" }))';
+            var params = {
+                id: record.data.UserID,
+                startTime: startTime,
+                endTime: endTime,
+                storeUrl: value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var NumberContractRenderer = function (value) {
+        var storeUrl = "NumberContract";
+        return "<a class='a-grid-cell' onclick =\"showContract(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var NumberContractSucessRenderer = function (value) {
+        var storeUrl = "NumberContractSucess";
+        return "<a class='a-grid-cell' onclick =\"showContract(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var showContract = function (value) {
+        var records = App.GrStatisticalEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var record = records[0];
+            var startTime = App.dfFromDate.value;
+            var endTime = App.dfToDate.value;
+            var url = '@(Url.Action("Contract", "StatisticalEmployee", new { Area = "Customer" }))';
+            var params = {
+                id: record.data.UserID,
+                startTime: startTime,
+                endTime: endTime,
+                storeUrl: value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function onSelectChangeDepartment(tree) {
+        var records = tree.selModel.getSelection();
+        if (records.length > 0) {
+            var record = records[0];
+            if (record.data.IsActive == true) {
+                App.hdfGroupCustomerID.setValue(record.get('id'));
+                App.GrStatisticalEmployee.store.reload({ page: 1 });
+            }
+        }
+    };
+    var Statistical = function () {
+        App.GrStatisticalEmployee.store.reload();
+    };
+    var expandDepartmentCustomer = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+    };
+</script>

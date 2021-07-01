@@ -1,0 +1,164 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    var X = Html.X();
+}
+  @(Html.X().Window()
+            .ID("frmAuditResult")
+                  .Title("Danh sách yêu cầu mua vật tư ")
+                          .Layout(LayoutType.Border).Width(850)
+                  .Height(500)   
+        .Icon(Icon.User)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+        Html.X().Hidden().ID("hdfArrOrderID"),
+            Html.X().GridPanel()
+                       .Region(Region.West)
+                        .Width(300)
+                        .Header(false)
+                        .ID("gpProducts").Layout(LayoutType.Fit)
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                    .Store(
+                        Html.X().Store()
+                                .ID("StorePlan")
+                                .RemotePaging(true)
+                                .AutoLoad(true)
+                                .PageSize(20)
+                                          .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetListRequired", "SuppliersOrdersManager", new { Area = "Suppliers" }))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                .IDParam("ID"))                                
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name")
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                    X.Column().DataIndex("ID").Hidden(true),
+                                    Html.X().Column().DataIndex("Name").Text("Tên yêu cầu").Width(200).Flex(1).StyleSpec("font-weight: bold;text-align: center")
+                                   
+                        )
+                    .SelectionModel(
+                        Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi).Listeners(ls =>
+                                      ls.Select.Handler = "showdataProducts();App.grAuditResult.getStore().reload();"
+                        ))
+                    .BottomBar(
+                           Html.X().CustomPagingToolbar()
+                ),
+        Html.X().GridPanel()
+                       .Region(Region.Center)
+                        .Margin(1)
+                        .Header(false)
+                        .ID("grAuditResult")
+
+                        .ColumnLines(true)
+                        .ForceFit(true)
+
+                    .Store(
+                        Html.X().Store()
+                                .ID("StoreAditResult")
+                                .RemotePaging(true)
+                                .AutoLoad(false)
+                                          .PageSize(20).GroupField("SuppliersOrderRequirement.Name")
+                                          .Sorters(Html.X().DataSorter().Property("SuppliersOrderRequirement.Name").Direction(Ext.Net.SortDirection.ASC))
+                                          .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetOrderDetail", "SuppliersOrdersManager", new { Area = "Suppliers" }))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                .IDParam("ID"))
+                                .Parameters(ps =>
+                                {
+                                    //ps.Add(new StoreParameter("categoryID", "App.cbGroupQuantity.getValue()", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("orderID", "App.hdfArrOrderID.getValue()", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("SuppliersOrderRequirement.Name"),
+                                                    Html.X().ModelField().Name("ProductName"),
+                                                            Html.X().ModelField().Name("ProductUnitName"),
+                                              Html.X().ModelField().Name("Quantity"),
+                                        Html.X().ModelField().Name("Note")
+
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                                    Html.X().Column().DataIndex("ProductName").Text("Tên").Flex(1).StyleSpec("font-weight: bold;text-align: center"),
+                                                      Html.X().Column().Text("ĐVT").Width(50).Align(Alignment.Right).DataIndex("ProductUnitName"),
+                                                    Html.X().Column().DataIndex("Quantity").Text("Số lượng").Width(100).StyleSpec("font-weight: bold;text-align: center"),
+                                            Html.X().Column().DataIndex("Note").Text("Ghi Chú").Width(100).StyleSpec("font-weight: bold;text-align: center")
+
+                        )
+
+                     .Features(
+                                        Html.X().GroupingSummary()
+                                        .ID("GroupingSummarySupplier")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                )
+                .SelectionModel(
+                  Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi).Listeners(ls =>
+                  ls.Select.Handler = ""
+                  )
+                  )
+                    .BottomBar(
+                           Html.X().CustomPagingToolbar()
+                )
+                 )
+.Buttons(
+Html.X().ButtonChoice()
+        .ID("btnAccept")
+        .TabIndex(5).Handler("insertProductsToStempInward();"),
+Html.X().ButtonExit()
+    )     
+)
+
+<script type="text/javascript">
+    var showdataProducts = function () {
+        var records = App.gpProducts.selModel.getSelection();
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        App.hdfArrOrderID.setValue(strId);
+    };
+    var insertProductsToStempInward = function () {
+
+        var records = App.grAuditResult.selModel.getSelection();
+        
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có vật tư hàng hóa nào được chọn!',
+                    iconCls: '#Exclamation',
+                    buttons: { yes: 'Đồng ý' }
+                });
+                break;
+            default:
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("GetProducts", "SuppliersOrdersManager", new { Area = "Suppliers" }, null))',
+                    params: { stringId: strId }
+                });
+                break;
+                alert();
+        }
+    };
+</script>

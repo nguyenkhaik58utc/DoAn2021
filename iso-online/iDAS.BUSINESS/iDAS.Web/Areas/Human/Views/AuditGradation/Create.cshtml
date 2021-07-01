@@ -1,0 +1,148 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditGradationItem
+@( Html.X().Window()
+    .Title("Thêm mới đợt đánh giá")
+    .Icon(Icon.Add)
+    .ID("winNewAuditGradation")
+        .Width(680)
+        .Height(400)
+        .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(true)
+        .BodyPadding(0)
+        .Border(false)
+        .Center()
+        .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+            .ID("frmAudit")
+            .Border(false)
+            .Items(
+        Html.X().TabPanel()
+            .Region(Region.Center)
+            .ActiveTabIndex(0)
+            .Border(true)
+            .Items(
+            Html.X().Panel()
+            .BodyPadding(0)
+            .Icon(Icon.ApplicationViewDetail)
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .StyleSpec("border: none;")
+            .Title("Thông tin chi tiết")
+            .Frame(true)
+            .Items(
+                    Html.X().FormPanel()
+                            .ID("frmAuditGradation")
+                                    .Layout(LayoutType.VBox)
+                                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                                    .Frame(true)
+                                    .Flex(1).BodyPadding(0)
+                                    .StyleSpec("border: none;")
+                                    .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                                    .Items(
+                                            Html.X().TextFieldFor(m => m.Name)
+                                                    .ID("txtNameAuditGradation")
+                                                    .FieldLabel("Tên đợt" + Html.Required())
+                                                    .AllowOnlyWhitespace(false)
+                                                    .TabIndex(2)
+                                                    .AllowBlank(false)
+                                                    .BlankText("Tên đợt đánh giá không được để trống!"),
+                                            Html.X().Container()
+                                                .Layout(LayoutType.Column)
+                                                .ColSpan(2)
+                                                .MarginSpec("0 0 5 0")
+                                                .Items(
+                                                        Html.X().DateTimeFieldFor(m => m.StartTime)
+                                                            .AllowBlank(false)
+                                                            .FieldLabel("Bắt đầu" + Html.Required())
+                                                            .ColumnWidth(0.5).MarginSpec("0 5 0 0"),
+                                                        Html.X().DateTimeFieldFor(m => m.EndTime)
+                                                            .FieldLabel("Kết thúc" + Html.Required())
+                                                            .AllowBlank(false)
+                                                            .ColumnWidth(0.5)),
+                                        Html.X().TextAreaFor(m => m.Content)
+                                                .TabIndex(3)
+                                                .AllowOnlyWhitespace(false)
+                                                .AllowBlank(false)
+                                                .FieldLabel("Nội dung" + Html.Required())
+                                                .BlankText("Nội dung không được bỏ trống!")
+                                                .MinHeight(170)
+                                                .Flex(1)
+                                                )
+                                    ),
+                            Html.X().Panel()
+                                    .Icon(Icon.UserTick)
+                                    .Border(false)
+                                    .BodyPadding(0)
+                                    .Margin(0)
+                                    .Padding(0)
+                                    .AutoScroll(true)
+                                    .Title("Phòng ban đánh giá")
+                                    .Layout(LayoutType.Fit)
+                                    .ItemsFromAction("FormListObject", "AuditGradation")
+                                     )
+                                     )
+                                     )
+                                .Buttons(
+                                    Html.X().ButtonSave()
+                                        .ID("btnSaves")
+                                        .DirectEvents(de =>
+                                        {
+                                            de.Click.ExtraParams.Add(new { val = false });
+                                            de.Click.Before = @"if (!App.frmAudit.getForm().isValid()) { return false; } ";
+                                            de.Click.ExtraParams.Add(new { allow = new JRawValue("getAllow()") });
+                                            de.Click.ExtraParams.Add(new { arrObject = new JRawValue("getObjectPartial()") });
+                                            de.Click.Action = "Insert";
+                                            de.Click.ExtraParams.Add(new { IsEdit = true });
+                                            de.Click.FormID = "frmAudit";
+                                            de.Click.Success = "if(result.result){App.frmAudit.reset(); App.stM.removeAll();}";
+                                        }),
+                                        Html.X().ButtonSaveAndExit()
+                                            .ID("btnSave")
+                                            .DirectEvents(de =>
+                                            {
+                                            de.Click.ExtraParams.Add(new { val = true });
+                                            de.Click.Before = @"if (!App.frmAudit.getForm().isValid()) { return false; } ";
+                                            de.Click.ExtraParams.Add(new { allow = new JRawValue("getAllow()") });
+                                            de.Click.ExtraParams.Add(new { arrObject = new JRawValue("getObjectPartial()") });
+                                            de.Click.Action = "Insert";
+                                            de.Click.ExtraParams.Add(new { IsEdit = true });
+                                            de.Click.FormID = "frmAudit";
+                                            }),
+                                    Html.X().ButtonExit()
+                                )
+
+)
+<script type="text/javascript">
+    var getMinMax = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        App.txtMin.setValue(record.get('MinPointCate'));
+        App.txtMax.setValue(record.get('MaxPointCate'));
+    };
+    var showDepartment = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Department", "AuditGradation", new { Area = "Human" }))',
+        });
+    };
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.stM.data.length; i++) {
+            arr.push(App.stM.data.items[i].data);
+        }
+        return JSON.stringify(arr);
+    };
+    var getAllow = function () {
+        for (var i = 0; i < App.stM.data.length; i++) {
+            if (App.stM.data.items[i].data.EmployeeAuditManagementID == 0 || App.stM.data.items[i].data.EmployeeAuditLeaderID==0)
+                return false;
+        }
+        return true;
+    };
+</script>

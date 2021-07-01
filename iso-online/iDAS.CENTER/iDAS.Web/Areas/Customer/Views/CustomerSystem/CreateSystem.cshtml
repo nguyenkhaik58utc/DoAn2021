@@ -1,0 +1,68 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+}
+@model iDAS.Items.CustomerSystemItem
+@(
+ Html.X().Window()
+    .ID("winCreateSys")
+    .Title("Thiết lập thông tin hệ thống")
+    .Width(450)
+    .Icon(Icon.DatabaseYellowStart)
+    .Frame(true)
+    .Constrain(true)
+    .BodyPadding(5).Center()
+    .Modal(true).Maximizable(true)
+    .Items(
+        Html.X().FormPanel().DefaultAnchor("100%")
+            .FieldDefaults(lb => lb.LabelWidth = 100)
+            .ID("frmCreateSys")
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .Items(
+                X.HiddenFor(m => m.ID),
+                //X.TextFieldFor(m => m.System).FieldLabel("Hệ thống").ReadOnly(true),   
+                //X.TextFieldFor(m => m.Name).FieldLabel("Tên khách hàng").ReadOnly(true),
+                X.TextFieldFor(m => m.Code).FieldLabel("Mã khách hàng*").AllowBlank(false).BlankText("Mã khách hàng bắt buộc nhập !"),
+                //X.TextFieldFor(m => m.Company).FieldLabel("Công ty").ReadOnly(true),
+                //X.TextFieldFor(m => m.Email).FieldLabel("Email").ReadOnly(true),
+               
+                X.TextFieldFor(m => m.DBName).AllowBlank(false).BlankText("DatabaseName bắt buộc nhập !").FieldLabel("DatabaseName*"),
+                X.TextFieldFor(m => m.DBSource).FieldLabel("DataSource*").AllowBlank(false).BlankText("DataSource bắt buộc nhập !"),
+                X.TextFieldFor(m => m.DBUserID).AllowBlank(false).BlankText("UserID bắt buộc nhập !").FieldLabel("UserID*"),
+                X.TextFieldFor(m => m.DBPassword).AllowBlank(false).BlankText("Password bắt buộc nhập !").FieldLabel("Password*")
+
+                )
+        )
+        .Buttons(
+                Html.X().Button()
+                .Text("Lưu lại")
+                .ID("btnSave")
+                .Icon(Icon.DatabaseSave)
+                .DirectEvents(de =>
+                    {
+                        de.Click.Before = @"if (!App.frmCreateSys.getForm().isValid()) { return false; } ";
+                        de.Click.ExtraParams.Add(new { exit = true });
+                        de.Click.Url = Url.Action("UpdateDataBase");
+                        de.Click.EventMask.ShowMask = true;
+                        de.Click.FormID = "frmCreateSys";
+                    })
+                ,
+                Html.X().Button()
+                    .Text("Hủy")
+                    .Icon(Icon.Cancel)
+                    .TabIndex(6)
+                    .OnClientClick("this.up('window').close();")
+                      )
+)
+
+<script>
+    var ShowEditImage = function () {
+        App.FileUploadFieldEdit.setDisabled(false);
+        App.imgAvatar.setDisabled(true);
+    }
+</script>

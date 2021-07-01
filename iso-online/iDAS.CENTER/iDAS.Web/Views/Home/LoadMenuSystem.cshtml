@@ -1,0 +1,41 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model IEnumerable<iDAS.Items.MenuModuleItem>
+
+@{
+    Layout = null;
+    int index = 0;
+}
+
+@foreach(var module in Model) { 
+    var id = module.Code;
+    @(Html.X().TreePanel()
+        .ID(id)
+        .Title("<b>" + module.Name.ToUpper() + "</b>")
+        .Icon(iDAS.Web.Ultility.ConvertToIcon(module.Icon))
+        .Border(false)
+        .AutoScroll(true)
+        .RootVisible(false)
+        .Expand(index==0)
+        .Height(420)
+        .Tools(Html.X().Tool().ID(id + "tool").Type(ToolType.Pin).Handler("PinItemMenu(this.up().up());"))
+        .Listeners(ls => 
+        {
+            ls.ItemClick.Handler = "if (record.data.hrefTarget) {e.stopEvent();addTab(App.MainContent, record);}";
+            ls.Expand.Handler = "var store = App." + @id + ".getStore(); if (store.getRootNode().childNodes.length <= 0) {App." + @id + ".body.mask('Đang tải dữ liệu...','x-mask-loading'); store.reload({params:{expand: true}})}";
+        })
+        .Store(
+            Html.X().TreeStore()
+                .AutoLoad(false)
+                .Listeners(ls => ls.Load.Fn = "function(node, records, success){if (success) App." + @id + ".body.unmask()}")
+                .Proxy(
+                    Html.X().AjaxProxy().Url(Url.Action("LoadMenu"))
+                        .ExtraParams(item => {
+                            item.Add(Html.X().Parameter().Name("moduleCode").Value(module.Code).Mode(ParameterMode.Value));
+                            item.Add(Html.X().Parameter().Name("expand").Value(index == 0 ? "true" : "false").Mode(ParameterMode.Value));
+                        })
+                )
+        )
+    );
+     index++;
+};

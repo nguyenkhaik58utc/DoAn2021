@@ -1,0 +1,209 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitTask = Url.Action("InsertTask", "TrainingPlan", new { area = "Human" });
+    var urlStoreTask = Url.Action("LoadPlanTask", "TrainingPlan", new { area = "Human" });
+    var paramStoreTask = Html.X().StoreParameter().Name("planId").Value("getPlanId()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Hidden().ID("hdfDepartmentPlanManagement"))
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(2).Frame(false).StyleSpec("border: none;")
+.Items(
+        Html.X().DepartmentPanel().Handler("selectDepartmentPlan"),
+        Html.X().GridPanel()
+                .Region(Region.Center)
+                .Layout(LayoutType.Fit)
+                .Header(false)
+                .ID("GrPlan")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),  
+                        Html.X().ButtonCreate().Handler("AddNew();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrPlan.selModel.getSelection()[0].get('ID'));"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Thiết lập yêu cầu").ID("btnRequirement").Handler("RequiremenetSetting();").Icon(Icon.ApplicationViewDetail).Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnPlanDetail").Text("Đợt đào tạo")
+                                .Handler("showPlanDetail();").Icon(Icon.ApplicationViewDetail).Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonSend().ID("btnSendApprovePlan").Handler("SendApprovePlan();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonApproval().ID("btnApprovePlan").Handler("ApprovePlan();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                Html.X().Store()
+                    .ID("StorePlan")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlan", "TrainingPlan", new { Area = "Human" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("department", "App.hdfDepartmentPlanManagement.value", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("QuanlityPlanID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("StartTime"),
+                            Html.X().ModelField().Name("EndTime"),
+                            Html.X().ModelField().Name("Cost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("Status")
+                        )
+                     )
+            )
+            .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        Html.X().Column().DataIndex("Name").Text("Tên kế hoạch").Width(300).Flex(1),
+                        Html.X().ComponentColumn().Text("Thời gian thực hiện").Columns(
+                        Html.X().DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                        Html.X().DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(120).Align(Alignment.Center)),
+                        Html.X().ComponentColumn().Text("Chi phí").Columns(
+                        Html.X().NumberColumn().DataIndex("Cost").Text("Giá trị").Width(100).Align(Alignment.Right),
+                        Html.X().Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                        Html.X().Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(80)
+                )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                             .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+            .BottomBar(
+                   Html.X().CustomPagingToolbar()
+        )
+    )
+)
+
+<script>
+    var getPlanId = function () {
+        var planId = 0;
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            planId = records[0].get('ID');
+        }
+        return planId;
+    }
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("QuanlityPlanID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+    var deleteUrl = '@(Url.Action("DeletePlan"))';
+    var selectDepartmentPlan = function (records) {
+        App.hdfDepartmentPlanManagement.setValue(records[0].get('id'));
+        App.GrPlan.getStore().reload();
+    };
+    function CheckStatus() {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length == 1) {
+            var IsEdit = records[0].get('IsEdit');
+            if (IsEdit == true) {
+                SetEnabled(App.btnDelete, App.btnUpdate, App.btnPlanDetail, App.btnRequirement, App.btnSendApprovePlan);
+                App.btnApprovePlan.setDisabled(true);
+            }
+            else {
+                SetDisabled(App.btnDelete, App.btnUpdate, App.btnPlanDetail, App.btnRequirement, App.btnSendApprovePlan);
+                App.btnApprovePlan.setDisabled(false);
+            }
+            App.btnDetail.setDisabled(false);
+        }
+        else {
+            SetDisabled(App.btnDetail, App.btnDelete, App.btnUpdate, App.btnPlanDetail, App.btnRequirement, App.btnSendApprovePlan, App.btnApprovePlan);
+        };
+    };
+    var AddNew = function () {
+        var url = '@(Url.Action("AddForm", "TrainingPlan", new { Area = "Human" }, null))';
+        onDirectMethod(url, null);
+    };
+    var showPlanDetail = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Index", "PlanDetail", new { Area = "Human" }, null))';
+            var params = {
+                planId: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var UpdateItem = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "Plan", new { Area = "Quality" }, null))';
+            var params = {
+                ID: records[0].get('QuanlityPlanID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "TrainingPlan", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var RequiremenetSetting = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("RequirementForm", "TrainingPlan", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SendApprovePlan = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("SendApproveForm", "TrainingPlan", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ApprovePlan = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ApproveForm", "TrainingPlan", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

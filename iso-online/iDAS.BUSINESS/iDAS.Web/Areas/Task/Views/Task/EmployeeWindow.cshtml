@@ -1,0 +1,305 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+}
+
+@( Html.X().Window()
+        .ID("winChoiceEmployees")
+        .Title("Lựa chọn đối tượng thực hiện công việc")
+        .Icon(Icon.Zoom)
+        .Height(520)
+        .Width(960)
+        .Constrain(true)
+        .Layout(LayoutType.Border)
+        .Modal(true)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(false)
+        .Center()
+        .Items(
+       Html.X().TreePanel()
+                        .ID("TreeGroupTask")
+                        .Title("SƠ ĐỒ TỔ CHỨC")
+                        .Header(false)
+                        .TitleAlign(TitleAlign.Center)
+                        .Region(Region.West)
+                        .Icon(Icon.TextListBullets)
+                        .ForceFit(true)
+                        .Width(280)
+                        .RootVisible(false)
+                        .RowLines(true)
+                        .SingleExpand(false)
+                        .Collapsible(true)
+                        .Split(true)
+                        .SelectionModel(
+                Html.X().CheckboxSelectionModel()
+                        .ShowHeaderCheckbox(false)
+                        .Mode(SelectionMode.Single)
+                                .Listeners(
+                            ls =>
+                            {
+                                ls.Select.Handler = "App.TaskEmployeeGrid.getStore().reload();";
+                            })
+                            )
+                        .Store(Html.X().TreeStore()
+                        .ID("StoreGroupsTask")
+                        .AutoLoad(false)
+                        .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("LoadData", "Department", new { Area = "Department" }))
+                            .Reader(Html.X().JsonReader()
+                            .Root("data"))
+                        )
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("id"),
+                                Html.X().ModelField().Name("text"),
+                                Html.X().ModelField().Name("ParentID"),
+                                Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsDeleted").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                                )
+                              )
+                           )
+                         .ColumnModel(
+                                    Html.X().TreeColumn()
+                                            .Text("SƠ ĐỒ TỔ CHỨC")
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Align(Alignment.Left)
+                                            .DataIndex("text")
+                                            .Flex(1)
+                         ),
+                      X.GridPanel()
+                        .Title("Danh sách thành viên").Header(false)
+                       .ID("TaskEmployeeGrid")
+                        .Region(Region.Center)
+                        .ColumnLines(true)
+                        .Border(true)
+                        .ForceFit(true)
+                        .Icon(Icon.TextListBullets)
+                    .Store(
+                        X.Store()
+                            .ID("StoreUsersPerform")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .AutoLoad(false)
+                            .Proxy(X.AjaxProxy()
+                            .Url(Url.Action("LoadUsers", "Employee", new { Area = "Human" }))
+                            .Reader(X.JsonReader()
+                            .Root("data"))
+                            .IDParam("ID"))
+                            .Parameters(ps => ps.Add(new StoreParameter("departmentID", "App.TreeGroupTask.selModel.getSelection().length>0?App.TreeGroupTask.getSelectionModel().getLastSelected().data.id:0", ParameterMode.Raw))
+                        )
+                        .Listeners(ls => ls.DataChanged.Handler = "refreshGrid();")
+                         .Model(
+                                    Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Avatar"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Role"),
+                                    Html.X().ModelField().Name("sex"),
+                                    Html.X().ModelField().Name("DepartmentName"),
+                                    Html.X().ModelField().Name("IsApproval"),
+                                    Html.X().ModelField().Name("IsPerform"),
+                                    Html.X().ModelField().Name("IsCheck"),
+                                    Html.X().ModelField().Name("IsAudit")
+                                   )
+                                  )
+                                )
+                    .ColumnModel(
+                                   X.RowNumbererColumn()
+                                    .Text("STT")
+                                    .Width(30)
+                                    .Align(Alignment.Center)
+                                    .StyleSpec("font-weight: bold;text-align: center"),
+                                    X.Column()
+                                    .DataIndex("Avatar")
+                                    .Width(31)
+                                    .Text("")
+                                    .Renderer("AvatarRenderer"),
+                                   X.Column()
+                                    .DataIndex("Name")
+                                    .Text("Họ tên")
+                                    .Flex(1)
+                                    .Width(120)
+                                    .StyleSpec("font-weight: bold;text-align: center"),
+                                    X.CheckColumn()
+                                    .DataIndex("IsPerform")
+                                    .Text("Thực hiện" + Html.Required())
+                                    .Listeners(ls =>
+                                    {
+                                        ls.CheckChange.Handler = "setEmployeesPerform(record);";
+                                    })
+                                    .Editable(true)
+                                    .Width(90)
+                                    .Align(Alignment.Left)
+                                    .StyleSpec("font-weight: bold;text-align: center"),
+                                    X.CheckColumn()
+                                    .DataIndex("IsApproval")
+                                    .Text("Phê duyệt")
+                                    .Listeners(ls =>
+                                            {
+                                                ls.CheckChange.Handler = "setEmployeesApprove(record);";
+                                            })
+                                    .Editable(true)
+                                    .Width(80)
+                                    .Align(Alignment.Left)
+                                    .StyleSpec("font-weight: bold;text-align: center"),
+                                    X.CheckColumn()
+                                    .DataIndex("IsCheck")
+                                    .Text("Kiểm tra")
+                                    .Width(80)
+                                    .Listeners(ls =>
+                                        {
+                                            ls.CheckChange.Handler = "setEmployeesCheck(record);";
+                                        })
+                                    .Editable(true)
+                                    .Align(Alignment.Left)
+                                    .StyleSpec("font-weight: bold;text-align: center"),
+                                    X.CheckColumn()
+                                    .DataIndex("IsAudit")
+                                    .Text("Đánh giá")
+                                    .Width(80)
+                                    .Editable(true)
+                                    .Listeners(ls =>
+                                    {
+                                        ls.CheckChange.Handler = "setEmployeesAssess(record);";
+                                    })
+                                    .Align(Alignment.Left)
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                            )
+                            .SelectionModel(
+                            X.RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "")
+                            )
+                     .BottomBar(Html.X().CustomPagingToolbar())
+                    )
+            .Buttons(
+                Html.X().ButtonExit()
+            )
+)
+<script>
+    var AvatarRenderer = function (value) {
+        var tpl = "<img src='" + value + "' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        return tpl;
+    };
+    var setCheck = function (record) {
+        if (App.IsCheck.value != record.ID) {
+            record.data.IsCheck = false;
+        }
+        else {
+            record.data.IsCheck = true;
+        }
+        if (App.IsAudit.value != record.ID) {
+            record.data.IsAudit = false;
+        }
+        else {
+            record.data.IsAudit = true;
+        }
+        if (App.IsPerform.value != record.ID) {
+            record.data.IsPerform = false;
+        }
+        else {
+            record.data.IsPerform = true;
+        }
+        if (App.IsApproval.value != record.ID) {
+            record.data.IsApproval = false;
+        }
+        else {
+            record.data.IsApproval = true;
+        }
+        App.TaskEmployeeGrid.getView().refresh();
+    };
+    var refreshGrid = function () {
+        var records = App.TaskEmployeeGrid.getStore();
+        for (var i = 0; i < records.getCount() ; i++) {
+            var record = records.data.items[i].data;
+            if (App.IsPerform.value != record.ID) {
+                record.IsPerform = false;
+            }
+            if (App.IsApproval.value != record.ID) {
+                record.IsApproval = false;
+            }
+            if (App.IsCheck.value != record.ID) {
+                record.IsCheck = false;
+            }
+            if (App.IsAudit.value != record.ID) {
+                record.IsAudit = false;
+            }
+        };
+        App.TaskEmployeeGrid.getView().refresh();
+    };
+    var setEmployeesPerform = function (record) {
+        if (record.data.IsPerform == true && record.data.ID != App.IsApproval.getValue() && record.data.ID != App.IsCheck.getValue() && record.data.ID != App.IsAudit.getValue()) {
+            App.IsPerform.setValue(record.data.ID);
+            App.avatarPerform.setImageUrl(record.data.Avatar);
+            App.namePerform.setValue(record.data.Name);
+            App.displayPerform.setValue("Phòng ban: " + record.data.DepartmentName + "</br> Chức danh: " + record.data.Role);
+        }
+        else if (record.data.IsPerform == true && record.data.ID == App.IsApproval.getValue() || record.data.ID == App.IsCheck.getValue() || record.data.ID == App.IsAudit.getValue()) {
+            App.IsPerform.reset();
+            App.avatarPerform.setImageUrl("/Content/images/underfind.jpg");
+            App.namePerform.reset();
+            App.displayPerform.reset();
+            record.data.IsPerform = false;
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Người thực hiện không được trùng các đối tượng khác!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+    var setEmployeesAssess = function (record) {
+        if (record.data.IsAudit == true && record.data.ID != App.IsPerform.getValue()) {
+            App.IsAudit.setValue(record.data.ID);
+            App.avatarAssess.setImageUrl(record.data.Avatar);
+            App.nameAssess.setValue(record.data.Name);
+            App.displayAssess.setValue("Phòng ban: " + record.data.DepartmentName + "</br> Chức danh: " + record.data.Role);
+        }
+        else if (record.data.IsAudit == true && record.data.ID == App.IsPerform.getValue()) {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Người đánh giá không được trùng người thực hiện!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+        else {
+            App.IsAudit.reset();
+            App.avatarAssess.setImageUrl("/Content/images/underfind.jpg");
+            App.nameAssess.reset();
+            App.displayAssess.reset();
+        }
+
+    };
+    var setEmployeesCheck = function (record) {
+        if (record.data.IsCheck == true && record.data.ID != App.IsPerform.getValue()) {
+            App.IsCheck.setValue(record.data.ID);
+            App.avatarCheck.setImageUrl(record.data.Avatar);
+            App.nameCheck.setValue(record.data.Name);
+            App.displayCheck.setValue("Phòng ban: " + record.data.DepartmentName + "</br> Chức danh: " + record.data.Role);
+        }
+        else if (record.data.IsCheck == true && record.data.ID == App.IsPerform.getValue()) {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Người kiểm tra không được trùng người thực hiện!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+        else {
+            App.IsCheck.reset();
+            App.avatarCheck.setImageUrl("/Content/images/underfind.jpg");
+            App.nameCheck.reset();
+            App.displayCheck.reset();
+        }
+
+    };
+    var setEmployeesApprove = function (record) {
+        if (record.data.IsApproval == true && record.data.ID != App.IsPerform.getValue()) {
+            App.IsApproval.setValue(record.data.ID);
+            App.avatarApproval.setImageUrl(record.data.Avatar);
+            App.nameApproval.setValue(record.data.Name);
+            App.displayApproval.setValue("Phòng ban: " + record.data.DepartmentName + "</br> Chức danh: " + record.data.Role);
+        }
+        else if (record.data.IsApproval == true && record.data.ID == App.IsPerform.getValue()) {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Người phê duyệt không được trùng người thực hiện!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+        else {
+            App.IsApproval.reset();
+            App.avatarApproval.setImageUrl("/Content/images/underfind.jpg");
+            App.nameApproval.reset();
+            App.displayApproval.reset();
+        }
+
+    };
+</script>

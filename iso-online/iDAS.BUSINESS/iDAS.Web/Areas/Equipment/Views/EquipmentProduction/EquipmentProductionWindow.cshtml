@@ -1,0 +1,90 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@(
+ Html.X().CustomWindow().Height(350).Width(600).Title("Danh sách thiết bị sản xuất").Border(false)
+            .Items(
+                    Html.X().Container().Layout(LayoutType.Border).Border(false)
+                        .Items(
+                                Html.X().Hidden().ID("hdfProductionCategory"),
+                                Html.X().Panel()
+                                    .Title("NHÓM THIẾT BỊ SẢN XUẤT").TitleAlign(TitleAlign.Center)
+                                    .Header(false)
+                                    .Collapsible(true)
+                                    .Region(Region.West).Width(200)
+                                    .Split(true)
+                                    .Layout(LayoutType.Fit)
+                                    .ItemsFromAction("List", "EquipmentProductionCategory", new { area = "Equipment" }),
+                                Html.X().Panel().ID("RightPanel")
+                                    .Header(false)
+                                    .Region(Region.Center)
+                                    .Layout(LayoutType.Fit)
+                                    .Items(
+                                        Html.X().GridPanel()
+                                            .Header(false)
+                                            .ID("GrEquipmentSelect")
+                                            .ColumnLines(true)
+                                            .ForceFit(true)
+                                            .Border(false)
+                                            .Store(
+                                                    Html.X().Store()
+                                                        .ID("StoreEquipmentProdutionID")
+                                                        .PageSize(20)
+                                                        .RemotePaging(true)
+                                                        .Proxy(
+                                                        Html.X().AjaxProxy().Url(Url.Action("LoadProduction"))
+                                                                .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                        .Parameters(ps =>
+                                                            {
+                                                                ps.Add(new StoreParameter("categoryId", "App.hdfProductionCategory.getValue()", ParameterMode.Raw));
+
+                                                            })
+                                                        .Model(
+                                                            Html.X().Model().Fields(
+                                                                        Html.X().ModelField().Name("ID"),
+                                                                        Html.X().ModelField().Name("Code"),
+                                                                        Html.X().ModelField().Name("SerialNumber"),
+                                                                        Html.X().ModelField().Name("Name"),
+                                                                        Html.X().ModelField().Name("Status"),
+                                                                        Html.X().ModelField().Name("UseStartTime"),
+                                                                        Html.X().ModelField().Name("MadeYear"),
+                                                                        Html.X().ModelField().Name("MadeIn")
+                                                            )
+                                                        )
+                                                )
+                                                .ColumnModel(
+                                                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                Html.X().Column().DataIndex("Code").Text("Mã").Width(100).Locked(true),
+                                                                Html.X().Column().DataIndex("SerialNumber").Text("Số hiệu").Width(100).Locked(true),
+                                                                Html.X().Column().DataIndex("Name").Text("Tên thiết bị").Width(250).Locked(true),
+                                                                Html.X().Column().DataIndex("Status").Text("Tình trạng").Width(100),
+                                                                Html.X().DateColumnExtend().DataIndex("UseStartTime").Format("dd/MM/yyyy").Text("Thời gian sử dụng").Width(120).Align(Alignment.Center),
+                                                                Html.X().DateColumnExtend().DataIndex("MadeYear").Format("dd/MM/yyyy").Text("Năm sản xuất").Width(100).Align(Alignment.Center),
+                                                                Html.X().Column().DataIndex("MadeIn").Text("Nơi sản xuất").MinWidth(100).Flex(1)
+                                                    )
+                                                .BottomBar(Html.X().CustomPagingToolbar())
+                                            )
+                                    )
+                )
+        .Buttons(
+                Html.X().Button().Text("Chọn").Icon(Icon.Accept).Handler("onSelectEquipmentProduction(this.up('window'))"),
+                Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var onSelectEquipmentProduction = function (window) {
+        var records = App.GrEquipmentSelect.selModel.getSelection();
+        if (records.length > 0) {
+            selectEquipmentProduction(records);
+            window.close();
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function OnSelectChangeEquipementCategory(records) {
+        App.hdfProductionCategory.setValue(records[0].get('id'));
+        App.GrEquipmentSelect.store.reload();
+    };
+</script>

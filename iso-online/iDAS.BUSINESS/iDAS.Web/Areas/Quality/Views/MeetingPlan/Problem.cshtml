@@ -1,0 +1,111 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.QualityMeetingProblemItem
+@{
+    var X = Html.X();
+}
+
+@(Html.X().Window()
+.Title("Thiết lập vấn đề")
+.Icon(Icon.Information)
+.Width(800).Height(400)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+        X.HiddenFor(m => m.MeetingID).ID("hdfmeetingID"),
+        X.GridPanel().Layout(LayoutType.Fit)
+        .ID("GrMeetingProblem")
+            .Header(false)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().ButtonCreate().Handler("SelectProblem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDeleteProblem").Handler("onDeleteProblem();")
+                    )
+                    )
+            .Store(
+                        Html.X().Store().ID("storeMeetingProblem")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMeetingProblem", "MeetingProblem", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                        .Parameters(ps => ps.Add(new StoreParameter("meetingID", "App.hdfmeetingID.getValue()", ParameterMode.Raw)))
+                        .Model(
+                            Html.X().Model().Fields(
+                                        X.ModelField().Name("ID"),
+                                        X.ModelField().Name("Name"),
+                                        X.ModelField().Name("IsoName")
+                            )
+                        )
+                    )
+                    .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                X.Column().DataIndex("Name").Width(200).Text("Tên vấn đề"),
+                                X.Column().DataIndex("IsoName").Flex(1).Text("Iso")
+                        ).SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi)
+                            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusProblem();")
+                    )
+                    .BottomBar(
+                            Html.X().CustomPagingToolbar())
+            )
+.Buttons(Html.X().ButtonExit())
+)
+<script>
+    var SelectProblem = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("LoadIsoProblemPartialView", "MeetingProblem", new { Area = "Quality" }, null))',
+            params: { meetingId: App.hdfmeetingID.getValue() }
+        });
+    };
+    var CheckStatusProblem = function () {
+        var records = App.GrMeetingProblem.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDeleteProblem.setDisabled(false);
+        }
+        else {
+            App.btnDeleteProblem.setDisabled(true);
+        };
+    };
+    var onDeleteProblem = function () {
+        var records = App.GrMeetingProblem.selModel.getSelection();
+        if (records.length > 0) {
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = records[i]; i++) {
+                aId[i] = records[i].get('ID');
+            }
+            strId = aId.join();
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có chắc chắn muốn xóa vấn đề này?', function (btn) {
+                if (btn == 'yes')
+                    Ext.net.DirectMethod.request({
+                        url:'@(Url.Action("DeleteProblem", "MeetingProblem", new { Area = "Quality" }, null))',
+                        params: {
+                            listId: strId,
+                        }
+                    });
+            })
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var onSelectedProblem = function (strId) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateMeetingProblem", "MeetingProblem", new { Area = "Quality" }, null))',
+            params: { stringId: strId, meetingId: App.hdfmeetingID.getValue() }
+        });
+
+    };
+</script>

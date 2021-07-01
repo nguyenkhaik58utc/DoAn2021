@@ -1,0 +1,137 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateEthnic = '@(Url.Action("Create", "V3_Ethnic", new { area = "Human" }))';
+    var urlUpdateEthnic = '@(Url.Action("Update", "V3_Ethnic", new { area = "Human" }))';
+    var urlDeleteEthnic = '@(Url.Action("Delete", "V3_Ethnic", new { Area = "Human" }))';
+    var urlDetailEthnic = '@(Url.Action("ShowFrmDetail", "V3_Ethnic", new { Area = "Human" }))';
+    var sortEthnicIndex = null;
+    var showCreateEthnic = function () {
+        var url = urlCreateEthnic;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateEthnic = function () {
+        var url = urlUpdateEthnic;
+        var record = getEthnicSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getEthnicSelection = function () {
+        var records = App.EthnicPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setEthnicSelection = function () {
+        if (sortEthnicIndex != null) {
+            App.EthnicPanel.selModel.select(sortEthnicIndex);
+        }
+    };
+
+    var showDeleteEthnic = function () {
+        var url = urlDeleteEthnic;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ dân tộc này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getEthnicSelection();
+                            var EthnicId = record == null ? 0 : record.data.ID;
+                            var params = { ID: EthnicId };
+                            onDirectMethod(url, params, 'post', reloadEthnic);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailEthnic = function () {
+        var url = urlDetailEthnic;
+        var record = getEthnicSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadEthnic = function () {
+        App.EthnicPanel.store.reload();
+    };
+
+    var selectionChangeEthnic = function () {
+        var record = getEthnicSelection();
+        var isDisabled = record == null;
+        App.btnUpdateEthnic.setDisabled(isDisabled);
+        App.btnDeleteEthnic.setDisabled(isDisabled);
+        App.btnDetailEthnic.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý dân tộc").Header(false)
+                    .ID("EthnicPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateEthnic").ID("btnCreateEthnic()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateEthnic").Handler("showUpdateEthnic();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteEthnic").Handler("showDeleteEthnic()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailEthnic").Handler("showDetailEthnic();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreEthnic")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setEthnicSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên dân tộc").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeEthnic();")
+            .Plugins(Html.X().FilterHeader())
+                .BottomBar(
+                        X.CustomPagingToolbar()
+                )
+    )
+    )

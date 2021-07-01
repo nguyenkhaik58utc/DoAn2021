@@ -1,0 +1,167 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.EquipmentProductionHistoryItem
+@(Html.X().Window()
+    .ID("WinHistory")
+    .Title("Theo dõi thiết bị sản xuất")
+    .Icon(Icon.Eye)
+    .Height(500)
+    .Maximized(true)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .AutoScroll(true)
+    .Items(
+            Html.X().HiddenFor(m => m.EquipmentProductionID).ID("hdfEquipmentProductionID"),
+            Html.X().GridPanel()
+                .Header(false)
+                .ID("GrHistory")
+                .ColumnLines(true)
+                .Layout(LayoutType.Fit)
+                .ForceFit(true)
+                .StyleSpec("border: none;")
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().ToolTip("Thêm mới theo dõi thiết bị")
+                                .ID("btnAddContact").Icon(Icon.Add).Disabled(false).Handler("AddHistory();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnUpdateHistory").ToolTip("Cập nhật theo dõi thiết bị")
+                                .Handler("UpdateHistory();").Icon(Icon.Pencil).Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ToolTip("Xóa theo dõi thiết bị").Icon(Icon.Delete).ID("btnDeleteHistory")
+                                .Handler("DeleteHistory();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ToolTip("Xem chi tiết").ID("btnDetailHistory").Icon(Icon.Zoom)
+                                .Handler("DetailHistory();").Disabled(true)
+                    )
+            )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreHistory")
+                            .AutoLoad(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadHistoryByProduct", "EquipmentProductionHistory")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("id", "App.hdfEquipmentProductionID.value", ParameterMode.Raw));
+                                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("HumanDepartment.Name"),
+                                        Html.X().ModelField().Name("HumanEmployee.Name"),
+                                        Html.X().ModelField().Name("Time"),
+                                        Html.X().ModelField().Name("Status"),
+                                        Html.X().ModelField().Name("Note")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("HumanDepartment.Name").Text("Phòng ban").Width(200).Locked(true),
+                                    Html.X().DateColumnExtend().DataIndex("Time").Format("dd/MM/yyyy").Align(Alignment.Center).Text("Thời gian").Width(150).Locked(true),
+                                    Html.X().Column().DataIndex("HumanEmployee.Name").Text("Người thực hiện").Width(120),
+                                    Html.X().Column().DataIndex("Status").Text("Tình trạng").Width(100),
+                                    Html.X().Column().DataIndex("Note").Text("Ghi chú").MinWidth(100).Flex(1).Wrap(true)
+                        )
+                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusContact()"))
+                    .BottomBar(Html.X().CustomPagingToolbar())
+
+    )
+    .Buttons(
+            Html.X().Button()
+                    .ID("btnHistoryCancel")
+                    .Text("Đóng")
+                    .Icon(Icon.Cancel)
+                    .Handler("this.up('window').close();")
+                )
+)
+<script>
+    function CheckStatusContact() {
+        var records = App.GrHistory.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnUpdateHistory.setDisabled(false);
+            App.btnDetailHistory.setDisabled(false);
+            App.btnDeleteHistory.setDisabled(false);
+        }
+        else {
+            App.btnUpdateHistory.setDisabled(true);
+            App.btnDetailHistory.setDisabled(true);
+            App.btnDeleteHistory.setDisabled(true);
+        };
+    };
+    var AddHistory = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "EquipmentProductionHistory", new { Area = "Equipment" }))',
+            params: {
+                productionId: App.hdfEquipmentProductionID.value
+            }
+        });
+    };
+    var UpdateHistory = function () {
+        var records = App.GrHistory.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "EquipmentProductionHistory", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DetailHistory = function () {
+        var records = App.GrHistory.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "EquipmentProductionHistory", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DeleteHistory = function () {
+        var records = App.GrHistory.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var id = records[0].get('ID');
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "EquipmentProductionHistory", new { Area = "Equipment" }, null))',
+                        params: {
+                            id: id,
+                        }
+                    });
+                }
+            })
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+</script>

@@ -1,0 +1,65 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceProgramFileItem
+
+@(Html.X().Window()
+    .Title("Cập nhật thông tin tệp đính kèm")
+    .Icon(Icon.Pencil)
+    .Height(250)
+    .Constrain(true)
+    .Width(550)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(1).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên tệp").ReadOnly(true),
+                            Html.X().TextFieldFor(m => m.Extension).FieldLabel("Kiểu tệp").ReadOnly(true),
+                            Html.X().Container().Layout(LayoutType.Column).Items(
+                                Html.X().TextFieldFor(m => m.Size).ColumnWidth(0.5).FieldLabel("Kích cỡ").ReadOnly(true),
+                                Html.X().Container().ColumnWidth(0.02),
+                                Html.X().Label("Byte")
+                            ),
+                            Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Kích hoạt").ReadOnly(true)
+                        )
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmUpdate";
+            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Update");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "this.up('window').close(); reloadServiceProgramFile();";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)

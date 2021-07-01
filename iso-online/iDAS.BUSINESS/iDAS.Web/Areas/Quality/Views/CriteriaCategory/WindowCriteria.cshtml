@@ -1,0 +1,183 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@(Html.X().Window()
+    .Icon(Icon.House)
+    .Height(450)
+    .Width(850)
+    .Constrain(true)
+    .Layout(LayoutType.Border)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(1)
+    .Listeners(ls => ls.Close.Handler = "this.destroy();")
+    .Center()
+    .Items(
+        Html.X().Hidden().ID("hdfLsCateId"),
+        Html.X().TreePanel()
+                .Header(false)
+                .Title("Bộ tiêu chí đánh giá")
+                .Region(Region.West)
+                .ID("trCriteriaCategory")
+                .Width(350)
+                .TitleAlign(TitleAlign.Center)
+                .Collapsible(true)
+                .Split(true)
+                .Border(true)
+                .RowLines(true)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .RootVisible(false)
+                .SingleExpand(false)
+                .Store(Html.X().TreeStore()
+                        .ID("stCriteriaCategory")
+                        .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetDataUsed", "CriteriaCategory", new { area = "Quality" })))
+                        .Model(
+                        Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean)
+                                )
+                              )
+                          )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                        Html.X().TreeColumn()
+                            .Text("Bộ tiêu chí đánh giá")
+                            .Align(Alignment.Left)
+                            .DataIndex("Name")
+                            .Flex(1)
+                )
+            .Listeners(ls => { ls.SelectionChange.Handler = "categoryCriteriaSelect();"; ls.Load.Handler = "getStrNodeIds()"; })
+                ,
+            Html.X().GridPanel()
+            .Region(Region.Center)
+            .ID("grCriteria")
+            .Border(true)
+            .RowLines(true)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Store(Html.X().Store().ID("StoreTreeCriteria")
+                    .AutoLoad(false)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetCriteriaUsed", "Criteria", new { area = "Quality" }))
+                                    .Reader(Html.X().JsonReader()
+                                    .Root("data")
+                                    )
+                    )
+            .Parameters(ps =>
+                {
+                    ps.Add(new StoreParameter("strCateId", "App.hdfLsCateId.value", ParameterMode.Raw));
+                })
+                .Model(
+                    Html.X().Model().IDProperty("ID")
+                    .Fields(
+                        Html.X().ModelField().Name("ID"),
+                        Html.X().ModelField().Name("Name"),
+                        Html.X().ModelField().Name("CategoryName"),
+                        Html.X().ModelField().Name("MinPoint").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("MaxPoint").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("Factory").Type(ModelFieldType.String)
+                        )
+                    )
+            )
+            .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        Html.X().Column()
+                                .Text("Tiêu chí đánh giá")
+                                .Align(Alignment.Left)
+                                .DataIndex("Name")
+                                .Flex(1),
+                        Html.X().ComponentColumn()
+                        .Text("Điểm")
+                        .Columns(
+                                Html.X().Column()
+                                .Text("Thấp nhất")
+                                .DataIndex("MinPoint")
+                                .Align(Alignment.Right)
+                                .Width(100),
+                        Html.X().Column().Text("Cao nhất")
+                                .DataIndex("MaxPoint")
+
+                                .Width(100)
+                                .Align(Alignment.Right)
+                                ),
+                        Html.X().Column()
+                                .Text("Hệ số")
+                                .DataIndex("Factory")
+                                .Width(100)
+                                .Align(Alignment.Right)
+                 )
+                .BottomBar(Html.X().CustomPagingToolbar())
+         )
+        .Buttons(
+            Html.X().Button()
+                    .Icon(Icon.Accept)
+                    .Text("Chọn")
+                        .Handler("onCriteriaWindowClose(this.up('window'))"),
+            Html.X().Button()
+                    .Icon(Icon.Cancel)
+                    .Text("Thoát")
+                    .Handler("this.up('window').close();")
+        )
+)
+<script type="text/javascript">
+    var onCriteriaWindowClose = function (window) {
+        var grid = window.down('gridpanel');
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            onSelectCriteriaExtend(records);
+            window.close();
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Chưa lựa chọn tiêu chí nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var categoryCriteriaSelect = function () {
+        var records = App.trCriteriaCategory.selModel.getSelection();
+        if (records.length == 1) {
+            var nodeSelect = App.stCriteriaCategory.getNodeById(records[0].get('ID'));
+            if (nodeSelect.isLeaf() == false) {
+                nodeSelect.reload();
+            }
+            else {
+                getStrNodeIds();
+            };
+
+        };
+    };
+    function getStrNodeIds() {
+        var records = App.trCriteriaCategory.selModel.getSelection();
+        if (records.length == 1) {
+            var id = records[0].get('ID');
+            var childNodes = App.stCriteriaCategory.getNodeById(id).childNodes;
+            var aId = new Array();
+            if (childNodes.length > 0) {
+                var strId = '';
+                for (var i = 0; i < childNodes.length; i++) {
+                    aId[i] = childNodes[i].get('ID');
+                }
+                aId[childNodes.length] = id;
+            }
+            else {
+                aId[0] = id;
+            }
+            var str = aId.join();
+            App.hdfLsCateId.setValue(str);
+            App.grCriteria.store.reload();
+        }
+    };
+</script>

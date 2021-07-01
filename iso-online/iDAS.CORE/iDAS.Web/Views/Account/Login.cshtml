@@ -1,0 +1,86 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model iDAS.Items.SystemUserLoginItem
+
+<!DOCTYPE html>
+<html>
+<head>  
+    <title>Phần mềm tích hợp các tiêu chuẩn hệ thống quản lý ISO</title>
+    <link rel="shortcut icon" href="~/Content/image/iDAS.ico" type="image/ico" />
+    <link href="~/Content/Login.css" rel="stylesheet" />
+    <script src="~/Scripts/jquery-1.7.1.js"></script>
+    <script>
+        var refreshCaptcha = function () {
+            date = new Date();
+            $.ajax({
+                type: "GET",
+                url: '@Url.Action("Captcha")?' + date.getTime(),
+                datatype: "image/Jpeg",
+                success: function (data) {
+                    $('#captcha_img').attr('src', '@Url.Action("Captcha")?' + date.getTime());
+                }
+            });
+        }
+
+        var changeLanguague = function () {
+            Ext.net.DirectMethod.request({
+                url: '@Url.Action("ChangeLanguague")',
+                params: {
+                    languague: App.ComboBox1.value,
+                },
+            });
+        }
+    </script>
+</head>
+<body>
+<div id="contentpage">
+    <div id="head">
+        <div id="logo"></div>
+        <span id="title">Đăng nhập vào Hệ thống</span>
+    </div>
+    <div class="contenmaincenter">
+        <div class="maincenter">
+            <div id="containlogin">
+                 @(Html.X().FormPanelForModel(modelOnly: true)
+                    .ID("FormPanel1")
+                    .Url(Url.Action("Login"))
+                    .FieldDefaults(lb => { lb.LabelWidth = 120; lb.LabelSeparator = ""; })
+                    .Frame(true)
+                    .DefaultAnchor("100%")
+                    .BodyPadding(10)
+                    .Items(items =>
+                    {
+                        items.Add(Html.X().TextFieldFor(m => m.Account).Icon(Icon.User));
+                        items.Add(Html.X().TextFieldFor(m => m.Password).Icon(Icon.Key));
+                        items.Add(Html.X().TextFieldFor(m => m.Code).Icon(Icon.LockKey));
+                        items.Add(
+                            Html.X().ComboBoxFor(m => m.Languague).ID("ComboBox1")
+                                .Icon(Icon.UserEarth).Editable(false)
+                                .Listeners(ls => ls.Select.Fn = "changeLanguague")
+                                .Items(ViewBag.Languagues)
+                                .SelectedItems(ViewBag.LanguagueDefault)
+                        );
+                        items.Add(Html.X().TextFieldFor(m => m.Captcha).Icon(Icon.CalculatorAdd)
+                            .FieldLabel("<a href='#' onClick='refreshCaptcha();'><img id='captcha_img' alt='Captcha' src='" + Url.Action("Captcha") + "' style='' /></a>"));
+                    })
+                    .Buttons(
+                        Html.X().Button().Text("Đăng nhập").Icon(Icon.UserHome)
+                            .Listeners(ls => ls.Click.Handler = "App.FormPanel1.submit({waitMsg : 'Đăng nhập vào hệ thống ....'})"),
+                        Html.X().Button().Text("Đăng ký").Icon(Icon.UserKey)
+                            .Listeners(ls=> ls.Click.Handler ="document.location = '"+Url.Action("Register")+"';")
+                    )
+                )  
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <ul id="ulbottom">
+            <li class="libottom"><span>© 2013 D.A.S Technology Ltd. </span></li>
+            <li class="libottom"><a href="#">Liên hệ với chúng tôi</a></li>
+            <li class="libottom"><a href="#">Chính sách bảo mật</a> </li>
+            <li class="libottom"><a href="#">Điều khoản sử dụng</a> </li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>

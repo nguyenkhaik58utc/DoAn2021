@@ -1,0 +1,164 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@model iDAS.Items.AuditItem
+
+@(Html.X().Window()
+    .ID("WindowAudit")
+    .Title("Đánh giá")
+    .Icon(Icon.AwardStarBronze1)
+    .MinHeight(500)
+    .Maximized(true)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .BodyPadding(0)
+    .Border(false)
+    .Resizable(false)
+    .Center()
+    .Items(
+        Html.X().FormPanel()
+        .Layout(LayoutType.Fit)
+        .StyleSpec("border: none;")
+        .Border(true)
+        .Items(
+            Html.X().GridPanel()
+                .Header(false)
+                .Region(Region.Center)
+                .Split(true)
+                .Border(false)
+                .TitleAlign(TitleAlign.Center)
+                .Layout(LayoutType.Fit)
+                .Collapsible(true)
+                .ForceFit(true)
+                .ColumnLines(true)
+                .RowLines(true)
+                .TopBar(
+                            Html.X().Toolbar()
+                                    .Items(
+                                        Html.X().Button()
+        //.ID("btnInsertNews")
+                                                .Icon(Icon.Add)
+                                                .DirectClickAction("FormAdd"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button()
+        //.ID("btnEdit")
+                                                .Icon(Icon.Pencil)
+                                                .Handler("updateForm();")
+                                                .Disabled(true),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button()
+        //.ID("btnDelete")
+                                                .Icon(Icon.Delete)
+                                                .Handler("deleteRecord();")
+                                                .Disabled(true),
+                                       Html.X().ToolbarSeparator(),
+                                            Html.X().Button()
+        //.ID("btnDetail")
+                                                    .Disabled(true)
+                                                        .Icon(Icon.Zoom)
+                                                        .Handler("showFormDetail();")
+                                                    .Disabled(true),
+                                     Html.X().ToolbarSeparator(),
+                                                Html.X().Button()
+                                                    .Text("Tiêu chí đánh giá")
+        //.ID("btnDetail")
+                                                            .Icon(Icon.ApplicationOsxGet)
+                                                            .Handler("showFormDetail();"),
+                                         Html.X().ToolbarSeparator(),
+                                             Html.X().Button()
+                                          .Text("Sự không phù hợp")
+        //.ID("btnDetail")
+                                                            .Icon(Icon.ApplicationOsx)
+                                                            .Handler("showFormDetail();")
+                                    )
+                                 )
+                 .Store(
+                    Html.X().Store().ID("StoreAudit")
+        .Proxy(Html.X().AjaxProxy()
+            .Url(ViewData["StoreAudit"].ToString())
+            .Reader(Html.X().JsonReader().Root("data"))
+        )
+        .Model(
+            Html.X().Model().IDProperty("ID")
+            .Fields(
+                Html.X().ModelField().Name("ID"),
+                Html.X().ModelField().Name("Name"),
+                Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                Html.X().ModelField().Name("IsOption").Type(ModelFieldType.Boolean),
+                Html.X().ModelField().Name("IsRoot").Type(ModelFieldType.Boolean),
+                Html.X().ModelField().Name("Point")
+            )
+        ) 
+                 )                
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        Html.X().TreeColumn()
+                                .Text("Bộ tiêu chí đánh giá")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Left)
+                                .DataIndex("Name")
+                                    .Flex(1),
+                            
+                    Html.X().TreeColumn()
+                            .Text("Thời gian đánh giá")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Left)
+                            .DataIndex("Name")
+                            .Width(200),
+
+                       Html.X().CheckColumn()
+                                .Text("Kết quả")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .DataIndex("IsUse")
+                                .Width(120)
+                                .Align(Alignment.Center)
+                                .Editable(true),
+                        Html.X().ComponentColumn().Text("Tổng số điểm không phù hợp").Columns(
+                            Html.X().Column().Text("Obs").Width(80),
+                            Html.X().Column().Text("m").Width(80),
+                            Html.X().Column().Text("M").Width(80)
+                        )
+                        
+                        
+                        )
+                    .BottomBar(
+                                        Html.X().CustomPagingToolbar()
+                            )   
+
+               ))
+)
+<script type="text/javascript">    
+    var onEditSelected = function (editor, e) {
+        var auditId = App.hdfAuditId.getValue();
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateCriteriasSelected", "Audit"))',
+                params: {
+                    data: e.record.data,
+                    auditId: auditId,
+                }
+            });
+        }
+    };    
+    var detailAssess = function () {
+        var records = App.GridTaskViewAssess.selModel.getSelection();       
+        if (records.length == 1) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetailAssess", "Assess", new { Area = "Audit" }, null))',
+                params: { assessId: records[0].get('ID') }
+            });
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có bản ghi nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+    var resultRenderer = function (value) {
+        if (value == true) {
+            return "<span style='color:blue'>Đạt</span>";
+        }
+        else {
+            return "<span style='color:red'>Không đạt</span>";
+        }
+    };
+</script>

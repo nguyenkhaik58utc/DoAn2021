@@ -1,0 +1,136 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.HumanProfileWorkTrialItem
+@{
+    var X = Html.X();
+}
+
+@(Html.X().Window()
+                .ID("frResult")
+            .Title("Tự đánh giá")
+                    .Layout(LayoutType.Border).Maximized(true)
+        .Icon(Icon.ApplicationEdit)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+
+            Html.X().HiddenFor(m => m.ID).ID("txtID"),
+        Html.X().GridPanel()
+                       .Region(Region.Center)
+                        .Margin(1)
+                        .Header(false)
+                        .ID("grAuditResult")
+
+                        .ColumnLines(true)
+                        .ForceFit(true)
+
+                    .Store(
+                        Html.X().Store()
+                                .ID("StoreAditResult")
+                                .RemotePaging(true)
+                                .AutoLoad(true)
+                                                            .GroupField("QualityCriteriaCateName")
+                                                        .Sorters(Html.X().DataSorter().Property("QualityCriteriaCateName").Direction(Ext.Net.SortDirection.ASC))
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetAuditResult"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                .IDParam("ID"))
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("humanProfileWorkTrialID", "App.txtID.getValue()", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                            Html.X().ModelField().Name("QualityCriteriaName"),
+                                            Html.X().ModelField().Name("EmployeePoint"),
+                                            Html.X().ModelField().Name("QualityCriteriaCateName"),
+                                    Html.X().ModelField().Name("Note")
+
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                        Html.X().Column().DataIndex("ID").Hidden(true),
+                                                        Html.X().Column().DataIndex("QualityCriteriaName").Text("Tiêu chí").Width(300).StyleSpec("font-weight: bold;text-align: center"),
+                                                                Html.X().Column().Text("Điểm").Align(Alignment.Right).DataIndex("EmployeePoint").Editor(Html.X().NumberField().MinValue(1).MaxValue(10)),
+                                                    Html.X().Column().DataIndex("Note").Text("Ghi chú").Width(300).Flex(1).Editor(Html.X().TextField()).StyleSpec("font-weight: bold;text-align: center")
+                            )
+
+                     .Features(
+                                        Html.X().GroupingSummary()
+                                        .ID("GroupingSummarySupplier")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                )
+     .Plugins(
+                            Html.X().CellEditing()//.Listeners(ls => ls.Edit.Fn = "edit")
+                            )
+                   
+                 )
+.Buttons(
+         Html.X().Button()
+        .ID("btnSaves")
+        .Text("Lưu lại")
+        .Icon(Icon.Disk).Handler("Save()"),
+X.ButtonExit()
+    )
+)
+
+
+
+<script type="text/javascript">
+    var Save = function () {
+        var url = '@(Url.Action("UpdateAudit"))';
+        var params = {
+            strPoint: getPoint()
+        };
+        onDirectMethod(url, params);
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: params,
+            success: function (result) {
+                App.frResult.close();
+            }
+        });
+    };
+    var edit = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+               url: '@(Url.Action("HandleChanges", "ProfileWorkTrialAuditManager", new { Area = "Human" }, null))',
+                params: {
+                    id: e.record.data.ID,
+                    point: e.record.data.Point,
+                    note: e.record.data.Note
+                }
+            });
+        };
+    };
+    var getPoint = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.StoreAditResult.data.length; i++) {
+            arr.push(App.StoreAditResult.data.items[i].data);
+        }
+        return JSON.stringify(arr);
+    };
+    var CreSelectChange = function () {
+        var component = App.trCriteriaCategory;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = records[i]; i++) {
+                    aId.push(records[i].get('id'));
+            }
+            strId = aId.join();
+            App.hdfCategoryIDs.setValue(strId);
+            App.grAuditResult.getStore().reload();
+        };
+    };
+</script>

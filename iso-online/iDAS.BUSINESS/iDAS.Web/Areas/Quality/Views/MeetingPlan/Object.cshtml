@@ -1,0 +1,174 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.QualityMeetingItem
+@{
+    var X = Html.X();
+}
+
+@(Html.X().Window()
+.Title("Thiết lập thành phần tham gia")
+.Icon(Icon.Group)
+.Width(700)
+.Height(450)
+.Maximizable(true)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+        X.HiddenFor(m => m.ID).ID("hdfmeetingID"),
+        X.GridPanel().Layout(LayoutType.Fit)
+        .ID("GrMeetingObject")
+            .Header(false)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().ButtonCreate().Handler("App.windowObjectSelect.show();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDeleteObject").Handler("onDeleteObject();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Xem thông tin nhân sự").ToolTip("Xem chi tiết").ID("btnDetailObject").Icon(Icon.Zoom).Handler("ViewDetailEmployee();").Disabled(true)
+                    )
+                    )
+            .Store(
+                        Html.X().Store().ID("storeMeetingObject")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMeetingPlanObject", "MeetingPlan", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                        .Parameters(ps => ps.Add(new StoreParameter("meetingID", "App.hdfmeetingID.getValue()", ParameterMode.Raw)))
+                        .Model(
+                            Html.X().Model().Fields(
+                                        X.ModelField().Name("ID"),
+                                        X.ModelField().Name("Name"),
+                                        X.ModelField().Name("Avatar"),
+                                        X.ModelField().Name("RoleName"),
+                                        X.ModelField().Name("MeetingID"),
+                                        X.ModelField().Name("EmployeeID"),
+                                        X.ModelField().Name("Email"),
+                                        X.ModelField().Name("RoleName"),
+                                        X.ModelField().Name("Phone"),
+                                        X.ModelField().Name("IsSelect")
+                            )
+                        )
+                    )
+                    .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                                Html.X().TemplateColumn().DataIndex("EmployeeID").Width(30).TdCls("AvatarColumn").Tpl(
+                                                            Html.X().XTemplate().Html(@<text>
+                                                            <img src='{Avatar}' style='width:30px;height:40px;' />
+                                                        </text>)
+                                                        ),
+                                X.Column().DataIndex("Name").Width(150).Text("Họ tên"),
+                                X.Column().DataIndex("RoleName").Flex(1).Text("Chức danh"),
+                                X.Column().DataIndex("Phone").Width(110).Text("Điện thoại"),
+                                X.Column().DataIndex("Email").Width(110).Text("Email")
+                        )
+                            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Multi).Listeners(ls => ls.SelectionChange.Handler = "CheckStatusObject();")
+                    )
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar())
+            )
+.Buttons(Html.X().ButtonExit())
+)
+@(
+ X.Window().ID("windowObjectSelect").Layout(LayoutType.Fit).Hidden(true)
+                    .Title("Danh sách nhân sự")
+                    .Icon(Icon.ApplicationSideList)
+                    .Border(false)
+                    .Height(450)
+                    .Width(800)
+                        .ItemsFromAction("EmployeeViewMulti", "Employee", new { Area = "Human", gridEmployeeId = "grEmployeeApprove" })
+.Buttons(
+        X.Button().Icon(Icon.Accept).Listeners(ls => ls.Click.Handler = "SelectEmployee();").ToolTip("Chọn người tham gia").Text("Chọn"),
+        X.Button().Icon(Icon.DoorOut).OnClientClick("this.up('window').hide();").Text("Đóng")
+)
+)
+<script>
+    var CheckStatusObject = function () {
+        var records = App.GrMeetingObject.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDeleteObject.setDisabled(false);
+            if (records.length == 1) {
+                App.btnDetailObject.setDisabled(false);
+            }
+            else {
+                App.btnDetailObject.setDisabled(true);
+            };
+        }
+        else {
+            App.btnDeleteObject.setDisabled(true);
+            App.btnDetailObject.setDisabled(true);
+        };
+    };
+    var onDeleteObject = function () {
+        var records = App.GrMeetingObject.selModel.getSelection();
+        if (records.length > 0) {
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = records[i]; i++) {
+                aId[i] = records[i].get('ID');
+            }
+            strId = aId.join();
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có chắc chắn muốn xóa vấn đề này?', function (btn) {
+                if (btn == 'yes')
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("DeleteObject"))',
+                        params: {
+                            listId: strId,
+                        }
+                    });
+            })
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SelectEmployee = function () {
+        if (App.windowObjectSelect.hidden == true) {
+            App.windowObjectSelect.show();
+        }
+        else {
+            var records = App.grEmployeeApprove.selModel.getSelection();
+            if (records.length >= 1) {
+                var meetingId = App.hdfmeetingID.getValue();
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("UpdateMeetingPlanObject", "MeetingPlan", new { Area = "Quality" }, null))',
+                    params: { stringId: strId, meetingId: meetingId }
+                });
+                App.windowObjectSelect.hide();
+            }
+            else {
+                Ext.Msg.alert("", "Bạn chưa lựa chọn bản ghi nào!");
+            };
+
+        };
+    };
+    var ViewDetailEmployee = function () {
+        var records = App.GrMeetingObject.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "Employee", new { Area = "Human" }, null))',
+                params: { ID: records[0].get('EmployeeID') }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    }
+</script>

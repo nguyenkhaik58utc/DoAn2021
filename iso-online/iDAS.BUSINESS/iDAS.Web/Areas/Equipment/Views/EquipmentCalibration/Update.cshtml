@@ -1,0 +1,79 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.EquipmentCalibrationItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thông tin kiểm định thiết bị";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật thông tin kiểm định thiết bị";
+    }
+}
+@(Html.X().Window()
+.ID("WinEquipmentCalibration")
+.Title(title)
+.Icon(IconView)
+.Width(550)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmCalibration")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .Border(false)
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 105; })
+    .Items(
+            X.HiddenFor(m => m.ID).ID("hdfEquipmentDepartment"),
+            X.HiddenFor(m => m.EquipmentMeasureID).ID("hdfEquipmentMeasure"),
+            X.TextFieldFor(m => m.AccreditationBy)
+                    .FieldLabel("Người kiểm định" + Html.Required()).AllowBlank(false).ColumnWidth(1).MarginSpec("5 8 5 8"),
+            X.FieldSet().Title("Thời gian kiểm định").ColumnWidth(1).Layout(LayoutType.Column)
+                .Items(
+                    X.DateTimeFieldFor(m => m.AccreditationLastTime)
+                            .LabelWidth(90).FieldLabel("Thời gian")
+                            .ColumnWidth(1).MarginSpec("5 8 5 8"),
+                    X.DateTimeFieldFor(m => m.AccreditationNextTime).LabelWidth(90).FieldLabel("Lần tiếp theo")
+                            .ColumnWidth(1).MarginSpec("5 8 5 8")
+                        ),
+            X.CheckboxFor(m => m.IsPass).FieldLabel("Kết quả").BoxLabel("Đạt").ColumnWidth(0.4)
+                    .MarginSpec("5 8 5 8"),
+            X.NumberFieldFor(m => m.AccreditationPeriodic).AllowBlank(false)
+                        .FieldLabel("Chu kỳ kiểm định" + Html.Required())
+                    .ColumnWidth(0.8).Icon(Icon.Calendar)
+                    .MarginSpec("5 8 5 8"),
+            X.Label().Text("(tháng/ lần)").ColumnWidth(0.2).MarginSpec("5 8 5 8"),
+            X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú").LabelAlign(LabelAlign.Top)
+                    .ColumnWidth(1).MarginSpec("0 8 0 8").Height(200)            
+            )
+    )
+    .Buttons(
+        Html.X().Button()
+                .Text("Lưu lại")
+                .Icon(Icon.DatabaseSave)
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmCalibration.getForm().isValid()) { return false; }; ";
+                                de.Click.ExtraParams.Add(new { exit = true });
+                                de.Click.Url = Url.Action("Update", "EquipmentCalibration", new { Area = "Equipment" });
+                                de.Click.EventMask.ShowMask = true;
+                                de.Click.Success = "this.up('window').close();App.StoreCalibration.reload();";
+                                de.Click.FormID = "frmCalibration";
+                            })
+        , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

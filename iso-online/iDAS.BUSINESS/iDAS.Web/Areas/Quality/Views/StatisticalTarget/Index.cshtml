@@ -1,0 +1,213 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(
+ Html.X().Viewport().Layout(LayoutType.Border).StyleSpec("border: none;").Border(false).Padding(2).Items(
+     Html.X().CustomGridPanel().Url(Url.Action("GetData"))
+                            .Parameters(
+                                    ps =>
+                                    {
+                                        ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                        ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                    }
+                            )
+                        .StoreField("CategoryID", "CategoryName", "Total", "New", "Wait", "Edit", "Performing",
+                                    "EndTotal", "Complete", "Ok", "NotOk", "NotApproval")
+                        .Region(Region.West).Width(570).Collapsible(true).Split(true).Header(false)
+                        .ID("grStatisticalTarget")
+                        .TopBar(
+                                Html.X().Toolbar().ID("tbgpStatisticalTaskCate")
+                                .Items(
+                                            Html.X().SearchByDate("App.grStatisticalTarget.store.reload();").FromDateID("dfFromDate").ToDateID("dfToDate"),
+                                                    Html.X().ButtonExportExcelFile().GridIDGetFile("grStatisticalTarget")
+                                        )
+                                )
+                        .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("CategoryName").Text("Nhóm mục tiêu").Width(250),
+
+                                    Html.X().ComponentColumn()
+                                                            .Width(22).Filterable(false)
+                                                            .Component(
+                                                                        Html.X().Button().Width(20).Margin(0)
+                                                                        .StyleHtmlCls("background-image:none")
+                                                                        .Listeners(ls => ls.Click.Handler = "onRowClick(this);")
+                                                                        .MenuItem(
+                                                                            Html.X().Panel()
+                                                                                .Height(90)
+                                                                                .Width(200).Layout(LayoutType.Fit)
+                                                                                .MarginSpec("0 0 0 0")
+                                                                                .Loader(
+                                                                                        Html.X().ComponentLoader()
+                                                                                                .Mode(LoadMode.Html)
+                                                                                                .Url(Url.Action("getTargetDetail"))
+                                                                                                .LoadMask(mask => mask.ShowMask = true)
+                                                                                                .Params(
+                                                                                                    new
+                                                                                                    {
+                                                                                                        id = JRawValue.From("App.hdfTargetDetailId.getValue()"),
+                                                                                                        fromDate = JRawValue.From(" App.dfFromDate.getValue().toJSON()"),
+                                                                                                        toDate = JRawValue.From("App.dfToDate.getValue().toJSON()"),
+                                                                                                    }
+                                                                                                )
+                                                                                )
+
+                                                                    )
+                                                            ),
+                                    Html.X().Column().DataIndex("Total").Text("Tổng số mục tiêu").Filterable(false)
+                                            .Width(120).Align(Alignment.Right),
+                                    Html.X().Column().DataIndex("New").Text("Mục tiêu mới").Filterable(false)
+                                            .Width(120).Align(Alignment.Right),
+                                    Html.X().Column().DataIndex("Edit").Text("Sửa đổi").Filterable(false)
+                                                .Width(120).Align(Alignment.Right),
+                                    Html.X().Column().DataIndex("Wait").Text("Chờ duyệt").Filterable(false)
+                                            .Width(120).Align(Alignment.Right),
+                                    Html.X().Column().DataIndex("NotApproval").Text("Không duyệt").Filterable(false)
+                                            .Width(120).Align(Alignment.Right),
+                                    Html.X().Column().DataIndex("Performing").Text("Đang thực hiện").Filterable(false)
+                                            .Width(120).Align(Alignment.Right)
+                                )
+                        .Plugins(
+                                    Html.X().FilterHeader().Remote(true)
+                        )
+                        .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                                .Listeners(ls => ls.SelectionChange.Fn = "onSelectCateTarget"))
+,
+Html.X().Hidden().ID("hdfTargetDetailId"),
+Html.X().Hidden().ID("hdfTargetCateId"),
+Html.X().Panel().Layout(LayoutType.Fit)
+        .Region(Region.Center).AutoScroll(false)
+        .Header(false).Border(true)
+        .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                                Html.X().ComboBox().SelectedItems("0").ID("abc")
+                                            .Items(new ListItem() { Value = "0", Text = "Biểu đồ quạt", },
+                                                    new ListItem() { Value = "1", Text = "Biểu đồ cột" })
+                                    .Listeners(ls => ls.Select.Handler = "onComboboxSelect(this);")
+                                )
+               )
+        .Items(
+                Html.X().Panel().Layout(LayoutType.Fit).ID("char0").Title("<b>Biểu đồ quạt</b>").Header(false).Border(false)
+                .Items(
+                        Html.X().CustomCharPie().Field("Data1", new[] { "Name" })
+                                        .Url(Url.Action("GetDataPie"))
+                                        .StoreField("Name", "Data1")
+                                        .Parameters(
+                                                ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("id", "App.hdfTargetCateId.value", ParameterMode.Raw));
+                                                    ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                    ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                                }
+                                          )
+                                        .AutoLoad(false).StoreControlID("storeTagetID")
+                                        .ID("CharPieTarget")
+                    ),
+            Html.X().Panel().Layout(LayoutType.Fit).ID("char1").Title("<b>Biểu đồ cột</b>").Hidden(true).Border(false).Header(false)
+                .Items(
+                Html.X().CustomChar(isUseStore: false)
+                                .XAxis("Thống kê mục tiêu", "Name")
+                                .YAxis("(Đơn vị mục tiêu)", "Data1")
+                                .StoreID("storeTagetID")
+                                .Series(
+                                         Html.X().CustomColumnSeries("Name", new[] { "Data1" })
+                                                    .Titles(new[] { "Mục tiêu" })
+                                                    .Tips(Html.X().ChartTip()
+                                                                    .TrackMouse(true).Width(210).Height(28)
+                                                                    .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data1') + ' mục tiêu');")
+                                                    )
+                                     ).ID("CharColumnTarget").Height(350))
+                 )
+)
+)
+<script type="text/javascript">
+   
+    var onSelectCateTarget = function () {
+        var records = App.grStatisticalTarget.selModel.getSelection();
+        switch (records.length) {
+            case 1:
+                App.hdfTargetCateId.setValue(records[0].get("CategoryID"));
+                var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+                mask.show();
+                App.storeTagetID.addListener('load', function ()
+                {
+                    mask.hide();
+                });
+                App.storeTagetID.load();
+                break;
+            default:
+
+        }
+    };
+    var renderTotalTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadTotalTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderPauseTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadPauseTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderOverTimeTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadOverTimeTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderDoingTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadDoingTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderFinishTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadFinishTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderFinishOverTimeTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadFinishOverTimeTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderAuditNotTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadAuditNotTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderAuditGoodTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadAuditGoodTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var renderAuditFailTask = function (value) {
+        var urlStoreTask = '@(Url.Action("LoadAuditFailTasks", "CateStatisticalTask", new { Area = "Task" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showTaskStatiscal(\'" + urlStoreTask.toString() + "\')\">" + value + "</a>";
+    };
+    var tipRenderer = function (storeItem, item) {
+        this.setTitle(storeItem.get('Name'));
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+    var onComboboxSelect = function (obj) {
+        var records = obj.store.getAllRange();
+        for (var i = 0; i < records.length; i++) {
+            var charId = "char" + records[i].data.field1;
+            Ext.getCmp(charId).hide();
+        };
+        Ext.getCmp("char" + obj.value).show();
+    };
+    var onRowClick = function (o) {
+        App.hdfTargetDetailId.setValue(o.record.data.CategoryID);
+    };
+</script>
+<style>
+    .row-expand td {
+        padding-right: 10px;
+    }
+    .td-header {
+        color: #04468C;
+    }
+</style>

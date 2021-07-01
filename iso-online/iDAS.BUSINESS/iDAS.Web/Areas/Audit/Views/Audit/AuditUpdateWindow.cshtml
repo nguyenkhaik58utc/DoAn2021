@@ -1,0 +1,65 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    var nameButton = ViewData["NameButtonSave"];
+}
+@(Html.X().Window()
+    .ID("WindowAuditUpdate")
+    .Title("Đánh giá kết quả thực hiện công việc")
+    .Icon(Icon.Pencil)
+    .Height(1)
+    .Maximized(true)
+    .Constrain(true)
+    .Layout(LayoutType.Border)
+    .Modal(true)
+    .BodyPadding(0)
+    .Border(true)
+    .Resizable(false)
+    .Center()
+    .Items(
+            Html.X().Panel()
+                .Region(Region.West)
+                .Width(400)
+                .Title("KẾT QUẢ ĐÁNH GIÁ CHUNG")   
+                .Split(true)
+                .Border(true)
+                .Margin(1)
+                .TitleAlign(TitleAlign.Center)
+                .Layout(LayoutType.Fit)
+                .Collapsible(true)
+                .Header(false)
+                .ItemsFromAction("Edit", "Audit", new { area = "Audit" }),
+            Html.X().Panel()
+                .Header(false)
+                .ItemID("PanelResult")
+                .Region(Region.Center)
+                .Border(true)
+                .Margin(1)
+                .Split(true)
+                .Layout(LayoutType.Fit)
+                .ItemsFromAction("Result", "Audit", new { Area = "Audit" })
+    )
+           .Buttons(
+            Html.X().Button()
+                .ID("btnSaveAudit")
+                .TabIndex(8)
+                .Icon(Icon.Disk)
+                .Text(nameButton.ToString())
+                .DirectEvents(de =>
+                {
+                    de.Click.ExtraParams.Add(new { val = true });
+                    de.Click.ExtraParams.Add(new { QualityCriteriaCategoryID = new JRawValue("App.cbCriteriaCategoryID.getValue()") });
+                    de.Click.Before = @"if (!App.frAudit.getForm().isValid()) { return false; } else if(App.cbCriteriaCategoryID.getValue()==null){Ext.MessageBox.show({ title: 'Thông báo', msg: 'Bạn phải chọn nhóm tiêu chí đánh giá!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' }); return false;} ";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.Action = "UpdateAudit";
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                    de.Click.FormID = "frAudit";
+                    de.Click.Success = "if(result.result){this.up('window').close();}; App.btnSaveAudit.setText('Lưu lại');";
+
+                }),
+            Html.X().ButtonExit()
+                .ID("btnExitAudit")
+        )
+    
+)

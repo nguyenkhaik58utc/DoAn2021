@@ -1,0 +1,112 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.TaskItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+.Title("Danh sách các đánh giá công việc")
+.Icon(Icon.Comment)
+.Width(840)
+.Height(300)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Items(
+                    X.HiddenFor(m => m.ID).ID("TaskID"),
+                    X.GridPanel()
+                        .ID("grPlan")
+                        .Header(false)
+                        .ForceFit(true)
+                        .Border(false)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("Update('add');"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdate1").Handler("Update('edit');"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDelete1").Handler("onDelete(App.grPlan.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetail1").Handler("Update('view');"),
+                                    Html.X().ToolbarFill()
+                                )
+                        )
+                        .Store(
+                                Html.X().Store()
+                                    .ID("PlanInterviewStore")
+                                    .RemotePaging(true)
+                                    .PageSize(5)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadListComent")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                    .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("ID", "App.TaskID.getValue()", ParameterMode.Raw));
+                                                    })
+                                        .Model(
+                                            X.Model().Fields(
+                                                X.ModelField().Name("ID"),
+                                                    X.ModelField().Name("EmployeeName"),
+                                                    X.ModelField().Name("Comment"),
+                                                    X.ModelField().Name("IsEdit"),
+                                                    X.ModelField().Name("TaskID")
+                                        )
+                                    )
+                            )
+                            .ColumnModel(
+                                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                        X.Column().DataIndex("EmployeeName").Text("Tên").Width(200),
+                                        X.Column().DataIndex("Comment").Flex(1).Text("Nội dung")
+                                        )
+                            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusInterviewItem"))
+                            .BottomBar(Html.X().CustomPagingToolbar("5", "10", "20", "50", "100"))
+
+                )
+    .Buttons(Html.X().ButtonExit())
+)
+<script>
+    function CheckStatusInterviewItem() {
+        var records = App.grPlan.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetail1, App.btnDelete1, App.btnUpdate1);
+            if(records[0].get('IsEdit') == false)
+                SetDisabled(App.btnDelete1, App.btnUpdate1);
+        }
+        else {
+            SetDisabled(App.btnDetail1, App.btnDelete1, App.btnUpdate1);
+        };
+    };
+    var Update = function (e) {
+        if (e == 'add') {
+            var url = '@(Url.Action("UpdateCommentForm", "ProfileWorkTrial", new { Area = "Human" }, null))';
+            var params = {
+                ID: 0,
+                action: e,
+                TaskId: App.TaskID.value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            var records = App.grPlan.selModel.getSelection();
+            if (records.length == 1) {
+                if (e != 'add') {
+                    var url = '@(Url.Action("UpdateCommentForm", "ProfileWorkTrial", new { Area = "Human" }, null))';
+                    var params = {
+                        ID: records[0].get('ID'),
+                        action: e.toString(),
+                        TaskId: App.TaskID.value
+                    };
+                    onDirectMethod(url, params);
+                };
+            }
+            else {
+                MessageBox();
+            };
+        };
+    };
+    var deleteUrl = '@(Url.Action("DeleteComent"))';
+</script>

@@ -1,0 +1,59 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Human.Models.V3_Category.V3_CityResponse
+@(Html.X().Window()
+    .ID("CreateCategoryCityWindow")
+    .Title("Thêm mới thành phố")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreateCategoryCityForm")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .MarginSpec("0 10 10 10")
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 100)
+            .DefaultAnchor("100%")
+            .Items(
+                                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên Thành phố" + Html.Required())
+                                    .EmptyText("Nhập tên thành phố")
+                                    .BlankText("Bạn phải nhập tên thành phố!")
+                                    .AllowBlank(false).AllowOnlyWhitespace(false)
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createCategoryCitySubmit(false)"),
+        Html.X().ButtonSaveAndExit().Handler("createCategoryCitySubmit(true)"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var createCategoryCitySubmit = function (exit) {
+        App.CreateCategoryCityForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadCategoryCity();
+                    if (exit) {
+                        App.CreateCategoryCityWindow.close();
+                    }
+                    else {
+                        App.CreateCategoryCityForm.reset();
+                        App.TabMain.setActiveTab('tabCityCreate');
+                    }
+                }
+            }
+        });
+    };
+</script>

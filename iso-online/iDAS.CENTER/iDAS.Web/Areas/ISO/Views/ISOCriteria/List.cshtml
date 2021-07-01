@@ -1,0 +1,207 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@model iDAS.Items.ISOIndexCriteriaItem
+@(Html.X().Window()
+    .ID("winListISOIndexCriteria")
+    .Title("Thiết lập tiêu chí")
+    .Icon(Icon.TableAdd)
+    .Width(750)
+    .Maximized(true)
+    .Height(450)
+    .BodyPadding(0)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Resizable(false)
+    .Items(
+         Html.X().HiddenFor(m=>m.ISOIndexID).ID("hdfISOIndexId"),
+         Html.X().GridPanel()
+            .Header(false)
+            .ID("grIsoCriteria")
+            .ColumnLines(true)
+            .Border(false)
+            .ForceFit(true)
+            .TopBar(
+                Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                        Html.X().Button()
+                                .Text("Thêm mới")
+                                .Icon(Icon.Add)
+                                .ID("btnInsertCriteria")
+                                 .Handler("ShowFrmInsert();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .Text("Sửa")
+                                .Icon(Icon.Pencil)
+                                .ID("btnEditCriteria").Disabled(true)
+                                .Handler("showFrmEdit();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .Text("Xóa")
+                                .Icon(Icon.Delete).Disabled(true)
+                                .ID("btnDeleteCriteria")
+                                .Handler("deleteRecord();"),
+                        Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Text("Xem chi tiết")
+                                .Icon(Icon.Zoom).Disabled(true)
+                                .ID("btnDetailCriteria")
+                                .Handler("showFrmDetail();")
+                    )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                        .ID("ISOIndexCriteriaStore")
+                        .PageSize(10)
+                        .RemotePaging(true)
+                        .AutoLoad(true)
+                        .Proxy(
+                            Html.X().AjaxProxy().Url(Url.Action("LoadISOCriteria"))
+                                .Reader(Html.X().JsonReader().Root("data")).IDParam("ID")
+                            )
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("id", "App.hdfISOIndexId.value", ParameterMode.Raw));
+                            })    
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .Width(33)
+                        .Align(Alignment.Center)
+                        .StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column()
+                        .DataIndex(Model, m => m.ID)
+                        .Text("ID")
+                        .Hidden(true),
+                Html.X().Column()
+                        .DataIndex(Model, m => m.Name)
+                        .Text("Tiêu đề")
+                        .Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column()
+                        .DataIndex(Model, m => m.Content).Wrap(true)
+                        .Text("Ghi chú")
+                        .Flex(2)
+                        .StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().CheckColumn()
+                        .DataIndex(Model, m => m.IsUse)
+                        .Text("Sử dụng")
+                        .Width(100)
+                        .Align(Alignment.Center)
+                        .StyleSpec("font-weight: bold; text-align: center;")
+            ).Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+            .View(Html.X().GridView().TrackOver(false))
+            .BottomBar(
+                Html.X().PagingToolbar()
+                        .EmptyMsg("Hiện không có dữ liệu")
+                        .NextText("Trang kế tiếp")
+                        .PrevText("Trang trước")
+                        .LastText("Trang cuối cùng")
+                        .FirstText("Trang đầu tiên")
+                        .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                        .BeforePageText("Trang")
+                        .AfterPageText("của {0}")
+                        .RefreshText("Tải lại Dữ liệu")
+                        .Items(
+                                Html.X().Label("Số bản ghi trên 1 trang"),
+                                Html.X().ToolbarSpacer(10),
+                                Html.X().ComboBox()
+                                    .Width(50)
+                                    .Items("10", "20", "30", "50", "100")
+                                    .SelectedItems("10")
+                                   .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                            )
+                    .Plugins(Html.X().ProgressBarPager())
+                 )
+                 .SelectionModel(
+                        Html.X().CheckboxSelectionModel()
+                        .Mode(SelectionMode.Single)
+                            .Listeners(
+                            ls => ls.SelectionChange.Handler = "checkISOCriteriaStatus(); "
+                            )
+                )
+                
+    )
+      .Buttons(
+                Html.X().Button()
+                    .Icon(Icon.Cancel)
+                    .Text("Đóng")
+                    .Handler("App.winListISOIndexCriteria.close();")
+            )  
+)
+
+<script type="text/javascript">
+    var showFrmEdit = function () {
+        var records = App.grIsoCriteria.selModel.getSelection();
+        if (records.length <= 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn phải chọn Bản ghi!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation'
+            });
+        }
+        else {
+            var isoid = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "ISOCriteria", new { Area = "ISO" }, null))',
+                params: { id: isoid }
+            });
+        };
+    };
+    var showFrmDetail = function () {
+        var records = App.grIsoCriteria.selModel.getSelection();
+        if (records.length <= 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn phải chọn Bản ghi!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation'
+            });
+        }
+        else {
+            var isoid = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "ISOCriteria", new { Area = "ISO" }, null))',
+                params: { id: isoid }
+            });
+        };
+    };
+    var deleteRecord = function () {
+        var records = App.grIsoCriteria.selModel.getSelection();
+        if (records.length <= 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn phải chọn Bản ghi!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation'
+            });
+        }
+        else {
+            var isoid = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("Delete", "ISOCriteria", new { Area = "ISO" }, null))',
+                params: { id: isoid }
+            });
+        }
+    };
+    var ShowFrmInsert = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("InsertForm", "ISOCriteria", new { Area = "ISO" }, null))',
+            params: { ISOIndexId: App.hdfISOIndexId.value }
+        });
+
+    };
+    var checkISOCriteriaStatus = function () {
+        var records = App.grIsoCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDetailCriteria.setDisabled(false);
+            App.btnEditCriteria.setDisabled(false);
+            App.btnDeleteCriteria.setDisabled(false);
+
+        } else {
+            App.btnDetailCriteria.setDisabled(true);
+            App.btnEditCriteria.setDisabled(true);
+            App.btnDeleteCriteria.setDisabled(true);
+        };
+    };
+</script>
+

@@ -1,0 +1,250 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+@( Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().Panel().Region(Region.West).Layout(LayoutType.Fit).MarginSpec("1 1 1 1")
+        .TopBar(
+          Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                    Html.X().ComboBox()
+                                    .FieldLabel("Đợt đánh giá")
+                                    .EmptyText("Chọn đợt đánh giá nhân sự")
+                                    .LabelWidth(70)
+                                    .AllowBlank(false)
+                                    .ID("cbAuditPhase")
+                                    .Width(300)
+                                    .Editable(false)
+                                    .DisplayField("Name")
+                                    .Listeners(ls => ls.Change.Handler = "App.grMnEmployeeAudits.getStore().reload();")
+                                    .ValueField("ID")
+                                    .Store(
+                                            Html.X().Store()
+                                                .ID("StoreAuditPhase")
+                                                .AutoLoad(true)
+                                                .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("LoadAuditPhase", "AuditTickResult", new { area = "Human" }))
+                                                .Reader(Html.X().JsonReader().Root("data")
+                                                )
+                                                )
+                                                .Model(Html.X().Model()
+                                                    .Fields(
+                                                        new ModelField("Name"),
+                                                        new ModelField("ID")
+                                                    )
+                                                )
+                                        )
+                    )
+        
+        )
+                    .Width(330).Items(
+        Html.X().DepartmentPanel()
+            .Handler("selectDepartmentTickResult")
+            .MarginSpec("1 1 1 1")),
+        Html.X().GridPanel()
+                .Region(Region.Center)
+                .Margin(1)
+                .Title("DANH SÁCH NHÂN VIÊN BỊ ĐÁNH GIÁ")
+                .Header(true)
+                .Icon(Icon.ApplicationViewDetail)
+                .ID("grMnEmployeeAudits")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                    Html.X().Hidden()
+                        .ID("AuditDepartmentID")
+                        .Value(0),
+                            Html.X().Button().ID("btnResult").Disabled(true).Icon(Icon.StarBronze).Text("Nhập kết quả").Handler("updateResult();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnInsertToProfile").Handler("insertIntoProfile").Text("Đưa vào hồ sơ đánh giá").Icon(Icon.PageWord).Disabled(true),
+                            Html.X().ToolbarFill(),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                Html.X().Store()
+                    .ID("StoreEmployeeAudtitResults")
+                    .RemotePaging(true)
+                    .AutoLoad(false)
+                    .PageSize(20)
+                    .GroupField("RoleName")
+                    .Sorters(Html.X().DataSorter().Property("RoleName").Direction(Ext.Net.SortDirection.ASC))
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "AuditTickResult", new { Area = "Human" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("departmentId", "App.AuditDepartmentID.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("auditPhaseId", "App.cbAuditPhase.getValue()", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("EmployeeName"),
+                            Html.X().ModelField().Name("RoleName"),
+                            Html.X().ModelField().Name("TotalEmployeeAuditResult"),
+                            Html.X().ModelField().Name("TotalManagementAuditResult"),
+                            Html.X().ModelField().Name("FileName"),
+                            Html.X().ModelField().Name("TotalLeaderAuditResult"),
+                            Html.X().ModelField().Name("FileID"),
+                            Html.X().ModelField().Name("IsSave"),
+                            Html.X().ModelField().Name("LevelName")
+                        )
+                     )
+            )
+             .ColumnModel(
+                Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Center)
+                        .Width(33),
+                Html.X().Column()
+                        .Text("ID")
+                        .DataIndex("ID")
+                        .Hidden(true),                         
+                Html.X().TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+                              Html.X().XTemplate().Html(@<text>
+                            <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                 style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                        </text>)
+                        ),
+                Html.X().Column()
+                        .Text("Họ tên")
+                        .StyleSpec("font-weight: bold;text-align: center")
+                        .DataIndex("EmployeeName")
+                        .Flex(1)
+                        .Wrap(true),
+                    Html.X().ComponentColumn().Text("Tổng điểm đánh giá").Columns(
+                    Html.X().Column()
+                            .Text("Tự đánh giá")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("TotalEmployeeAuditResult")
+                            .Width(100)
+                            .Align(Alignment.Right)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Quản lý")
+                            .Align(Alignment.Right)
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("TotalManagementAuditResult")
+                            .Width(100)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Lãnh đạo")
+                            .Align(Alignment.Right)
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("TotalLeaderAuditResult")
+                            .Width(100)
+                            .Wrap(true)
+                            ),
+                    Html.X().Column()
+                            .Text("Xếp loại")
+                            .Align(Alignment.Left)
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("LevelName")
+                            .Width(100)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Lưu hồ sơ")
+                            .Align(Alignment.Center)
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("IsSave")
+                            .Renderer("if(value){return '<span style=\"color:blue;\">Đã lưu</span>'} else{return '<span style=\"color:red;\">Chưa lưu</span>'};")
+                            .Width(80)
+                            .Wrap(true)
+                            )
+                            .SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatus();"))
+                            .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                            .Features(
+                            Html.X().GroupingSummary()
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                        .ShowSummaryRow(false),
+                            Html.X().RowWrap()
+                            )
+                            .Plugins(Html.X().CellEditing())
+                            .BottomBar
+                            (
+                            Html.X().CustomPagingToolbar()
+                            )
+                    )
+            )
+<script type="text/javascript">
+    function CheckStatus() {
+        var records = App.grMnEmployeeAudits.selModel.getSelection();
+        if (records.length > 0) {
+            if (records[0].get('IsSave')) {
+                App.btnInsertToProfile.setDisabled(true);
+                App.btnResult.setDisabled(true);
+            }
+            else if (!records[0].get('IsSave') && records[0].get('LevelName') != '') {
+                App.btnResult.setDisabled(false);
+                App.btnInsertToProfile.setDisabled(false);
+            } else {
+                App.btnResult.setDisabled(false);
+            }
+        }
+        else {
+            App.btnResult.setDisabled(true);
+            App.btnInsertToProfile.setDisabled(true);
+        };
+    };
+    var updateResult = function () {
+        var records = App.grMnEmployeeAudits.selModel.getSelection();
+        var url = '@(Url.Action("UpdateForm", "AuditTickResult", new { Area = "Human" }, null))';
+        var params = { id: records[0].get('ID') };
+        onDirectMethod(url, params);
+    };
+    var insertIntoProfile = function () {
+        var records = App.grMnEmployeeAudits.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnResult.setDisabled(true);
+                        App.btnInsertToProfile.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn đưa kết quả đánh giá của nhân sự vào hồ sơ đánh giá không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("InsertToProfile", "AuditTickResult", new { Area = "Human" }, null))',
+                                params: { id: records[0].get('ID') }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var selectDepartmentTickResult = function (records) {
+        if (App.cbAuditPhase.getValue() != null) {
+            App.AuditDepartmentID.setValue(records[0].get('id'));
+            App.grMnEmployeeAudits.getStore().load();
+        }
+    };
+</script>

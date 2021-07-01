@@ -1,0 +1,113 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.TaskItem
+@{
+    var X = Html.X();
+}
+@( Html.X().Window()
+        .ID("winChoiceDepartment")
+        .Title("Chọn phòng ban")
+        .Icon(Icon.Zoom)
+         .Height(520)
+        .Width(470)
+        .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(false)
+        .Center()
+        .Items(
+                    Html.X().TreePanel()
+                        .ID("TreeGroups")
+                        .Title("SƠ ĐỒ TỔ CHỨC")
+                        .Header(true)
+                        .MarginSpec("1 0 1 1")
+                        .TitleAlign(TitleAlign.Left)
+                        .Icon(Icon.House)
+                        .Region(Region.West)
+                        .ForceFit(true)
+                        .Width(280)
+                        .RootVisible(false)
+                        .RowLines(true)
+                        .SingleExpand(false)
+                        .Split(true)
+                        .SelectionModel(
+                                        Html.X().CheckboxSelectionModel()
+                                        .ShowHeaderCheckbox(false)
+                                        .Mode(SelectionMode.Single)
+                                        .Listeners(
+                                        ls =>
+                                        {
+                                            ls.SelectionChange.Handler = "";
+                                        })
+                            )
+                         .BottomBar(
+                                Html.X().Toolbar()
+                                        .Items(
+                                        Html.X().Checkbox()
+                                        .BoxLabel("Hoạt động")
+                                        .MarginSpec("0 5 0 10")
+                                        .Checked(true)
+                                        .ReadOnly(true),
+                                        Html.X().ToolbarSeparator()
+                                        .MarginSpec("0 5 0 0"),
+                                        Html.X().Checkbox()
+                                        .BoxLabel("Giải thể")
+                                            .ReadOnly(true)
+                                        .BoxLabelStyle("color:#b200ff")
+                                        .ID("chkIsCancela")
+                                        .MarginSpec("0 5 0 0")
+                                        .Listeners(ls => ls.Change.Handler = "refresh(this.up('treepanel'));"),
+                                        Html.X().ToolbarSeparator()
+                                        .MarginSpec("0 5 0 0"),
+                                        Html.X().Checkbox()
+                                        .ID("chkIsDeleteda")
+                                            .ReadOnly(true)
+                                        .BoxLabel("Đã xóa")
+                                        .BoxLabelStyle("color:#a9a5a5")
+                                            .Listeners(ls => ls.Change.Handler = "refresh(this.up('treepanel'));")
+                                        )
+                                     )
+                        .Store(Html.X().TreeStore()
+                                .ID("StoreGroups")
+                                .AutoLoad(false)
+                                .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("LoadData", "Department", new { area = "Department" }))
+                                    .Reader(Html.X().JsonReader()
+                                    .Root("data"))
+                                )
+                                    .Model(
+                                        Html.X().Model().Fields(
+                                            Html.X().ModelField().Name("id"),
+                                            Html.X().ModelField().Name("text"),
+                                            Html.X().ModelField().Name("ParentID"),
+                                            Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                                            Html.X().ModelField().Name("IsDeleted").Type(ModelFieldType.Boolean),
+                                            Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                                        )
+                                        )
+                                                .Parameters(ps =>
+                                                    {
+                                                    }
+                                            )
+                    )
+                        .ColumnModel(
+                            Html.X().TreeColumn()
+                                    .Text("Sơ đồ tổ chức")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Left)
+                                    .DataIndex("text")
+                                    .Flex(1)
+                             )
+                             .HideHeaders(true)
+
+             )
+        .Buttons(
+            Html.X().ButtonChoice()
+                                .Handler("fillDepartent(App.TreeGroups.selModel.getSelection().length>0?App.TreeGroups.selModel.getSelection()[0].get('id'):0);"),
+            Html.X().ButtonExit()
+        )
+)

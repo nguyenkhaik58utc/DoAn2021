@@ -1,0 +1,544 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using System.Web.Mvc;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@section headtag
+{
+
+
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css' rel='stylesheet' />
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css" type="text/css">
+    <!-- Promise polyfill script required to use Mapbox GL Geocoder in IE 11 -->
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.min.js"></script>
+
+
+    <style>
+        .red-row-class {
+            background-color: #fc6060 !important;
+        }
+
+        .orange-row-class {
+            background-color: #ffd800 !important;
+        }
+
+        .green-row-class {
+            background-color: #b6ff00 !important;
+        }
+    </style>
+
+    <script>
+        var getRowClass = function (record) {
+            if (record.data.StatusID == 1) {
+                if (record.data.MinuteCheck < 16)
+                    return "green-row-class";
+                else if (record.data.MinuteCheck > 60)
+                    return "red-row-class";
+                else
+                    return "orange-row-class";
+            }
+        };
+    </script>
+}
+<div id='map' style='width: 100%; height: 100%;' hidden></div>
+@(Html.X().Hidden()
+    .ID("hdfrdChoice")
+    .Value("App.Time")
+    .Listeners(ls => ls.Change.Handler = "App.stProblem.load();")
+)
+@(Html.X().DateField()
+    .ID("hdfdfFromDate")
+    .Hidden(true)
+)
+@(Html.X().DateField()
+    .ID("hdfdfToDate")
+    .Hidden(true)
+)
+@(Html.X().Hidden()
+    .ID("hdfType")
+    .Value(0)
+    .Hidden(true)
+)
+@(Html.X().Hidden()
+    .ID("hdfGroup")
+    .Value(0)
+    .Hidden(true)
+)
+@(Html.X().Hidden()
+    .ID("hdfDepartmentID")
+    .Value(0)
+    .Hidden(true)
+)
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(1)
+    .Items(
+         Html.X().GridPanel()
+            .ID("grdProblem")
+            .Border(true)
+            .Header(false)
+            .MarginSpec("0 1 0 0")
+            .TitleAlign(TitleAlign.Center)
+            .Region(Region.Center)
+            .TopBarItem(
+              Html.X().Container().Flex(1)
+                            .Items(
+                Html.X().Toolbar()
+                    .MarginSpec("0 0 1 0")
+                    .ID("tbaSearchProblem")
+                    .Items(
+                        Html.X().RadioGroup().ID("rdChoice").Width(150).Items(
+                            Html.X().Radio().BoxLabel("Tất cả").ID("All"),
+                            Html.X().Radio().BoxLabel("Thời gian").Checked(true).ID("Time")
+                            )
+                            .Listeners(ls => ls.Change.Handler = "var idradio = Ext.getCmp('rdChoice').items.get(0).getGroupValue();if(idradio=='App.All'){App.Year.setReadOnly(true); App.dfFromDate.setReadOnly(true); App.dfToDate.setReadOnly(true);}else{App.Year.setReadOnly(false); App.dfFromDate.setReadOnly(false); App.dfToDate.setReadOnly(false);}; App.hdfrdChoice.setValue(idradio);"),
+                        Html.X().ComboBox()
+                            .ID("Year")
+                            .MarginSpec("0 5 0 5")
+                            .LabelWidth(30)
+                            .DisplayField("Name")
+                            .Editable(false)
+                            .SelectedItems(new ListItem("Tháng này", 1))
+                            .FieldLabel("Năm")
+                            .HideLabel(true)
+                            .ValueField("ID")
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "optionTime();";
+                            })
+                            .Store(
+                                Html.X().Store()
+                                    .AutoLoad(true)
+                                    .Model(
+                                        Html.X().Model()
+                                            .IDProperty("ID")
+                                                    .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                            )
+                                          )
+                                    .Proxy(
+                                        Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetYear", "Target", new { Area = "Quality"}))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                          )
+                                    .Listeners(ls => ls.Load.Handler = "var date = new Date(); App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));App.hdfdfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1)); App.hdfdfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));")
+                                  ),
+                        Html.X().DateField()
+                            .FieldLabel("Từ")
+                            .ID("dfFromDate")
+                            .Editable(false)
+                            .MarginSpec("0 5 0 5")
+                            .Width(120)
+                            .MaxDate(DateTime.Now)
+                            .LabelWidth(30)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "App.hdfdfFromDate.setValue(this.value); App.stProblem.load();";
+                                l.SpecialKey.Fn = "onSpecialKey";
+                            })
+                            .Format("dd/MM/yyyy"),
+                        Html.X().DateField()
+                            .FieldLabel("Đến")
+                            .LabelWidth(30)
+                            .Editable(false)
+                            .Width(120)
+                            .ID("dfToDate")
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "App.hdfdfToDate.setValue(this.value);App.stProblem.load();";
+                                l.SpecialKey.Fn = "onSpecialKey";
+                            })
+                            .Format("dd/MM/yyyy"),
+                        Html.X().ComboBox()
+                            .MarginSpec("0 0 0 5")
+                            .FieldLabel("Loại")
+                            .EmptyText("Chọn phân loại sự cố")
+                            .AllowBlank(true)
+                            .ID("cboTypeSearch")
+                            .Listeners(ls => ls.Select.Handler = "App.hdfType.setValue(this.value); App.stProblem.load();")
+                            .Editable(false)
+                            .LabelWidth(30)
+                            .Width(200)
+                            .Items(new ListItem("Tất cả", 0))
+                            .Text("Tất cả")
+                            .DisplayField("ProblemTypeName")
+                            .ValueField("ID")
+                            .Store(
+                                Html.X().Store()
+                                    .AutoLoad(true)
+                                    .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetTypeCbo"))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    .Model(Html.X().Model()
+                                        .Fields(
+                                            new ModelField("ID"),
+                                            new ModelField("ProblemTypeName")
+                                        )
+                                    )
+                            ),
+                        Html.X().ComboBox()
+                            .MarginSpec("0 0 0 5")
+                            .FieldLabel("Nhóm")
+                            .EmptyText("Chọn nhóm sự cố")
+                            .AllowBlank(true)
+                            .ID("cboGroupSearch")
+                            .Listeners(ls => ls.Select.Handler = "App.hdfGroup.setValue(this.value); App.stProblem.load();")
+                            .Editable(false)
+                            .LabelWidth(30)
+                            .Width(200)
+                            .Items(new ListItem("Tất cả", 0))
+                            .Text("Tất cả")
+                            .DisplayField("ProblemGroupName")
+                            .ValueField("ID")
+                            .Store(
+                                Html.X().Store()
+                                    .AutoLoad(true)
+                                    .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetGroupCbo"))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    .Model(Html.X().Model()
+                                        .Fields(
+                                            new ModelField("ID"),
+                                            new ModelField("ProblemGroupName")
+                                        )
+                                    )
+                            ),
+                        Html.X().TextField().ID("txtDepartment").FieldLabel("Phòng ban xử lý").MarginSpec("0 0 0 5").LabelWidth(90).Width(250),
+                        Html.X().ButtonChoice().ID("btnChoseDept12").Handler("showDepartment"),
+                        Html.X().ButtonDestroy().ID("btnCancelDept").Handler("deleteDepartment").Text("Bỏ chọn"),
+                        Html.X().ToolbarFill()
+                ),
+                Html.X().Toolbar()
+                    .Items(
+                        Html.X().ButtonCreate()
+                            .ID("btnAddDetail")
+                            .Handler("showFormAdd();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate()
+                                .ID("btnUpdateDetail")
+                                .Disabled(true)
+                                .Handler("showFormEdit();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView()
+                                .ID("btnViewDetail")
+                                .Disabled(true)
+                                .Icon(Icon.Zoom)
+                                .Handler("showDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete()
+                                .ID("btnDeleteDetail")
+                                .Disabled(true)
+                                .Handler("deleteRecord();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .ID("btnCreateTemp")
+                                .Icon(Icon.WrenchOrange)
+                                .Text("Tạo mẫu sự cố")
+                                .Disabled(true)
+                                .Handler("showFormCreateTemp();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                        )
+                    )
+            )
+                    .Store(Html.X().Store()
+                            .ID("stProblem")
+                            .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetData"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Parameters(a =>
+                            {
+                                a.Add(new StoreParameter("fromDate", "App.hdfdfFromDate.getValue()", ParameterMode.Raw));
+                                a.Add(new StoreParameter("toDate", "App.hdfdfToDate.getValue()", ParameterMode.Raw));
+                                a.Add(new StoreParameter("choise", "App.hdfrdChoice.getValue()", ParameterMode.Raw));
+                                a.Add(new StoreParameter("type", "App.hdfType.getValue()", ParameterMode.Raw));
+                                a.Add(new StoreParameter("group", "App.hdfGroup.getValue()", ParameterMode.Raw));
+                                a.Add(new StoreParameter("departmentID", "App.hdfDepartmentID.getValue()", ParameterMode.Raw));
+                            })
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("OccuredDate").Type(ModelFieldType.Date),
+                                        Html.X().ModelField().Name("ResolvedDate").Type(ModelFieldType.Date),
+                                        Html.X().ModelField().Name("ReceiverName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("StatusID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("ProblemStatusName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("ProblemGroupName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("ProblemTypeName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("RelateDep").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("MinuteCheck").Type(ModelFieldType.Float)
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Center).Width(33),
+                            Html.X().Column().Text("ID").DataIndex("ID").Hidden(true),
+                            Html.X().Column().Text("MinuteCheck").DataIndex("MinuteCheck").Hidden(true),
+                            Html.X().Column().Text("Mã sự cố").StyleSpec("font-weight: bold;text-align: center").DataIndex("Code").Width(80).Wrap(true),
+                            Html.X().Column().Text("Tên sự cố").Flex(1).StyleSpec("font-weight: bold;text-align: center").DataIndex("Name").Wrap(true),
+                            Html.X().Column().Text("Người tiếp nhận").DataIndex("ReceiverName").Width(130).Wrap(true),
+                            Html.X().DateColumn().Text("Ngày tiếp nhận").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Left).Wrap(true).DataIndex("OccuredDate").Format("dd/MM/yyyy HH:mm A ").Width(140),
+                            Html.X().Column().Text("Trạng thái").DataIndex("ProblemStatusName").Width(100).Align(Alignment.Center).Wrap(true),
+                            Html.X().Column().Text("Phòng ban xử lý").DataIndex("RelateDep").Width(140).Wrap(true),
+                            Html.X().DateColumn().Text("Ngày xử lý xong").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Left).Wrap(true).DataIndex("ResolvedDate").Format("dd/MM/yyyy HH:mm A ").Width(140),
+                            Html.X().Column().Text("Nhóm").DataIndex("ProblemGroupName").Width(150).Wrap(true),
+                            Html.X().Column().Text("Loại").DataIndex("ProblemTypeName").Width(150).Wrap(true),
+                            Html.X().Column().Text("StatusID").DataIndex("StatusID").Hidden(true)
+                            )
+                        .SelectionModel(
+                            Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                .Listeners(l =>
+                                {
+                                    l.Select.Handler = "checkStatus();";
+                                })
+                            )
+                        //.View(
+                        //    Html.X().GridView().MarkDirty(false)
+                        //    )
+                        .View(Html.X().GridView()
+                            .StripeRows(true)
+                            .GetRowClass(grc => grc.Fn = "getRowClass")
+                            )
+                        //.Plugins(Html.X().CellEditing())
+                        .Plugins(Html.X().RowExpander().ID("RowExpander1")
+                            .Loader(Html.X().ComponentLoader()
+                                .Url(Url.Action("GetGrid"))
+                                .Mode(LoadMode.Component)
+                                .LoadMask(mask => mask.ShowMask = true)
+                                .Params(new { id = JRawValue.From("this.record.getId()") })
+                                )
+                            //.Listeners(l =>
+                            //{
+                            //    l.Expand.Handler = "refreshGridpanelData();";
+                            //})
+
+                            )
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar()
+                            )
+     )
+)
+<script type="text/javascript">
+    var checkStatus = function () {
+        var records = App.grdProblem.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                App.btnCreateTemp.setDisabled(true);
+                break;
+            case 1:
+                App.btnUpdateDetail.setDisabled(false);
+                App.btnDeleteDetail.setDisabled(false);
+                App.btnViewDetail.setDisabled(false);
+                App.btnCreateTemp.setDisabled(false);
+                break;
+            default:
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                App.btnCreateTemp.setDisabled(true);
+        }
+    };
+
+    var optionTime = function () {
+        var date = new Date();
+        var option = App.Year.getValue();
+        if (option == 0) {
+            var startDay = 1;
+            var d = date.getDay();
+            var weekStart = new Date(date.valueOf() - (d <= 0 ? 7 - startDay : d - startDay) * 86400000);
+            var weekEnd = new Date(weekStart.valueOf() + 6 * 86400000);
+            App.dfFromDate.setValue(weekStart);
+            App.dfToDate.setValue(weekEnd);
+            App.hdfdfFromDate.setValue(weekStart);
+            App.hdfdfToDate.setValue(weekEnd);
+        }
+        else if (option == 1) {
+            App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+            App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+            App.hdfdfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+            App.hdfdfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+        } else {
+            App.dfFromDate.setValue(new Date(App.Year.getValue(), 0, 1));
+            App.dfToDate.setValue(new Date(App.Year.getValue(), 11, 31));
+            App.hdfdfFromDate.setValue(new Date(App.Year.getValue(), 0, 1));
+            App.hdfdfToDate.setValue(new Date(App.Year.getValue(), 11, 31));
+        }
+        App.stProblem.load();
+    };
+    var onSpecialKey = function (field, e) {
+        if (e.getKey() === e.ENTER) {
+            App.stProblem.reload();
+            e.stopEvent();
+        }
+    };
+
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+
+    var deleteRecord = function () {
+        var record = App.grdProblem.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa dữ liệu đã chọn?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "ProblemEvent", new { Area = "Problem" }, null))',
+                            params: { id: id },
+                            success: function () {
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    };
+
+    var showFormAdd = function () {
+        //var records = App.grdProblem.selModel.getSelection();
+        //var parentId = 0;
+        //if (records.length > 0) {
+        //    parentId = records[0].get('id');
+        //}
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("InsertWindow", "ProblemEvent", new { Area = "Problem" }))'//,
+            //params: { id: parentId, }
+        });
+    };
+
+    var showFormEdit = function () {
+        var records = App.grdProblem.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateWindow", "ProblemEvent", new { Area = "Problem" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+    var showDetail = function () {
+        var records = App.grdProblem.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailWindow", "ProblemEvent", new { Area = "Problem" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+    var showFormCreateTemp = function () {
+        var records = App.grdProblem.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("InsertWindowFromProblemEvent", "ProblemEventTemp", new { Area = "Problem" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+    var deleteDepartment = function () {
+        App.hdfDepartmentID.setValue(0);
+        App.txtDepartment.setValue("");
+        App.stProblem.load();
+    };
+
+    var showDepartment = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Department", "DispatchGoEmployee", new { Area = "Dispatch" }))',
+        });
+    };
+
+    var fillDepartent = function (id, name) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            var idD = parseInt(id);
+            App.hdfDepartmentID.setValue(idD);
+            App.txtDepartment.setValue(name);
+            App.winChoiceDepartment.close();
+            App.stProblem.load();
+        }
+    };
+
+    var refreshGridpanelData = function (VisitID) {
+
+        var expander = App.RowExpander1,
+            rec = expander.getExpanded()[0],
+            innerGrid = expander.getComponent(rec).items.items[0];
+        console.log(expander.getComponent(rec).items.items[0]);
+        if (innerGrid !== undefined) {
+            console.log(innerGrid.getStore());
+            innerGrid.getStore().reload();
+        }
+
+    }
+
+</script>

@@ -1,0 +1,207 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Web.Areas.Department.Models.TitleDTO
+@(Html.X().Window()
+          .ID("winEditTitle")
+          .Title("Sửa thông tin chức danh")
+          .Icon(Icon.Pencil)
+          .Height(240)
+          .Width(500)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+            Html.X().FormPanel()
+                .ID("frmTitle")
+                .Layout(LayoutType.Fit)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                    Html.X().TabPanel().ActiveTabIndex(0).Border(true)
+                        .Items(
+                            Html.X().FormPanel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin chức danh")
+                            .BodyPadding(5)
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().HiddenFor(m=>m.ID),
+                                Html.X().TextFieldFor(m => m.Code)
+                                    .FieldLabel("Mã chức danh" + Html.Required())
+                                    .ID("txtCode")
+                                    .AllowBlank(false)
+                                    .LabelWidth(120)
+                                    .BlankText("Mã chức danh không được để rỗng")
+                                    .AllowOnlyWhitespace(false),
+                                Html.X().TextFieldFor(m => m.Name)
+                                    .FieldLabel("Tên chức danh" + Html.Required())
+                                    .ID("txtName")
+                                    .AllowBlank(false)
+                                    .LabelWidth(120)
+                                    .BlankText("Tên chức danh không được trống")
+                                    .AllowOnlyWhitespace(false),
+                                Html.X().ComboBoxFor(m => m.IsActive)
+                                    .TabIndex(4)
+                                    .LabelWidth(120)
+                                    .Editable(false)
+                                    .FieldLabel("Tình trạng" + Html.Required())
+                                    .ID("cbIsUse")
+                                    .Items(
+                                        new ListItem("Sử dụng", true),
+                                        new ListItem("Không sử dụng", false)
+                                     ),
+                                 Html.X().ComboBoxFor(m => m.PositionId)
+                                    .LabelWidth(120)
+                                    .FieldLabel("Chức vụ" + Html.Required())
+                                    .QueryMode(DataLoadMode.Local).Editable(false)
+                                    .EmptyText("Chức vụ ....")
+                                    .ForceSelection(true)
+                                    .DisplayField("PositionName")
+                                    .ValueField("ID")
+                                    .Store(Html.X().Store()
+                                                .AutoLoad(true)
+                                                .Model(Html.X().Model()
+                                                        .IDProperty("ID")
+                                                        .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                new ModelField("PositionName", ModelFieldType.String)))
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetPosition"))
+                                                                .Reader(Html.X().JsonReader().Root("data")))
+                                                                )
+                               ),
+                            Html.X().Panel()
+                                .Layout(LayoutType.Fit)
+                                .Title("Đơn vị sử dụng")
+                                .Frame(true)
+                                .StyleSpec("border: none;")
+                                .Items(
+                                    Html.X().Hidden().ID("ViewDeleteRole").Value(false),
+                                    Html.X().Hidden().ID("SortRole").Value(true),
+                                    Html.X().GridPanel()
+                                        .ID("DepartTitlePanel")
+                                        .Header(false)
+                                        .ColumnLines(true)
+                                        .Border(false)
+                                        .ForceFit(true)
+                                        .Collapsible(true)
+                                        .Split(true)
+                                        .Icon(Icon.TextListBullets)
+                                        .TopBarItem(
+                                            Html.X().ButtonCreate().Handler("showCreateDepartment").ID("btnCreateDepartment"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonDelete().Handler("showDeleteDepartment").ID("btnDeleteDepartment").Disabled(true),
+                                            Html.X().ToolbarFill()
+                                        )
+                                        .Store(Html.X().Store()
+                                            .ID("stDepartmentTitle")
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData1", "DepartmentTitle")).Reader(Html.X().JsonReader().Root("data")))
+                                            .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("titleID", Model.ID.ToString(), ParameterMode.Value));
+                                                ps.Add(new StoreParameter("viewDelete", "App.ViewDeleteRole.value", ParameterMode.Raw));
+                                            })
+                                            .Model(
+                                                Html.X().Model()
+                                                    .Fields(
+                                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                        Html.X().ModelField().Name("DepartmentName").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("ReportToName").Type(ModelFieldType.String)
+                                                    )
+                                            )
+                                        //.Listeners(ls => ls.Load.Handler = "setTitleSelection()")
+                                        )
+                                        .SortableColumns(false)
+                                        .ColumnModel(
+                                            Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                                            Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                                            Html.X().Column().DataIndex("DepartmentName").Text("Tên đơn vị").Flex(1).MenuDisabled(true),
+                                            Html.X().Column().DataIndex("ReportToName").Text("Báo cáo tới").Flex(1).MenuDisabled(true)
+                                        )
+                                        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeTitle();")
+                                )
+                         )
+                    )
+            )
+            .Buttons(
+            Html.X().ButtonSave()
+            .ID("btnSave")
+            .DirectEvents(de =>
+            {
+                de.Click.Before = @"if (!App.frmTitle.getForm().isValid()) { return false; } ";
+                de.Click.Action = "Update";
+                de.Click.FormID = "frmTitle";
+                de.Click.Success = "this.up('window').close();";
+            }),
+            Html.X().ButtonExit()
+            )
+)
+<script>
+    var urlCreateDepartment = '@(Url.Action("Create1", "DepartmentTitle", new { area = "Department" }))';
+    var urlDeleteDepartment = '@(Url.Action("Delete", "DepartmentTitle", new { Area = "Department" }))';
+
+    var sortTitleIndex = null;
+    var getTitleSelection = function () {
+        var records = App.DepartTitlePanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+
+    var setTitleSelection = function () {
+        if (sortTitleIndex != null) {
+            App.DepartTitlePanel.selModel.select(sortTitleIndex);
+        }
+    };
+    var reloadRole = function () {
+        App.DepartTitlePanel.store.reload();
+    };
+
+    var showCreateDepartment = function () {
+        var titleID = '@Model.ID';
+        var url = urlCreateDepartment;
+        var params = { titleID: titleID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showDeleteDepartment = function () {
+        var record = getTitleSelection();
+        var titleID = record == null ? 0 : record.data.ID;
+        var url = urlDeleteDepartment;
+        var deleteSuccess = function () {
+            {
+                console.log('test111');
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ chức danh này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getTitleSelection();
+                            var titleID = record == null ? 0 : record.data.id;
+                            var params = { id: titleID };
+                            onDirectMethod(url, params, 'post', reloadDepartment);
+                        }
+                    }
+                });
+            }
+        };
+        var params = { id: titleID };
+        onDirectMethod(url, params, 'post', App.DepartTitlePanel.store.reload());
+    };
+
+    var selectionChangeTitle = function () {
+        var record = getTitleSelection();
+        var isDisabled = record == null;
+        App.btnDeleteDepartment.setDisabled(isDisabled);
+        if (record != null) {
+            App.btnDeleteDepartment.setDisabled(record.data.IsDelete);
+        }
+    };
+</script>

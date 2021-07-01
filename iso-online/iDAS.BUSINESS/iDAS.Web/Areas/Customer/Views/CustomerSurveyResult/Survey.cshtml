@@ -1,0 +1,99 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerSurveyQuestionItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+.Title("Cập nhật kết quả khảo sát")
+.Icon(Icon.ApplicationSideList)
+.Width(800).Height(500)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+X.HiddenFor(m=>m.CustomerID).ID("hdfCustomerID"),
+        X.HiddenFor(m => m.GroupID).ID("hdfGroupID"),
+            Html.X().TreePanel()
+                .ID("TreeCustomerSurveyResult")
+                .Title("Kết quả khảo sát")
+                .Header(false)
+                .Border(false)
+                .Region(Region.Center)
+                .Icon(Icon.TextListBullets)
+                .ForceFit(true)
+                .RootVisible(false)
+                .ColumnLines(true)
+                .RowLines(true)
+                .SingleExpand(false)
+                .Store(Html.X().TreeStore().ID("StoreTreeSurveyResult")
+                        .AutoLoad(false)
+                        .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("LoadSurveyResult"))
+                            .Reader(Html.X().JsonReader()
+                            .Root("data"))
+                        )
+                        .Parameters(ps =>{
+                                            ps.Add(new StoreParameter("customerID", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                            ps.Add(new StoreParameter("groupID", "App.hdfGroupID.getValue()", ParameterMode.Raw));
+                                        })
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("IsSelect").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsRoot").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsCategory").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("Point"),
+                                Html.X().ModelField().Name("ResultID")
+                            )
+                    )
+            )
+            .ColumnModel(
+                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().TreeColumn()
+                        .Text("Câu hỏi khảo sát")
+                        .Align(Alignment.Left)
+                        .DataIndex("Name")
+                        .Flex(1),
+                Html.X().CheckColumn()
+                        .Text("Lựa chọn")
+                        .DataIndex("IsSelect")
+                        .Width(100)
+                        .Align(Alignment.Center)
+                        .Editable(true)
+                 )
+        .Plugins(
+            Html.X().CellEditing().ClicksToEdit(1)
+                    .Listeners(ls =>
+                    {
+                        ls.Edit.Fn = "EditResult";
+                    })
+        )
+    )
+.Buttons(Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var EditResult = function (editor, e) {
+        if (e.record.data.parentId == "root" || e.record.data.IsCategory == true) {
+            e.record.data.IsSelect = false;
+            App.StoreTreeSurveyResult.getNodeById(e.record.data.ID).reload();
+            return false;
+        };
+        if (!(e.value === e.originalValue) && e.record.data.IsCategory == false) {
+            var url= '@(Url.Action("UpdateSurveyResult"))';
+            var params= {
+                data: e.record.data,
+                CustomerID: App.hdfCustomerID.getValue()
+            };
+            onDirectMethod(url,params);
+        };
+    };
+</script>

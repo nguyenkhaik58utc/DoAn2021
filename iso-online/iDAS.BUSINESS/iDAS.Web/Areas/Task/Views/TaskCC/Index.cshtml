@@ -1,0 +1,483 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitTask = Url.Action("Insert", "Task");
+    var StoreParam = ViewData["StoreParam"] as StoreParameter;
+    var urlSubmitAudit = Url.Action("Insert", "TaskAudit", new { area = "Task" });
+    var urlStoreAudit = Url.Action("LoadAudits", "TaskAudit", new { Area = "Task" });
+    var paramStoreAudit = Html.X().StoreParameter().Name("taskId").Value("getTaskIdPerson()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Menu()
+    .ID("cmMenuPerson")
+    .Items(
+        new MenuItem { Text = "Xem chi tiết", ID = "cmView", Icon = Icon.Zoom, Handler = "showTaskDetail();" },
+        Html.X().MenuSeparator(),
+        new MenuItem { Text = "Thực hiện", ID = "cmPerforms", Disabled = true, Icon = Icon.Report, Handler = "showTaskPerform();" },
+        Html.X().MenuSeparator(),
+        new MenuItem { Text = "Kiểm tra", ID = "cmCheck", Disabled = true, Icon = Icon.FlagChecked, Handler = "showTaskCheck();" },
+        Html.X().MenuSeparator(),
+        new MenuItem { Text = "Điều chỉnh", ID = "cmChange", Disabled = true, Icon = Icon.ArrowRefresh, Handler = "showTaskChange();" },
+        Html.X().MenuSeparator(),
+        new MenuItem { Text = "Đánh giá", ID = "cmTaskAudit", Disabled = true, Icon = Icon.AwardStarGold1, Handler = "showTaskAudit();" }
+    )
+)
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .ID("vpGridTaskView")
+    .Items(
+        Html.X().Hidden()
+            .Value(ViewBag.FocusId)
+            .ID("hdfFocusID"),
+        Html.X().TreePanel()
+                .Split(true)
+                .AutoScroll(true)
+                .RootVisible(false)
+                .UseArrows(true)
+                .MultiSelect(true)
+                .SingleExpand(true)
+                .FolderSort(true)
+                .RowLines(true)
+                .SyncFx()
+                .ColumnLines(true)
+                .ID("GridTaskView")
+                .Border(false)
+                .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenuPerson")
+                .Listeners(ls => ls.SelectionChange.Handler = "checkConMenuPerson(this);")
+                .TopBarItem(
+                Html.X().Container().Flex(1)
+                        .Items(
+                Html.X().Toolbar()
+                        .MarginSpec("0 0 1 0")
+                        .ID("bbGridTaskView")
+                        .Items(
+                             Html.X().RadioGroup()
+                                     .ID("rdChoice")
+                                     .Width(150)
+                                     .Items(
+                             Html.X().Radio()
+                                     .BoxLabel("Tất cả")
+                                     .ID("All"),
+                             Html.X().Radio()
+                                     .BoxLabel("Thời gian")
+                                     .Checked(true)
+                                     .ID("Time")
+                                     )
+                                    .Listeners(ls => ls.Change.Handler = "var idradio = Ext.getCmp('rdChoice').items.get(0).getGroupValue();if(idradio=='App.All'){App.Year.setReadOnly(true); App.dfFromDate.setReadOnly(true); App.dfToDate.setReadOnly(true);}else{App.Year.setReadOnly(false); App.dfFromDate.setReadOnly(false); App.dfToDate.setReadOnly(false);};App.stTask.reload();"),
+                                Html.X().ComboBox()
+                                        .ID("Year")
+                                        .MarginSpec("0 5 0 5")
+                                        .LabelWidth(30)
+                                        .DisplayField("Name")
+                                        .Editable(false)
+                                        .SelectedItems(new ListItem("Tháng này", 1))
+                                        .FieldLabel("Năm")
+                                        .HideLabel(true)
+                                        .ValueField("ID")
+                                        .Listeners(l =>
+                                            {
+                                                l.Select.Handler = "optionTimeTaskPerson();";
+                                            })
+                                        .Store(
+                                Html.X().Store()
+                                        .AutoLoad(true)
+                                        .Model(
+                                        Html.X().Model()
+                                                .IDProperty("ID")
+                                                        .Fields(
+                                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                )
+                                                                )
+                                                        .Proxy(
+                                                            Html.X().AjaxProxy()
+                                                                .Url(Url.Action("GetYear"))
+                                                        .Reader(Html.X().JsonReader().Root("data"))
+                                                        )
+                                                        .Listeners(ls => ls.Load.Handler = "var date = new Date(); App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));")),
+                                               Html.X().DateField()
+                                                       .FieldLabel("Từ")
+                                                       .ID("dfFromDate")
+                                                       .Editable(false)
+                                                       .MarginSpec("0 5 0 5")
+                                                       .Width(120)
+                                                       .MaxDate(DateTime.Now)
+                                                       .LabelWidth(30)
+                                                       .Listeners(l =>
+                                                       {
+                                                           l.Select.Handler = "App.stTask.reload();";
+                                                           l.SpecialKey.Fn = "onSpecialKey";
+                                                       })
+                                                       .Format("dd/MM/yyyy"),
+                                               Html.X().DateField()
+                                                       .FieldLabel("Đến")
+                                                       .LabelWidth(30)
+                                                       .Editable(false)
+                                                       .Width(120)
+                                                       .ID("dfToDate")
+                                                       .Listeners(l =>
+                                                           {
+                                                               l.Select.Handler = "App.stTask.reload();";
+                                                               l.SpecialKey.Fn = "onSpecialKey";
+                                                           })
+                                                       .Format("dd/MM/yyyy"),
+                Html.X().ComboBox()
+                        .MarginSpec("0 0 0 5")
+                        .FieldLabel("Nhóm công việc")
+                        .EmptyText("Chọn nhóm công việc")
+                        .AllowBlank(false)
+                        .ID("cbCateTask")
+                        .Listeners(ls => ls.Select.Handler = "App.GridTaskView.getStore().load();")
+                        .Editable(false)
+                        .LabelWidth(80)
+                        .Width(300)
+                        .Items(new ListItem("Tất cả", 0))
+                        .SelectedItems(new ListItem("Tất cả", 0))
+                        .BlankText("Nhóm công việc không được bỏ trống!")
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Store(
+                            Html.X().Store()
+                                .AutoLoad(true)
+                                .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataIsUse", "TaskCategory", new { area = "Task" }))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Model(Html.X().Model()
+                                    .Fields(
+                                        new ModelField("ID"),
+                                        new ModelField("Name")
+                                    )
+                                )
+                        ),
+                  Html.X().ToolbarFill()
+                ),
+                Html.X().Toolbar()
+                .ID("tbGridTaskView")
+                .Items(
+                Html.X().ButtonView().ID("btnTaskView").Disabled(true).Handler("showTaskDetail();"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().ID("btnTaskPerforms").Text("Thực hiện").Icon(Icon.Report).Disabled(true).Handler("showTaskPerform();"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().ID("btnTaskChecks").Text("Kiểm tra").Icon(Icon.FlagChecked).Disabled(true).Handler("showTaskCheck();"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().ID("btnChangeTask").Text("Điều chỉnh").Icon(Icon.ArrowRefresh).Disabled(true).Handler("showTaskChange();"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Text("Đánh giá").Icon(Icon.AwardStarGold1).ID("btnTaskAudit").Disabled(true).Handler("showTaskAudit();"),
+                Html.X().ToolbarFill()
+            )
+            ))
+            .Store(
+                Html.X().TreeStore()
+                .ID("stTask")
+                .AutoSync(false)
+                .AutoDataBind(false)
+                .AutoLoad(false)
+                .Proxy(Html.X().AjaxProxy()
+                .Url(Url.Action("LoadTreeTaskCC", "TaskCC"))
+                .Reader(
+                    Html.X().JsonReader().Root("data"))
+                        .IDParam("id"))
+                        .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("cateId", "App.cbCateTask.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("choise", "App.rdChoice.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("fromdate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("todate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                        })
+                    .Model(Html.X().Model()
+                    .Fields(
+                        new ModelField("id"),
+                        new ModelField("text", ModelFieldType.String),
+                        new ModelField("IsRequireCheck", ModelFieldType.Boolean),
+                        new ModelField("LevelName", ModelFieldType.String),
+                        new ModelField("CategoryName", ModelFieldType.String),
+                        new ModelField("LevelColor", ModelFieldType.String),
+                        new ModelField("StartTime", ModelFieldType.String),
+                        new ModelField("EndTime", ModelFieldType.String),
+                        new ModelField("IsNew", ModelFieldType.Boolean),
+                        new ModelField("IsEdit", ModelFieldType.Boolean),
+                        new ModelField("IsAccept", ModelFieldType.Boolean),
+                        new ModelField("IsComplete", ModelFieldType.Boolean),
+                        new ModelField("IsPass", ModelFieldType.Boolean),
+                        new ModelField("IsPause", ModelFieldType.Boolean),
+                        new ModelField("IsOverTime", ModelFieldType.Boolean),
+                        new ModelField("PerformBy", ModelFieldType.Int),
+                        new ModelField("Status", ModelFieldType.String),
+                        new ModelField("Rate", ModelFieldType.Float),
+                        new ModelField("IsNew", ModelFieldType.Boolean),
+                        new ModelField("IsCreate", ModelFieldType.Boolean),
+                        new ModelField("IsPerform", ModelFieldType.Boolean),
+                        new ModelField("TaskID", ModelFieldType.Int)
+                    )
+                )
+            )
+            .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                .Text("STT.")
+                                .Width(33)
+                                .Align(Alignment.Center),
+                            Html.X().TreeColumn()
+                                .Text("Tên công việc")
+                                .DataIndex("text")
+                                .Width(300)
+                                .Wrap(true)
+                                .Renderer("rendererNew")
+                                .HeaderItems(
+                                    Html.X().TriggerField()
+                                            .EnableKeyEvents(true)
+                                            .Triggers(Html.X().FieldTrigger().Icon(TriggerIcon.Clear))
+                                            .Listeners(l =>
+                                            {
+                                                l.KeyUp.Fn = "filterTree";
+                                                l.KeyUp.Buffer = 350;
+                                                l.TriggerClick.Fn = "clearFilter";
+                                            })
+                                            ),
+                            Html.X().Column()
+                                .Text("Thời gian thực hiện")
+                                .Columns(
+                                    Html.X().Column()
+                                        .Width(120)
+                                        .Text("Bắt đầu")
+                                        .Align(Alignment.Center)
+                                        .DataIndex("StartTime"),
+                                    Html.X().Column()
+                                        .Width(120)
+                                        .Text("Kết thúc")
+                                        .Align(Alignment.Center)
+                                        .DataIndex("EndTime")
+                                ),
+                            Html.X().ComponentColumn()
+                                    .Text("Tiến độ")
+                                    .Component(Html.X().ProgressBar().Text("%"))
+                                    .Listeners(ls => ls.Bind.Handler = "cmp.updateProgress(record.get('Rate')/100, record.get('Rate') + '%'); "),
+                            Html.X().Column()
+                                    .Width(100)
+                                    .Text("Trạng thái")
+                                    .Align(Alignment.Center)
+                                    .DataIndex("Status"),
+                            Html.X().Column()
+                                    .Width(100)
+                                    .Text("Mức độ")
+                                    .DataIndex("LevelName")
+                                    .Align(Alignment.Center)
+                                    .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('LevelColor') + ';'; return value; }" }),
+                            Html.X().Column()
+                                    .Text("Trách nhiệm")
+                                    .Columns(
+                                        Html.X().CheckColumn()
+                                            .Text("Tạo mới")
+                                            .DataIndex("IsCreate")
+                                            .Width(70),
+                                        Html.X().CheckColumn()
+                                            .Text("Thực hiện")
+                                            .DataIndex("IsPerform")
+                                            .Width(70)
+                                            ),
+                            Html.X().Column()
+                                    .Text("Danh mục")
+                                    .DataIndex("CategoryName")
+                                    .Align(Alignment.Left)
+                                    .Width(200)
+                     )
+            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single))
+    )
+)
+<style type="text/css">
+    .newRequireCheck .x-grid-cell {
+        background-color: yellow !important;
+        opacity: 0.8;
+    }
+
+    .idas-focus {
+        background-color: darkkhaki !important;
+        opacity: 0.8;
+    }
+</style>
+<script type="text/javascript">
+    var optionTimeTaskPerson = function () {
+        var date = new Date();
+        var option = App.Year.getValue();
+        if (option == 0) {
+            var startDay = 1;
+            var d = date.getDay();
+            var weekStart = new Date(date.valueOf() - (d <= 0 ? 7 - startDay : d - startDay) * 86400000);
+            var weekEnd = new Date(weekStart.valueOf() + 6 * 86400000);
+            App.dfFromDate.setValue(weekStart);
+            App.dfToDate.setValue(weekEnd);
+        }
+        else if (option == 1) {
+            App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+            App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+        } else {
+            App.dfFromDate.setValue(new Date(App.Year.getValue(), 0, 1));
+            App.dfToDate.setValue(new Date(App.Year.getValue(), 11, 31));
+        }
+        App.stTask.reload();
+    };
+    var onSpecialKey = function (field, e) {
+        if (e.getKey() === e.ENTER) {
+            App.stTask.reload();
+            e.stopEvent();
+        }
+    };
+    var showTaskDetail = function () {
+        var taskId = getTaskIdPerson();
+        if (taskId != 0) {
+            var url = '@(Url.Action("DetailWindow", "Task", new { Area = "Task" }))';
+            var params = { taskId: taskId };
+            onDirectMethod(url, params);
+        }
+    };
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        if (record != null) {
+            var color = record.get('Color');
+            obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+        } else {
+            return false;
+        }
+    };
+    var rendererNew = function (value, metadata, record) {
+        if (record.data.IsNew) {
+            value = "<span style='margin-left: 0px;padding-left: 35px; background: url(/Content/images/new_red.gif) no-repeat scroll 0px 0px transparent'>&nbsp;</span>" + value;
+        }
+        return value;
+    };
+    var checkConMenuPerson = function (grid) {
+        TaskGridPanel = grid;
+        var records = TaskGridPanel.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnTaskView.setDisabled(true);
+                App.cmView.setDisabled(true);
+                App.cmChange.setDisabled(true);
+                App.btnTaskPerforms.setDisabled(true);
+                App.cmPerforms.setDisabled(true);
+                App.btnTaskChecks.setDisabled(true);
+                App.cmCheck.setDisabled(true);
+                App.btnChangeTask.setDisabled(true);
+                App.btnTaskAudit.setDisabled(true);
+                App.cmTaskAudit.setDisabled(true);
+                break;
+            case 1:
+                App.cmPerforms.setDisabled(false);
+                App.cmCheck.setDisabled(false);
+                App.cmChange.setDisabled(false);
+                App.btnTaskView.setDisabled(false);
+                App.cmView.setDisabled(false);
+                App.btnTaskPerforms.setDisabled(false);
+                App.btnTaskChecks.setDisabled(false);
+                App.btnChangeTask.setDisabled(false);
+                break;
+            default:
+                App.btnTaskView.setDisabled(true);
+                App.cmView.setDisabled(true);
+                App.cmChange.setDisabled(true);
+                App.btnTaskPerforms.setDisabled(true);
+                App.cmPerforms.setDisabled(true);
+                App.btnTaskChecks.setDisabled(true);
+                App.cmCheck.setDisabled(true);
+                App.btnChangeTask.setDisabled(true);
+                App.btnTaskAudit.setDisabled(true);
+                break;
+        }
+    };
+    var itemcontextmenuPerson = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenuPerson.showAt(e.getXY());
+    };
+    var showTaskPerform = function () {
+        var taskId = getTaskIdPerson();
+        if (taskId != 0) {
+            var url = '@(Url.Action("ViewPerforms", "Perform", new { Area = "Task" }))';
+            var params = { taskId: taskId };
+            onDirectMethod(url, params);
+        }
+    };
+    var showTaskCheck = function () {
+        var taskId = getTaskIdPerson();
+        if (taskId != 0) {
+            var url = '@(Url.Action("ViewChecks", "Check", new { Area = "Task" }))';
+            var params = { taskId: taskId };
+            onDirectMethod(url, params);
+        }
+    };
+    var showTaskAudit = function () {
+        var taskId = getTaskIdPerson();
+        var records = TaskGridPanel.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AuditUpdateWindow", "Audit", new { Area = "Audit" }))',
+                params: { taskId: taskId },
+                success: function (result) {
+                    mask.hide();
+                },
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải lựa chọn công việc cần đánh giá!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+    };
+    var showTaskChange = function () {
+        var taskId = getTaskIdPerson();
+        if (taskId != 0) {
+            var url = '@(Url.Action("ChangeVoteList", "Change", new { Area = "Task" }))';
+            var params = { taskId: taskId };
+            onDirectMethod(url, params);
+        }
+    };
+    var getTaskIdPerson = function () {
+        var taskId = 0;
+        var records = TaskGridPanel.selModel.getSelection();
+        if (records.length > 0) {
+            taskId = records[0].get('TaskID');
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có Công việc nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+        return taskId;
+    };
+    var filterTree = function (tf, e) {
+        var tree = this.up("treepanel"),
+            text = tf.getRawValue();
+        tree.clearFilter();
+        if (Ext.isEmpty(text, false)) {
+            return;
+        }
+        if (e.getKey() === Ext.EventObject.ESC) {
+            clearFilter();
+        } else {
+            var re = new RegExp(".*" + text + ".*", "i");
+            tree.filterBy(function (node) {
+                return re.test(node.data.text);
+            });
+        }
+    };
+    var clearFilter = function () {
+        var field = this,
+            tree = this.up("treepanel");
+        field.setValue("");
+        tree.clearFilter(true);
+        tree.getView().focus();
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("id") == App.hdfFocusID.value) {
+           return 'idas-focus';
+        };
+        return record.get('IsRequireCheck') == true ? 'newRequireCheck' : '';
+    };
+</script>

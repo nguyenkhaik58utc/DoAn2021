@@ -1,0 +1,116 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+    @{
+    var X = Html.X();
+    }
+    @(
+ X.Window().ID("windowProblemSelect")
+.Title("Danh sách vấn đề")
+.Icon(Icon.ApplicationSideList)
+.Border(false)
+.Height(450)
+.Width(800)
+.Layout(LayoutType.Border)
+.Items(
+            X.GridPanel()
+            .ID("grListIso")
+            .Title("Danh sách tiêu chuẩn Iso").TitleAlign(TitleAlign.Center)
+            .Split(true).Collapsible(true)
+            .Region(Region.West)
+            .Width(280)
+            .Layout(LayoutType.Fit)
+            .Split(true)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Store(
+                Html.X().Store()
+                .AutoLoad(true)
+                .RemotePaging(true)
+                .PageSize(20)
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadIso", "MeetingProblem", new { Area = "Quality" }, null))
+                .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                .Model(
+                    X.Model().Fields(
+                        X.ModelField().Name("ID"),
+                            X.ModelField().Name("Code"),
+                            X.ModelField().Name("Name")
+                    )
+                )
+            )
+            .ColumnModel(
+                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                X.Column().DataIndex("Code").Width(100).Text("Mã ISO"),
+                X.Column().DataIndex("Name").Flex(1).Text("Tên ISO")
+            )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                .Listeners(ls => ls.SelectionChange.Handler = "onSelectIsoItem()"))
+        ,
+        X.GridPanel()
+        .ID("GrProblemByISO")
+        .Layout(LayoutType.Fit)
+        .Header(false)
+        .Split(true)
+        .Region(Region.Center)
+        .ColumnLines(true)
+        .ForceFit(true)
+        .Store(
+            Html.X().Store()
+            .AutoLoad(true)
+            .RemotePaging(true)
+            .PageSize(20)
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadIsoProblem", "MeetingProblem", new { Area = "Quality" }, null))
+            .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+            .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("isoID", "App.hdfIsoSeledID.getValue()", ParameterMode.Raw));
+                        })
+            .Model(
+                X.Model().Fields(
+                    X.ModelField().Name("ID"),
+                    X.ModelField().Name("Name"),
+                        X.ModelField().Name("Note")
+                )
+            )
+        )
+        .ColumnModel(
+            X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+            X.Column().DataIndex("Name").Width(100).Text("Vấn đề"),
+            X.Column().DataIndex("Note").Flex(1).Text("Ghi chú")
+        )
+        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(true).Mode(SelectionMode.Multi))
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+.Buttons(
+        X.Button().Icon(Icon.Accept).Listeners(ls => ls.Click.Handler = "onSelectedProblemPartialView();").ToolTip("Chọn vấn đề").Text("Chọn").OnClientClick("this.up('window').close();"),
+        X.Button().Icon(Icon.Cancel).OnClientClick("this.up('window').close();").Text("Đóng")
+    )
+    )
+    @(X.Hidden().ID("hdfIsoSeledID"))
+
+    <script>
+        function onSelectIsoItem() {
+            var records = App.grListIso.selModel.getSelection();
+            if (records.length > 0) {
+                App.hdfIsoSeledID.setValue(records[0].get('ID'));
+                Ext.getCmp("GrProblemByISO").getStore().reload();
+            };
+        };
+        function onSelectedProblemPartialView() {
+            var records = App.GrProblemByISO.selModel.getSelection();
+            if (records.length >= 1) {
+
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                onSelectedProblem(strId);
+            }
+            else {
+                Ext.Msg.alert("", "Bạn chưa lựa chọn bản ghi nào!");
+            };
+        };
+    </script>

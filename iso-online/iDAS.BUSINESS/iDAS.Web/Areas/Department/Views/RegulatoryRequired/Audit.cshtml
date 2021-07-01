@@ -1,0 +1,63 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.DepartmentRegulatoryAuditResultItem
+@{
+    var X = Html.X();
+    string title = "";
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        title = "Thêm mới kết quả đánh giá";
+    }
+    else
+    {
+        title = "Cập nhật kết quả đánh giá đánh giá";
+    }
+}
+@(Html.X().CustomWindow()
+    .ID("winAudit")
+        .Title(title)
+        .Icon(Icon.StarGold)
+        .Border(false)
+        .Items(
+                    X.FormPanel().ID("frmUpdate")
+                            .Layout(LayoutType.Fit)
+                            .StyleSpec("border: none;")
+                            .Border(false).BodyPadding(0)
+                            .Items(
+                                    X.TabPanel()
+                                        .Items(
+                                           X.CustomFormPanel().Title("Thông tin chính sách")
+                                            .FieldDefaults(df=>df.LabelWidth =110)
+                                            .Items(
+                                                        X.HiddenFor(m => m.ID),
+                                                        X.HiddenFor(m => m.HumanDepartmentID), X.HiddenFor(m => m.DepartmentRegulatoryID),
+                                                        X.EmployeeFieldFor(m => m.HumanEmployee).AllowBlank(false).Title("Người đánh giá"+Html.Required()),
+                                                        X.DateTimeFieldFor(m => m.AuditAt).AllowBlank(false)
+                                                                .FieldLabel("Thời gian đánh giá" + Html.Required()).Height(24),
+                                                        X.CheckboxFor(m => m.IsPass).FieldLabel("Kết quả").BoxLabel("Đạt"),
+                                                        X.TextAreaFor(m => m.AuditNote).FieldLabel("Ghi chú")
+                                                                    .EmptyText("Nhập ghi chú...").MinHeight(100).Flex(1)
+                                                 ),
+                                            X.Panel().Title("Bằng chứng").Layout(LayoutType.Fit).BodyPadding(2)
+                                              .Items(
+                                                  X.TextAreaFor(m => m.Evidence).HideLabel(true)
+                                                                .EmptyText("Nhập bằng chứng...").MinHeight(300)
+                                              )
+                                        )
+                                )
+                )
+.Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.Url = Url.Action("Audit");
+                                    de.Click.FormID = "frmUpdate";
+                                }), 
+            Html.X().ButtonExit()
+      )
+)

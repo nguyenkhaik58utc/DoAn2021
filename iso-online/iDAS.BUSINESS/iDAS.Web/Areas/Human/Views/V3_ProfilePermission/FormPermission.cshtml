@@ -1,0 +1,91 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Web.Areas.Human.Model.V3_ProfilePermissionRequest
+@{
+    var formId = Html.X().GetComponentID();
+    string DepartmentTitleFromID = (String)ViewData["DepartmentTitleFromID"];
+}
+@(Html.X().Window()
+    .ID("ModuleFunctionWindow")
+    .Title("Danh sách phân quyền")
+    .Icon(Icon.TableGear)
+    .Width(600)
+    //.Height(666)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Maximizable(true)
+    .Hidden(false)
+    .Items(
+           Html.X().GridPanel()
+           .ID("grdTitle")
+           .ColumnLines(true)
+           .MarginSpec("5 5 5 5")
+           .Flex(1)
+           .AutoScroll(true)
+           .Layout(LayoutType.Fit)
+           .Height(700)
+           //.Title("Danh sách phân quyền").hi
+           .Store(
+                    Html.X().Store()
+                    .AutoLoad(true)
+                    .ID("stTitle")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetAllPermission", "V3_ProfilePermission"))
+                    .Reader(Html.X().JsonReader().Root("data")))
+                    //.GroupField("DepartmentName")
+                    .GroupField("StringPosition")
+                    .Parameters(pr =>
+                    {
+                        pr.Add(new StoreParameter("DepartmentTitleFromID", DepartmentTitleFromID, ParameterMode.Raw));
+                    })
+                    .Model(Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("DepartmentID").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("DepartmentName").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("TitleName").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("DepartmentTitleID").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("Position").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("StringPosition").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("DepartmentTitleFromID").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("DepartmentTitleToID").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("IsView").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsUpdate").Type(ModelFieldType.Boolean)
+                            )
+                        )
+                )
+            .ColumnModel(
+                //Html.X().RowNumbererColumnFormat(),
+                Html.X().Column().DataIndex("TitleName").Text("Chức danh").Flex(1),
+                //Html.X().Column().DataIndex("StringPosition").Text("StringPosition"),
+                Html.X().CheckColumn().DataIndex("IsView").Text("Xem").Width(80).Editable(true),
+                Html.X().CheckColumn().DataIndex("IsUpdate").Text("Sửa").Width(80).Editable(true)
+                //Html.X().Column().DataIndex("DepartmentName")
+            )
+            //.Features(Html.X().Grouping().GroupHeaderTplString("{name}").HideGroupedHeader(false))
+            .Features(Html.X().Grouping().GroupHeaderTplString("{[values.rows[0].data.DepartmentName]}").HideGroupedHeader(false))
+            //.Features(Html.X().Grouping().GroupHeaderTplString("{name} ({rows.length} Item{[values.rows[0].data ='' ? 's' : 'ac']})").HideGroupedHeader(false)
+            .Plugins(Html.X().CellEditing())
+            .SelectionModel(
+                    Html.X().RowSelectionModel()
+                    .Mode(SelectionMode.Multi)
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().FormID(formId)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = formId;
+            de.Click.ExtraParams.Add(new Parameter("DepartmentTitleFromId", DepartmentTitleFromID, ParameterMode.Value));
+            de.Click.ExtraParams.Add(new Parameter("dataProfileHumanPermission", "App.grdTitle.getStore().getChangedData()", ParameterMode.Raw));
+            de.Click.Url = Url.Action("SaveProfilePermission");
+            de.Click.Success = "this.up('window').down('#loadMask').hide();";
+        }),
+        Html.X().Button().Text("Thoát").Icon(Icon.Cancel).OnClientClick("this.up('window').close();")
+    )
+)
+)

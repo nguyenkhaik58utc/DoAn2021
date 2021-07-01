@@ -1,0 +1,162 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.TaskCheckItem
+@{
+    int taskId = (int)ViewData["TaskID"];
+}
+@(
+ Html.X().Window()
+        .ID("winAddTaskCheck")
+        .Title("Thêm mới phiếu kiểm tra công việc thực hiện")
+        .Icon(Icon.Tick)
+        .Height(1)
+        .Maximized(true)
+        .BodyPadding(1)
+        .Constrain(true)
+        .Modal(true)
+        .Resizable(false)
+        .Layout(LayoutType.Border)
+        .Center()
+        .Items(
+        Html.X().Panel()
+                .ID("frmTaskPerformDetail")
+                .Frame(true)
+                .AutoScroll(true)
+                .Border(true)
+                .Title("BÁO CÁO CÔNG VIỆC")
+                .Header(true)
+                .Split(true)
+                .Collapsible(false)
+                .MarginSpec("0 0 0 0")
+                .Width(600)
+                .Region(Region.West)
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Items(
+                             Html.X().TextAreaFor(m => m.ContentTask)
+                                            .ID("txtContentTask")
+                                            .FieldLabel("Nội dung công việc")
+                                            .FieldCls("x-form-text-change")
+                                            .ReadOnly(true)
+                                            .LabelAlign(LabelAlign.Top)
+                                            .TabIndex(3)
+                                            .Height(110),
+                                Html.X().FileUploadFieldFor(m => m.AttachmentFiles).ReadOnly(true),
+                                Html.X().HtmlEditorFor(m => m.ContentPerform)
+                                    .ID("txtPerformContent")
+                                    .FieldLabel("Nội dung báo cáo công việc")
+                                    .Flex(1)
+                                    .LabelAlign(LabelAlign.Top)
+                                    .TabIndex(3)
+                                    .ReadOnly(true)
+                                    .Height(110),
+                                Html.X().Container()
+                                        .Layout(LayoutType.HBox)
+                                        .MarginSpec("0 0 0 0")
+                                        .Items(
+                                    Html.X().NumberFieldFor(m => m.RatePerform)
+                                        .ReadOnly(true)
+                                        .MarginSpec("0 10 0 0")
+                                        .Width(150)
+                                        .TabIndex(4)
+                                            .FieldLabel("% Hoàn thành").LabelAlign(LabelAlign.Top)
+                                        .MinValue(0)
+                                        .MaxValue(100)
+                                        .AllowBlank(false)
+                                        .BlankText("% Hoàn thành Công việc không được bỏ trống!")
+                                )
+                    ),
+        Html.X().FormPanel()
+            .ID("frmTaskCheck")
+            .Frame(true)
+                  .AutoScroll(true)
+                   .Border(true)
+                    .Title("NỘI DUNG KIỂM TRA")
+                    .Header(true)
+                  .Region(Region.Center)
+                 .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .Items(
+                Html.X().HiddenFor(m => m.TaskID)
+                    .ID("txtTaskID"),
+                      Html.X().DateTimeFieldFor(m => m.Time)
+                        .AllowBlank(false)
+                        .FieldLabel("Thời gian kiểm tra" + Html.Required()).LabelWidth(123)
+                         .MarginSpec("3 0 3 0"),
+                    Html.X().TextAreaFor(m => m.Content)
+                    .ID("txtCheckContent")
+                    .AllowOnlyWhitespace(false)
+                    .FieldLabel("Nội dung" + Html.Required())
+                    .Flex(1)
+                    .AllowBlank(false)
+                          .LabelAlign(LabelAlign.Top)
+                    .TabIndex(2)
+                    .BlankText("Nội dung kiểm tra công việc không được để trống!")
+                    .EmptyText("Nhập nội dung kiểm tra công việc...")
+                    .Height(110),
+                Html.X().TextAreaFor(m => m.Feedback)
+                            .ID("txtCheckFeedback")
+                            .FieldLabel("Phản hồi")
+                            .TabIndex(3)
+                            .LabelAlign(LabelAlign.Top)
+                            .EmptyText("Nhập nội dung đề xuất, phản hồi...")
+                            .Height(100),
+                Html.X().Container()
+                    .Layout(LayoutType.Column)
+                    .MarginSpec("5 0 5 0")
+                    .Items(
+                    Html.X().NumberFieldFor(m => m.Rate)
+                            .ID("txtPercentComplete")
+                            .MarginSpec("0 5 0 0")
+                            .LabelWidth(123)
+                            .FieldLabel("% Hoàn thành" + Html.Required())
+                            .MinValue(0)
+                            .ColumnWidth(0.6)
+                            .MaxValue(100)
+                            .TabIndex(3)
+                            .Listeners(ls =>
+                            {
+                                ls.Change.Handler = "if(App.txtPercentComplete.getValue()!=100){App.dfCompleate.setDisabled(true);App.chbFinish.setValue(false);}";
+                                ls.Change.Buffer = 250;
+                            }
+                            )
+                            .AllowBlank(false)
+                            .BlankText("% Hoàn thành công việc không được bỏ trống!"),
+                         Html.X().CheckboxFor(m => m.IsComplete)
+                                    .ID("chbFinish")
+                                    .TabIndex(4)
+                                    .ColumnWidth(0.4)
+                                    .LabelAlign(LabelAlign.Right)
+                                    .Listeners(ls => ls.Change.Handler = "if(App.chbFinish.getValue()==true){App.txtPercentComplete.setValue(100);App.dfCompleate.setDisabled(false);}else{App.txtPercentComplete.setValue(" + Model.Rate + "); App.dfCompleate.setDisabled(true);}")
+                                    .HideLabel(true)
+                                    .BoxLabel("(Hoàn thành công việc)")
+
+                     ),
+                     Html.X().DateTimeFieldFor(m => m.CompleteTime).LabelWidth(123)
+                            .AllowBlank(false)
+                            .FieldLabel("Thời gian hoàn thành" + Html.Required())
+                            .MarginSpec("0 0 0 0")
+                            .ColumnWidth(0.7)
+                            .ID("dfCompleate")
+                            .Disabled(true)
+                )
+            )
+            .Buttons(
+                Html.X().ButtonReset()
+                    .ID("btnReset")
+                    .MarginSpec("0 10 0 0")
+                    .Handler("App.frmTaskCheck.reset();"),
+                Html.X().ButtonSave()
+                    .ID("btnCheckSave")
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frmTaskCheck";
+                        de.Click.Before = @"if (!#{frmTaskCheck}.getForm().isValid()) { return false; }";
+                        de.Click.Url = Url.Action("Insert");
+                        de.Click.Success = "this.up('window').close();";
+                    }),
+                Html.X().ButtonExit()
+            )
+)

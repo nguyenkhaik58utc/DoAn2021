@@ -1,0 +1,118 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.NewsCategoryItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("NewsCategoryPanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateNewsCategory").Icon(Icon.Add).Handler("showCreateNewsCategory();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateNewsCategory").Icon(Icon.Pencil).Handler("showUpdateNewsCategory();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteNewsCategory").Icon(Icon.Delete).Handler("showDeleteNewsCategory();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailNewsCategory").Icon(Icon.Zoom).Handler("showDetailNewsCategory();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectNewsCategory()")
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeNewsCategory();")
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex("ID").Hidden(true),
+            Html.X().Column().Text("Tên danh mục").DataIndex("Name").StyleSpec("font-weight: bold;text-align: center").Width(250),
+            Html.X().Column().Text("Mô tả").DataIndex("Description").StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex("IsActive").StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex("CreateAt").Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex("UpdateAt").Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script type="text/javascript">
+    var urlCreateNewsCategory = '@Url.Action("Create", "NewsCategory", new { area = "Web" })';
+    var urlUpdateNewsCategory = '@Url.Action("Update", "NewsCategory", new { area = "Web" })';
+    var urlDeleteNewsCategory = '@Url.Action("Delete", "NewsCategory", new { area = "Web" })';
+    var urlDetailNewsCategory = '@Url.Action("Detail", "NewsCategory", new { area = "Web" })';
+
+    var getNewsCategorySelection = function () {
+        return App.NewsCategoryPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadNewsCategory = function () {
+        App.NewsCategoryPanel.getStore().reload();
+        deSelectNewsCategory();
+    }
+    var deSelectNewsCategory = function () {
+        App.NewsCategoryPanel.selModel.lastSelected = null;
+        selectionChangeNewsCategory();
+    }
+    var showCreateNewsCategory = function () {
+        var url = urlCreateNewsCategory;
+        onDirectMethod(url, null, 'get');
+    };
+    var showUpdateNewsCategory = function () {
+        var url = urlUpdateNewsCategory;
+        var record = getNewsCategorySelection();
+        var newsCategoryId = record == null ? 0 : record.data.ID;
+        var params = { newsCategoryId: newsCategoryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteNewsCategory = function () {
+        var url = urlDeleteNewsCategory;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getNewsCategorySelection();
+                            var newsCategoryId = record == null ? 0 : record.data.ID;
+                            var params = { newsCategoryId: newsCategoryId };
+                            onDirectMethod(url, params, 'post', reloadNewsCategory);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailNewsCategory = function () {
+        var url = urlDetailNewsCategory;
+        var record = getNewsCategorySelection();
+        var newsCategoryId = record == null ? 0 : record.data.ID;
+        var params = { newsCategoryId: newsCategoryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeNewsCategory = function () {
+        var record = getNewsCategorySelection();
+        App.btnUpdateNewsCategory.setDisabled(record == null);
+        App.btnDeleteNewsCategory.setDisabled(record == null);
+        App.btnDetailNewsCategory.setDisabled(record == null);
+    };
+</script>

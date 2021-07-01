@@ -1,0 +1,115 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.Problem.ProblemGroupItem
+@(Html.X().Window()
+    .ID("DetailProblemGroupWindow")
+    .Title("thông tin nhóm sự cố")
+    .Icon(Icon.Pencil)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("DetailProblemGroup")
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Items(
+                Html.X().TabPanel().ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin chi tiết")
+                            .BodyPadding(5)
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().TextAreaFor(m => m.ID).Hidden(true).ID("ProblemGroupID"),
+                                Html.X().TextFieldFor(m => m.ProblemGroupName).FieldLabel("Tên nhóm sự cố"),
+                                Html.X().TextFieldFor(m => m.Code).FieldLabel("Mã nhóm sự cố"),
+                                Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả"),
+                                Html.X().ComboBoxFor(m => m.ParentID)
+                                    .ID("cboProblemGroup")
+                                .MarginSpec("0 0 5 0")
+                                .FieldLabel("Nhóm cha")
+                                .EmptyText("Chọn nhóm cha")
+                                .DisplayField("ProblemGroupName")
+                                .ValueField("ID")
+                                .Editable(false)
+                                .ColumnWidth(0.5)
+                                .SelectedItems(new ListItem("Không", "0"))
+                                .Items(
+                                        new ListItem("Không", "0")
+                                    )
+                                .Store(
+                                    Html.X().Store()
+                                        .ID("stProblemGroupCbb")
+                                        .AutoLoad(true)
+                                        .Model(
+                                        Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                new ModelField("ID"),
+                                                new ModelField("ProblemGroupName")
+                                            )
+                                    )
+                                    .Proxy(Html.X().AjaxProxy()
+                                             .Url(Url.Action("LoadDataNotId", "ProblemGroup", new { area = "Problem" }))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    ).Parameters(a =>
+                                    {
+                                        a.Add(new StoreParameter("ID", "App.ProblemGroupID.getValue()", ParameterMode.Raw));
+                                    })
+                                    ),
+                        Html.X().GridPanel()
+                                .Region(Region.Center)
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .ID("GridPanel1")
+                                .Title("Loại sự cố")
+                                .Icon(Icon.TextListBullets)
+                                .Store(Html.X().Store()
+                                    .ID("stProblemTypePanel")
+                                    .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("LoadData2", "ProblemType", new { area = "Problem" }))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                        )
+                                    .Parameters(a =>
+                                        {
+                                            a.Add(new StoreParameter("ID", "App.ProblemGroupID.getValue()", ParameterMode.Raw));
+                                        })
+                                    .Model(
+                                        Html.X().Model()
+                                            .Fields(
+                                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("ProblemTypeName").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("IsSelect").Type(ModelFieldType.Boolean)
+                                            )
+                                    )
+                                )
+                                .SortableColumns(false)
+                                .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                                    Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                                    Html.X().Column().DataIndex("ProblemTypeName").Text("Tên loại sự cố").Flex(1).MenuDisabled(true),
+                                    Html.X().CheckColumn().DataIndex("IsSelect").Text("Chọn").Width(150).Editable(true)
+                                 )
+                                .SelectionModel(
+                                        Html.X().RowSelectionModel()
+                                            .Mode(SelectionMode.Multi)
+                                    )
+                                )
+                                
+                            )
+                    )
+            )
+    )
+)
+s

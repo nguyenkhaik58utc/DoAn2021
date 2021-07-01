@@ -1,0 +1,459 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+  @(Html.X().Menu()
+        .ID("cmMenu")
+        .Items(
+                new MenuItem { Text = "Xem chi tiết", ID = "cmDetail", Icon = Icon.Zoom, Handler = "showFormDetail();" },
+                Html.X().MenuSeparator(),
+                new MenuItem { Text = "Thêm mới", ID = "cmAdd", Icon = Icon.Add, DirectClickAction = "ShowFrmAdd" },
+                new MenuItem { Text = "Sửa", ID = "cmEdit", Icon = Icon.Pencil, Handler = "updateForm();" },
+                new MenuItem { Text = "Xóa", ID = "cmDelete", Icon = Icon.Delete, Handler = "deleteRecord();" },
+                new MenuItem { Text = "Gửi duyệt", ID = "cmSendApproval",Disabled=true,Icon = Icon.Mail, Handler = "showFormSendApproval();" },
+                new MenuItem { Text = "Phê duyệt", ID = "cmApproval", Icon = Icon.Tick, Handler = "showApprove();" }
+                )
+            )
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .ID("vpGridTaskRequestView")
+    .Items(
+            Html.X().GridPanel()
+                    .ID("GridTaskRequestView")
+                    .Border(false)
+                    .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                    .TopBar(Html.X().Toolbar()
+                    .ID("tbGridTaskRequestView")
+                    .Items(
+            Html.X().ButtonCreate()
+                    .ID("btnInsertNews")
+                    .DirectClickAction("ShowFrmAdd"),
+            Html.X().ToolbarSeparator(),
+            Html.X().ButtonUpdate()
+                    .ID("btnEdit")
+                    .Handler("updateForm();")
+                    .Disabled(true),
+            Html.X().ToolbarSeparator(),
+            Html.X().ButtonDelete()
+                    .ID("btnDelete")
+                    .Handler("deleteRecordPlan();")
+                    .Disabled(true),
+            Html.X().ToolbarSeparator(),
+            Html.X().ButtonView()
+                    .ID("btnDetail")
+                    .Disabled(true)
+                    .Handler("showFormDetail();")
+                    .Disabled(true),
+            Html.X().ToolbarSeparator(),
+            Html.X().ButtonSend()
+                    .Text("Gửi duyệt")
+                    .ID("btnSendApprove")
+                    .Handler("showFormSendApproval();")
+                    .Disabled(true),
+            Html.X().ToolbarSeparator(),
+            Html.X().ButtonApproval()
+                    .ID("btnApproval")
+                    .Handler("showApprove();")
+                    .Disabled(true),
+                Html.X().ToolbarFill(),
+                Html.X().Hidden().ID("employeeId").Value(ViewBag.EmployeeID),
+                Html.X().DisplayField().FieldLabel("Nhân sự").LabelWidth(55).MarginSpec("0 0 0 0"),
+                Html.X().ImageButton().ID("imgemployeesAvatar").Width(19).Height(22).ImageUrl("/Generic/File/LoadAvatarFile?employeeId=" + ViewBag.employeeId),
+                Html.X().DisplayField().ID("dpemployeesName").FieldStyle("font-weight:bold").Text(ViewBag.EmployeeName).HideLabel(true).LabelWidth(55).MarginSpec("0 5 0 3"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().ID("btnChoiseEm").Text("Chọn...").Icon(Icon.UserMagnify).Disabled(false).Handler("openChoiceEmployeeWindow();"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().ID("btnChoisePer").Text("Cá nhân").Icon(Icon.User).Disabled(false).Handler("App.employeeId.setValue('" + ViewBag.EmployeeID + "'); App.imgemployeesAvatar.setImageUrl('" + "/Generic/File/LoadAvatarFile?employeeId=" + ViewBag.employeeId + "'); App.dpemployeesName.setValue('" + ViewBag.EmployeeName + "'); App.GridTaskRequestView.getStore().reload();"),
+                Html.X().ButtonTutorial()
+                )
+            )
+            .Store(
+                Html.X().Store()
+                .ID("stTaskRequest")
+                .AutoLoad(true)
+                    .Proxy(
+                            Html.X().AjaxProxy().Url(Url.Action("GetData", "TaskRequest")).Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("employeeId", "App.employeeId.getValue()", ParameterMode.Raw));
+                    })
+                    .RemoteSort(false).RemotePaging(true).PageSize(20)
+                    .Model(Html.X().Model()
+                        .Fields(
+                            new ModelField("ID"),
+                            new ModelField("Name", ModelFieldType.String),
+                            new ModelField("LevelID", ModelFieldType.Int),
+                            new ModelField("LevelName", ModelFieldType.String),
+                            new ModelField("CategoryName", ModelFieldType.String),
+                            new ModelField("LevelColor", ModelFieldType.String),
+                            new ModelField("StartTime", ModelFieldType.Date),
+                            new ModelField("EndTime", ModelFieldType.Date),
+                            new ModelField("IsNew", ModelFieldType.Boolean),
+                            new ModelField("IsEdit", ModelFieldType.Boolean),
+                            new ModelField("IsApproval", ModelFieldType.Boolean),
+                            new ModelField("IsAccept", ModelFieldType.Boolean),
+                            new ModelField("IsAccept", ModelFieldType.Boolean),
+                            new ModelField("PerformBy", ModelFieldType.Int),
+                            new ModelField("Status", ModelFieldType.String),
+                            new ModelField("Cost", ModelFieldType.Float),
+                            new ModelField("Contents", ModelFieldType.String),
+                            new ModelField("Note", ModelFieldType.String),
+                            new ModelField("IsNew", ModelFieldType.Boolean),
+                            new ModelField("ParentID", ModelFieldType.Int)
+
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().Column()
+                    .Hidden(true)
+                    .DataIndex("ID"),
+                Html.X().RowNumbererColumn()
+                    .Text("STT.")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(33)
+                    .Align(Alignment.Center),
+                Html.X().Column()
+                    .Text("Tên công việc")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .DataIndex("Name")
+                    .Wrap(true)
+                    .Flex(1)
+                    .Width(300),
+            Html.X().ComponentColumn().Filterable(false).Text("Thời gian thực hiện")
+                    .Columns(
+                        Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                            .Width(120)
+                            .Text("Bắt đầu")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .DataIndex("StartTime")
+                            .Format("dd/MM/yyyy HH:mm"),
+                            Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                            .Width(120)
+                            .Text("Kết thúc")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .DataIndex("EndTime")
+                            .Format("dd/MM/yyyy HH:mm")
+                    ),
+                Html.X().Column()
+                    .Width(100)
+                    .Text("Mức độ").Filterable(false)
+                    .DataIndex("LevelName")
+                    .Align(Alignment.Center)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('LevelColor') + ';'; return value; }" }),
+            Html.X().Column().Filterable(false)
+                    .Text("Danh mục")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .DataIndex("CategoryName")
+                    .Align(Alignment.Left)
+                    .Width(200),
+                     Html.X().Column()
+                    .Width(100)
+                    .Text("Trạng thái").Filterable(false)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Align(Alignment.Center)
+                    .DataIndex("Status")
+                    )
+                   .Plugins(
+                Html.X().FilterHeader().Remote(true)
+                            )
+             .View(Html.X().GridView().StripeRows(false))
+                .SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "checkStatus()";
+                            })
+                            )
+            .BottomBar(
+                  Html.X().CustomPagingToolbar())
+            )
+)
+<script type="text/javascript">
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        if (record != null) {
+            var color = record.get('Color');
+            obj.setFieldStyle('text-align: center; background-image: none; background-color: ' + color + ';');
+        }
+        else {
+            return false;
+        }
+    };
+    var onSpecialKey = function (field, e) {
+        if (e.getKey() === e.ENTER) {
+            App.stTaskDepartment.reload();
+            e.stopEvent();
+        }
+    };
+    var filterTree = function (tf, e) {
+        var tree = this.up("treepanel"),
+            text = tf.getRawValue();
+        tree.clearFilter();
+        if (Ext.isEmpty(text, false)) {
+            return;
+        }
+        if (e.getKey() === Ext.EventObject.ESC) {
+            clearFilter();
+        } else {
+            var re = new RegExp(".*" + text + ".*", "i");
+            tree.filterBy(function (node) {
+                return re.test(node.data.text);
+            });
+        }
+    };
+    var clearFilter = function () {
+        var field = this,
+            tree = this.up("treepanel");
+        field.setValue("");
+        tree.clearFilter(true);
+        tree.getView().focus();
+    };
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var showApprove = function () {
+        var records = App.GridTaskRequestView.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowApprove", "TaskRequest", new { Area = "Task" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showFormSendApproval = function () {
+        var records = App.GridTaskRequestView.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowSendApproval", "TaskRequest", new { Area = "Task" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showFormDetail = function () {
+        var records = App.GridTaskRequestView.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "TaskRequest", new { Area = "Task" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var checkStatus = function () {
+        var records = App.GridTaskRequestView.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDetail.setDisabled(false);
+            App.cmDetail.setDisabled(false);
+            if (records[0].get('IsNew')) {
+                App.btnEdit.setDisabled(false);
+                App.cmEdit.setDisabled(false);
+                App.btnDelete.setDisabled(false)
+                App.cmDelete.setDisabled(false);
+                App.btnSendApprove.setDisabled(false);
+                App.cmSendApproval.setDisabled(false);
+            }
+            else {
+                App.btnEdit.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true)
+                App.cmDelete.setDisabled(true);
+                App.btnSendApprove.setDisabled(true);
+                App.cmSendApproval.setDisabled(true);
+            }
+            if (!records[0].get('IsEdit') && !records[0].get('IsApproval')) {
+                App.cmApproval.setDisabled(false);
+                App.btnApproval.setDisabled(false);
+                App.btnEdit.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true)
+                App.cmDelete.setDisabled(true);
+                App.btnSendApprove.setDisabled(true);
+                App.cmSendApproval.setDisabled(true);
+            }
+            else if (records[0].get('IsEdit') && records[0].get('IsApproval')) {
+                App.cmApproval.setDisabled(true);
+                App.btnApproval.setDisabled(true);
+                App.btnEdit.setDisabled(false);
+                App.cmEdit.setDisabled(false);
+                App.btnDelete.setDisabled(true)
+                App.cmDelete.setDisabled(true);
+                App.btnSendApprove.setDisabled(false);
+                App.cmSendApproval.setDisabled(false);
+            }
+            else if (records[0].get('IsApproval') && records[0].get('IsAccept')) {
+                App.cmApproval.setDisabled(true);
+                App.btnApproval.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true)
+                App.cmDelete.setDisabled(true);
+                App.btnSendApprove.setDisabled(true);
+                App.cmSendApproval.setDisabled(true);
+            }
+            else if (records[0].get('IsApproval') && !records[0].get('IsAccept') && !records[0].get('IsEdit')) {
+                App.cmApproval.setDisabled(true);
+                App.btnApproval.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true)
+                App.cmDelete.setDisabled(true);
+                App.btnSendApprove.setDisabled(true);
+                App.cmSendApproval.setDisabled(true);
+            }
+
+        }
+        else {
+            App.btnDelete.setDisabled(true);
+            App.cmDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.cmDetail.setDisabled(true);
+            App.btnApproval.setDisabled(true);
+            App.cmApproval.setDisabled(true);
+            App.btnSendApprove.setDisabled(true);
+            App.cmSendApproval.setDisabled(true);
+        }
+    };
+    function updateForm() {
+        var records = App.GridTaskRequestView.selModel.getSelection();
+        if (records.length > 0) {
+            var postUrl = '/Task/TaskRequest/ShowUpdate/';
+            if (records.length > 0) {
+                postUrl += records[0].get('ID');
+            }
+            Ext.net.DirectMethod.request({
+                url: postUrl
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+    //Xóa bản ghi khỏi CSDL
+    var deleteRecordPlan = function () {
+        var records = App.GridTaskRequestView.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnEdit.setDisabled(true);
+                        App.btnDelete.setDisabled(true);
+                        App.btnDetail.setDisabled(true);
+                        App.cmEdit.setDisabled(true);
+                        App.cmDelete.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "TaskRequest", new { Area = "Task" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+    var openChoiceEmployeeWindow = function () {
+        var url = '@(Url.Action("EmployeeWindow", "TaskPerson", new { Area = "Task" }))';
+        var params = {
+            multi: false,
+        };
+        onDirectMethod(url, params);
+    };
+    function selectEmployeeTask(records) {
+        if (records.length == 1) {
+            App.employeeId.setValue(records[0].get('ID'));
+            App.imgemployeesAvatar.setImageUrl('/Generic/File/LoadAvatarFile?employeeId=' + records[0].get('ID'));
+            App.dpemployeesName.setValue(records[0].get('Name'));
+            App.GridTaskRequestView.getStore().load();
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Bạn chưa chọn nhân sự nào cần xem công việc!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        };
+    };
+</script>

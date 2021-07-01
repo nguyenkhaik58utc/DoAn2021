@@ -1,0 +1,122 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductDataSizeItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("ProductDataSizePanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateProductDataSize").Icon(Icon.Add).Handler("showCreateProductDataSize();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateProductDataSize").Icon(Icon.Pencil).Handler("showUpdateProductDataSize();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteProductDataSize").Icon(Icon.Delete).Handler("showDeleteProductDataSize();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailProductDataSize").Icon(Icon.Zoom).Handler("showDetailProductDataSize();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Size").Type(ModelFieldType.Float),
+                    Html.X().ModelField().Name("Unit").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("UseTime").Type(ModelFieldType.Float),
+                    Html.X().ModelField().Name("IsUpgrade").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectProductDataSize()")
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProductDataSize();")
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex(Model, m => m.ID).Hidden(true),
+            Html.X().NumberColumn().Text("Dung lượng").DataIndex(Model, m => m.Size).StyleSpec("font-weight: bold;text-align: center").Flex(1).Align(Alignment.Center),
+            Html.X().Column().Text("Đơn vị").DataIndex(Model, m => m.Unit).StyleSpec("font-weight: bold;text-align: center").Width(150).Align(Alignment.Center),
+            Html.X().Column().Text("Thời gian sử dụng (Tháng)").DataIndex(Model, m => m.UseTime).StyleSpec("font-weight: bold;text-align: center").Width(180).Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Gói nâng cấp").DataIndex(Model, m => m.IsUpgrade).StyleSpec("font-weight: bold;text-align: center").Width(150).Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex(Model, m => m.CreateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script type="text/javascript">
+    var urlCreateProductDataSize = '@Url.Action("Create", "ProductDataSize", new { area = "Web" })';
+    var urlUpdateProductDataSize = '@Url.Action("Update", "ProductDataSize", new { area = "Web" })';
+    var urlDeleteProductDataSize = '@Url.Action("Delete", "ProductDataSize", new { area = "Web" })';
+    var urlDetailProductDataSize = '@Url.Action("Detail", "ProductDataSize", new { area = "Web" })';
+
+    var getProductDataSizeSelection = function () {
+        return App.ProductDataSizePanel.getSelectionModel().getLastSelected();
+    };
+    var reloadProductDataSize = function () {
+        App.ProductDataSizePanel.getStore().reload();
+        deSelectProductDataSize();
+    }
+    var deSelectProductDataSize = function () {
+        App.ProductDataSizePanel.selModel.lastSelected = null;
+        selectionChangeProductDataSize();
+    }
+    var showCreateProductDataSize = function () {
+        var url = urlCreateProductDataSize;
+        onDirectMethod(url, null, 'get');
+    };
+    var showUpdateProductDataSize = function () {
+        var url = urlUpdateProductDataSize;
+        var record = getProductDataSizeSelection();
+        var ProductDataSizeId = record == null ? 0 : record.data.ID;
+        var params = { ProductDataSizeId: ProductDataSizeId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteProductDataSize = function () {
+        var url = urlDeleteProductDataSize;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProductDataSizeSelection();
+                            var ProductDataSizeId = record == null ? 0 : record.data.ID;
+                            var params = { ProductDataSizeId: ProductDataSizeId };
+                            onDirectMethod(url, params, 'post', reloadProductDataSize);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProductDataSize = function () {
+        var url = urlDetailProductDataSize;
+        var record = getProductDataSizeSelection();
+        var ProductDataSizeId = record == null ? 0 : record.data.ID;
+        var params = { ProductDataSizeId: ProductDataSizeId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeProductDataSize = function () {
+        var record = getProductDataSizeSelection();
+        App.btnUpdateProductDataSize.setDisabled(record == null);
+        App.btnDeleteProductDataSize.setDisabled(record == null);
+        App.btnDetailProductDataSize.setDisabled(record == null);
+    };
+</script>

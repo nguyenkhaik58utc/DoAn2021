@@ -1,0 +1,147 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanEmployeeItem
+@{
+    var X = Html.X();
+    string strEmployeesId = ViewData["strEmployeesId"] != null ? ViewData["strEmployeesId"].ToString() : "";
+    var departmentId = ViewData["departmentId"];
+}
+@(Html.X().Window()
+         .ID("winDepartmetChange")
+         .Title("Chọn tổ chức và chức danh của nhân sự điều chuyển")
+         .Icon(Icon.DoorIn)
+         .Height(500)
+         .Width(760)
+         .BodyPadding(0)
+         .Border(false)
+         .Margin(0)
+         .Constrain(true)
+         .Layout(LayoutType.Border)
+         .Modal(true)
+         .Resizable(false)
+         .Items(
+
+                    Html.X().TreePanel()
+                    .ID("TreeDeparmentChange")
+                    .Title("SƠ ĐỒ TỔ CHỨC")
+                    .Header(false)
+                    .TitleAlign(TitleAlign.Center)
+                    .Width(280)
+                    .Collapsible(true)
+                    .Split(true)
+                    .Region(Region.West)
+                    .Icon(Icon.TextListBullets)
+                    .ForceFit(true)
+                    .RootVisible(false)
+                    .SingleExpand(false)
+                        .SelectionModel(sm => sm.Add(Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .ShowHeaderCheckbox(false)
+                            .Listeners(ls =>
+                            {
+                                ls.BeforeSelect.Handler = "if(record.data.id == App.hdfParentDepartmentId.value){return false;};";
+                                ls.SelectionChange.Handler = "App.GridRoleOfDepartment.getStore().reload();";
+                            })
+                            )
+                    )
+                    .Store(
+                        Html.X().TreeStore().AutoLoad(true)
+                            .ID("StoreGroups")
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Department", new { area = "Department" }))
+                                .Reader(Html.X().JsonReader().Root("data")))
+                            .Model(
+                                    Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("id"),
+                                    Html.X().ModelField().Name("text"),
+                                    Html.X().ModelField().Name("Description"),
+                                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean)
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                    Html.X().TreeColumn()
+                    .Text("Sơ đồ tổ chức")
+                    .StyleSpec("font-weight: bold;text-align: center")
+                    .DataIndex("text")
+                    .Flex(1)
+                    )
+
+                    ,
+                    Html.X().GridPanel()
+                    .ID("GridRoleOfDepartment")
+                    .Title("Danh sách chức danh")
+                    .Header(false)
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .Store(
+                        Html.X().Store()
+                            .AutoLoad(true)
+                            .ID("StoreRoleOfDepartment")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Role", new { area = "Department" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("departmentId", "App.TreeDeparmentChange.selModel.getSelection().length > 0 ? App.TreeDeparmentChange.getSelectionModel().getLastSelected().data.id:0", ParameterMode.Raw));
+                            })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                Html.X().Column().DataIndex("Name").Text("Chức danh").Width(350).StyleSpec("font-weight: bold;text-align: center")
+
+                    )
+                        .SelectionModel(
+                        Html.X().CheckboxSelectionModel()
+                        .ShowHeaderCheckbox(false)
+                        .Mode(SelectionMode.Single)
+
+                                )
+        )
+        .Buttons(
+         Html.X().Button()
+                .Text("Chuyển")
+                .Icon(Icon.Accept)
+                .Handler("changeDepartment();"),
+        Html.X().ButtonExit()
+            )
+)
+<script>
+    var changeDepartment = function () {
+        var strEmployeesId = '@strEmployeesId';
+    var records = App.GridRoleOfDepartment.selModel.getSelection();
+        if(records.length<1)
+        {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn phải chọn chức danh cho nhân sự điều chuyển!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }       
+        else {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn chuyển nhân sự sang tổ chức mới không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ChangeDepartment", "Organization", new { Area = "Human" }, null))',
+                        params: { strEmployessId: strEmployeesId, roleId: records[0].get('ID'), departmentId: '@departmentId'}
+                    });
+                }
+            });
+
+        }
+
+    };
+</script>

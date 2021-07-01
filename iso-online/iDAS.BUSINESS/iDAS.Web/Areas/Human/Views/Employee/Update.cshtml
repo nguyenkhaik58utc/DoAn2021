@@ -1,0 +1,88 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Utilities;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanEmployeeItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+    .ID("winUpdate")
+    .Title("Cập nhật thông tin nhân sự")
+    .Icon(Icon.Pencil)
+    .Width(800)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Resizable(false)
+        .Items(
+                Html.X().FormPanel().ID("frmUpdate")
+                    .Layout(LayoutType.Column)
+                    .Frame(true)
+                    .Border(false)
+                    .StyleSpec("border: none;")
+                    .AutoScroll(true)
+                    .Padding(0)
+                    .Margin(0)
+                    .Items(
+                            X.FormPanel().Border(false)
+                                        .Padding(0)
+                                        .Layout(LayoutType.Column)
+                                        .Frame(true)
+                                        .StyleSpec("border: none;")
+                                        .MarginSpec("5 10 0 0")
+                                        .FieldDefaults(d => { d.LabelAlign = LabelAlign.Left; d.LabelWidth = 124; })
+                                            .ColumnWidth(0.8)
+                                            .Items(
+                                                    X.HiddenFor(m => m.ID), X.HiddenFor(m => m.FileID).ID("hdfFileID"),
+                                                    X.TextFieldFor(m => m.Name).AllowOnlyWhitespace(false).BlankText("Bắt buộc nhập")
+                                                                .EmptyText("Nhập tên nhân sự")
+                                                                .FieldLabel("Họ Tên" + Html.Required()).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                                                    X.TextFieldFor(m => m.Code).FieldLabel("Mã nhân sự").MarginSpec("5 8 0 8").ColumnWidth(0.5),
+                                                    X.DateFieldFor(m => m.Birthday).FieldLabel("Ngày sinh").MarginSpec("5 8 0 8").ColumnWidth(0.5),
+                                                    X.TextFieldFor(m => m.Phone).InputType(Ext.Net.InputType.Number)
+                                                            .FieldLabel("Số điện thoại").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                                                    X.TextFieldFor(m => m.Email)
+                                                            .InputType(Ext.Net.InputType.Email)
+                                                            .FieldLabel("Email").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                                                    X.TextFieldFor(m => m.WeddingStatus).FieldLabel("Hôn nhân").MarginSpec("5 8 0 8").ColumnWidth(0.5),
+                                                    X.RadioGroupFor(m => m.Gender,
+                                                            new List<Radio.Config> {
+                                                            new Radio.Config{BoxLabel = "Nam", InputValue = true.ToString(), Checked = true},
+                                                            new Radio.Config{BoxLabel = "Nữ", InputValue = false.ToString()}
+                                                                                    }
+                                                            ).FieldLabel("Giới tính").MarginSpec("5 8 0 8").ColumnWidth(0.5),
+                                                    X.TextAreaFor(m => m.Address).FieldLabel("Địa chỉ").MarginSpec("5 8 0 8").ColumnWidth(1).Height(100)
+                                            ),
+                                    X.FieldSet().Title("Ảnh đại diện")
+                                        .Layout(LayoutType.Form)
+                                        .ColumnWidth(0.186).Margin(0)
+                                        .PaddingSpec("5 5 5 5")
+                                        .Items(
+                                        Html.X().ImageButton().ID("ImageAvatar").ImageUrl(Model.ImageUrl).ToolTip("Ảnh đại diện").Height(150).StyleSpec("border: 0.5px solid #b5b8c8; width:98%;"),
+                                            Html.X().FileUploadField()
+                                        .ID("FileUploadFieldEdit").ButtonText("")
+                                            .Listeners(ls => ls.AfterRender.Fn = "function(cmp){cmp.fileInputEl.set({ accept:'image/*' });}")
+                                            .Listeners(ls => ls.Change.Handler = "AvatarChange(this);")
+                                            .Icon(Icon.ImageAdd)
+                                    )
+                            )
+                    )
+                    .Buttons(
+                              Html.X().ButtonSave()
+                                      .DirectEvents(de =>
+                                      {
+                                          de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+                                          de.Click.Url = Url.Action("Update");
+                                          de.Click.Success = "this.up('window').close();App.StoreEmployee.reload();";
+                                          de.Click.FormID = "frmUpdate";
+                                      }),
+                             Html.X().ButtonExit()
+                    )
+)
+<script>
+    var AvatarChange = function (obj) {
+        var file = obj.fileInputEl.dom.files[0];
+        var url = URL.createObjectURL(file);
+        App.ImageAvatar.setImageUrl(url);
+    };
+</script>

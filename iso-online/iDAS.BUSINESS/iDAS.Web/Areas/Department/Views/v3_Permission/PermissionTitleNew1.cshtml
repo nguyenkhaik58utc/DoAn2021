@@ -1,0 +1,143 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Web.Areas.Department.Models.DepartmentTitle
+@{
+    var formId = Html.X().GetComponentID();
+}
+@(Html.X().Window()
+    .ID("ModuleFunctionWindow")
+    .Title("Danh sách Module chức năng của hệ thống")
+    .Icon(Icon.TableGear)
+    .Width(1078)
+    .Height(666)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Maximizable(true)
+    .Hidden(false)
+        .Items(
+            Html.X().FormPanelVBoxFormat().ID(formId).BodyPadding(6)
+            .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().FieldSetVBox().AutoScroll(true).MarginSpec("0 0 0 0").Flex(1)
+                    .Items(
+                        Html.X().ContainerHBoxTop().MarginSpec("5 0 5 0")
+                            .Items(
+                                Html.X().ComboBoxFor(m => m.DepartmentID).ID("cbbSelectDepartment").Flex(1).HideLabel(true).AllowBlank(true).MarginSpec("0 10 0 0").Note("Bộ phận").NoteAlign(NoteAlign.Top).EmptyText("Bộ phận...")
+                                    .ValueField("ID")
+                                    .DisplayField("Name")
+                                    .Store(Html.X().Store().ID("storeDept")
+                                                    .AutoLoad(true)
+                                                    .PageSize(100)
+                                                    .Model(Html.X().Model()
+                                                            .IDProperty("ID")
+                                                            .Fields(new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }))
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadAllCbbDepartment", "v3_Permission", new { area = "Department" }))
+                                                                    .Reader(Html.X().JsonReader().Root("data")))
+                                                    .Parameters(ps =>
+                                                    {
+                                                        // Empty, no need parameter.
+                                                    })
+                                                       )
+                                    .Listeners(l =>
+                                    {
+                                        l.Change.Handler = "if(App.storeTitle)App.storeTitle.reload()";
+                                        l.Select.Handler = "if(App.storeTitle)App.storeTitle.reload()";
+                                    })
+                                    ,
+                                Html.X().ComboBoxFor(m => m.TitleID).ID("cbbSelectTitle").Flex(1).HideLabel(true).AllowBlank(true).MarginSpec("0 10 0 0").Note("Chức danh").NoteAlign(NoteAlign.Top).EmptyText("Chức danh...")
+                                    .ValueField("ID")
+                                    .DisplayField("Name")
+                                    .Store(Html.X().Store().ID("storeTitle")
+                                                    .AutoLoad(false)
+                                                    .PageSize(100)
+                                                    .Model(Html.X().Model()
+                                                            .IDProperty("ID")
+                                                            .Fields(new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }))
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCbbSelectTitle", "v3_Permission", new { area = "Department" }))
+                                                                    .Reader(Html.X().JsonReader().Root("data")))
+                                                    .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("id", "App.cbbSelectDepartment.getValue()", ParameterMode.Raw));
+                                                    })
+                                                       )
+                                    .Listeners(l=> {
+                                        l.Change.Handler = "if(App.stTitle)App.stTitle.reload()";
+                                        l.Select.Handler = "if(App.stTitle)App.stTitle.reload()";
+                                    })
+                                    ,
+                                Html.X().Button().Text("Copy quyền").MarginSpec("8 0 0 0").Height(32).DirectEvents(de =>
+                                {
+                                    de.Click.ExtraParams.Add(new { DepartmentID = new JRawValue("App.cbbSelectDepartment.getValue()") });
+                                    de.Click.ExtraParams.Add(new { V3TitleId = new JRawValue("App.cbbSelectTitle.getValue()") });
+                                    de.Click.Url = Url.Action("FormCopy");
+                                })
+                        ),
+                        Html.X().ContainerHBoxTop().MarginSpec("5 0 0 0").Flex(1)
+                            .Items(
+                                Html.X().GridPanel().ID("grdTitle").ColumnLines(true).MarginSpec("5 5 5 5").Flex(1).AutoScroll(true).Layout(LayoutType.Fit).Height(500)
+                                    .Title("Danh sách phân quyền")
+                                    .Store(
+                                        Html.X().Store()
+                                            .AutoLoad(false)
+                                            .ID("stTitle")
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetTitlePermission", "v3_Permission"))
+                                            .Reader(Html.X().JsonReader().Root("data")))
+                                            .Parameters(pr =>
+                                            {
+                                                pr.Add(new StoreParameter("DepartmentID", "App.cbbSelectDepartment.getValue()", ParameterMode.Raw));
+                                                pr.Add(new StoreParameter("V3TitleId", "App.cbbSelectTitle.getValue()", ParameterMode.Raw));
+                                            })
+                                            .Model(Html.X().Model()
+                                                    .Fields(
+                                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Auto),
+                                                        Html.X().ModelField().Name("DisplayNameInforOnGrid").Type(ModelFieldType.Auto),
+                                                        Html.X().ModelField().Name("IsPermission").Type(ModelFieldType.Boolean)
+                                                    )
+                                                )
+                                        //.ModelType(typeof(iDAS.Service.ProfileUsersMappingBO))
+                                        )
+                                    .ColumnModel(
+                                        Html.X().RowNumbererColumnFormat(),
+                                        Html.X().Column().DataIndex("DisplayNameInforOnGrid").Text("Chức năng").Flex(1),
+                                        Html.X().CheckColumn().DataIndex("IsPermission").Text("Quyền thực hiện").Width(150).Editable(true)
+                                    )
+                                    .SelectionModel(
+                                        Html.X().RowSelectionModel()
+                                            .Mode(SelectionMode.Multi)
+                                    )
+                            )
+                        )
+        )
+    )
+    .Buttons(
+        Html.X().ButtonSave().FormID(formId)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = formId;
+            //de.Click.ExtraParams.Add(new Parameter("DepartmentTitleId", "App.cbbSelectTitle.getValue()", ParameterMode.Value));
+            de.Click.ExtraParams.Add(new Parameter("dataMenuRole", "App.grdTitle.getStore().getChangedData()", ParameterMode.Raw));
+            de.Click.Url = Url.Action("UpdateTitleNew");
+            de.Click.Success = "this.up('window').down('#loadMask').hide();";
+        }),
+        Html.X().Button().Text("Thoát").Icon(Icon.Cancel).OnClientClick("this.up('window').close();")
+    )
+)
+)
+<script>
+
+    // HungNM. Add event for Copy quyen.
+    @*var CallPopupCopyAAA = function (btn) {
+        debugger;
+    var url = '@Url.Action("FormCopy", "v3_Permission")';
+        var params = { id: App.cbbSelectTitle.getValue() };
+    onDirectMethod(url, params);
+    };*@
+    // End.
+
+</script>

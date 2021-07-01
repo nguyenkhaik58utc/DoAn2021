@@ -1,0 +1,78 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerAssessItem
+
+@(
+Html.X().Window().ID("winAuditResult")
+.Title("Thống kê đánh giá của khách hàng")
+.Icon(Icon.Sum)
+.Maximized(true)
+.Height(1)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+Html.X().HiddenFor(m => m.ID).ID("hdfAuditID"),
+Html.X().HiddenFor(m => m.CriteriaCategoryID).ID("hdfCategoryID"),
+Html.X().TreePanel()
+    .Header(false)
+    .Split(true)
+    .Border(false)
+    .ID("grResult")
+    .TitleAlign(TitleAlign.Center)
+    .Layout(LayoutType.Fit)
+    .Collapsible(true)
+    .ForceFit(true)
+    .RootVisible(false)
+    .ColumnLines(true)
+    .RowLines(true)
+    .SingleExpand(false)
+    .Store(Html.X().TreeStore().ID("StoreTreeCriteria")
+        .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("LoadResult", "CustomerAudit", new { area = "Customer" }))
+                    .Reader(Html.X().JsonReader()
+                    .Root("data"))
+                )
+              .Parameters(ps =>
+                {
+                    ps.Add(new StoreParameter("auditId", "App.hdfAuditID.getValue()!=null? App.hdfAuditID.getValue():0", ParameterMode.Raw));
+                    ps.Add(new StoreParameter("categoryId", "App.hdfCategoryID.getValue()!=null? App.hdfCategoryID.getValue():0", ParameterMode.Raw));
+                })
+        .Model(
+            Html.X().Model().IDProperty("ID")
+            .Fields(
+                    Html.X().ModelField().Name("ID"),
+                    Html.X().ModelField().Name("Name"),
+                    Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("IsCategory").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("SumPoint").Type(ModelFieldType.String) ,
+                    Html.X().ModelField().Name("SumCustomerAudit").Type(ModelFieldType.String)
+            )
+        )
+    )
+    .ColumnModel(
+        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+        Html.X().TreeColumn()
+            .Text("Tiêu chí đánh giá")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Align(Alignment.Left)
+            .DataIndex("Name")
+            .Flex(1),
+        Html.X().Column()
+            .Text("Tổng điểm")
+            .Width(100)
+            .Align(Alignment.Right)
+            .DataIndex("SumPoint"),
+        Html.X().Column()
+            .Text("Số khách hàng đánh giá")
+            .Width(150)
+            .Align(Alignment.Right)
+            .DataIndex("SumCustomerAudit")
+    )
+).Buttons(Html.X().ButtonExit())
+)

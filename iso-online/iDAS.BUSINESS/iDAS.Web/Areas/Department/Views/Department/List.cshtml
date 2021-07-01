@@ -1,0 +1,63 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+<script type="text/javascript">
+    var DepartmentSelectChange = function () {
+        var component = App.treeDepartment;
+        var records = component.selModel.getSelection();
+        if (records.length == 1) {
+            if (records[0].get('IsSelected')) {
+                onDepartmentReady(records, true)
+            }
+            else {
+                onDepartmentReady(records, false);
+            };
+        };
+    };
+</script>
+<style>
+    .NotAllow {
+        opacity: 0.5;
+    }
+    .ForEmployee {
+        font-weight: bold;
+    }
+</style>
+@(
+ Html.X().TreePanel().Margin(0).Padding(0)
+                .Tools(
+                        Html.X().Tool().Type(ToolType.Plus).Handler("App.treeDepartment.expandAll();").ToolTip("Mở rộng"),
+                        Html.X().Tool().Type(ToolType.Minus).Handler("App.treeDepartment.collapseAll();").ToolTip("Thu gọn"),
+                        Html.X().Tool().Type(ToolType.Refresh).Handler("App.treeDepartment.store.reload();").ToolTip("Tải lại")
+                       )
+                .Title("SƠ ĐỒ TỔ CHỨC")
+                .ID("treeDepartment")
+                .TitleAlign(TitleAlign.Center)
+                .Border(false)
+                .AutoScroll(true)
+                    .SingleExpand(true)
+                .Region(Region.West)
+                .HideHeaders(true)
+                .RootVisible(false)
+                .Listeners(ls =>
+                {
+                    //ls.AfterLayout.Handler = "this.selModel.doSelect(0);";
+                })
+                .Store(
+                        Html.X().TreeStore().ID("StoreDepartment")
+                            .AutoDataBind(true)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadTreeData", "Department", new { Area = "Department" }))
+                            .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("id"),
+                                Html.X().ModelField().Name("text"),
+                                Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                            )
+                        )
+                    )
+                 .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "DepartmentSelectChange();";
+                    })
+)

@@ -1,0 +1,170 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.EquipmentProductionErrorItem
+@(Html.X().Window()
+    .ID("WinError")
+    .Title("Xử lý sự cố thiết bị")
+    .Icon(Icon.BugDelete)
+    .Height(500)
+    .Maximized(true)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .AutoScroll(true)
+    .Items(
+            Html.X().HiddenFor(m => m.EquipmentProductionID).ID("hdfEquipmentProductionID"),
+            Html.X().GridPanel()
+                .Header(false)
+                .ID("GrError")
+                .ColumnLines(true)
+                .Layout(LayoutType.Fit)
+                .ForceFit(true)
+                .StyleSpec("border: none;")
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().ToolTip("Thêm mới xử lý sự cố")
+                                .ID("btnAddContact").Icon(Icon.Add).Disabled(false).Handler("AddError();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnUpdateError").ToolTip("Cập nhật xử lý sự cố")
+                                .Handler("UpdateError();").Icon(Icon.Pencil).Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ToolTip("Xóa xử lý sự cố").Icon(Icon.Delete).ID("btnDeleteError")
+                                .Handler("DeleteErrorEquipment();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ToolTip("Xem chi tiết").ID("btnDetailError").Icon(Icon.Zoom)
+                                .Handler("DetailError();").Disabled(true)
+                    )
+            )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreError")
+                            .AutoLoad(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadErrorByProduct", "EquipmentProductionError")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("id", "App.hdfEquipmentProductionID.value", ParameterMode.Raw));
+                                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Cause"),
+                                        Html.X().ModelField().Name("Time"),
+                                        Html.X().ModelField().Name("StartTime"),
+                                        Html.X().ModelField().Name("EndTime"),
+                                        Html.X().ModelField().Name("Status")
+                            )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().DateColumnExtend().DataIndex("Time").Format("dd/MM/yyyy").Text("Thời gian xảy ra").Width(120).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("Cause").Text("Lý do").Flex(1).MinWidth(200).Flex(1).Wrap(true),
+                                    Html.X().ComponentColumn().Text("Thời gian khắc phục sự cố")
+                                            .Columns(
+                                                    Html.X().DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                                                    Html.X().DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(120).Align(Alignment.Center)
+                                    ),
+                                    Html.X().Column().DataIndex("Status").Text("Tình trạng").Width(100).Align(Alignment.Center)
+                        )
+                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusContact()"))
+                    .BottomBar(Html.X().CustomPagingToolbar())
+
+    )
+    .Buttons(
+            Html.X().Button()
+                    .ID("btnErrorCancel")
+                    .Text("Đóng")
+                    .Icon(Icon.Cancel)
+                    .Handler("this.up('window').close();")
+                )
+)
+<script>
+    function CheckStatusContact() {
+        var records = App.GrError.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnUpdateError.setDisabled(false);
+            App.btnDetailError.setDisabled(false);
+            App.btnDeleteError.setDisabled(false);
+        }
+        else {
+            App.btnUpdateError.setDisabled(true);
+            App.btnDetailError.setDisabled(true);
+            App.btnDeleteError.setDisabled(true);
+        };
+    };
+    var AddError = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "EquipmentProductionError", new { Area = "Equipment" }))',
+            params: {
+                productionId: App.hdfEquipmentProductionID.value
+            }
+        });
+    };
+    var UpdateError = function () {
+        var records = App.GrError.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "EquipmentProductionError", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DetailError = function () {
+        var records = App.GrError.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "EquipmentProductionError", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DeleteErrorEquipment = function () {
+        var records = App.GrError.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var id = records[0].get('ID');
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "EquipmentProductionError", new { Area = "Equipment" }, null))',
+                        params: {
+                            id: id,
+                        }
+                    });
+                }
+            })
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+</script>

@@ -1,0 +1,208 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+    //var SatrusCombobox = new List<ListItem>();
+    //SatrusCombobox.Add(new ListItem() { Text = "", Value = "" });
+    //SatrusCombobox.Add(new ListItem() { Text = "Chờ giải trình", Value = "1" });
+    //SatrusCombobox.Add(new ListItem() { Text = "Đã giải trình, Chờ xét duyệt", Value = "2" });
+    //SatrusCombobox.Add(new ListItem() { Text = "Đã duyệt", Value = "3" });
+    //SatrusCombobox.Add(new ListItem() { Text = "Từ chối", Value = "4" });
+    #region Tạo cột động theo tháng
+    var Days = DateTime.DaysInMonth(ViewBag.Year, ViewBag.Month);
+    List<ColumnBase> columnBases = new List<ColumnBase>();
+    List<ModelField> modelFields = new List<ModelField>();
+    columnBases.Add(Html.X().RowNumbererColumnFormat());
+    columnBases.Add(Html.X().ColumnEncodeFormat().DataIndex("CodeView").Text("Mã chấm công").Width(110).Align(Alignment.Center));
+    columnBases.Add(Html.X().ColumnEncodeFormat().DataIndex("NameOnView").Text("Họ tên").Width(170));
+    modelFields.Add(Html.X().ModelField().Name("CodeView").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("NameOnView").Type(ModelFieldType.String));
+
+    for (int i = 1; i <= Days; i++)
+    {
+        string Day = i.ToString("00");
+        columnBases.Add(Html.X().Column().ID("columnId" + Day).Text(Day).Columns(
+                X.ColumnEncodeFormat().DataIndex("_" + Day + "_In").Text("Giờ vào").Width(70).Align(Alignment.Center).Editor(Html.X().TextField().AllowBlank(true)),
+                X.ColumnEncodeFormat().DataIndex("_" + Day + "_Out").Text("Giờ ra").Width(70).Align(Alignment.Center).Editor(Html.X().TextField().AllowBlank(true))
+            ));
+        modelFields.Add(X.ModelField().Name("_" + Day + "_In").Type(ModelFieldType.String));
+        modelFields.Add(X.ModelField().Name("_" + Day + "_Out").Type(ModelFieldType.String));
+
+    }
+    modelFields.Add(Html.X().ModelField().Name("NgayCong_NT").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("NgayCong_CT").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("GioCong_NT").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("GioCong_CT").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("VaoTre_Lan").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("VaoTre_Phut").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("RaSom_Lan").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("RaSom_Phut").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("TangCa_TC1").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("TangCa_TC2").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("TangCa_TC3").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("VangKP").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("OM").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("TS").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("R").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("Ro").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("P").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("F").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("CO").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("CD").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("H").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("CT").Type(ModelFieldType.String));
+    modelFields.Add(Html.X().ModelField().Name("Le").Type(ModelFieldType.String));
+
+    columnBases.Add(Html.X().Column().Text("Ngày công").Columns(
+Html.X().ColumnEncodeFormat().DataIndex("NgayCong_NT").Text("Ngày thường").Width(100).Align(Alignment.Center),
+Html.X().ColumnEncodeFormat().DataIndex("NgayCong_CT").Text("Cuối tuần").Width(100).Align(Alignment.Center)
+));
+    columnBases.Add(Html.X().Column().Text("Giờ công").Columns(
+                    Html.X().ColumnEncodeFormat().DataIndex("GioCong_NT").Text("Ngày thường").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("GioCong_CT").Text("Cuối tuần").Width(100).Align(Alignment.Center)
+                ));
+    columnBases.Add(Html.X().Column().Text("Đi muộn").Columns(
+                    Html.X().ColumnEncodeFormat().DataIndex("VaoTre_Lan").Text("Lần").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("VaoTre_Phut").Text("Phút").Width(100).Align(Alignment.Center)
+                ));
+    columnBases.Add(Html.X().Column().Text("Về sớm").Columns(
+                    Html.X().ColumnEncodeFormat().DataIndex("RaSom_Lan").Text("Lần").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("RaSom_Phut").Text("Phút").Width(100).Align(Alignment.Center)
+                ));
+    columnBases.Add(Html.X().Column().Text("Tăng ca").Columns(
+                    Html.X().ColumnEncodeFormat().DataIndex("TangCa_TC1").Text("Mức 1").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("TangCa_TC2").Text("Mức 2").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("TangCa_TC3").Text("Mưc 3").Width(100).Align(Alignment.Center)
+                ));
+    columnBases.Add(Html.X().Column().Text("Ngày nghỉ").Columns(
+                    Html.X().ColumnEncodeFormat().DataIndex("OM").Text("Nghỉ ốm").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("TS").Text("Thai sản").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("R").Text("Việc riêng có lương").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("Ro").Text("Việt riêng không lương").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("P").Text("Nghỉ phép").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("F").Text("Nghỉ phép năm").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("CO").Text("Con ốm").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("CD").Text("Cúp điện").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("H").Text("Hội hợp, học tập").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("CT").Text("Công tác").Width(100).Align(Alignment.Center),
+                    Html.X().ColumnEncodeFormat().DataIndex("Le").Text("Nghỉ lễ").Width(100).Align(Alignment.Center)
+                ));
+
+    #endregion
+    var TypeCombobox = new List<ListItem>();
+    TypeCombobox.Add(new ListItem("Tất cả", 0));
+    TypeCombobox.Add(new ListItem("Nhân viên", 1));
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+   Html.X().GridPanel()
+                .Flex(1)
+                .Header(false)
+                .Title("Dữ liệu chấm công thô")
+                .ID("gnDashboardTimeKeeping")
+                .ColumnLines(true).Region(Region.Center)
+                .TopBar(
+                        Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                            Html.X().Hidden().ID("IdParameterTimeKeeping").Value(""),
+
+                         Html.X().RadioGroup().ID("rdChoice").Width(150).Items(
+                            Html.X().Radio().BoxLabel("Tất cả").ID("All").Checked(true),
+                            Html.X().Radio().BoxLabel("Nhân viên").ID("Employee")
+                            )
+                            .Listeners(ls => ls.Change.Handler = "typeSearchChange();"),
+                          Html.X().ToolbarSeparator(),
+                          Html.X().DateField().FieldLabel("Tháng").LabelWidth(40).Type(DatePickerType.Month).Width(120).
+                            ID("MonthPickerTimeKeeping").Format("MM/yyyy").EmptyText("Chọn tháng")
+                            .Value(DateTime.Now).Listeners(l =>
+                            {
+                                l.Select.Handler = "reloadData();";
+                            }),
+                            Html.X().Hidden().ID("employeeId").Value(-1),
+                            Html.X().Button().ID("btnChoiseEm").Text("Chọn nhân viên").Icon(Icon.UserMagnify).Disabled(false).Handler("openChoiceEmployeeWindow();").Disabled(true)
+                            )
+                            )
+                .Icon(Icon.Accept)
+                .Store(Html.X().Store()
+                    .ID("stMnDashBoardTimeKeeping")
+                    .Parameters(pr =>
+                    {
+                        pr.Add(new StoreParameter("curMonth", "App.MonthPickerTimeKeeping.rawValue", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("employeeId", "App.employeeId.value", ParameterMode.Raw));
+                    })
+                    .AutoLoad(true)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataNotHandingConfig"))
+                    .Reader(Html.X().JsonReader().Root("data")))
+                    .PageSize(25)
+                    .Model(Html.X().Model()
+                    .Fields(
+                        modelFields
+                        )
+                    )
+                )
+                // .EmptyText("Không có dữ liệu")
+                .ColumnModel(
+                columnBases
+                )
+                .SelectionModel(
+                    Html.X().RowSelectionModel()
+                )
+
+                .View(
+                    Html.X().GridView().MarkDirty(false)
+            )
+    ))
+
+<script>
+        function reloadData() {
+            var data = App.MonthPickerTimeKeeping.rawValue.split("/");
+            var Month = parseInt(data[0]);
+            var year = parseInt(data[1]);
+            var day = new Date(year, Month, 0).getDate();
+            for (var i = 29; i <= 31; i++)
+            {
+              App["columnId" + i].setVisible((i <= day));
+            }
+            //if (App.cboTypeSearch.value == 1 && App.employeeId.value == -1) {
+            //    App.employeeId.setValue(0);
+            //}
+            App.stMnDashBoardTimeKeeping.reload();
+        };
+
+         var openChoiceEmployeeWindow = function () {
+        var url = '@(Url.Action("EmployeeWindow", "TaskPerson", new { Area = "Task" }))';
+        var params = {
+            multi: false,
+        };
+        onDirectMethod(url, params);
+    };
+
+    function selectEmployeeTask(records) {
+        if (records.length == 1) {
+            App.employeeId.setValue(records[0].get('ID'));
+
+            reloadData();
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Bạn chưa chọn nhân sự nào!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        };
+    };
+
+    function typeSearchChange() {
+
+        var idradio = Ext.getCmp('rdChoice').items.get(0).getGroupValue();
+        if (idradio == 'App.All') {
+            App.employeeId.setValue(-1);
+            App.btnChoiseEm.setDisabled(true);
+        } else {
+            App.btnChoiseEm.setDisabled(false);
+            App.employeeId.setValue(0);
+        }
+        reloadData();
+    }
+</script>

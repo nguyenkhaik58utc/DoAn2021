@@ -1,0 +1,163 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@(Html.X().Hidden().ID("Code").Value("root"))
+@(Html.X().Hidden().ID("IsModule").Value(false))
+@(Html.X().Hidden().ID("IsGroup").Value(false))
+@(Html.X().Hidden().ID("IsFunction").Value(false))
+@(Html.X().Hidden().ID("IsPermission").Value(false))
+@(Html.X().Hidden().ID("DeptID").Value("1"))
+@model iDAS.Items.HumanAuditCriteriaItem
+@(Html.X().HiddenFor(m=>m.ID).ID("AuditCriteriaID"))
+@(Html.X().Window()
+            .ID("frmCri")
+            .Title("Thiết lập hệ số theo chức danh")
+            .Width(850)
+            .Height(500)
+            .Constrain(true)
+            .Modal(true)
+            .Closable(true)
+            .Icon(Icon.Add)
+            .Resizable(true)
+            .Layout(LayoutType.Border)
+            .Items(
+              Html.X().TreePanel()
+                .ID("DepartmentPanel")
+                .Region(Region.West)
+                .Width(360)
+                .Header(false)
+                .Border(true)
+                .RowLines(true)
+                .Icon(Icon.TextListBullets)
+                .ForceFit(true)
+                .RootVisible(false)
+                .SingleExpand(false)
+                .Split(true)
+                .Collapsible(true)
+                .MarginSpec("1 0 1 1")
+                .Listeners(ls =>
+                {
+                    ls.Load.Handler = "expandDepartment(records);";
+                    ls.Select.Handler = "reloadPermissionStore();";
+                })
+                .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                            Html.X().Button().Text("Mở rộng").Icon(Icon.ControlAddBlue).Handler("this.up('treepanel').expandAll();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Text("Thu gọn").Icon(Icon.ControlRemoveBlue).Handler("this.up('treepanel').collapseAll();")
+                        )
+                )
+                .Store(
+                    Html.X().TreeStore()
+                        .ID("StoreDepartments")
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Department", new { area = "Department" })).Reader(Html.X().JsonReader().Root("data")))
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("id"),
+                                Html.X().ModelField().Name("text"),
+                                Html.X().ModelField().Name("ParentID"),
+                                Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsMerge").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                            )
+                        )
+                )
+                .ColumnModel(
+                    Html.X().TreeColumn().Text("Cơ cấu tổ chức").StyleSpec("font-weight: bold;text-align: center")
+                        .DataIndex("text").Flex(1).Filterable(false).Sortable(false)
+                ),
+            Html.X().GridPanel()
+                .ID("PermissionPanel")
+                .ColumnLines(true)
+                .MarginSpec("1 1 1 0")
+                .Icon(Icon.TextListBullets)
+                .Region(Region.Center)
+                .Header(false)
+                .Border(true)
+                .Collapsible(true)
+                .ForceFit(true)
+                .EnableLocking(true)                
+                .Store(
+                    Html.X().Store()
+                        .ID("StorePermissions")
+                        .AutoLoad(false)
+                        .RemoteSort(true)
+                        .Model(Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("RoleID"),
+                                Html.X().ModelField().Name("RoleName"),
+                                    Html.X().ModelField().Name("AuditCriteRialFactiory"),
+                                Html.X().ModelField().Name("DepartmentName")
+                            )
+                        )
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDataPermission", "AuditCriteriaCategoryKPI", new { area = "Human" })).Reader(Html.X().JsonReader().Root("data")))
+                        .GroupField("DepartmentName")
+                        .SortOnLoad(false)
+                        .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("code", "App.Code.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("departmentId", "App.DeptID.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("isModule", "App.IsModule.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("isGroup", "App.IsGroup.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("isFunction", "App.IsFunction.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("CritId", "App.AuditCriteriaID.getValue()", ParameterMode.Raw));
+                        })
+                )
+                .Listeners(ls =>
+                {
+                    //ls.Select.Handler = "setPermissionAllDisabled(false)";
+                })
+                .ColumnModel(
+                    Html.X().Column().DataIndex("RoleID").Hidden(true),
+                    Html.X().Column().DataIndex("RoleName").Text("Chức danh").Flex(1).MenuDisabled(true),
+                    Html.X().Column().DataIndex("AuditCriteRialFactiory").Text("Hệ số").Width(100).Editor(Html.X().NumberField()),
+                    Html.X().Column().DataIndex("DepartmentName")
+                )
+                .Features(Html.X().Grouping().GroupHeaderTplString("{name}").HideGroupedHeader(true))
+                     .Plugins(
+                            Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "editCri")
+                    )
+                 
+      
+   )
+.Buttons(
+
+Html.X().ButtonExit()
+    )
+)
+
+<script type="text/javascript">
+    var expandDepartment = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+        var count = App.DepartmentPanel.selModel.getCount();
+        if (count <= 0) {
+            App.DepartmentPanel.selModel.select(0);
+        }
+    };
+    var reloadPermissionStore = function () {
+        App.DeptID.setValue(App.DepartmentPanel.getSelectionModel().getLastSelected().data.id);
+        App.PermissionPanel.store.reload();
+        App.PermissionPanel.selModel.deselectAll();
+    };
+    var editCri = function (editor, e) {
+        if (!(e.value == e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("HandleChanges", "AuditCriteriaCategoryKPI", new { area = "Human" }))',
+                params: {
+                    roleId: e.record.data.RoleID,
+                    critId: App.AuditCriteriaID.getValue(),
+                    factory: e.record.data.AuditCriteRialFactiory
+                }
+            });
+        }
+       
+    };
+</script>

@@ -1,0 +1,216 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    var StoreParam = ViewData["StoreParam"] as StoreParameter;
+    var urlSubmitTask = Url.Action("Insert", "NCTask", new { area = "Quality" });
+    var urlStoreTask = Url.Action("LoadTasks", "NCTask", new { area = "Quality" });
+    var paramStoreTask = Html.X().StoreParameter().Name("NCId").Value("getNCId()").Mode(ParameterMode.Raw);
+}
+@(
+ Html.X().GridPanel()
+        .ID("GridNC")
+        .Header(false)
+        .Border(false)
+        .ColumnLines(true)
+        .ForceFit(true)
+        .TopBar(
+            Html.X().Toolbar()
+                .Layout(LayoutType.HBox)
+                .Items(
+                    Html.X().ButtonCreate().Handler("showNCInsert(this.up('gridpanel'));"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonUpdate().ItemID("btnUpdateNC").Handler("showNCUpdate(this.up('gridpanel'));"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonDelete().ItemID("btnDeleteNC").Handler("deleteNC(this.up('gridpanel'));"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonView().ItemID("btnDetailNC").Handler("showNCDetail(this.up('gridpanel'));"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonApproval().ItemID("btnVerify").Handler("showIncorrecVerify(this.up('gridpanel'));"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask()
+                        .Listeners(ls => ls.Focus.Handler = "showNCTask(this.up('gridpanel'))").ItemID("btnNCTask").Disabled(true).Text("Giao việc"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().Button().Text("Yêu cầu khắc phục phòng ngừa").ItemID("btnRequireCAPA").Disabled(true).Icon(Icon.PictureEdit)
+                            .Handler("showCAPARequire(this.up('gridpanel'));"),
+                    Html.X().ToolbarFill(),
+                    Html.X().ButtonTutorial()
+                )
+            )
+            .Store(
+                Html.X().Store().AutoLoad(false)
+                .Proxy(Html.X().AjaxProxy().Url(ViewData["StoreUrl"].ToString()).Reader(Html.X().JsonReader().Root("data")))
+                .Parameters(a => a.Add(StoreParam))
+                .RemoteSort(false)
+                .RemotePaging(true)
+                .PageSize(15)
+                //.GroupField("Criteria.Category")
+                .Model(
+                    Html.X().Model().IDProperty("ID")
+                    .Fields(
+                        new ModelField("ID",ModelFieldType.Int),
+                        new ModelField("DepartmentID", ModelFieldType.Int),
+                        //new ModelField("Criteria.Name"),
+                        //new ModelField("Criteria.Category"),
+                        //new ModelField("Criteria.ID"),
+                        new ModelField("Content", ModelFieldType.String),
+                        new ModelField("IsObs", ModelFieldType.Boolean),
+                        new ModelField("IsMaximum", ModelFieldType.Boolean),
+                        new ModelField("IsMedium", ModelFieldType.Boolean),
+                        new ModelField("IsTrue", ModelFieldType.Boolean),
+                        new ModelField("Time", ModelFieldType.String),
+                        new ModelField("Status", ModelFieldType.String)
+                    )
+                )
+            )
+            .ColumnModel(
+              //  Html.X().Column().DataIndex("Criteria.Category").Width(100),
+                Html.X().RowNumbererColumn().Text("STT").Width(40).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Content").Text("Mô tả").Flex(1),
+                Html.X().ComponentColumn().Text("Phân loại").Columns(
+                            Html.X().CheckColumn().DataIndex("IsObs").Text("Obs").Width(80).Align(Alignment.Center),
+                            Html.X().CheckColumn().DataIndex("IsMedium").Text("m").Width(80).Align(Alignment.Center),
+                            Html.X().CheckColumn().DataIndex("IsMaximum").Text("M").Width(80).Align(Alignment.Center)
+                            ),
+                Html.X().DateColumnExtend().DataIndex("Time").Format("dd/MM/yyyy").Text("Ngày phát hiện").Align(Alignment.Center).Width(100)
+        ,
+        Html.X().Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(100)//,
+        //Html.X().Column().DataIndex("Status").Text("Kết quả").Align(Alignment.Center).Width(100)
+            )
+            //.Features(Html.X().GroupingSummary()
+            //                        .GroupHeaderTplString("{name}")
+            //                        .HideGroupedHeader(true).ShowSummaryRow(false)
+            //                        )
+            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusListNC(this);")
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single))
+                .BottomBar(
+                        Html.X().CustomPagingToolbar())
+)
+
+<script type="text/javascript">
+    var getNCId = function () {
+        var NCId = 0;
+        var records = NCGridPanel.selModel.getSelection();
+        if (records.length > 0) {
+            NCId = records[0].get('ID');
+        };
+        return NCId;
+    };
+    var showNCTask = function (grid) {
+        NCGridPanel = grid;
+    };
+    function CheckStatusListNC(grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length == 1) {
+            if (records[0].get("IsTrue") == false) {
+                grid.queryById('btnUpdateNC').setDisabled(false);
+                grid.queryById('btnDeleteNC').setDisabled(false);
+                grid.queryById('btnNCTask').setDisabled(true);
+                grid.queryById('btnRequireCAPA').setDisabled(true);
+            }
+            else {
+                grid.queryById('btnUpdateNC').setDisabled(true);
+                grid.queryById('btnDeleteNC').setDisabled(true);
+                if (records[0].get("IsObs") == true) {
+                    grid.queryById('btnNCTask').setDisabled(false);
+                    grid.queryById('btnRequireCAPA').setDisabled(true);
+                }
+                else {
+                    grid.queryById('btnNCTask').setDisabled(true);
+                    grid.queryById('btnRequireCAPA').setDisabled(false);
+                };
+            };
+            grid.queryById('btnDetailNC').setDisabled(false);
+            grid.queryById('btnVerify').setDisabled(false);
+        }
+        else {
+            grid.queryById('btnNCTask').setDisabled(true);
+            grid.queryById('btnUpdateNC').setDisabled(true);
+            grid.queryById('btnDeleteNC').setDisabled(true);
+            grid.queryById('btnDetailNC').setDisabled(true);
+            grid.queryById('btnRequireCAPA').setDisabled(true);
+            grid.queryById('btnVerify').setDisabled(true);
+        }
+    };
+    var showCAPARequire = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("CAPARequire", "NC", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showNCInsert = function (grid) {
+        NCGridPanel = grid;
+        var url = '@(Url.Action("InsertView", "NC", new { Area = "Quality" }))';
+        var params = {
+            urlSubmit: '@(ViewData["SubmitUrl"])',
+            Name: '@(StoreParam.Name)',
+            Value: '@(StoreParam.Value)',
+            Mode: '@(StoreParam.Mode)',
+        };
+        onDirectMethod(url, params);
+    };
+    var showNCUpdate = function (grid) {
+        NCGridPanel = grid;
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateView", "NC", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showNCDetail = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailView", "NC", new { Area = "Quality" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showIncorrecVerify = function (grid) {
+        NCGridPanel = grid;
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("VerifyView", "NC", new { Area = "Quality" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteUrl = '@(Url.Action("Delete", "NC", new { Area = "Quality" }, null))';
+    var deleteNC = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            onDelete(records[0].get('ID'), deleteSuccess);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteSuccess = function () {
+        var grid = App.GridNC;
+        grid.store.reload();
+        CheckStatusListNC(grid);
+    };
+</script>

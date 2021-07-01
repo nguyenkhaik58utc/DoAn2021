@@ -1,0 +1,59 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.TrainingItem
+    @{
+        var required = "<span style='color: red;'>(*)</span>";
+    }
+    @(Html.X().Window()
+        .ID("winAddTraining")
+        .Title("Thêm mới thông tin khóa đào tạo")
+        .Icon(Icon.Add)
+        .Frame(true)
+        .Constrain(true)
+        .Width(700)
+        .BodyPadding(5)
+        .Center()
+        .Resizable(false)
+        .Modal(true)
+        .Items(
+            Html.X().FormPanel().DefaultAnchor("100%")
+            .ID("frmAddTraining")
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 120)
+            .Items(
+                   Html.X().TextFieldFor(m => m.Name).AllowOnlyWhitespace(false).BlankText("Tên khóa đào tạo bắt buộc nhập !").FieldLabel("Tên khóa" + required),
+                               Html.X().DateFieldFor(m => m.Time).FieldLabel("Thời gian").AllowBlank(false).Format("dd/MM/yyyy"),
+                   Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").MaxLength(400).Height(100),
+                   Html.X().FileUploadFieldFor(m => m.File).Multiple(false).FileFilter("application/msword"),
+                           Html.X().TextAreaFor(m => m.Contents).FieldLabel("Nội dung").Height(200),
+                   Html.X().NumberFieldFor(m => m.Order).FieldLabel("Thứ tự"),
+                   Html.X().CheckboxFor(m => m.IsShow).FieldLabel("Hiển thị")
+                )
+
+    )
+    .Buttons(
+            Html.X().ButtonSave()
+                .DirectEvents(de =>
+                {
+                    de.Click.Before = @"if (!App.frmAddTraining.getForm().isValid()) { return false; } ";
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.FormID = "frmAddTraining";
+                    de.Click.Success = "App.stTraining.reload();";
+
+                }),
+            Html.X().ButtonSaveAndExit()
+                .DirectEvents(de =>
+                {
+                    de.Click.Before = @"if (!App.frmAddTraining.getForm().isValid()) { return false; } ";
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.FormID = "frmAddTraining";
+                    de.Click.Success = "this.up('window').close(); App.stTraining.reload();";
+                }),
+            Html.X().ButtonReset()
+                                    .OnClientClick("App.frmAddTraining.reset();"),
+            Html.X().ButtonExit()
+    )
+    )

@@ -1,0 +1,625 @@
+﻿@model System.Collections.IEnumerable
+@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var year = DateTime.Today.Year;
+    var itemYear = new List<ListItem>();
+    itemYear.Add(new ListItem() { Text = (year - 1).ToString(), Value = (year - 1).ToString() });
+    itemYear.Add(new ListItem() { Text = year.ToString(), Value = year.ToString() });
+    itemYear.Add(new ListItem() { Text = (year + 1).ToString(), Value = (year + 1).ToString() });
+
+    var panelChart1 = Html.X().Panel().ColumnWidth(0.55)
+                .Title("Biểu đồ biến động nhân sự theo tháng của từng năm")
+                .Layout(LayoutType.Fit)
+                .Height(400)
+                .TopBar(Html.X().Toolbar()
+                        .Items(
+                    Html.X().Button()
+                        .Text("Lưu biểu đồ")
+                        .Icon(Icon.Disk)
+                        .Handler("saveChart")
+                        ,
+                    Html.X().ComboBox()
+                               .ID("cboYear1")
+                               .Width(90)
+                               .Editable(false)
+                               .EmptyText("Chọn năm")
+                               .Items(itemYear)
+                               .Value(year)
+                               .Listeners(ls => ls.Change.Handler = "#{Chart1}.getStore().reload()"
+                           ),
+                    Html.X().TextField().ID("NumberEmployee").FieldLabel("Số lượng nhân viên").Width(150).ReadOnly(true).Text("1234").Hidden(true)
+                        )
+                    )
+                .Items(
+                        Html.X().Chart()
+                        .ID("Chart1")
+                        .StyleSpec("background:#fff;")
+                        .Shadow(true)
+                        .StandardTheme(StandardChartTheme.Category1)
+                        .Animate(true)
+                        .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right))
+                        .Store(Html.X().Store()
+                            .Data(Model)
+                            .Model(Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Amount")
+                                )
+                            )
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetData"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("year", "App.cboYear1.getValue()", ParameterMode.Raw));
+                            })
+                        )
+                        .Axes(
+                            Html.X().NumericAxis()
+                                .Fields(new[] { "Amount" })
+                                .MinorTickSteps(1)
+                                .Minimum(0)
+                                .GridConfig(Html.X().AxisGrid()
+                                    .Odd(new SpriteAttributes { Opacity = 1, Fill = "#ddd", Stroke = "#bbb", StrokeWidth = 0.5 })
+                                ),
+                            Html.X().CategoryAxis()
+                                .Position(Position.Bottom)
+                                .Fields("Name")
+                        )
+                        .Series(
+                            Html.X().LineSeries()
+                                .Axis(Position.Left)
+                                .XField("Name")
+                                .YField("Amount")
+                                .Title("Nhân sự")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Cross, Size = 4, Radius = 4, StrokeWidth = 0 })
+                        )
+                    );
+
+    var panelChart2 = Html.X().Panel().ColumnWidth(0.45)
+                 .Layout(LayoutType.Fit)
+                 .Title("Trình độ học vấn")
+                 .Height(400)
+                 .TopBar(Html.X().Toolbar()
+                     .Items(
+                         Html.X().Button()
+                             .Text("Tải lại")
+                             .Icon(Icon.ArrowRefresh)
+                             .Handler("#{Chart2}.getStore().reload()"),
+                         Html.X().Button()
+                             .Text("Lưu biểu đồ")
+                             .Icon(Icon.Disk)
+                             .Handler("saveChart")
+                     )
+                 )
+                 .Items(
+                     Html.X().Chart()
+                         .ID("Chart2")
+                         .Animate(true)
+                         .Shadow(true)
+                         .InsetPadding(60)
+                         .Theme("Base:gradients")
+                         .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right))
+                         .StyleSpec("background:#fff;")
+                         .Store(Html.X().Store()
+                             .Data(Model)
+                             .Model(Html.X().Model()
+                                 .Fields(
+                                     Html.X().ModelField().Name("Name"),
+                                     Html.X().ModelField().Name("Amount")
+                                 )
+                             )
+                             .Proxy(Html.X().AjaxProxy()
+                                 .Url(Url.Action("GetData2"))
+                                 .Reader(Html.X().JsonReader().Root("data"))
+                             )
+                         )
+                         .Series(Html.X().PieSeries()
+                             .AngleField("Amount")
+                             .ShowInLegend(true)
+                             .Donut(0)
+                             .Highlight(true)
+                             .HighlightSegmentMargin(20)
+                             .Label(Html.X().SeriesLabel()
+                                 .Display(SeriesLabelDisplay.Rotate)
+                                 .Field(new[] { "Name" })
+                                 .Contrast(true)
+                                 .Font("13px Arial")
+                                 .Orientation(Orientation.Horizontal)
+                             )
+                             .Tips(Html.X().ChartTip()
+                                 .TrackMouse(true)
+                                 .Width(140)
+                                 .Height(28)
+                                 .Renderer(r => r.Fn = "tipRenderer2")
+                             )
+                         )
+             );
+
+    var panelChart3 = Html.X().Panel().ColumnWidth(0.33).MarginSpec("10 0 0 0")
+                .Layout(LayoutType.Fit)
+                .Title("Độ tuổi")
+                .Height(400)
+                .TopBar(Html.X().Toolbar()
+                    .Items(
+                        Html.X().Button()
+                            .Text("Tải lại")
+                            .Icon(Icon.ArrowRefresh)
+                            .Handler("#{Chart3}.getStore().reload()"),
+                        Html.X().Button()
+                            .Text("Lưu biểu đồ")
+                            .Icon(Icon.Disk)
+                            .Handler("saveChart")
+                    )
+                )
+                .Items(
+                    Html.X().Chart()
+                        .ID("Chart3")
+                        .Animate(true)
+                        .Shadow(true)
+                        .InsetPadding(60)
+                        .Theme("Base:gradients")
+                        .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right))
+                        .StyleSpec("background:#fff;")
+                        .Store(Html.X().Store()
+                            .Data(Model)
+                            .Model(Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Amount")
+                                )
+                            )
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetData3"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        )
+                        .Series(Html.X().PieSeries()
+                            .AngleField("Amount")
+                            .ShowInLegend(true)
+                            .Donut(0)
+                            .Highlight(true)
+                            .HighlightSegmentMargin(20)
+                            .Label(Html.X().SeriesLabel()
+                                .Display(SeriesLabelDisplay.Rotate)
+                                .Field(new[] { "Name" })
+                                .Contrast(true)
+                                .Font("13px Arial")
+                                .Orientation(Orientation.Horizontal)
+                            )
+                            .Tips(Html.X().ChartTip()
+                                .TrackMouse(true)
+                                .Width(140)
+                                .Height(28)
+                                .Renderer(r => r.Fn = "tipRenderer3")
+                            )
+                        )
+            );
+    var panelChart4 = Html.X().Panel().ColumnWidth(0.34).MarginSpec("10 0 0 0")
+                .Layout(LayoutType.Fit)
+                .Title("Giới tính")
+                .Height(400)
+                .TopBar(Html.X().Toolbar()
+                    .Items(
+                        Html.X().Button()
+                            .Text("Tải lại")
+                            .Icon(Icon.ArrowRefresh)
+                            .Handler("#{Chart4}.getStore().reload()"),
+                        Html.X().Button()
+                            .Text("Lưu biểu đồ")
+                            .Icon(Icon.Disk)
+                            .Handler("saveChart")
+                    )
+                )
+                .Items(
+                    Html.X().Chart()
+                        .ID("Chart4")
+                        .Animate(true)
+                        .Shadow(true)
+                        .InsetPadding(60)
+                        .Theme("Base:gradients")
+                        .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right))
+                        .StyleSpec("background:#fff;")
+                        .Store(Html.X().Store()
+                            .Data(Model)
+                            .Model(Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Amount")
+                                )
+                            )
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetData4"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        )
+                        .Series(Html.X().PieSeries()
+                            .AngleField("Amount")
+                            .ShowInLegend(true)
+                            .Donut(0)
+                            .Highlight(true)
+                            .HighlightSegmentMargin(20)
+                            .Label(Html.X().SeriesLabel()
+                                .Display(SeriesLabelDisplay.Rotate)
+                                .Field(new[] { "Name" })
+                                .Contrast(true)
+                                .Font("13px Arial")
+                                .Orientation(Orientation.Horizontal)
+                            )
+                            .Tips(Html.X().ChartTip()
+                                .TrackMouse(true)
+                                .Width(140)
+                                .Height(28)
+                                .Renderer(r => r.Fn = "tipRenderer4")
+                            )
+                        )
+            );
+
+    var panelChart5 = Html.X().Panel().ColumnWidth(0.33).MarginSpec("10 0 0 0")
+                .Layout(LayoutType.Fit)
+                .Title("Loại hợp đồng")
+                .Height(400)
+                .TopBar(Html.X().Toolbar()
+                    .Items(
+                        Html.X().Button()
+                            .Text("Tải lại")
+                            .Icon(Icon.ArrowRefresh)
+                            .Handler("#{Chart5}.getStore().reload()"),
+                        Html.X().Button()
+                            .Text("Lưu biểu đồ")
+                            .Icon(Icon.Disk)
+                            .Handler("saveChart")
+                    )
+                )
+                .Items(
+                    Html.X().Chart()
+                        .ID("Chart5")
+                        .Animate(true)
+                        .Shadow(true)
+                        .InsetPadding(60)
+                        .Theme("Base:gradients")
+                        .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right))
+                        .StyleSpec("background:#fff;")
+                        .Store(Html.X().Store()
+                            .Data(Model)
+                            .Model(Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Amount")
+                                )
+                            )
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetData5"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        )
+                        .Series(Html.X().PieSeries()
+                            .AngleField("Amount")
+                            .ShowInLegend(true)
+                            .Donut(0)
+                            .Highlight(true)
+                            .HighlightSegmentMargin(20)
+                            .Label(Html.X().SeriesLabel()
+                                .Display(SeriesLabelDisplay.Rotate)
+                                .Field(new[] { "Name" })
+                                .Contrast(true)
+                                .Font("13px Arial")
+                                .Orientation(Orientation.Horizontal)
+                            )
+                            .Tips(Html.X().ChartTip()
+                                .TrackMouse(true)
+                                .Width(140)
+                                .Height(28)
+                                .Renderer(r => r.Fn = "tipRenderer5")
+                            )
+                        )
+            );
+
+    var tableAward = Html.X().GridPanel().ColumnWidth(0.33).MarginSpec("10 0 0 0").Height(400)
+                    .Title("Khen thưởng tháng")
+                    .ID("ProblemResidentAgencyPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+
+                    .Store(Html.X().Store()
+                .ID("StoreAward")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataAward")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Content").Type(ModelFieldType.String)
+                        )
+                )
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Name").Text("Tên Nhân Viên").MenuDisabled(true),
+                Html.X().Column().DataIndex("Content").Text("Nội dung khen thưởng").Flex(1).MenuDisabled(true)
+             );
+
+    var tableNewEmployee = Html.X().GridPanel().ColumnWidth(0.34).MarginSpec("10 0 0 0").Height(400)
+                    .Title("Nhân viên mới")
+                    .ID("panelNewEmploee")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+
+                    .Store(Html.X().Store()
+                .ID("StoreNewEmployee")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataNewEmployee")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("DepartmentName").Type(ModelFieldType.String)
+                        )
+                )
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Name").Text("Tên Nhân Viên").MenuDisabled(true),
+                Html.X().Column().DataIndex("DepartmentName").Text("Chức danh - Phòng ban").Flex(1).MenuDisabled(true)
+             );
+
+    var tableExpireDate = Html.X().GridPanel().ColumnWidth(0.33).MarginSpec("10 0 0 0").Height(400)
+                    .Title("Nhân viên sắp hết hạn hợp đồng")
+                    .ID("panelExpireDate")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+
+                    .Store(Html.X().Store()
+                .ID("StoreExpireDate")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataExpireDate")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("ExpireDate").Type(ModelFieldType.Date)
+                        )
+                )
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Name").Text("Tên Nhân Viên").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("ExpireDate").Text("Ngày hết hạn").Flex(1).MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center)
+             );
+
+    var panelCruitment = Html.X().GridPanel().ColumnWidth(0.33).MarginSpec("10 0 0 0")
+           .ID("grdCruitment")
+           .ColumnLines(true).Title("Kế hoạch tuyển dụng")
+           .AutoScroll(true)
+           .Height(400)
+           .Store(
+                    Html.X().Store()
+                    .AutoLoad(true)
+                    .ID("stCruitment")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetAllCruitment"))
+                    .Reader(Html.X().JsonReader().Root("data")))
+                    .GroupField("PlanName")
+                    .Model(Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("PlanName").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StartTime").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("EndTime").Type(ModelFieldType.Date)
+                            )
+                        )
+                )
+            .ColumnModel(
+                Html.X().Column().DataIndex("Name").Text("Đợt tuyển dụng").Flex(1),
+                Html.X().DateColumn().DataIndex("StartTime").Text("Ngày bắt đầu").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("EndTime").Text("Ngày kết thúc").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center)
+            )
+            .Features(Html.X().Grouping().GroupHeaderTplString("{[values.rows[0].data.PlanName]}").HideGroupedHeader(false))
+            .Plugins(Html.X().CellEditing())
+            .SelectionModel(
+                    Html.X().RowSelectionModel()
+                    .Mode(SelectionMode.Multi)
+            );
+
+    var paneTraining = Html.X().GridPanel().ColumnWidth(0.34).MarginSpec("10 0 0 0")
+           .ID("grdTraining")
+           .ColumnLines(true)
+           .AutoScroll(true)
+           .Height(400)
+           .Title("Kế hoạch đào tạo")
+           .Store(
+                    Html.X().Store()
+                    .AutoLoad(true)
+                    .ID("stTraining")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetAllTraining"))
+                    .Reader(Html.X().JsonReader().Root("data")))
+                    .GroupField("PlanName")
+                    .Model(Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("PlanName").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StartTime").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("EndTime").Type(ModelFieldType.Date)
+                            )
+                        )
+                )
+            .ColumnModel(
+                Html.X().Column().DataIndex("Name").Text("Đợt đào tạo").Flex(1),
+                Html.X().DateColumn().DataIndex("StartTime").Text("Ngày bắt đầu").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("EndTime").Text("Ngày kết thúc").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center)
+            )
+            .Features(Html.X().Grouping().GroupHeaderTplString("{[values.rows[0].data.PlanName]}").HideGroupedHeader(false))
+            .Plugins(Html.X().CellEditing())
+            .SelectionModel(
+                    Html.X().RowSelectionModel()
+                    .Mode(SelectionMode.Multi)
+            );
+
+   
+
+    var treeDepartment = Html.X().TreePanel().ColumnWidth(0.33)
+            .Listeners(ls =>
+            {
+                ls.Load.Handler = "expandDepartmentWindow(records);";
+                ls.AfterRender.Handler = "this.getRootNode().expand(true);";
+            })
+            .Split(true)
+            .Region(Region.Center)
+            .MarginSpec("10 0 0 0")
+            .ID("gpDepartmentStatistical1")
+            .Border(false)
+            .Title("Nhân sự theo phòng ban")
+            .AutoScroll(true)
+            .RootVisible(false)
+            .ColumnLines(true)
+            .Height(400)
+            .RowLines(true)
+            .Store(
+                Html.X().TreeStore().ID("stStatistical1")
+                    .AutoLoad(true)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetEmpTotal", "Statistic"))
+                    .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                    .Model(
+                        Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("id"),
+                                Html.X().ModelField().Name("text"),
+                                Html.X().ModelField().Name("ParentID"),
+                                Html.X().ModelField().Name("Data1")
+                                )
+                    )
+                )
+            .ColumnModel(
+                Html.X().TreeColumn().Text("Sơ đồ tổ chức").Width(300).DataIndex("text").Flex(1),
+                Html.X().Column().DataIndex("Data1").Text("Tổng số nhân sự").Width(120)
+                )
+                .SelectionModel(
+                    Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Single)
+                    );
+}
+
+
+<script>
+
+    var expandDepartmentWindow = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                var node = records[i];
+                if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+                    node.expand();
+                }
+            }
+        }
+    };
+
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Xác nhận', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    }
+    var tipRenderer = function (storeItem, item) {
+        this.setTitle(storeItem.get('Name'));
+    }
+
+    var tipRenderer2 = function (storeItem, item) {
+        //calculate percentage.
+        var total = 0;
+
+        App.Chart2.getStore().each(function (rec) {
+            total += rec.get('Amount');
+        });
+
+        this.setTitle(storeItem.get('Name') + ': ' + Math.round(storeItem.get('Amount') / total * 100) + '%');
+    }
+    var tipRenderer3 = function (storeItem, item) {
+        //calculate percentage.
+        var total = 0;
+
+        App.Chart3.getStore().each(function (rec) {
+            total += rec.get('Amount');
+        });
+
+        this.setTitle(storeItem.get('Name') + ': ' + Math.round(storeItem.get('Amount') / total * 100) + '%');
+    }
+    var tipRenderer4 = function (storeItem, item) {
+        //calculate percentage.
+        var total = 0;
+
+        App.Chart4.getStore().each(function (rec) {
+            total += rec.get('Amount');
+        });
+
+        this.setTitle(storeItem.get('Name') + ': ' + Math.round(storeItem.get('Amount') / total * 100) + '%');
+    }
+    var tipRenderer5 = function (storeItem, item) {
+        //calculate percentage.
+        var total = 0;
+
+        App.Chart5.getStore().each(function (rec) {
+            total += rec.get('Amount');
+        });
+
+        this.setTitle(storeItem.get('Name') + ': ' + Math.round(storeItem.get('Amount') / total * 100) + '%');
+    }
+
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Tải xuống', 'Bạn có muốn tải hình ảnh hay không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    }
+</script>
+
+@(Html.X().Panel()
+        .Layout(LayoutType.Auto)
+        .Items(
+        Html.X().Panel()
+        .Layout(LayoutType.Column)
+          .Items(
+            panelChart1
+            ,
+            panelChart2
+          ),
+        Html.X().Panel()
+        .Layout(LayoutType.Column)
+          .Items(
+            tableAward,
+            tableNewEmployee,
+            tableExpireDate
+          ),
+        Html.X().Panel()
+        .Layout(LayoutType.Column)
+          .Items(
+            panelCruitment,
+            paneTraining,
+            treeDepartment
+          ),
+        Html.X().Panel()
+        .Layout(LayoutType.Column)
+          .Items(
+            panelChart3,
+            panelChart4,
+            panelChart5
+          )
+      )
+)

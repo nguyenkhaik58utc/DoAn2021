@@ -1,0 +1,83 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Human.Models.V3_Category.V3_EthnicResponse
+@(Html.X().Window()
+    .ID("CreateEthnicWindow")
+    .Title("Thêm mới dân tộc")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreateEthnicForm")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .MarginSpec("0 10 10 10")
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 100)
+            .DefaultAnchor("100%")
+            .Items(
+                                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên dân tộc" + Html.Required())
+                                    .EmptyText("Nhập tên dân tộc")
+                                    .BlankText("Bạn phải nhập tên dân tộc")
+                                    .AllowBlank(false).AllowOnlyWhitespace(false),
+                                Html.X().ComboBoxFor(m => m.NationalityID)
+                                    .FieldLabel("Quốc gia" + Html.Required())
+                                    .Editable(false)
+                                    .EmptyText("Chọn quốc gia")
+                                        .Store(
+                                            Html.X().Store()
+                                            .AutoLoad(true)
+                                            .ID("NationalityCbox")
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadData", "V3_Nationality", new { area = "Human" }))
+                                                    .Reader(
+                                                        Html.X().JsonReader().Root("data"))
+                                        )
+                                        .Model(
+                                            Html.X().Model()
+                                                .Fields(
+                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                                )
+                                        )
+                                    )
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createEthnicSubmit(false)"),
+        Html.X().ButtonSaveAndExit().Handler("createEthnicSubmit(true)"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var createEthnicSubmit = function (exit) {
+        App.CreateEthnicForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadEthnic();
+                    if (exit) {
+                        App.CreateEthnicWindow.close();
+                    }
+                    else {
+                        App.CreateEthnicForm.reset();
+                        App.TabMain.setActiveTab('tabEthnicCreate');
+                    }
+                }
+            }
+        });
+    };
+</script>

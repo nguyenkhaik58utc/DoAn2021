@@ -1,0 +1,105 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.CustomerTypeItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete", "CustomerType"))';
+    function CheckStatusCustomerType() {
+        var records = App.GrCustomerType.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateCustomerType, App.btnDeleteCustomerType, App.btnDetailOrder);
+        }
+        else {
+            SetDisabled(App.btnUpdateCustomerType, App.btnDeleteCustomerType, App.btnDetailOrder);
+        };
+    };
+    var ShowInsert = function () {
+        onDirectMethod('@(Url.Action("Update", "CustomerType", new { Area = "Customer" }, null))', null,'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.GrCustomerType.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "CustomerType", new { Area = "Customer" }, null))';
+            var  params= {ID: records[0].get('ID')};
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ShowViewDetail = function () {
+        var records = App.GrCustomerType.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerType", new { Area = "Customer" }, null))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerType")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowInsert();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateCustomerType").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteCustomerType").Handler("onDelete(App.GrCustomerType.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailOrder").Handler("ShowViewDetail();"),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                                )
+                            )
+                            .Store(
+                            Html.X().Store().ID("StoreCustomerType")
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "CustomerType", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Note"),
+                                        Html.X().ModelField().Name("IsActive")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                X.Column().DataIndex("Name").Text("Tên").Flex(1),
+                                X.Column().DataIndex("Note").Text("Ghi chú").Flex(2),
+                                X.CheckColumn().DataIndex("IsActive").Text("Kích hoạt").Width(100).Align(Alignment.Center)
+                            )
+                        .Features(
+                            Html.X().GridFilters()
+                                .MenuFilterText("Tìm kiếm")
+                                .Filters(
+                                    Html.X().StringFilter().DataIndex("Name"),
+                                    Html.X().BooleanFilter().DataIndex("IsActive").YesText("Đã kích hoạt").NoText("Chưa kích hoạt")
+                                )
+                        )   
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusCustomerType"))
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar()
+            )
+     )
+)
+

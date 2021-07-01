@@ -1,0 +1,68 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.RiskTreatmentItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window().ItemID("windowId")
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .ID("winRiskTreatmentDetail")
+    .Title("Xem chi tiết thông tin hành động ứng phó rủi ro")
+    .Icon(Icon.Zoom)
+    .Items(
+            X.CustomFormPanel().ID("frmUpdate")
+                .FieldDefaults(lf => { lf.LabelWidth = 80; lf.ReadOnly = true; })
+                .Items(
+                          X.HiddenFor(m => m.CenterRiskID),
+                        X.ComboBoxFor(i => i.CenterRiskMethodID).FieldLabel("Mức độ rủi ro")
+                                                            .ID("cbRiskMethod").AllowBlank(false)
+                                                            .BlankText("Thiết lập khả năng xảy ra phù hợp với mức độ rủi ro qui định")
+                                                            .PaddingSpec("5 0 5 0")
+                                                            .EmptyText("Hệ thống tính toán mức độ rủi ro từ định lượng rủi ro")
+                                                            .ColumnWidth(1)
+                                                            .DisplayField("Level")
+                                                            .ValueField("ID")
+                                                            .Store(
+                                                                Html.X().Store()
+                                                                .ID("stRiskMethod")
+                                                                    .AutoLoad(true)
+                                                                    .Model(
+                                                                        Html.X().Model()
+                                                                            .IDProperty("ID")
+                                                                            .Fields(
+                                                                                new ModelField("ID", ModelFieldType.Int),
+                                                                                new ModelField("Level", ModelFieldType.String),
+                                                                                new ModelField("Color", ModelFieldType.String)
+                                                                            )
+                                                                    )
+                                                                    .Proxy(
+                                                                        Html.X().AjaxProxy()
+                                                                            .Url(Url.Action("LoadData", "RiskMethod"))
+                                                                            .Reader(Html.X().JsonReader().Root("data")
+                                                                            )
+                                                                    )
+                                                            )
+                                                            .Tpl(
+                                                            @<text>
+                                                                <tpl for=".">
+                                                                    <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                                                        <div style="width: 20px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px soli>;">&nbsp;</div><div style="width: auto; float: left; font-size: 0.9em;">&nbsp;{Level}</div>
+                                                                    </div>
+                                                                </tpl>
+                                                            </text>)
+                                               ,
+                        X.TextFieldFor(m=>m.Method).ID("tfMethod").FieldLabel("Phương thức").ReadOnly(true),
+                        X.TextAreaFor(m => m.Action).FieldLabel("Hành động")
+                                .EmptyText("Nhập hành động kiểm soát rủi ro...").Height(150).Flex(1)
+                        )
+            )  
+    .Buttons(
+               Html.X().ButtonExit()
+            )
+)

@@ -1,0 +1,209 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DocumentItem
+@(Html.X().Window()
+    .ID("winApprovalDocumentUpdate")
+    .Title("Ban hành tài liệu")
+    .Icon(Icon.TabGo)
+    .Width(800)
+    .BodyPadding(0)
+    .Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .FieldDefaults(f => { f.LabelWidth = 110; })
+            .ID("frApprovalDocumentUpdate")
+            .Items(
+                Html.X().HiddenFor(m => m.ID),
+                Html.X().TabPanel()
+                    .ID("TabPanel1")
+                    .ActiveTabIndex(0)
+                    .Border(true)
+                    .Items(
+                        Html.X().Panel()
+                            .ID("Tab1")
+                            .Icon(Icon.ApplicationViewDetail)
+                            .Layout(LayoutType.Form)
+                                    .BodyPadding(4)
+                            .StyleSpec("border: none;")
+                            .Title("Thông tin tài liệu")
+                            .Frame(true)
+                            .Items(
+                                Html.X().Container()
+                                    .Layout(LayoutType.Column)
+                                    .Items(
+                                        Html.X().TextFieldFor(m => m.Code)
+                                                    .ID("Code").FieldLabel("Mã Tài liệu")
+                                                    .ReadOnly(true)
+                                                    .TabIndex(1)
+                                                    .ColumnWidth(0.7),
+                                        Html.X().TextFieldFor(m => m.Version)
+                                                    .ID("txtVersion")
+                                                    .FieldLabel("Phiên bản")
+                                                    .MarginSpec("0 0 0 5")
+                                                    .TabIndex(2).LabelWidth(80)
+                                                    .ReadOnly(true)
+                                                    .ColumnWidth(0.3)
+                                                ),
+                                Html.X().TextFieldFor(m => m.Name)
+                                        .ID("txtName")
+                                        .FieldLabel("Tên Tài liệu")
+                                        .ReadOnly(true)
+                                        .TabIndex(3),
+                                Html.X().Container().Layout(LayoutType.Column).Items(
+                                        Html.X().TextFieldFor(m => m.Type)
+                                            .ID("cbType")
+                                            .ColumnWidth(0.5)
+                                            .FieldLabel("Loại tài liệu")
+                                            .ReadOnly(true)
+                                            .TabIndex(6),
+                                    Html.X().ComboBoxFor(m => m.SecurityID)
+                                            .ID("cbSecurity")
+                                            .ColumnWidth(0.5).MarginSpec("0 0 0 5")
+                                            .FieldLabel("Mức độ bảo mật" + Html.Required())
+                                            .EmptyText("Chọn mức độ mật của tài liệu...")
+                                            .AllowBlank(false)
+                                            .BlankText("Mức độ mật bắt buộc chọn!")
+                                            .QueryMode(DataLoadMode.Local)
+                                            .ReadOnly(true)
+                                            .ForceSelection(true)
+                                            .TriggerAction(TriggerAction.All)
+                                            .DisplayField("Name")
+                                            .ValueField("ID")
+                                                .Tpl(
+                                            @<text>
+                                                <tpl for=".">
+                                                    <div class="x-boundlist-item"><div style="text-align: center; width: 100%; background-color: {Color}; border: #cecece 1px solid;">{Name}</div></div>
+                                                </tpl>
+                                            </text>)
+                                    .Store(
+                                            Html.X().Store()
+                                                .ID("stDocSecurity")
+                                                .AutoLoad(true).Model(
+                                                                        Html.X().Model().IDProperty("ID")
+                                                                                .Fields(
+                                                                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                                                                            new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                                                                        )
+                                                                        )
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataCboSecurity")).Reader(Html.X().JsonReader().Root("data")))
+                                            )
+                                        .Listeners(l => l.Change.Handler = "getColor(App.cbSecurity, App.stDocSecurity);")
+                                            ),
+                                    Html.X().Container().Layout(LayoutType.Column).Items(
+                                        Html.X().TextFieldFor(m => m.Category)
+                                            .FieldLabel("Danh mục Tài liệu")
+                                            .ColumnWidth(0.5)
+                                            .ID("cbCategory"),
+                                        Html.X().TextFieldFor(m => m.DepartmentOfCategory).FieldLabel("Thuộc phòng")
+                                            .ReadOnly(true)
+                                            .ID("txtCategoryDept")
+                                            .ColumnWidth(0.5)
+                                            .MarginSpec("0 0 0 5")
+                                    ),
+                                Html.X().CheckboxGroupFor(m => m.StorageFormID, new List<Checkbox.Config> {
+                                    new Checkbox.Config{BoxLabel = "Bản mềm", InputValue =iDAS.Items.StorageForm.SoftCopy.ToString() , ReadOnly= true, TabIndex=8},
+                                    new Checkbox.Config{BoxLabel = "Bản cứng", InputValue =iDAS.Items.StorageForm.HardCopy.ToString(), ReadOnly= true, TabIndex=9}
+                                        }).FieldLabel("Hình thức lưu trữ")
+                                    .ID("rabgrStore")
+                                    .ColumnWidth(0.5),
+                                Html.X().DepartmentFieldFor(m => m.Department).FieldLabel("Phòng/ban lưu trữ").ReadOnly(true).Multiple(false).AllowBlank(false).Height(25),
+                                Html.X().Container()
+                                    .Layout(LayoutType.Column)
+                                    .Items(
+                                    Html.X().NumberFieldFor("IssuedTime")
+                                        .ID("IssuedTime").FieldLabel("Lần ban hành")
+                                        .TabIndex(12)
+                                        .ReadOnly(true)
+                                        .ColumnWidth(0.5)
+                          
+                                    ),
+                              
+                                Html.X().FileUploadFieldFor(m => m.AttachmentFile).ReadOnly(true),
+                                Html.X().TextAreaFor(m => m.Content).MarginSpec("-4 0 0 0")
+                                    .ID("txtDescription")
+                                    .FieldLabel("Nội dung chính")
+                                    .ReadOnly(true)
+                                    .Flex(1)
+                                    .TabIndex(11).MinHeight(100),
+                                Html.X().TextFieldFor(m => m.Note).FieldLabel("Ghi chú").ReadOnly(true),
+                                    Html.X().Container()
+                                        .Layout(LayoutType.Column)
+                                        .Items(
+                                        Html.X().TextFieldFor(m => m.CreateByName)
+                                            .ID("txtCreateByName")
+                                            .ReadOnly(true)
+                                            .FieldLabel("Người tạo").ColumnWidth(0.5)
+                                            .TabIndex(11),
+                                        Html.X().DateFieldFor(m => m.CreateAt)
+                                            .ColumnWidth(0.5)
+                                            .ID("dtCreateAt")
+                                            .ReadOnly(true)
+                                            .FieldLabel("Thời gian tạo")
+                                            .MarginSpec("0 0 0 5")
+                                            .TabIndex(11).Format("dd/MM/yyyy")
+                                        )
+                                   ),
+                    Html.X().Panel()
+                        .ID("fsApproval")
+                        .Icon(Icon.UserComment)
+                        .Border(false)
+                        .BodyPadding(4)
+                        .StyleSpec("border:none")
+                        .Frame(true)
+                        .Title("Thông tin ban hành")
+                        .Layout(LayoutType.Form)
+                        .Items(
+                            Html.X().DateFieldFor(m => m.IssuedDate).ID("dtDate")
+                                    .FieldLabel("Ngày ban hành" + Html.Required())
+                                .TabIndex(5)
+                                .AllowBlank(false).BlankText("Ngày ban hành bắt buộc nhập!"),
+                                Html.X().RadioGroupFor(m => m.StatusApprove, new List<Radio.Config> {
+                                new Radio.Config{BoxLabel = "Ban hành", InputValue =iDAS.Utilities.Common.DocumentStatus.Issued.ToString(),  TabIndex=8 },
+                                new Radio.Config{BoxLabel = "Lỗi thời", InputValue =iDAS.Utilities.Common.DocumentStatus.Obsolete .ToString(), TabIndex=9}
+                                    }).FieldLabel("Trạng thái")
+                                .ID("rabgrStatus")
+                                            .Listeners(l => l.Change.Handler = "if(App.rabgrStatus.getChecked()[0].inputValue== '" + iDAS.Utilities.Common.DocumentStatus.Issued.ToString() + "'){App.dtDate.setDisabled(false); App.dtDate.allowBlank= false; App.txtNote.allowBlank= true; }else {App.dtDate.setDisabled(true); App.dtDate.allowBlank= true;App.txtNote.allowBlank= false;  };")
+                                .AllowBlank(false),
+                        Html.X().TextAreaFor(m => m.NoteIssues)
+                            .ID("txtNoteIssues")
+                            .FieldLabel("Ý kiến/ Ghi chú" + Html.Required())
+                            .TabIndex(5)
+                            .MaxLength(200)
+                            .AllowBlank(false).BlankText("Ý kiến/ Ghi chú bắt buộc nhập!").AllowOnlyWhitespace(false)
+                            .Height(250)
+                              
+                        )
+                 )
+             )
+        )
+        .Buttons(
+              Html.X().ButtonSave()
+                .ID("btnSave")
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frApprovalDocumentUpdate";
+                        de.Click.Url = Url.Action("IssuedUpdate");
+                        de.Click.Before = @"if (!#{frApprovalDocumentUpdate}.getForm().isValid()) { return false; }";
+                        de.Click.EventMask.ShowMask = true;
+                        de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                        de.Click.Failure = @"Ext.Msg.show({
+                                        title   : 'Thông báo',
+                                        msg     : 'Lỗi khi cập nhật dữ liệu.',
+                                        minWidth: 200,
+                                        modal   : true,
+                                        icon    : Ext.Msg.ERROR,
+                                        buttons : Ext.Msg.OK
+                                    });";
+                    }),
+            Html.X().ButtonExit()
+        )
+)

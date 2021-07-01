@@ -1,0 +1,98 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend
+@model IEnumerable<iDAS.Items.FileItem>
+@(Html.X().Window().ID("wAttachment").Title("Danh sách file đính kèm").Width(550).Height(300)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Modal(true)
+    .Resizable(false).Icon(Icon.Attach)
+    .Items(
+Html.X().GridPanel().Layout(LayoutType.Fit).ID("grAttachmentFile")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                    Html.X().Toolbar()
+                                        .Layout(LayoutType.HBox)
+                                        
+                                        .Items(
+                                        Html.X().Button().ID("btnViewDetailUploadFile").Disabled(true)
+                                                .Text("Xem").Icon(Icon.Zoom)
+                                                .Handler("ViewFile();")
+                                            )
+                                )
+                            .Store(
+                            Html.X().StoreFor(Model).ID("storeLoadFileUpload")
+                                .RemotePaging(true)
+                                .PageSize(10)
+                        )
+                        .ColumnModel(
+                                    Html.X().Column().DataIndex("ID").Hidden(true),
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("TypeIcon").Width(30).Renderer("TypeRenderer").Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("Name").Text("File").Flex(1),
+                                    Html.X().NumberColumn().DataIndex("Size").Renderer("SizeRenderer").Text("Kích thước").Width(100).Align(Alignment.Right)
+                                )
+                           .Listeners(
+                           ls =>
+                           {
+                               ls.SelectionChange.Handler = "CheckStatusAttachmentFile();";
+                               ls.CellDblClick.Handler = "ViewFile();";
+                           })
+                        )
+                        .Buttons(Html.X().Button().Text("Đóng").Icon(Icon.Cancel)
+                                .OnClientClick("this.up('window').close();"))
+)
+<script>
+    var configFile = function (cmp) {
+        cmp.fileInputEl.set({ accept: 'image/*' });
+        cmp.fileInputEl.set({ multiple: true });
+    };
+    var SizeRenderer = function (value) {
+        return (value / 1024 + " KB");
+    };
+    var TypeRenderer = function (value) {
+        var tpl = "<img src='" + value + "' />";
+        return tpl;
+    };
+    var template = '<span style="color:{0};">{1}</span>';
+    var StatusRenderer = function (value) {
+        var textValue = "";
+        var colorValue = "";
+        if (value) {
+            textValue = "Đã Xóa";
+            colorValue = "red";
+        }
+        else {
+            textValue = "Đính kèm";
+            colorValue = "green";
+        };
+        return Ext.String.format(template, colorValue, textValue);
+    };
+    var ViewFile = function () {
+        var records = App.grAttachmentFile.selModel.getSelection();
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Chờ trong giây lát ...." });
+        if (records.length > 0) {
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@Url.Action("ViewFile", "File", new { Area = "Generic" }, null)',
+                params: {
+                    fileId: records[0].data.ID,
+                },
+                success: function () {
+                    mask.hide();
+                },
+            });
+        };
+    };
+    var CheckStatusAttachmentFile = function () {
+        var records = App.grAttachmentFile.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnViewDetailUploadFile.setDisabled(false);
+        };
+    };
+</script>

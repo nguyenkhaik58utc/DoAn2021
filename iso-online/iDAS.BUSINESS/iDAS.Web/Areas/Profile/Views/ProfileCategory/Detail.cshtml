@@ -1,0 +1,91 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCategoryItem
+@(Html.X().Window()
+    .ID("winDetailCate")
+    .Title("Xem chi tiết thông tin danh mục hồ sơ")
+    .Icon(Icon.Pencil)
+    .Width(500)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+            .FieldDefaults(f => f.ReadOnly = true)
+            .ID("frmDetailCate")
+            .Items(
+                Html.X().TextFieldFor(m => m.Name)
+                    .FieldLabel("Tên danh mục"),
+                Html.X().DepartmentFieldFor(m => m.Department)
+                    .ReadOnly(true)
+                    .FieldLabel("Phòng ban")
+                    .Multiple(false)
+                    .AllowBlank(false)
+                    .Height(25),
+                Html.X().TextAreaFor(m => m.Note)
+                    .ID("txtContent")
+                    .FieldLabel("Ghi chú")
+                    .TabIndex(3).Height(100),
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().TextFieldFor(m => m.CreateByName)
+                        .ColumnWidth(0.6)
+                        .FieldLabel("Người tạo")
+                        .ID("CreateByName"),
+                    Html.X().DateFieldFor(m => m.CreateAt)
+                        .FieldLabel("Ngày tạo")
+                        .ID("CreateAt")
+                        .ColumnWidth(0.4)
+                        .LabelWidth(70)
+                        .Format("dd/MM/yyyy")
+                        .MarginSpec("0 0 0 5")
+                ),
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().TextFieldFor(m => m.UpdateByName)
+                        .ColumnWidth(0.6)
+                        .FieldLabel("Người sửa")
+                         .ID("UpdateByName"),
+                    Html.X().DateFieldFor(m => m.UpdateAt)
+                        .FieldLabel("Ngày sửa")
+                        .ID("UpdateAt")
+                        .ColumnWidth(0.4)
+                        .Format("dd/MM/yyyy")
+                        .LabelWidth(70)
+                        .MarginSpec("0 0 0 5")
+                 )
+               )
+             )
+        .Buttons(
+           Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var showDepartment = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowDepartment", "Request", new { Area = "Document" }, null))'
+        });
+    };
+    var fillDepartent = function (id) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            App.cbDepartment.setValue(parseInt(id));
+            App.winChoiceDepartment.close();
+        }
+    };
+</script>

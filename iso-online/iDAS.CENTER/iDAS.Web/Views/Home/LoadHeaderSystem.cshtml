@@ -1,0 +1,189 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Core;
+@{
+    Layout = null;
+    }
+
+<script>
+    var onLogout = function () {
+        window.location.href = '@(Url.Action("LogOut", "Account", new { area = "" }))';
+    }; 
+
+       var customTab = function (tabId, tabIcon, tabTitle, tabLink) {
+           var tab = App.MainContent.getComponent(tabId);
+           if (!tab) {
+               tab = App.MainContent.add({
+                   id: tabId,
+                   title: tabTitle,
+                   iconCls: tabIcon,
+                   closable: true,
+                   loader: {
+                       url: tabLink,
+                       renderer: 'frame',
+                       loadMask: {
+                           showMask: true,
+                           msg: 'Đang tải Dữ liệu...'
+                       }
+                   }
+               });
+           }
+           App.MainContent.setActiveTab(tab);
+       };
+  
+</script>
+
+@(Html.X().Toolbar()
+    .MarginSpec("0 0 0 0")
+    .Items(items =>
+    {
+        items.Add(Html.X().Image().ImageUrl(string.IsNullOrEmpty((User as UserPrincipal).Logo.ToString()) ? "../../Content/images/iDAS-logo.png" : (User as UserPrincipal).Logo).MarginSpec("0 0 0 5").Width(72).Height(29));
+        items.Add(Html.X().ToolbarSpacer(10));
+        items.Add(new ToolbarTextItem { Text = "HỆ THỐNG QUẢN TRỊ iDAS-Online", StyleSpec = "font-size: 1.6em; font-weight: bold; color: #34519f; font-family: Cambria, Times New Roman, Tahoma !important;" });
+        items.Add(new ToolbarFill());
+        items.Add(Html.X().Image().ID("userPicture").ImageUrl(string.IsNullOrEmpty(((User as UserPrincipal).Avatar).ToString()) ? "/Content/images/underfind.jpg" : (User as UserPrincipal).Avatar).Height(30).Width(23).Padding(1));
+        items.Add(new LinkButton
+        {
+            Text = User.Identity.Name,
+            Margins = "0 10 0 3",
+            PaddingSpec = "5 0 0 0",
+            StyleSpec = "font-weight: bold; text-decoration: none;",
+            Height = 30,
+            //Handler = "showfrmUserInfo();"
+        });
+
+        items.Add(new Button
+        {
+            ID = "btnMessage",
+            Text = "Thông báo", //+ messageLabel,
+            Margins = "0 10 0 0",
+            Icon = Icon.Information,
+            Height = 30,
+            Menu = { 
+                    new Menu {
+                        Plain = true,
+                        Items = {
+                            Html.X().Panel()
+                                .ID("pnNotification")
+                                .Height(450)
+                                .Width(280)
+                                .AutoScroll(false)
+                                .Loader(
+                                    Html.X().ComponentLoader()
+                                        //.Url(Url.Action("ShowNotifications","Notification", new { Area = "SystemManagement" }, null))
+                                        .Mode(LoadMode.Frame)
+                                        .LoadMask(lm=> {lm.ShowMask = true; lm.Msg = "Đang tải Dữ liệu";})
+                                )
+                                .BottomBar(
+                                    Html.X().Toolbar()
+                                        .Items(
+                                            Html.X().ToolbarFill(),
+                                            Html.X().Button()
+                                                .Icon(Icon.ApplicationViewList)
+                                                .Text("Xem tất cả")
+                                                .DirectEvents(de =>
+                                                {
+                                                    //de.Click.Url = Url.Action("Detail", "Notification", new { Area = "SystemManagement" }, null);
+                                                    de.Click.EventMask.ShowMask = true;
+                                                    de.Click.EventMask.Msg = "Đang tải Dữ liệu...";
+                                                })
+                                        )
+                                )                            
+                        }
+                    }
+                }
+        });
+
+        items.Add(new Button
+        {
+            Text = "Trợ giúp",
+            Margins = "0 10 0 0",
+            Icon = Icon.Help,
+            Height = 30,
+            Menu =
+                            {
+                                new Menu{                                    
+                                    Items = { 
+                                        new MenuItem { Text =  "Hướng dẫn sử dụng", Icon = Icon.Book },
+                                        new MenuItem { Text =  "Thông tin phần mềm", Icon = Icon.Information },
+                                        new MenuItem
+                                        {
+                                            Text = "Theme",
+                                            Icon = Icon.Paintcan,
+                                            Menu = 
+                                            {
+                                                new Menu
+                                                {
+                                                    Items= 
+                                                    {
+                                                        new CheckMenuItem
+                                                        {
+                                                            Text = "Default",
+                                                            Group = "theme"
+                                                        },
+                                                        new CheckMenuItem
+                                                        {
+                                                            Text = "Gray",
+                                                            Checked = true,
+                                                            Group = "theme"
+                                                        },
+                                                        new CheckMenuItem
+                                                        {
+                                                            Text = "Access",
+                                                            Group = "theme"
+                                                        },
+                                                        new CheckMenuItem
+                                                        {
+                                                            Text = "Neptune",
+                                                            Group = "theme"
+                                                        }
+                                                    },
+                                                    
+                                                    //Listeners = 
+                                                    //{
+                                                    //    //Click = 
+                                                    //    //{
+                                                    //    //    Fn = "themeChange"   
+                                                    //    //}   
+                                                    //}    
+                                                }}},
+                                        new MenuItem { Text =  "Đăng kí bản quyền", Icon = Icon.Star }
+                                    }
+                                }
+                            }
+        });
+
+        items.Add(new Button
+        {
+            Text = "Ý kiến",
+            Margins = "0 10 0 0",
+            Icon = Icon.EmailOpenImage,
+            Height = 30,
+            Menu ={new Menu{                                    
+                    Items = { 
+                        new MenuItem { Text =  "Đóng góp ý kiến", Icon = Icon.EmailGo, Handler="showfrmNewFeedback();" }
+                        //new MenuItem { Text =  "Xem ý kiến", Icon = Icon.Book,Handler="showfrmDetailFeedback();"  }                                  
+                            }
+                    }
+                }
+        });
+
+        items.Add(new Button
+        {
+            Text = "Thoát",
+            Margins = "0 10 0 0",
+            Icon = Icon.ControlPowerBlue,
+            Height = 30,
+            Listeners =
+            {
+                Click =
+                {
+                    Fn = "onLogout"
+                }
+            }
+        });
+    })
+)
+
+
+

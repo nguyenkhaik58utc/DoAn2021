@@ -1,0 +1,354 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@X.Hidden().ID("hdfGroupCustomerID").Value(0)
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+    .Items(
+         X.Panel()
+            .Title("NHÓM KHÁCH HÀNG").TitleAlign(TitleAlign.Center)
+            .Header(false)
+            .Collapsible(true)
+            .Region(Region.West).Width(300)
+            .MarginSpec("-1 0 -1 -1")
+            .Split(true)
+            .Layout(LayoutType.Fit)
+                .ItemsFromAction("List", "GroupCustomer", new { Area = "Customer" })
+         , X.Panel()
+            .Header(false)
+            .Region(Region.Center)
+            .Layout(LayoutType.Fit)
+            .MarginSpec("-1 -1 -1 0")
+            .Items(
+           Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrCustomer")
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                        Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                            Html.X().ButtonCreate().ID("btnInsert").Handler("ShowInsertCustomer();").Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnUpdate").Handler("ShowUpdateCustomer();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ID("btnDeleteCustomer").Handler("onDelete(App.GrCustomer.selModel.getSelection()[0].get('ID'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ID("btnDetail").Handler("ShowViewCustomer();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Icon(Icon.ApplicationSideList).ID("btnProgram").Text("Chương trình").Disabled(true)
+                                            .Menu(Html.X().Menu().ShowSeparator(false)
+                                            .Items(
+                                                    Html.X().MenuItem().Text("Khảo sát").Icon(Icon.ApplicationSideList).Handler("ShowSurvey();"),
+                                                    Html.X().MenuItem().Text("Đánh giá").Icon(Icon.Comment).Handler("ShowAuditResult();"),
+                                                    Html.X().MenuItem().Text("Chăm sóc").Icon(Icon.CartMagnify).Handler("ShowCare();")
+                                            )),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Icon(Icon.Phone).ID("btnContact").Text("Liên hệ").Disabled(true)
+                                        .Menu(Html.X().Menu().ShowSeparator(false).Items(
+                                                Html.X().MenuItem().Icon(Icon.Phone).Text("Liên hệ").Handler("ShowContactHistory();"),
+                                                Html.X().MenuSeparator(),
+                                                Html.X().MenuItem().Text("Lịch hẹn").Icon(Icon.Calendar).Handler("ShowAppoinment();"),
+                                                Html.X().MenuSeparator(),
+                                                Html.X().MenuItem().Text("Phản hồi").Icon(Icon.Email).Handler("ShowFeedBack();")
+                                        )),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Icon(Icon.PageWhiteStack).Text("Hợp đồng").ID("btnSetContract").Disabled(true)
+                                    .Menu(Html.X().Menu().ShowSeparator(false).Items(
+                                            Html.X().MenuItem().Text("Đơn hàng").ID("btnSetOrder").Icon(Icon.PageWhiteText).Handler("ShowOrder();"),
+                                            Html.X().MenuSeparator(),
+                                            Html.X().MenuItem().Text("Hợp đồng").Icon(Icon.PageWhiteStack).Handler("ShowContract();")
+                                        )),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Text("Lý lịch khách hàng").Icon(Icon.User).Handler("ShowProfile();").ID("btnProfile").Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Text("Tiềm năng").ToolTip("Khách hàng có tiềm năng").Icon(Icon.StarGold)
+                                    .Handler("HasPotential()").ID("btnHasPotential").Disabled(true),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreCustomer")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .AutoLoad(false)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "CustomerOfficial", new { Area = "Customer" }))
+                        .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("groupCustomerID", "App.hdfGroupCustomerID.getValue()", ParameterMode.Raw));
+                            })
+                        .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("AttachmentFileID"),
+                                    Html.X().ModelField().Name("FileName"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Email"),
+                                    Html.X().ModelField().Name("Phone"),
+                                    Html.X().ModelField().Name("Scope"),
+                                    Html.X().ModelField().Name("IsBackContact"),
+                                    Html.X().ModelField().Name("LastContact"),
+                                    Html.X().ModelField().Name("IsPotentialView"),
+                                    Html.X().ModelField().Name("Address")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(40).Align(Alignment.Center),
+                        X.TemplateColumn().DataIndex("AttachmentFileID").Width(30).TdCls("AvatarColumn").Tpl(
+                        X.XTemplate().Html(@<text>
+                                <img src="@Url.Action("LoadImage", "File", new { area = "Generic"})?fileId={AttachmentFileID}&fileName={FileName}"
+                                        style='width:30px;height:40px;' />
+                                </text>)
+                                ).Locked(true).Filterable(false),
+                        X.Column().DataIndex("Name").Text("Khách hàng").MenuDisabled(true).Width(250).Locked(true),
+                        X.Column().DataIndex("Scope").Text("Lĩnh vực").Width(120),
+                        X.Column().DataIndex("Phone").Text("Số điện thoại").Width(100).Align(Alignment.Right),
+                        X.Column().DataIndex("Email").Text("Email").Width(150),
+                        X.Column().DataIndex("Address").Text("Địa chỉ").Wrap(true).MinWidth(200).Flex(1),
+                        X.DateColumnExtend().DataIndex("LastContact").Text("Liên hệ gần nhất").Width(120).Align(Alignment.Center).Filterable(true),
+                        X.BooleanColumn().DataIndex("IsBackContact").Text("Lịch hẹn").Width(80).Align(Alignment.Center)
+                                .TrueText("<a class='a-grid-cell' onclick ='ShowAppoinment()'>Lịch hẹn</a>").FalseText("").Filterable(false),
+                        X.BooleanColumn().DataIndex("IsPotentialView").Text("Tiềm năng").Width(80).Align(Alignment.Center)
+                                    .TrueText("Có tiềm năng").FalseText("").Filterable(false)
+                    )
+                    .Features(
+                        Html.X().GridFilters()
+                            .MenuFilterText("Tìm kiếm")
+                            .Filters(
+                                Html.X().StringFilter().DataIndex("Name"),
+                                Html.X().StringFilter().DataIndex("Email"),
+                                Html.X().BooleanFilter().DataIndex("IsBackContact").YesText("Có lịch").NoText("Không có")
+                            )
+                    )
+                    .Plugins(
+                        X.FilterHeader().Remote(true)
+                    )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatus();"))
+                .BottomBar(Html.X().CustomPagingToolbar())
+                )
+    )
+)
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function OnSelectChangeGroupCustomer(records, value) {
+        if (value) {
+            App.hdfGroupCustomerID.setValue(records[0].get('id'));
+            App.StoreCustomer.reload({ params: { groupCustomerID: records[0].get('id') } });
+            App.btnInsert.setDisabled(false);
+        }
+        else {
+            App.btnInsert.setDisabled(true);
+        };
+    };
+    function CheckStatus() {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdate, App.btnDeleteCustomer, App.btnDetail, App.btnContact, App.btnProgram, App.btnSetOrder, App.btnSetContract, App.btnProfile, App.btnHasPotential);
+        }
+        else {
+            SetDisabled(App.btnUpdate, App.btnDeleteCustomer, App.btnDetail, App.btnContact, App.btnProgram, App.btnSetOrder, App.btnSetContract, App.btnProfile, App.btnHasPotential);
+        };
+    };
+    var ShowInsertCustomer = function () {
+        var groupID = "";
+        var groupName = "";
+        if (App.treeCustomerCateID.selModel.getSelection().length > 0) {
+            groupID = App.treeCustomerCateID.selModel.getSelection()[0].get('id');
+            groupName = App.treeCustomerCateID.selModel.getSelection()[0].get('text');
+        };
+        var url = '@(Url.Action("Insert", "CustomerOfficial", new { Area = "Customer" }, null))';
+        var params = {
+            groupCustomerID: groupID,
+            groupName: groupName,
+            IsOfficial: true
+        };
+        onDirectMethod(url, params, 'get');
+    };
+    var ShowUpdateCustomer = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "CustomerOfficial", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowViewCustomer = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerOfficial", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowFeedBack = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Feedback"))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowSurvey = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Survey"))';
+            var params = {
+                id: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowCare = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("CareResult"))';
+            var params = {
+                id: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowAuditResult = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("AuditResult"))';
+            var params = {
+                id: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowContactHistory = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length == 1) {
+            var url = '@(Url.Action("Contact"))';
+            var params = {
+                id: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowAppoinment = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Appoinment"))';
+            var params = {
+                id: records[0].get('ID'),
+                name: records[0].get('Name')
+            };
+            var window = new Ext.Window({
+                title: "Lịch hẹn", width: 600, height: 450,
+                maximized: true,
+                loader: {
+                    url: url,
+                    params: params,
+                    renderer: 'frame',
+                    loadMask: {
+                        showMask: true,
+                        msg: 'Đang tải Dữ liệu ...'
+                    }
+                }
+            });
+            window.show();
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowOrder = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("Order"))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowContract = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Contract"))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowProfile = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length == 1) {
+            var url = '@(Url.Action("Profile"))';
+            var params = {
+                id: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var HasPotential = function () {
+        var records = App.GrCustomer.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.MessageBox.confirm('Thông báo', "Bạn có muốn bộ phận quản lý khách hàng tiềm năng thấy thông tin khách hàng này", function (btn) {
+                if (btn == 'yes') {
+                    var url = '@(Url.Action("HasPotential"))';
+                    var params = {
+                        id: records[0].get('ID'),
+                    };
+                    onDirectMethod(url, params);
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

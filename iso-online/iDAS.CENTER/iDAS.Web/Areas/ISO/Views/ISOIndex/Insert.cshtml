@@ -1,0 +1,110 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@model iDAS.Items.ISOClauseItem
+@(
+ Html.X().Window()
+    .ID("winNewIsoStandard")
+    .Title("Tạo mới thông tin Tiêu chuẩn Iso")
+    .Icon(Icon.Add)
+    .Width(1000)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmNewIsostandard")
+        .Layout(LayoutType.Form)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => df.LabelWidth = 80)
+        .DefaultAnchor("100%")
+        .Items(
+              Html.X().ComboBoxFor(m => m.IsoID).ID("cboIso")
+                    .QueryMode(DataLoadMode.Local)
+                    .TriggerAction(TriggerAction.All)
+                    .SelectOnFocus(true)
+                    .TabIndex(1)
+                    .EmptyText("Chọn Iso ...")
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .FieldLabel("Iso *")
+                    .AllowBlank(false).BlankText("Iso bắt buộc phải chọn!")
+                    .Store(
+                        Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                )//end Fields
+                            )
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadIso"))//ham load dl cho combobox
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        )//end Store
+                        ),
+            Html.X().TextFieldFor(m => m.Index).ID("txtIndex")
+                .FieldLabel("Điều khoản *")
+                .TabIndex(3)
+                .AllowBlank(false).BlankText("Điều khoản bắt buộc nhập!"),
+            Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                .FieldLabel("Tiêu chuẩn *")
+                .TabIndex(4)
+                .AllowBlank(false).BlankText("Tiêu chuẩn bắt buộc nhập!"),
+        Html.X().CheckboxFor(m => m.IsActive).ID("ckActive")
+            .FieldLabel("Kích hoạt")
+            .TabIndex(5)
+            .Checked(true),
+                   
+                Html.X().HtmlEditorFor(m => m.Note).ID("txtNote").EnableFont(false)
+                .FieldLabel("Nội dung")
+                .TabIndex(6)
+                .Height(350)
+        ))
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaveMultis")
+                .Icon(Icon.DiskMultiple)
+                .Text("Lưu lại")
+                .TabIndex(7)
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frmNewIsostandard";
+
+                        de.Click.Url = Url.Action("Insert");
+                        de.Click.Before = @"if (!#{frmNewIsostandard}.getForm().isValid()) { return false; }";
+                        de.Click.EventMask.ShowMask = true;
+                        de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                        de.Click.Success = "App.frmNewIsostandard.reset();";
+                    })
+                ,
+
+                 Html.X().Button()
+                    .ID("btnSaveSingle")
+                    .Icon(Icon.Disk)
+                    .Text("Lưu và thoát")
+                    .TabIndex(8)
+                        .DirectEvents(de =>
+                        {
+                            de.Click.FormID = "frmNewIsostandard";
+
+                            de.Click.Url = Url.Action("Insert");
+                            de.Click.Before = @"if (!#{frmNewIsostandard}.getForm().isValid()) { return false; }";
+                            de.Click.EventMask.ShowMask = true;
+                            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                            de.Click.Success = "App.winNewIsoStandard.close();";
+                        })
+                    ,
+
+            Html.X().Button()
+                .Text("Nhập lại")
+                .Icon(Icon.ArrowRefresh)
+                .TabIndex(9)
+                    .OnClientClick("App.frmNewIsostandard.reset();"),
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Hủy")
+                .TabIndex(10)
+                .Handler("App.frmNewIsostandard.reset(); App.winNewIsoStandard.close();")
+        )
+)

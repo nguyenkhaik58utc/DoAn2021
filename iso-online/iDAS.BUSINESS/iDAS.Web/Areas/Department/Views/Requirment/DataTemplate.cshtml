@@ -1,0 +1,112 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.DepartmentRequirmentItem
+@(Html.X().CustomWindow().Maximized(true).Height(300).Maximizable(false)
+        .Title("Dữ liệu mẫu: Bối Cảnh Tổ Chức ")
+        .Icon(Icon.PackageDown).ID("winDataTemplate")
+        .Items(
+                Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrRequirmentTemplate")
+                                .Header(false)
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .Border(false)
+                                .Icon(Icon.TextListBullets)
+        //.TopBar(
+        //    Html.X().Toolbar()
+        //    .Layout(LayoutType.HBox)
+        //    .Items(
+
+                                //          )
+        //)
+                                .Store(
+                                        Html.X().Store().ID("StoreRequirmentTemplate").GroupField("RequirmentCategoryName")
+                                            .RemotePaging(true)
+                                            .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadTemplateData", "Requirment")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                            .Model(
+                                                    Html.X().Model().Fields(
+                                                            Html.X().ModelField().Name("ID"),
+                                                            Html.X().ModelField().Name("RequirmentCategoryName"),
+                                                            Html.X().ModelField().Name("Name"),
+                                                            Html.X().ModelField().Name("Scope"),
+                                                            Html.X().ModelField().Name("Object"),
+                                                            Html.X().ModelField().Name("IsUse")
+                                                    )
+                                                )
+                                      )
+                            .ColumnModel(
+                                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("Name").Renderer("RequirmentNameRenderer").Text("Tên").Width(300).Locked(true),
+                                            Html.X().Column().DataIndex("Scope").Text("Phạm vi").Width(200).Wrap(true),
+                                            Html.X().Column().DataIndex("Object").Text("Đối tượng").Flex(1).Wrap(true)
+                                )
+                            .Features(
+                                            Html.X().GroupingSummary()
+                                                .ID("GroupingSummaryDataTemplate")
+                                                .GroupHeaderTplString("{name}")
+                                                .HideGroupedHeader(true)
+                                                .EnableGroupingMenu(false)
+                                                .ShowSummaryRow(false)
+                                    )
+                            .SelectionModel(
+                                            Html.X().CheckboxSelectionModel().Mode(SelectionMode.Single).ShowHeaderCheckbox(false)
+                                                        .Listeners(ls => ls.SelectionChange.Fn = "onSelectRequirmentTemplate")
+                                            )
+                            .BottomBar(Html.X().CustomPagingToolbar())
+        )
+            .Buttons(
+                        Html.X().Button().Icon(Icon.ArrowDown).Text("Sử dụng dữ liệu này").ID("btnUseDataTemplate").Disabled(true)
+                            .Handler("UseDataTemplate(this.up('window'))"),
+                        Html.X().ButtonExit()
+                    )
+)
+<script>
+    function RequirmentNameRenderer(value) {
+        var result = "<a class='a-grid-cell' onclick ='ShowContentTemplate()'>" + value + "</a>";
+        return result;
+    };
+    var onSelectRequirmentTemplate = function () {
+        var records = App.GrRequirmentTemplate.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnUseDataTemplate.setDisabled(false);
+        }
+        else {
+            App.btnUseDataTemplate.setDisabled(true);
+        };
+    };
+    var ShowContentTemplate = function () {
+        var records = App.GrRequirmentTemplate.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ContentTemplate"))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var handleUseDataTemplate = function (window) {
+        reloadMainGrid();
+        window.close();
+    };
+    var UseDataTemplate = function (window) {
+        var records = App.GrRequirmentTemplate.selModel.getSelection();
+        if (records.length > 0) {
+            var url = insertDataTemplateUrl;
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'post');
+            handleUseDataTemplate(window);
+        }
+        else {
+            MessageBox();
+        };
+    };
+
+</script>

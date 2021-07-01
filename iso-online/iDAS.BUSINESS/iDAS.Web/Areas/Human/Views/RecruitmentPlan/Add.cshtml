@@ -1,0 +1,112 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.HumanRecruitmentPlanItem
+@(Html.X().Window()
+.ID("winPlanAdd")
+.Title("Thêm mới kế hoạch tuyển dụng")
+.Icon(Icon.Add)
+.Width(840)
+.Height(400)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.BodyPadding(0)
+.Center()
+.Border(false)
+.Items(
+    Html.X().FormPanel().ID("frmInsert")
+    .Layout(LayoutType.Fit)
+    .Border(false) 
+    .Items(
+            Html.X().TabPanel()
+            .ID("TabPanel1")
+            .ActiveTabIndex(0)               
+            .Border(true)      
+            .Items(
+                     Html.X().FormPanel().Title("Kế hoạch tuyển dụng")
+                        .AutoScroll(true)
+                        .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                        .Frame(true)
+                        .FieldDefaults(df => { df.LabelWidth = 110; df.LabelStyle = "padding-left: 5px;"; })
+                        .PaddingSpec("5 10 0 0")
+                        .StyleSpec("border: none;")
+                        .Items(
+                                    Html.X().TextFieldFor(m => m.Name)
+                                                .AllowOnlyWhitespace(false)
+                                                .BlankText("Tên kế hoạch là bắt buộc nhập")
+                                                .FieldLabel("Kế hoạch"+Html.Required()),
+                                    Html.X().Container().Layout(LayoutType.Column).Height(52)
+                                        .Items(
+                                                 Html.X().DateFieldFor(m => m.StartDate).FieldLabel("Ngày bắt đầu").ColumnWidth(0.55),
+                                                 Html.X().DateFieldFor(m => m.EndDate).FieldLabel("Ngày kết thúc").LabelWidth(80).ColumnWidth(0.45),
+                                                 Html.X().NumberFieldFor(m => m.TotalCost).FieldLabel("Tổng chi phí").MinValue(0).ColumnWidth(0.55).PaddingSpec("4 0 0 0")
+                                        ),
+                                    Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung").MinHeight(150).Flex(1)
+                                ),
+                Html.X().FormPanel().Title("<b>Danh sách yêu cầu tuyển dụng</b>").Margin(0)
+                .Layout(LayoutType.Fit)
+                .Items(
+                        Html.X().Hidden().ID("hdflistRequirementId"),
+                        Html.X().GridPanel().ID("grRequirement")
+                                    .Header(false)
+                                    .ForceFit(true)
+                                    .Border(false)
+                                    .Store(
+                                        Html.X().Store()
+                                            .AutoLoad(true)
+                                            .ID("StoreRequirement")
+                                            .RemotePaging(true)
+                                            .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRequirementApproved")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                            .Model(
+                                                    Html.X().Model().Fields(
+                                                        Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("Name"),
+                                                        Html.X().ModelField().Name("Reason"),
+                                                        Html.X().ModelField().Name("IsSelect").Type(ModelFieldType.Boolean)
+                                                    )
+                                            )
+                                    )
+                                    .ColumnModel(
+                                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                                    Html.X().Column().DataIndex("Name").Flex(1).Text("Yêu cầu"),
+                                                    Html.X().Column().DataIndex("Reason").Text("Lý do tuyển dụng").Width(300),
+                                                    Html.X().CheckColumn().DataIndex("IsSelect").Text("Chọn").Width(50).Editable(true)
+                                                )
+                                    .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "EditRequirement"))
+                                    .BottomBar(Html.X().CustomPagingToolbar())
+                        )
+                    ) 
+                  )
+                 )
+                .Buttons(
+                        Html.X().ButtonSave()
+                                .DirectEvents(de =>
+                                            {
+                                                de.Click.Before = @" if (!App.frmInsert.getForm().isValid()) { return false; } ; ";
+                                                de.Click.ExtraParams.Add(new StoreParameter("listRequirementId", " App.hdflistRequirementId.value", ParameterMode.Raw));
+                                                de.Click.Url = Url.Action("Insert");
+                                                de.Click.FormID = "frmInsert";
+                                            }),
+                        Html.X().ButtonExit()
+                    )
+)
+<script>
+    var EditRequirement = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            var str = "";
+            if (App.hdflistRequirementId.value != null) str = App.hdflistRequirementId.value.toString();
+            if (e.value == true) {
+                str += e.record.data.ID.toString() + ',';
+            } else {
+                var strSearchValue = e.record.data.ID.toString() + ',';
+                str = str.replace(strSearchValue, '');
+            };
+            App.hdflistRequirementId.setValue(str);
+        };
+    };
+</script>

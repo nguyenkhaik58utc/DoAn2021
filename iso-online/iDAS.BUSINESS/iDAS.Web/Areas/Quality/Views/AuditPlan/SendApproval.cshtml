@@ -1,0 +1,129 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityAuditPlanItem
+@( Html.X().Window()
+    .Title("Gửi phê duyệt kế hoạch đánh giá nội bộ")
+    .Icon(Icon.Mail)
+    .ID("wdApprove")
+         .Height(1)
+        .Maximized(true)
+        .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(false)
+        .Center()
+        .Items(Html.X().FormPanel()
+            .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+                    .ID("frmAudit")
+            .Border(false)
+            .Items(Html.X().TabPanel()
+            .Region(Region.Center)
+                .ActiveTabIndex(0)
+                .Border(true)
+                .Items(Html.X().Panel()
+                    .BodyPadding(6)
+                    .Icon(Icon.ApplicationViewDetail)
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })  
+                    .StyleSpec("border: none;")
+                    .Title("Nội dung kế hoạch")
+                    .Frame(true)
+                    .Items(
+                         Html.X().Container()
+                            .Layout(LayoutType.Column)
+                            .MarginSpec("0 0 5 0").Items(
+                            Html.X().HiddenFor(m=>m.ID),
+                                Html.X().TextFieldFor(m => m.Code)
+                                        .FieldLabel("Mã kế hoạch").ReadOnly(true)
+                                    .MaxLength(50)
+                                    .AllowOnlyWhitespace(false)
+                                    .TabIndex(1)
+                                    .ColumnWidth(0.3)
+                                    .MaxLength(20)
+                                    .AllowBlank(false)
+                                    .BlankText("Mã kế hoạch không được để trống!"),
+                                    Html.X().ComboBoxFor(m => m.ISOID)
+                                                .FieldLabel("Tiêu chuẩn đánh giá")
+                                                .Editable(false).ReadOnly(true)
+                                            .TabIndex(2)
+                                            .LabelWidth(120)
+                                            .MarginSpec("0 0 0 5")
+                                            .AllowBlank(false)
+                                            .ColumnWidth(0.7)
+                                                   .DisplayField("Name")
+                                                .ValueField("ID")
+                                                .Store(
+                                                Html.X().Store()
+                                                    .ID("StoreISO")
+                                                    .AutoLoad(true)
+                                                         .Proxy(Html.X().AjaxProxy()
+                                                                .Url(Url.Action("GetData", "ISOStandard", new { area = "Quality" }))
+                                                            .Reader(Html.X().JsonReader().Root("data")
+                                                            )
+                                                            )
+                                                    .Model(Html.X().Model()
+                                                        .Fields(
+                                                            new ModelField("Name"),
+                                                            new ModelField("ID")
+                                                        )
+                                                    )
+                                                )
+                                            ),
+                                             Html.X().TextFieldFor(m => m.Name)
+                                                  .AllowOnlyWhitespace(false)
+                                        .FieldLabel("Tên kế hoạch").ReadOnly(true)
+                                                 .MaxLength(200)
+                                        .TabIndex(2)
+                                        .AllowBlank(false)
+                                            .BlankText("Tên kế hoạch không được để trống!"),
+                                                  Html.X().Container()
+                                                                .Layout(LayoutType.Column)
+                                                                .ColSpan(2)
+                                                                .MarginSpec("0 0 5 0")
+                                                                .Items(
+                                                                Html.X().DateTimeFieldFor(m => m.StartTime)
+                                                                                 .FieldLabel("Bắt đầu").ReadOnly(true)
+                                                                             .ColumnWidth(0.5).MarginSpec("0 5 0 0"),
+                                                                             Html.X().DateTimeFieldFor(m => m.EndTime)
+                                                                                         .FieldLabel("Kết thúc").ReadOnly(true)
+                                                                                      .ColumnWidth(0.5)
+
+                                                                        ),
+                                                                 Html.X().TextAreaFor(m => m.Scope).ReadOnly(true)
+                                                .TabIndex(3)
+
+                                                .FieldLabel("Phạm vi")
+                                                     .AllowOnlyWhitespace(false)
+                                                        .BlankText("Phạm vi không được bỏ trống!")
+                                                .Height(155),
+                                                Html.X().TextAreaFor(m => m.Require).ReadOnly(true)
+                                                    .TabIndex(3)
+                                                        .FieldLabel("Yêu cầu").ReadOnly(true)
+                                                         .AllowOnlyWhitespace(false)
+                                                        .BlankText("Yêu cầu không được bỏ trống!")
+                                                    .Flex(1)
+                                    )
+                              ),
+                                Html.X().ApprovalPanelFor(m => m)
+                                 )
+                                 )
+                                .Buttons(
+                                    Html.X().ButtonSendWindow()
+                                    .ID("btnSend")
+                                    .DirectEvents(de =>
+                                        {
+                                            de.Click.FormID = "frmAudit";
+                                            de.Click.Url = Url.Action("SendApprove");
+                                            de.Click.Before = @"if (!#{frmAudit}.getForm().isValid()) {Ext.MessageBox.show({ title: 'Thông báo', msg: 'Kiểm tra các thông tin cần nhập!', buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation' }); return false; }";
+                                            de.Click.EventMask.ShowMask = true;
+                                            de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+                                            de.Click.Success = "this.up('window').close();";
+                                        }),
+                                    Html.X().ButtonExit()
+                                )
+)

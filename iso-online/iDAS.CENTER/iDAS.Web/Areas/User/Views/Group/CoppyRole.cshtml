@@ -1,0 +1,139 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@{
+    var X = Html.X();
+}
+@model iDAS.Items.UserItem
+@(Html.X().Window()
+        .ID("winCoppy")
+        .Title("Coppy chức danh từ tổ chức tới tổ chức")
+        .Icon(Icon.DatabaseCopy)
+        .Height(400)
+        .Width(700)
+         .BodyPadding(0)
+         .Border(false)
+         .Margin(0)
+         .Constrain(true)
+         .Layout(LayoutType.Border)
+         .Modal(true)
+         .Resizable(false)
+        .Items(
+                    Html.X().TreePanel()
+                        .ID("TreePanel1Coppy")
+                    .Title("Danh sách tổ chức")
+                    .Header(false)
+                       .Collapsible(true)
+                        .Split(true)
+                        .Width(250)
+                    .Region(Region.West)
+                    .Icon(Icon.TextListBullets)
+                    .ForceFit(true)
+                    .RootVisible(false)
+                    .SingleExpand(false)
+                    .SelectionModel(sm => sm.Add(Html.X().RowSelectionModel().SelectedIndex(0)))
+                    .Store(
+                        Html.X().TreeStore().AutoLoad(true)
+                            .ID("StoreGroupsCoppy")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadGroups", "Group")).Reader(Html.X().JsonReader().Root("data")))
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("id"),
+                                    Html.X().ModelField().Name("text"),
+                                    Html.X().ModelField().Name("Description"),
+                                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean)
+                                )
+                            )
+                    )
+                            .ColumnModel(Html.X().TreeColumn().Text("Sơ đồ tổ chức").StyleSpec("font-weight: bold;text-align: center").DataIndex("text").Flex(1))
+                    .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "if (selected.length<=0) return;  App.GridPanel1Coppy.setTitle('Danh sách chức danh của '+ selected[0].data.text); App.GridPanel1Coppy.getStore().load();";
+                    })
+
+
+                    ,
+                    Html.X().GridPanel()
+                        .ID("GridPanel1Coppy")
+                    .Title("Danh sách chức danh")
+                    .Header(false)                    
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .Store(
+                        Html.X().Store()
+                            .AutoLoad(true)
+                                .ID("StoreOrganizationsCoppy")
+                            .RemotePaging(true)
+                            .PageSize(10)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRoles", "Role", new { area ="User"})).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("groupId", "App.TreePanel1Coppy.getSelectionModel().getLastSelected()!=null ? App.TreePanel1Coppy.getSelectionModel().getLastSelected().data.id:0", ParameterMode.Raw));                              
+                            })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                Html.X().Column().DataIndex("Name").Text("Tên chức danh").Width(350).StyleSpec("font-weight: bold;text-align: center")                               
+                    )
+                        .SelectionModel(
+                   Html.X().CheckboxSelectionModel()
+                        .Mode(SelectionMode.Multi)                            
+                    )                   
+
+
+        ).Buttons(
+         Html.X().Button()
+            .Text("Coppy")
+            .Icon(Icon.DatabaseCopy)
+            .ID("Coppy")
+            .TabIndex(15)
+                .Handler("coppyRole();"),
+        Html.X().Button()
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .ID("CancelCoppy")
+            .TabIndex(15)
+            .Handler("this.up('window').close();")
+        )
+)
+<script>
+
+    var coppyroleUrl = '@(Url.Action("CoppyRole", "Role"))';
+    var coppyRole = function () {
+        var records = App.GridPanel1Coppy.selModel.getSelection();
+        if (records.length > 0) {
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = records[i]; i++) {
+                aId[i] = records[i].get('ID');
+            }
+            strId = aId.join();
+            Ext.net.DirectMethod.request({
+                url: coppyroleUrl,
+                params: {
+                    lstrole: strId,
+                    groupId: App.TreePanel1.getSelectionModel().getLastSelected().data.id
+                }
+            });
+        }
+        else
+        {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+    };
+</script>

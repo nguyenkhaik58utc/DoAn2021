@@ -1,0 +1,156 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities;
+@model iDAS.Items.ServiceCommentItem
+@{
+    var stringUrlSever = iDAS.Web.PathUpload.ServerURl;
+}
+@(Html.X().Window()
+    .ID("winNewServiceCmt")
+    .Title("Thêm mới thông tin Đánh giá của khách hàng")
+    .Icon(Icon.Add)
+    .Width(800)
+    .BodyPadding(6)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+    Html.X().FormPanel()
+        .ID("frServiceCmt")
+    .Layout(LayoutType.Form)
+    .Frame(true)
+    .StyleSpec("border: none;")
+    .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+    .Items(
+     Html.X().Container().Layout(LayoutType.Column).Items(
+        Html.X().Container().Layout(LayoutType.Form).ColumnWidth(0.82).MarginSpec("-6 0 0 0").Items(
+            Html.X().ComboBoxFor(m => m.ServiceID)
+                .FieldLabel("Dịch vụ*")
+                .DisplayField("Name")
+                .ValueField("ID")
+                .QueryMode(DataLoadMode.Local)
+                .ForceSelection(true)
+                .Store(
+                    Html.X().Store()
+                        .AutoLoad(true)
+                        .Model(
+                        Html.X().Model()
+                                .IDProperty("ID")
+                                .Fields(
+                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                        )
+                                    )
+                            .Proxy(
+                            Html.X().AjaxProxy()
+                                    .Url(Url.Action("LoadService"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                        )),
+                   
+            Html.X().TextFieldFor(m => m.Author)
+                .ID("txtAuthor")
+                .AllowBlank(false)
+                .BlankText("Tên khách hàng không được trống!")
+                .FieldLabel("Khách hàng*"),
+            Html.X().TextAreaFor(m => m.Position)
+                .Height(100)
+                .ID("Position")
+                .FieldLabel("Chức vụ")
+                    ),
+            Html.X().Container()
+                .Layout(LayoutType.Form)
+                .ColumnWidth(0.18)
+                .PaddingSpec("0 0 0 10")
+                .Items(
+                        Html.X().ImageButton()
+                                .ID("IconImage")
+                                .Width(123)
+                                .Height(150)
+                                    .ImageUrl(@Url.Content(ConstantPath.UploadImageRepresent).ToString()),
+                        Html.X().FileUploadField()
+                                .ButtonOnly(true)
+                                .ID("AttachFile")
+                                .ButtonText("---Chọn ảnh đại diện---")
+                                .DirectEvents(de =>
+                                    {
+                                        // de.Change.Before = @"Ext.Msg.wait('Đang tải ảnh lên Máy chủ...', 'Tải ảnh');";
+                                        de.Change.Url = Url.Action("UploadClick");
+                                        de.Change.Failure = @"Ext.Msg.show({
+                                            title   : 'Thông báo',
+                                            msg     : 'Lỗi phát sinh xảy ra trong quá trình tải ảnh lên Máy chủ.',
+                                            minWidth: 200,
+                                            modal   : true,
+                                            icon    : Ext.Msg.ERROR,
+                                            buttons : Ext.Msg.OK
+                                        });";
+                                    })
+                        ))
+
+
+                        ,
+                    Html.X().TextAreaFor(m => m.Comment).ID("Content").FieldLabel("Nội dung").Height(210), 
+                             Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 0 0")
+                                        .Items(
+                                                    
+                                                        Html.X().NumberFieldFor(m => m.Order).MarginSpec("0 5 0 0").ID("Order")
+                                                    .FieldLabel("Thứ tự"),
+                                                    Html.X().CheckboxFor(m => m.IsShow).ID("ckvIsShow")
+                                                .BoxLabel("Hiển thị").HideLabel(true)
+                                                .Value(true)
+                                                     
+                                       ))
+            )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnSave")
+            .Text("Lưu lại")
+            .Icon(Icon.DiskMultiple)
+            .TabIndex(17)
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { imgService = new JRawValue("getImageName()") });
+                de.Click.ExtraParams.Add(new { val = false });
+                de.Click.Before = @"if (!App.frServiceCmt.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "Insert";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frServiceCmt";
+                de.Click.Success = "App.txtCode.setValue(result.result);";
+            }),
+            Html.X().Button()
+            .ID("btnSaves")
+            .Text("Lưu và thoát")
+            .Icon(Icon.Disk)
+            .TabIndex(18)
+            .DirectEvents(de =>
+            {
+                de.Click.ExtraParams.Add(new { imgService = new JRawValue("getImageName()") });
+                de.Click.ExtraParams.Add(new { val = true });
+                de.Click.Before = @"if (!App.frServiceCmt.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "Insert";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frServiceCmt";
+            }),
+            Html.X().Button()
+            .ID("btnReset")
+            .Text("Nhập lại")
+            .Icon(Icon.ArrowRefresh)
+            .TabIndex(19)
+                .Handler("App.frServiceCmt.reset();"),
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+                .Handler("App.frServiceCmt.reset(); this.up('window').close();")
+            )
+)
+
+<script type="text/javascript">
+    function BrowseImage() {
+        Ext.net.DirectMethod.request({
+                       url: '@(Url.Action("frmBrowseImage", "News", new { Area = "Web" }, null))'
+        });
+    };  
+</script>

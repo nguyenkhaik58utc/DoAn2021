@@ -1,0 +1,359 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int add = (int)iDAS.Items.DispatchForm.Insert;
+    int verify = (int)iDAS.Items.DispatchForm.Verify;
+    int detail = (int)iDAS.Items.DispatchForm.Detail;
+    int edit = (int)iDAS.Items.DispatchForm.Edit;
+    int move = (int)iDAS.Items.DispatchForm.Move;
+    int approve = (int)iDAS.Items.DispatchForm.Approve;
+    int moveOut = (int)iDAS.Items.DispatchForm.MoveOut; ;
+    int userID = ViewData["UserLogOn"] != null ? (int)ViewData["UserLogOn"] : 0;
+}
+@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+        Html.X().GridPanel()
+            .ID("GrDispatchGoEmployee")
+            .Title("Danh sách Công văn đi của Cá nhân")
+            .Header(false)
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                           Html.X().ButtonCreate()
+                                .ID("btnInsert")
+                                .Disabled(false)
+                                    .Handler("ShowFrm(" + add + ");"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate()
+                                .ID("btnEdit")
+                                .Handler("ShowFrm(" + edit + ");")
+                                .Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                .ID("butDelete")
+                                .Disabled(true)
+                                .Handler("deleteRecord();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView()
+                                .ID("btnDetail")
+                                .Handler("ShowFrm(" + detail + ");")
+                                .Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonApproval()
+                                .ID("btnApprove")
+                                .Disabled(true)
+                                .Handler("ShowFrm(" + approve + ");"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Text("Chuyển nội bộ")
+                                .Icon(Icon.PageGo)
+                                .ID("btnMove")
+                                .Disabled(true)
+                                .Handler("ShowFrm(" + move + ");"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Text("Chuyển bên ngoài")
+                                .Icon(Icon.PageGo)
+                                .ID("btnMoveOut")
+                                .Disabled(true)
+                                .Handler("ShowFrm(" + moveOut + ");"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Text("Xác nhận")
+                                .Icon(Icon.Accept)
+                                .ID("btnVerify")
+                                .Disabled(true)
+                                .Handler("ShowFrm(" + verify + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .Text("Người theo dõi")
+                                .Icon(Icon.UserKey)
+                                .ID("btnGoEmployeeCC")
+                                .Disabled(true)
+                                .Handler("ShowFrmGoEmployeeCC();"),
+                        Html.X().ToolbarFill()
+                                )
+                   )
+            .Store(
+                Html.X().Store()
+                        .AutoLoad(true)
+                        .ID("StDispatchGoEmployee")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDispatchGoEmployee", "DispatchGoEmployee"))
+                        .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                        })
+                        .Model(
+                            Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("Code"),
+                            Html.X().ModelField().Name("FormH"),
+                            Html.X().ModelField().Name("FormS"),
+                            Html.X().ModelField().Name("Date"),
+                            Html.X().ModelField().Name("FormH"),
+                            Html.X().ModelField().Name("FormS"),
+                            Html.X().ModelField().Name("DestinationAddress"),
+                            Html.X().ModelField().Name("Security"),
+                            Html.X().ModelField().Name("SecurityColor"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("IsSend"),
+                            Html.X().ModelField().Name("FlagVerify"),
+                            Html.X().ModelField().Name("FlagApprove"),
+                            Html.X().ModelField().Name("IsVerify"),
+                            Html.X().ModelField().Name("IsApproval"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("IsAccept"),
+                            Html.X().ModelField().Name("EmployeeInfo.Name"),
+                            Html.X().ModelField().Name("ApprovalBy"),
+                            Html.X().ModelField().Name("AttachmentFileIDs")
+                            )
+                        )
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).StyleSpec("font-weight: bold; text-align: center;"),
+                    Html.X().Column().DataIndex("Code").Text("Số, ký hiệu").Width(110),
+                    Html.X().DateColumnExtend().DataIndex("Date").Text("Ngày tháng CV").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center).Filterable(false),
+                        Html.X().Column().DataIndex("Name").Text("Tên công văn").MinWidth(300).Wrap(true).Flex(1),
+                        Html.X().Column().DataIndex("DestinationAddress").Text("Nơi nhận").MinWidth(300).Wrap(true).Flex(1),
+                    Html.X().Column().DataIndex("EmployeeInfo.Name").Text("Người ký").Width(150),
+                    Html.X().ComponentColumn().Text("Hình thức lưu").Filterable(false).Columns(
+                    Html.X().CheckColumn().DataIndex("FormH").Text("Bản cứng").Width(80),
+                    Html.X().CheckColumn().DataIndex("FormS").Text("Bản mềm").Width(80)),
+                    Html.X().Column().DataIndex("Security").Text("Mức độ mật").Width(100).Align(Alignment.Center)
+                                .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('SecurityColor') + ';'; return value; }" }).Filterable(false),
+                    Html.X().Column().DataIndex("Status").Text("Trạng thái").Width(100).Align(Alignment.Center).Filterable(false),
+                    Html.X().ColumnFileExtend("AttachmentFileIDs")
+                    )
+                    .SelectionModel(
+                Html.X().CheckboxSelectionModel()
+                    .ShowHeaderCheckbox(false)
+                    .Mode(SelectionMode.Single)
+                    .Listeners(l => l.SelectionChange.Handler = "checkStatus();")
+                        )
+                    .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+                        .Plugins(
+                            Html.X().FilterHeader().Remote(true)
+                        )
+
+                        .BottomBar(Html.X().CustomPagingToolbar())
+             )
+)
+<script>
+    var ShowFrmGoEmployeeCC = function () {
+        var records = App.GrDispatchGoEmployee.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnGoEmployeeCC.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("ShowEmployeeCC", "DispatchGoDepartment", new { Area = "Dispatch" }, null))',
+                    params: { dispatchGoId: records[0].get('ID') }
+                });
+                break;
+        }
+    };
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var ShowFrm = function (cmd) {
+        if (cmd == 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAdd", "DispatchGoEmployee", new { Area = "Dispatch" }, null))'
+            });
+        } else {
+            var record = App.GrDispatchGoEmployee.selModel.getSelection();
+            if (record.length > 0) {
+                var id = record[0].get('ID');
+                if (cmd == 1) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmUpdate", "DispatchGoEmployee", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 2) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmApprove", "DispatchGoEmployee", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 3) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmMove", "DispatchGoEmployee", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 4) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmVerify", "DispatchGoEmployee", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 5) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmDetail", "DispatchGoEmployee", new { Area = "Dispatch" }, null))', params: { id: id, type: cmd }
+                    });
+
+                }
+                else if (cmd == 6) {
+                    var id = record[0].get('ID');
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmMoveOut", "DispatchGoEmployee", new { Area = "Dispatch" }, null))', params: { id: id }
+                    });
+                }
+            }
+        }
+    };
+    var checkStatus = function () {
+        var record = App.GrDispatchGoEmployee.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnDetail.setDisabled(false);
+            App.btnGoEmployeeCC.setDisabled(false);
+            if (record[0].get('IsEdit')) {
+                App.btnApprove.setDisabled(true);
+                App.btnEdit.setDisabled(false);
+                App.butDelete.setDisabled(false);
+                App.btnMove.setDisabled(true);
+                App.btnMoveOut.setDisabled(true);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (!record[0].get('FlagApprove') && record[0].get('ApprovalBy') == '@userID')
+            {
+                App.btnApprove.setDisabled(false);
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnMove.setDisabled(true);
+                App.btnMoveOut.setDisabled(true);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (!record[0].get('FlagApprove') && !record[0].get('IsEdit') && record[0].get('ApprovalBy') != '@userID')
+            {
+                App.btnApprove.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnMove.setDisabled(true);
+                App.btnMoveOut.setDisabled(true);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (record[0].get('FlagApprove') && !record[0].get('IsAccept') && !record[0].get('IsEdit')) {
+
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnApprove.setDisabled(true);
+                App.btnMove.setDisabled(true);
+                App.btnMoveOut.setDisabled(true);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (record[0].get('FlagApprove') && record[0].get('IsAccept') && !record[0].get('IsSend') && !record[0].get('IsVerify')) {
+
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnApprove.setDisabled(true);
+                App.btnMove.setDisabled(false);
+                App.btnMoveOut.setDisabled(false);
+                App.btnVerify.setDisabled(true);
+            }
+            else if (record[0].get('FlagApprove') && record[0].get('IsSend') && !record[0].get('IsVerify')) {
+                App.btnApprove.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnMove.setDisabled(false);
+                App.btnMoveOut.setDisabled(false);
+                if (!record[0].get('FlagVerify'))
+                    App.btnVerify.setDisabled(false);
+                else
+                    App.btnVerify.setDisabled(true);
+            }
+            else if (record[0].get('IsVerify')) {
+                App.btnApprove.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                App.btnMove.setDisabled(false);
+                App.btnMoveOut.setDisabled(false);
+                if (!record[0].get('FlagVerify'))
+                    App.btnVerify.setDisabled(false);
+                else
+                    App.btnVerify.setDisabled(true);
+            }
+        } else {
+            App.btnApprove.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnGoEmployeeCC.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+            App.btnMove.setDisabled(true);
+            App.btnVerify.setDisabled(true);
+        }
+    };
+    var deleteRecord = function () {
+        var records = App.GrDispatchGoEmployee.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnEdit.setDisabled(true);
+                        App.butDelete.setDisabled(true);
+                        App.btnDetail.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "DispatchGoEmployee", new { Area = "Dispatch" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+</script>

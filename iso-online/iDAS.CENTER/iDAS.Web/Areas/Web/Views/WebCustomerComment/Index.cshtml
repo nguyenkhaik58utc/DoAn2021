@@ -1,0 +1,120 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.WebCustomerCommentItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("WebCustomerCommentPanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateWebCustomerComment").Icon(Icon.Add).Handler("showCreateWebCustomerComment();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateWebCustomerComment").Icon(Icon.Pencil).Handler("showUpdateWebCustomerComment();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteWebCustomerComment").Icon(Icon.Delete).Handler("showDeleteWebCustomerComment();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailWebCustomerComment").Icon(Icon.Zoom).Handler("showDetailWebCustomerComment();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("FileID").Type(ModelFieldType.Object),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Role").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Company").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Comment").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectWebCustomerComment()")
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeWebCustomerComment();")
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex(Model, m => m.ID).Hidden(true),
+            Html.X().ImageColumn().DataIndex(Model, m=> m.FileID),
+            Html.X().Column().Text("Tên khách hàng").DataIndex(Model, m => m.Name).StyleSpec("font-weight: bold;text-align: center").Width(180).Align(Alignment.Center),
+            Html.X().Column().Text("Chức danh").DataIndex(Model, m => m.Role).StyleSpec("font-weight: bold;text-align: center").Width(180).Align(Alignment.Center),
+            Html.X().Column().Text("Đơn vị").DataIndex(Model, m => m.Company).StyleSpec("font-weight: bold;text-align: center").Width(180).Align(Alignment.Center),
+            Html.X().Column().Text("Ý kiến đánh giá").DataIndex(Model, m => m.Comment).StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).Width(100).StyleSpec("font-weight: bold; text-align: center").Align(Alignment.Center)
+        )
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script type="text/javascript">
+    var urlCreateWebCustomerComment = '@Url.Action("Create", "WebCustomerComment", new { area = "Web" })';
+    var urlUpdateWebCustomerComment = '@Url.Action("Update", "WebCustomerComment", new { area = "Web" })';
+    var urlDeleteWebCustomerComment = '@Url.Action("Delete", "WebCustomerComment", new { area = "Web" })';
+    var urlDetailWebCustomerComment = '@Url.Action("Detail", "WebCustomerComment", new { area = "Web" })';
+
+    var getWebCustomerCommentSelection = function () {
+        return App.WebCustomerCommentPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadWebCustomerComment = function () {
+        App.WebCustomerCommentPanel.getStore().reload();
+        deSelectWebCustomerComment();
+    }
+    var deSelectWebCustomerComment = function () {
+        App.WebCustomerCommentPanel.selModel.lastSelected = null;
+        selectionChangeWebCustomerComment();
+    }
+    var showCreateWebCustomerComment = function () {
+        var url = urlCreateWebCustomerComment;
+        onDirectMethod(url, null, 'get');
+    };
+    var showUpdateWebCustomerComment = function () {
+        var url = urlUpdateWebCustomerComment;
+        var record = getWebCustomerCommentSelection();
+        var WebCustomerCommentId = record == null ? 0 : record.data.ID;
+        var params = { WebCustomerCommentId: WebCustomerCommentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteWebCustomerComment = function () {
+        var url = urlDeleteWebCustomerComment;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getWebCustomerCommentSelection();
+                            var WebCustomerCommentId = record == null ? 0 : record.data.ID;
+                            var params = { WebCustomerCommentId: WebCustomerCommentId };
+                            onDirectMethod(url, params, 'post', reloadWebCustomerComment);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailWebCustomerComment = function () {
+        var url = urlDetailWebCustomerComment;
+        var record = getWebCustomerCommentSelection();
+        var WebCustomerCommentId = record == null ? 0 : record.data.ID;
+        var params = { WebCustomerCommentId: WebCustomerCommentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeWebCustomerComment = function () {
+        var record = getWebCustomerCommentSelection();
+        App.btnUpdateWebCustomerComment.setDisabled(record == null);
+        App.btnDeleteWebCustomerComment.setDisabled(record == null);
+        App.btnDetailWebCustomerComment.setDisabled(record == null);
+    };
+</script>

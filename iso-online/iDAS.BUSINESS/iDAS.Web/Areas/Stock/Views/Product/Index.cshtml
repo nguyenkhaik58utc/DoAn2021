@@ -1,0 +1,600 @@
+﻿@model System.Collections.IEnumerable
+@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/Content/FieldSet.css" rel="stylesheet" />
+<script type="text/javascript" src="@Url.Content("~/Areas/Stock/Content/js/jsCommon.js")"></script>
+<script type ="text/javascript">   
+    var imageProductChange = function (obj) {
+        var file = obj.fileInputEl.dom.files[0];
+        var url = URL.createObjectURL(file);
+        App.imgProduct.setImageUrl(url);
+    };
+        var applyFilter = function (field) {
+        var store = App.gpProduct.getStore();
+        store.filterBy(getRecordFilter());
+    };
+    var filterString = function (value, dataIndex, record) {
+        var val = record.get(dataIndex);
+        if (typeof val != "string") {
+            return value.length == 0;
+        }
+        return val.toLowerCase().indexOf(value.toLowerCase()) > -1;
+    };
+    var filterNumber = function (value, dataIndex, record) {
+        var val = record.get(dataIndex);
+
+        if (!Ext.isEmpty(value, false) && val != value) {
+            return false;
+        }
+        return true;
+    };
+    var filterBoolean = function (value, dataIndex, record) {
+        var val = record.get(dataIndex);
+        if (typeof val != "boolean") {
+            return value.length == 0;
+        }
+        return val.toString().toLowerCase().indexOf(value.toString().toLowerCase()) > -1;
+    }; 
+    var getRecordFilter = function () {   
+        var f = [];       
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftCode.getValue() || "", "Code", record);
+            }
+        });     
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftName.getValue() || "", "Name", record);
+            }
+        });
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftUnit_Name.getValue() || "", "Unit_Name", record);
+            }
+        });
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftStock_Name.getValue() || "", "Stock_Name", record);
+            }
+        });  
+        f.push({
+            filter: function (record) {
+                return filterNumber(App.ftOrg_Price.getValue() || "", "Org_Price", record);
+            }
+        });      
+        f.push({
+            filter: function (record) {
+                return filterNumber(App.ftSale_Price.getValue() || "", "Sale_Price", record);
+            }
+        });
+        f.push({
+            filter: function (record) {
+                return filterString(App.ftType_Name.getValue() || "", "Type_Name", record);
+            }
+        });       
+        var len = f.length;
+        return function (record) {
+            for (var i = 0; i < len; i++) {
+                if (!f[i].filter(record)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+    };
+    var clearFilter = function () { 
+        App.ftCode.reset();
+        App.ftName.reset();
+        App.ftUnit_Name.reset();
+        App.ftStock_Name.reset();
+        App.ftOrg_Price.reset();
+        App.ftSale_Price.reset();
+        App.ftType_Name.reset(); 
+        App.stProduct.clearFilter();       
+    };
+    // Hàm hiện thị context menu
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    // Hàm check trạng thái của button xóa nếu có chọn dòng thì button xóa enable
+    var checkStatus = function () {
+        var records = App.gpProduct.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.cmDelete.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.btnStruct.setDisabled(true);
+                App.cmStruct.setDisabled(true);
+                App.btnDetail.setDisabled(true);
+                App.cmDetail.setDisabled(true);
+                break;
+            case 1:
+                App.cmDelete.setDisabled(false);
+                App.cmEdit.setDisabled(false);
+                App.btnDelete.setDisabled(false);
+                App.btnEdit.setDisabled(false);
+                App.btnStruct.setDisabled(false);
+                App.cmStruct.setDisabled(false);
+                App.btnDetail.setDisabled(false);
+                App.cmDetail.setDisabled(false);
+                break;
+            default:
+                App.cmDelete.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.btnStruct.setDisabled(true);
+                App.cmStruct.setDisabled(true);
+                App.btnDetail.setDisabled(true);
+                App.cmDetail.setDisabled(true);
+                break;
+        }
+    };
+    // Hàm check trạng thái của button xóa nếu có chọn dòng thì button xóa enable
+    var checkStatusBuild = function () {
+        var records = App.gpStructure.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnDeleteStructure.setDisabled(true);
+                App.btnEditStructure.setDisabled(true);
+           
+                break;
+            case 1:
+                App.btnDeleteStructure.setDisabled(false);
+                App.btnEditStructure.setDisabled(false);
+                break;
+            default:
+                App.btnDeleteStructure.setDisabled(false);
+                App.btnEditStructure.setDisabled(false);
+                break;
+        }
+    };
+    // Hàm thực hiện thao tác lưu trên grid
+    var ShowAddStructure = function (build_id) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowWdAddProductStructure", "Product", new { Area = "Stock" }, null))',
+            params: { build_id: build_id }
+         });
+    };
+    var ShowEditStructure = function (build_id) {
+        var records = App.gpStructure.selModel.getSelection();
+        var id = records[0].get('ID');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowWdEditProductStructure", "Product", new { Area = "Stock" }, null))',
+            params: {id:id,  build_id: build_id }
+        });
+    };
+    //Xóa bản ghi khỏi CSDL
+    var deleteRecordStructure = function () {
+        var records = App.gpStructure.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnEditStructure.setDisabled(true);
+                        App.btnDeleteStructure.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("DeleteBuild", "Product", new { Area = "Stock" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var showFormEdit = function()
+    {
+        var records = App.gpProduct.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnStruct.setDisabled(true);
+                    App.cmStruct.setDisabled(true);
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.cmEdit.setDisabled(true);
+                    App.cmDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    App.cmDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowWdEditProduct", "Product", new { Area = "Stock" }, null))',
+                params: { id: id }
+            });
+        }
+
+    };
+    var viewRecord = function () {
+        var records = App.gpProduct.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnStruct.setDisabled(true);
+                    App.cmStruct.setDisabled(true);
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.cmEdit.setDisabled(true);
+                    App.cmDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    App.cmDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowWdDetailProduct", "Product", new { Area = "Stock" }, null))',
+                params: { id: id }
+            });
+        }
+
+    };
+    var showCreateStruct = function () {
+        var records = App.gpProduct.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnStruct.setDisabled(true);
+                    App.cmStruct.setDisabled(true);
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.cmEdit.setDisabled(true);
+                    App.cmDelete.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var type_ID = records[0].get('Type_ID'), id = records[0].get('ID');
+            if (type_ID != 2 && type_ID != 5 && type_ID != 6) {
+                Ext.MessageBox.show({
+                    title: 'Chú ý', msg: 'Chức năng cấu tạo chỉ hỗ trợ cho loại <b>Bán thành phẩm</b>, <b>Thành phẩm</b>, <b>Sản phẩm lắp ráp</b> !',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Note',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+            }
+            else {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("ShowWdCreateStruct", "Product", new { Area = "Stock" }, null))',
+                    params: { id: id }
+                });
+            }
+        }
+    };
+    //Xóa bản ghi khỏi CSDL
+    var deleteRecord = function () {
+        var records = App.gpProduct.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnStruct.setDisabled(true);
+                        App.cmStruct.setDisabled(true);
+                        App.btnEdit.setDisabled(true);
+                        App.btnDelete.setDisabled(true);
+                        App.cmEdit.setDisabled(true);
+                        App.cmDelete.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "Product", new { Area = "Stock" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };  
+</script>
+@(Html.X().Menu()
+          .ID("cmMenu")          
+          .Items(
+                new MenuItem {
+                    Text = "Thêm mới",
+                    ID = "cmAdd", Icon = Icon.Add,
+                    DirectClickAction="ShowWdAddProduct"
+                },
+                    new MenuItem {
+                    Text = "Sửa",
+                    ID = "cmEdit", Icon = Icon.Pencil,
+                    Disabled = true,
+                    Handler ="showFormEdit();"
+                },
+                new MenuItem { 
+                    Text = "Xóa",
+                    ID = "cmDelete",
+                    Disabled = true,
+                    Icon = Icon.Delete,
+                    Handler = "deleteRecord();" 
+                },
+                new MenuItem
+                {
+                    Text = "Xem chi tiết",
+                    ID = "cmDetail",
+                    Disabled = true,
+                    Icon = Icon.Delete,
+                    Handler = "viewRecord();"
+                },
+                 new MenuItem { 
+                    Text = "Cấu tạo",
+                    ID = "cmStruct",
+                    Disabled = true,
+                    Icon = Icon.ApplicationCascade,
+                    Handler = "showCreateStruct();" 
+                }
+           )
+)
+@(Html.X().Viewport()
+          .Layout(LayoutType.Fit)
+          .Items(
+            Html.X().GridPanel()
+                    .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                    .ID("gpProduct")
+                    .ColumnLines(true)
+                    .Height(400).Border(false)
+                    .TopBar(
+                             Html.X().Toolbar().ID("tbgpProduct")
+                                     .Items(
+                                        Html.X().ButtonCreate()
+                                                .ID("btnAdd")
+                                                .DirectClickAction("ShowWdAddProduct"),
+                                        Html.X().ToolbarSeparator(),                                                
+                                        Html.X().ButtonUpdate()
+                                                .ID("btnEdit")
+                                                .Disabled(true)
+                                                .Handler("showFormEdit();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonDelete()
+                                                .ID("btnDelete")
+                                                .Disabled(true)
+                                                .Handler("deleteRecord();"),
+                                            Html.X().ToolbarSeparator(),
+                                                   Html.X().ButtonView()
+                                                    .ID("btnDetail")
+                                                    .Disabled(true)
+                                                    .Handler("viewRecord();"),
+                                                Html.X().ToolbarSeparator(),                                                  
+                                        Html.X().Button()
+                                                .ID("btnStruct")
+                                                .Text("Cấu tạo")
+                                                .Icon(Icon.ApplicationCascade)
+                                                .Disabled(true)
+                                                .Handler("showCreateStruct();"),
+                                             Html.X().ToolbarFill(),
+                                                             Html.X().ButtonTutorial()
+                                        )
+                                        
+                                      
+                                )
+            .Store(Html.X().Store()
+                    .ID("stProduct")                   
+                   .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetData"))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .GroupField("Group_Name")
+                    .Sorters(Html.X().DataSorter().Property("Group_Name").Direction(Ext.Net.SortDirection.ASC))                 
+                    .Model(
+                        Html.X().Model()
+                            .Fields( 
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("NameEN").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("AverageCost").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Barcode").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Batch").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("Photo").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("Color").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Commission").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("CostMethod").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("Currency_ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("CurrentCost").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Customer_Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Depth").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Discount").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("ExchangeRate").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Expiry").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("ExpiryValue").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("ExportTax_ID").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Group_ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Group_Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Height").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("ImportTax_ID").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("LimitOrders").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("LuxuryTax_ID").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Manufacturer_ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("MaxStock").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("MinStock").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Model_ID").Type(ModelFieldType.Int),                                                                                 
+                                Html.X().ModelField().Name("Org_Price").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Origin").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Provider_ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Quantity").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Retail_Price").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Sale_Price").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Serial").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("Size").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StockID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Stock_Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Thickness").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Type_ID").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Type_Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Unit_ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Unit_Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("UnitConvert").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("UnitRate").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("VAT_ID").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Warranty").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Width").Type(ModelFieldType.Float),                                                                                        
+                                Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Active").Type(ModelFieldType.Boolean)                                                            
+                            )
+                    )                 
+                    
+            )
+.ColumnModel(
+Html.X().RowNumbererColumn()
+        .Text("STT")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(33)
+        .Wrap(true)
+        .Align(Alignment.Center),
+Html.X().Column()
+        .Text("ID")
+        .DataIndex("ID")
+        .Wrap(true)      
+        .Hidden(true),        
+Html.X().Column()
+        .Text("Mã")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .DataIndex("Code")
+        .Align(Alignment.Center)
+        .Wrap(true)        
+        .Width(100),
+Html.X().Column()
+        .Text("Tên vật tư hàng hóa")
+        .DataIndex("Name")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(200)
+        .Flex(1)      
+        .Wrap(true),      
+Html.X().Column()
+        .Text("Đơn vị tính")
+        .DataIndex("Unit_Name")
+        .Filterable(false)
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(100)     
+        .Wrap(true),      
+    Html.X().Column()
+        .Text("Kho mặc định")
+        .DataIndex("Stock_Name")
+        .Filterable(false)
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(190)
+        .Wrap(true),
+        Html.X().NumberColumn()
+        .Text("Giá mua (VNĐ)")
+        .DataIndex("Org_Price")
+        .Renderer("RenderVND")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(130)
+        .Align(Alignment.Right)
+        .Wrap(true),     
+    Html.X().NumberColumn()
+        .Text("Giá bán (VNĐ)")
+        .DataIndex("Sale_Price")
+        .Renderer("RenderVND")
+        .Align(Alignment.Right)
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(130)
+        .Wrap(true),      
+    Html.X().Column()
+        .Text("Loại")
+        .DataIndex("Type_Name")
+        .Filterable(false)
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(120)
+        .Wrap(true)      
+        )
+        .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                            l.Select.Handler = "checkStatus()";
+                        })
+                        )
+                             .Plugins(
+                                Html.X().FilterHeader()
+                                        .Remote(true)
+                                )
+                          .View(
+                        Html.X().GridView().MarkDirty(false)
+                        )
+                        .Features(
+                            Html.X().GroupingSummary()
+                                    .ID("GroupingSummaryProductGroup")
+                                    .GroupHeaderTplString("{name}")
+                                    .HideGroupedHeader(true)
+                                    .EnableGroupingMenu(false)
+                            )   
+                        .Plugins(Html.X().CellEditing() )
+                        .BottomBar
+                        (
+                                Html.X().CustomPagingToolbar()
+        )             
+     )
+   )

@@ -1,0 +1,312 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+    var urlSubmitTask = Url.Action("Insert", "PlanTask", new { area = "Quality" });
+    var urlStoreTask = Url.Action("LoadTasks", "PerformPlan", new { area = "DevelopmentProduct" });
+    var paramStoreTask = Html.X().StoreParameter().Name("planId").Value("getPlanId()").Mode(ParameterMode.Raw);
+}
+@( Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+         Html.X().Menu()
+                        .ID("cmMenuPlan")
+                        .Items(
+                                new MenuItem { Text = "Xem chi tiết", ID = "cmDetailPlan", Icon = Icon.Zoom, Handler = "ViewDetailPlan();" },
+                                Html.X().MenuSeparator()
+
+                            ),
+        Html.X().GridPanel()
+            .Header(true)
+            .Region(Region.West)
+            .Width(300)
+            .Split(true)
+            .Title("YÊU CẦU PHÁT TRIỂN SẢN PHẨM")
+            .ID("grRequirment")
+            .Border(true)
+            .MarginSpec("1 0 1 1")
+            .TitleAlign(TitleAlign.Center)
+            .Layout(LayoutType.Fit)
+            .Collapsible(true)
+            .ForceFit(true)
+            .ColumnLines(true)
+            .RowLines(true)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                            Html.X().Button()
+                                    .Disabled(true)
+                                        .Icon(Icon.Zoom)
+                                        .Text("Xem chi tiết")
+                                        .ID("btnProductDevelopmentRequirement")
+                                        .Handler("showFormDetail();")
+                                    .Disabled(true)
+
+                    )
+                )
+                      .Store(Html.X().Store()
+                            .ID("stMnRequirment")
+                        .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetDataRequirment", "PerformPlan", new { area = "DevelopmentProduct" }))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .RemoteSort(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                        Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    
+                                        Html.X().ModelField().Name("DevelopmentFromProductName").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("StockProductName").Type(ModelFieldType.String)
+                                )
+                              )
+                          )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                        Html.X().Column()
+                                .Text("ID")
+                                .DataIndex("ID")
+                                .Hidden(true),
+                        Html.X().Column()
+                                .Text("Sản phẩm yêu cầu phát triển")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                .DataIndex("StockProductName")
+                               .Flex(1)
+                                .Wrap(true)
+
+                )
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = " checkCommandStatus(); App.grMnPlanIndex.getStore().reload();";
+                            })
+                            )
+
+                              .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                    .BottomBar
+                                (
+                             X.CustomPagingToolbar()
+
+
+                ),
+               Html.X().GridPanel()
+               .Region(Region.Center)
+                .Margin(1)
+                .Header(false)
+                        .ID("grMnPlanIndex")
+                                   .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenuPlan")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().ButtonView().ID("btnDetailPlanProduction").Handler("ViewDetailPlan();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask().Text("Giao việc").ID("btnTaskPlan").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Tổng hợp tài liệu thiết kế").Icon(Icon.Page).ID("btnAttachment").Handler("ViewDocumentProduction();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnStartProduction").Icon(Icon.ServerStart).Text("Yêu cầu sản xuất thử").Handler("RequirementProduction();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                Html.X().Store()
+                        .ID("StorePlanIndex")
+                        .RemotePaging(true)
+                        .AutoLoad(false)
+                        .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataIsApproval", "PerformPlan", new { Area = "DevelopmentProduct" }))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        .IDParam("ID"))
+                        .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("requirmentId", "App.grRequirment.selModel.getSelection().length>0?App.grRequirment.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("ProductDevelopmentRequirementPlanID"),
+                                        Html.X().ModelField().Name("ProductionRequirementID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("StartTime"),
+                            Html.X().ModelField().Name("EndTime"),
+                            Html.X().ModelField().Name("Cost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("IsAccept"),
+                            Html.X().ModelField().Name("IsApproval"),
+                                Html.X().ModelField().Name("StatusProduction"),
+                                     Html.X().ModelField().Name("RateFinish")
+                        )
+                     )
+            )
+            .ColumnModel(
+                            X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                            X.Column().DataIndex("Name").Text("Tên kế hoạch").Width(300).Flex(1).StyleSpec("font-weight: bold;text-align: center"),
+                            X.ComponentColumn().Text("Thời gian thực hiện").StyleSpec("font-weight: bold;text-align: center").Columns(
+                            X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").StyleSpec("font-weight: bold;text-align: center").Width(80).Align(Alignment.Center),
+                            X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").StyleSpec("font-weight: bold;text-align: center").Width(80).Align(Alignment.Center)),
+                            X.ComponentColumn().Text("Chi phí").StyleSpec("font-weight: bold;text-align: center").Columns(
+                            X.NumberColumn().DataIndex("Cost").Text("Giá trị").StyleSpec("font-weight: bold;text-align: center").Width(70).Align(Alignment.Right),
+                            X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").StyleSpec("font-weight: bold;text-align: center").Width(50).Align(Alignment.Center)),
+                             Html.X().ComponentColumn()
+                                        .Text("Tiến độ").StyleSpec("font-weight: bold;text-align: center")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Component(Html.X().ProgressBar().Text("%"))
+                                        .Listeners(ls => ls.Bind.Handler = "cmp.updateProgress(record.get('RateFinish')/100, record.get('RateFinish') + '%');"),
+                                                  X.Column().DataIndex("StatusProduction").Text("Trạng thái sản xuất").Width(120).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center")
+                )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusPlan"))
+            .BottomBar(
+                   X.CustomPagingToolbar()
+        )
+       )
+)
+<script type="text/javascript">
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var getPlanId = function () {
+        var planId = 0;
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        if (records.length > 0) {
+            planId = records[0].get('ID');
+        }
+        return planId;
+    }
+    var itemcontextmenuPlan = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenuPlan.showAt(e.getXY());
+    };
+    var deleteUrl = '@(Url.Action("DeletePlan"))';
+    var checkCommandStatus = function () {
+        var records = App.grRequirment.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnProductDevelopmentRequirement.setDisabled(true);
+                break;
+            case 1:
+
+                App.btnProductDevelopmentRequirement.setDisabled(false);
+
+                break;
+            default:
+                App.btnProductDevelopmentRequirement.setDisabled(true);
+        }
+
+    };
+    var showFormDetail = function () {
+        var records = App.grRequirment.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetailPlanProduction.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "ProductDevelopmentRequirement", new { Area = "DevelopmentProduct" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var RequirementProduction = function () {
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetailPlanProduction.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ProductionRequirementID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("RequirementProduction", "PerformPlan", new { Area = "DevelopmentProduct" }, null))',
+                params: { id: id, productDevelopmentRequirementPlanId: records[0].get('ProductDevelopmentRequirementPlanID') }
+            });
+        }
+    };
+    function CheckStatusPlan() {
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        if (records.length == 1) {
+            var IsEdit = records[0].get('IsEdit');
+            var IsAccept = records[0].get('IsAccept');
+            if (IsEdit == true) {
+                App.btnTaskPlan.setDisabled(true);
+            }
+            else {
+                if (IsAccept == true) {
+                    App.btnTaskPlan.setDisabled(false);
+                }
+                else {
+                    App.btnTaskPlan.setDisabled(true);
+                };
+            }
+            App.btnDetailPlanProduction.setDisabled(false);
+            App.cmDetailPlan.setDisabled(false);
+        }
+        else {
+            App.btnDetailPlanProduction.setDisabled(true);
+            App.btnTaskPlan.setDisabled(true);
+            App.cmDetailPlan.setDisabled(true);
+        };
+    };
+
+    var ViewDetailPlan = function () {
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "Plan", new { Area = "DevelopmentProduct" }, null))',
+                params: {
+                    id: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDocumentProduction = function () {
+        var records = App.grMnPlanIndex.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DocumentProduction", "PerformPlan", new { Area = "DevelopmentProduct" }, null))',
+                params: {
+                    productDevelopmentRequirementPlanID: records[0].get('ProductDevelopmentRequirementPlanID'),
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

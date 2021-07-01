@@ -1,0 +1,123 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@model iDAS.Items.UserItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+    .ID("winUpdate")
+    .Title("Sửa thông tin tài khoản")
+             .Icon(Icon.ApplicationViewDetail)
+            .Height(370)
+            .Width(700)
+             .BodyPadding(0)
+             .Margin(0)
+             .Constrain(true)
+             .Layout(LayoutType.Fit)
+             .Modal(true)
+             .Resizable(false)
+            .Items(
+                 Html.X().FormPanel()
+                    .ID("frmUpdate")
+                            .Layout(LayoutType.Form)
+                            .Frame(true)
+                            .Border(false)
+                            .MarginSpec("0 -4 -3 -4")
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(df => df.LabelWidth = 100)
+                            .DefaultAnchor("100%")
+                .Items(
+                                X.HiddenFor(m => m.ID).ID("hdfUserID"),
+                                    X.TextFieldFor(m => m.Name).FieldLabel("Họ Tên*:").MarginSpec("0 8 0 8").Width(650),
+                                    X.TextFieldFor(m => m.Account).FieldLabel("Tài khoản*:").MarginSpec("0 8 0 8").Width(650),
+                                    X.TextFieldFor(m => m.Password).Text("***********").FieldLabel("Mật khẩu:").MarginSpec("0 8 0 8").Width(650),
+                                    X.TextFieldFor(m => m.Email).FieldLabel("Email*:").MarginSpec("0 8 0 8").Width(650),
+                                    X.CheckboxFor(m => m.IsActive).FieldLabel("Kích hoạt:").MarginSpec("0 8 0 8").Width(650),
+                                Html.X().GridPanel().ID("GrdPosition")
+                                                    .MarginSpec("5 0 0 0")
+                                                    .StyleSpec("border-top: solid 1px #99bce8;")
+                                                    .ColumnLines(true)
+                                                    .Header(false)
+                                                    .Border(false)
+                                                    .Icon(Icon.TextListBullets)
+                                                    .Layout(LayoutType.Fit)
+                                                    .ForceFit(true)
+                                                    .Height(172)
+                                        .Store(
+                                            Html.X().Store()
+                                                .AutoLoad(true)
+                                                .ID("StorePosition")
+                                                .RemotePaging(true)
+                                                .PageSize(10)
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPosition", "Organization")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("userId", "App.hdfUserID.value", ParameterMode.Raw));
+                                                })
+                                                .Model(
+                                                    Html.X().Model().Fields(
+                                                        Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("GroupName"),
+                                                        Html.X().ModelField().Name("Name")
+                                                    )
+                                                )
+                                        )
+                                        .ColumnModel(
+                                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                                   Html.X().Column().DataIndex("GroupName").Text("Tổ chức").Width(330).StyleSpec("font-weight: bold;text-align: center"),
+                                                    Html.X().Column().DataIndex("Name").Text("Chức danh").Width(330).StyleSpec("font-weight: bold;text-align: center")
+                                                )
+                                                    .BottomBar(
+                    Html.X().PagingToolbar()
+                        .EmptyMsg("Hiện không có dữ liệu")
+                        .NextText("Trang kế tiếp")
+                        .PrevText("Trang trước")
+                        .LastText("Trang cuối cùng")
+                        .FirstText("Trang đầu tiên")
+                        .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                        .BeforePageText("Trang")
+                        .AfterPageText("của {0}")
+                        .RefreshText("Tải lại dữ liệu")
+                        .Items(
+                            Html.X().Label("Số bản ghi trên 1 trang"),
+                            Html.X().ToolbarSpacer(10),
+                            Html.X().ComboBox()
+                                .Width(50)
+                                .Items("5", "10", "15", "20", "25")
+                                .SelectedItems("5")
+                                .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                        )
+                        .Plugins(Html.X().ProgressBarPager())
+                )
+                )
+
+                )
+                    .Buttons(
+                      Html.X().Button()
+                                        .Text("Lưu lại")
+                                        .ID("btnUpdateSave")
+                                        .Icon(Icon.DatabaseSave)
+                                        .DirectEvents(de =>
+                                                  {
+                                                      de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+                                                      de.Click.ExtraParams.Add(new { exit = true });
+                                                      de.Click.Url = Url.Action("Update");
+                                                      de.Click.EventMask.ShowMask = true;
+                                                      de.Click.FormID = "frmUpdate";
+                                                  })
+
+                    , Html.X().Button()
+                                            .Text("Hủy")
+                                            .Icon(Icon.Cancel)
+                                            .TabIndex(15)
+                                        .OnClientClick("this.up('window').close();"))
+)
+)
+<script>
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("GrdPosition").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+</script>

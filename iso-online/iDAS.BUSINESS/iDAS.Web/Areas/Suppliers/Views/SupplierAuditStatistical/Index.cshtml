@@ -1,0 +1,274 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+@( Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+         
+               Html.X().GridPanel()
+               .Region(Region.Center)
+                .Margin(1)
+                .Header(false)
+                        .ID("grSuppAuditPlan")
+                .ColumnLines(true)
+                .ForceFit(true)
+                    .TopBar(
+                Html.X().Toolbar()
+                        .ID("tbgpDepartmentStatisticalProfile")
+                        .Items(
+                                        Html.X().SearchByDate("App.StorePlanIndex.load();")
+                                                    .FromDateID("dfFromDate").ToDateID("dfToDate"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button()
+                                        .Icon(Icon.ChartCurve)
+                                        .ID("groupChart")
+                                            .Text("Xem dưới dạng biểu đồ").Hidden(true)
+                                        .Menu(Html.X().Menu()
+                                            .Items(
+                                                    Html.X().MenuItem()
+                                                .Text("Biểu đồ hình cột(SL)")
+                                                            .ID("btnChartColumn")
+                                                    .Disabled(true)
+                                                    .Listeners(ls => ls.Click.Handler = "showChartColumn();")
+                                                    .Icon(Icon.ChartBar)
+
+                                        )
+                                ),
+                                    Html.X().Button()
+                                            .Text("In báo cáo")
+                                                .Hidden(true)
+                                            .Icon(Icon.Printer),
+                                                 Html.X().ButtonExportExcelFile().GridIDGetFile("grSuppAuditPlan"),
+                                                    Html.X().ToolbarFill(),
+                                                            Html.X().ButtonTutorial()
+
+
+                                    ))
+            .Store(
+                Html.X().Store()
+                        .ID("StorePlanIndex")
+                        .RemotePaging(true)
+                        .AutoLoad(true)
+                        .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "SupplierAuditStatistical", new { Area = "Suppliers" }))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        .IDParam("ID"))
+                            .Parameters(ps =>
+                                                        {
+                                                            ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                            ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("StartTime"),
+                            Html.X().ModelField().Name("EndTime"),
+                            Html.X().ModelField().Name("Cost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("IsAccept"),
+                            Html.X().ModelField().Name("IsApproval"),
+                                    Html.X().ModelField().Name("SupplierAuditCount"),
+                                        Html.X().ModelField().Name("SupplierAuditPassCount"),
+                                                Html.X().ModelField().Name("SupplierAuditChecked"),
+                                                Html.X().ModelField().Name("SupplierAuditNotCheck"),
+                                            Html.X().ModelField().Name("SupplierAuditNotPassCount"),
+                            Html.X().ModelField().Name("Status")
+                        )
+                     )
+            )
+            .ColumnModel(
+                            X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                            X.Column().DataIndex("Name").Text("Tên kế hoạch").Width(300).StyleSpec("font-weight: bold;text-align: center"),
+                            X.ComponentColumn().Text("Thời gian thực hiện").StyleSpec("font-weight: bold;text-align: center").Columns(
+                            X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").StyleSpec("font-weight: bold;text-align: center").Width(80).Align(Alignment.Center),
+                            X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").StyleSpec("font-weight: bold;text-align: center").Width(80).Align(Alignment.Center)),
+                            X.ComponentColumn().Text("Chi phí").StyleSpec("font-weight: bold;text-align: center").Columns(
+                            X.NumberColumn().DataIndex("Cost").Text("Giá trị").StyleSpec("font-weight: bold;text-align: center").Width(70).Align(Alignment.Right),
+                            X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").StyleSpec("font-weight: bold;text-align: center").Width(50).Align(Alignment.Center)),
+                            X.ComponentColumn().Text("Kết quả đánh giá nhà cung cấp").Columns(
+                                X.Column().DataIndex("SupplierAuditCount").Text("Số đánh giá").StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center).Width(100).Renderer("renderTotalAudit"),
+                                    X.Column().DataIndex("SupplierAuditNotCheck").Text("Chưa đánh giá").StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center).Width(100).Renderer("renderTotalAuditNotCheck"),
+                                            //X.Column().DataIndex("SupplierAuditChecked").Text("Đã đánh giá").StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center).Width(100).Renderer("renderTotalAuditChecked"),
+                                             X.ComponentColumn().Text("Đã đánh giá").Columns(
+                                                 X.Column().DataIndex("SupplierAuditPassCount").Text("Đạt").StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center).Width(70).Renderer("renderTotalPass"),
+                                                X.Column().DataIndex("SupplierAuditNotPassCount").Text("Không đạt").StyleSpec("font-weight: bold;text-align: center").Align(Alignment.Center).Width(70).Renderer("renderTotalNotPass")
+                                             )
+                                            
+                            )
+                            
+                )
+            
+            .BottomBar(
+                   X.CustomPagingToolbar()
+        )
+       )
+)
+<script type="text/javascript">
+   
+    var showListSupp = function () {
+        var records = App.grSuppAuditPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowSuppAuditList", "SuppliersPlanRate", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showSummaryResult = function () {
+        var records = App.grSuppAuditPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowSummaryResult", "SuppliersPlanRate", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var optionTime = function () {
+        var date = new Date();
+        var option = App.Time.getValue();
+        var quarter = Math.floor((date.getMonth() + 3) / 3);
+        switch (option) {
+            case 0:
+                App.dfFromDate.setValue(date);
+                App.dfToDate.setValue(date);
+                break;
+            case 1:
+                var startDay = 1;
+                var d = date.getDay();
+                var weekStart = new Date(date.valueOf() - (d <= 0 ? 7 - startDay : d - startDay) * 86400000);
+                var weekEnd = new Date(weekStart.valueOf() + 6 * 86400000);
+                App.dfFromDate.setValue(weekStart);
+                App.dfToDate.setValue(weekEnd);
+                break;
+            case 2:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+                break;
+            case 3:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * quarter - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * quarter + 0, 1));
+                break;
+            case 4:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11, 31));
+                break;
+            case 5:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 0 + 1, 0));
+                break;
+            case 6:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 1, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 1 + 1, 0));
+                break;
+            case 7:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 2, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 2 + 1, 0));
+                break;
+            case 8:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 + 1, 0));
+                break;
+            case 9:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 4, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 4 + 1, 0));
+                break;
+            case 10:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 5, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 5 + 1, 0));
+                break;
+            case 11:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 6, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 6 + 1, 0));
+                break;
+            case 12:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 7, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 7 + 1, 0));
+                break;
+            case 13:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 8, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 8 + 1, 0));
+                break;
+            case 14:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 9, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 9 + 1, 0));
+                break;
+            case 15:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 10, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 10 + 1, 0));
+                break;
+            case 16:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 11, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11 + 1, 0));
+                break;
+            case 17:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 1 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 1 + 0, 1));
+                break;
+            case 18:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 2 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 2 + 0, 1));
+                break;
+            case 19:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 3 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 3 + 0, 1));
+                break;
+            case 20:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 4 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 4 + 0, 1));
+                break;
+            default:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+        }
+        App.grSuppAuditPlan.getStore().load();
+    };
+  
+     var showDetailStatiscal = function (storeUrl) {
+        var records = App.grSuppAuditPlan.selModel.getSelection();
+        var planID = 0;
+        if (records.length > 0) {
+            planID = records[0].get('ID');
+        }
+        var url = '@(Url.Action("ViewDetailStatistical", "SupplierAuditStatistical", new { Area = "Suppliers" }))';
+        var params = {
+            urlStore: storeUrl,
+            Mode: '@(ParameterMode.Value)',
+            planID: planID
+        };
+        
+        onDirectMethod(url, params);
+    };
+    var renderTotalAudit = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalAudit", "SupplierAuditStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalAuditNotCheck = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalAuditNotCheck", "SupplierAuditStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalAuditChecked = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalAuditChecked", "SupplierAuditStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalPass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalPass", "SupplierAuditStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalNotPass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalNotPass", "SupplierAuditStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+</script>

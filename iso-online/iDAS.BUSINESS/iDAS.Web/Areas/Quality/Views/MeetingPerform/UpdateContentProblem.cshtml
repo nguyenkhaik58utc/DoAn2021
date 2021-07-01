@@ -1,0 +1,42 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.QualityMeetingProblemItem
+@(Html.X().Window()
+.ID("winMeetingProblemUpdate")
+.Title("Cập nhật vấn đề cuộc họp")
+.Icon(Icon.Pencil)
+.Width(500)
+.BodyPadding(6)
+.Maximizable(true)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+        Html.X().FormPanel()
+                .ID("frUpdate")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(lf => { lf.LabelAlign = LabelAlign.Left; lf.LabelWidth = 120; })
+                .Items(
+                        Html.X().HiddenFor(m => m.ID),
+                        Html.X().TextFieldFor(m => m.IsoName).FieldLabel("Iso").ReadOnly(true).LabelWidth(80),
+                            Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên vấn đề").ReadOnly(true).LabelWidth(80),
+                            Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung").Height(200).LabelWidth(80).Flex(1)
+                        )
+                    )
+.Buttons(
+    Html.X().ButtonSave()
+        .DirectEvents(de =>
+        {
+            de.Click.Before = @"if (!App.frUpdate.getForm().isValid()) { return false; } ";
+            de.Click.Action = "UpdateProblem";
+            de.Click.FormID = "frUpdate";
+            de.Click.Success = "this.up('window').close();";
+        }),
+        Html.X().ButtonExit()
+        )
+)

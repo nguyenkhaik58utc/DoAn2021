@@ -1,0 +1,101 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.ProductionPlanProductDetailItem
+@(Html.X().Window()
+        .Icon(Icon.TableEdit).Title("Kế hoạch công đoạn")
+        .ID("winPlanDetail")
+        .Height(1).Maximized(true)
+        .Layout(LayoutType.Fit)
+        .Items(
+                Html.X().Hidden().Value(ViewData["PlanProductID"]).ID("hdfPlanProductID"),
+                                Html.X().GridPanel().ID("GrPlanStage").Header(false)
+                                            .ColumnLines(true)
+                                            .ForceFit(true)
+                                            .Border(false)
+                                            .TopBar(
+                                                Html.X().Toolbar().Hidden((bool)ViewData["ReadOnly"])
+                                                .Items(
+                                                        Html.X().Button().Icon(Icon.CalculatorAdd).Text("Tính toán tự động kế hoạch").Handler("PlanCalculator")
+                                                )
+                                            )
+                                            .Store(
+                                                Html.X().Store().ID("PlanStageStoreID")
+                                                        .RemotePaging(true)
+                                                        .PageSize(365)
+                                                        .GroupField("Month")
+                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlanStage", "Plan", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                        .Parameters(pr => { pr.Add(new StoreParameter("planProductId", "App.hdfPlanProductID.value", ParameterMode.Raw)); })
+                                                        .Model(
+                                                            Html.X().Model().Fields(
+                                                                Html.X().ModelField().Name("ID"),
+                                                                Html.X().ModelField().Name("Date"),
+                                                                Html.X().ModelField().Name("HumanDepartment.Name"),
+                                                                Html.X().ModelField().Name("EmployeeCount"),
+                                                                Html.X().ModelField().Name("Menday"),
+                                                                Html.X().ModelField().Name("Quantity"),
+                                                                Html.X().ModelField().Name("Month")
+                                                            )
+                                                        )
+                                                    )
+                                                    .ColumnModel(
+                                                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                Html.X().DateColumnExtend().DataIndex("Date").Text("Ngày").Align(Alignment.Center).Width(120),
+                                                                Html.X().Column().DataIndex("HumanDepartment.Name").Text("Phòng ban thực hiện").Align(Alignment.Right).Flex(1),
+                                                                Html.X().Column().DataIndex("EmployeeCount").Text("Nhân sự phòng ban").Align(Alignment.Right).Width(120),
+                                                                Html.X().NumberColumn().DataIndex("Menday").Text("Nhân công ước lượng").Align(Alignment.Right).Width(150),
+                                                                Html.X().NumberColumn().DataIndex("Quantity").Text("Số lượng").Align(Alignment.Right).Width(120)
+                                                                        .Editor(Html.X().NumberField())
+                                                    )
+                                                .Features(Html.X().GroupingSummary()
+                                                            .ID("GroupingSummaryPlanDetail")
+                                                            .GroupHeaderTplString("Tháng {name}")
+                                                            .EnableGroupingMenu(false)
+                                                            .ShowSummaryRow(false)
+                                                        ).MultiSelect(true)
+)
+.Buttons(
+            Html.X().ButtonExit()
+      )
+)
+@(Html.X().Window().Title("Tính toán tự động kế hoạch")
+            .BodyPadding(0)
+            .Width(550)
+            .Constrain(true)
+            .Modal(true)
+            .Layout(LayoutType.Fit)
+            .ID("winSelectDepartment").Hidden(true)
+            .Items(
+                Html.X().CustomFormPanel().ID("frmSettingCalulatorID")
+                    .Items(
+                            Html.X().DepartmentFieldFor(m => m.HumanDepartment).AllowBlank(false).Multiple(false)
+                                        .FieldLabel("Phòng ban" + Html.Required())
+                    )
+            )
+            .Buttons(Html.X().Button().Icon(Icon.CalculatorAdd).Text("Tính toán").Handler("Calculator"))
+)
+<script>
+    var PlanCalculator = function () {
+        var measage = 'Bạn có chắc chắn muốn lập kế hoạch sản xuất tự động. Hệ thống sẽ tự động tính toán và ghi đè nên dữ liệu cũ nếu có. Bạn có muốn tiếp tục ?';
+        Ext.MessageBox.confirm('Thông báo', measage, function (btn) {
+            if (btn == 'yes') {
+                App.winSelectDepartment.show();
+            }
+        });
+    };
+    var Calculator = function () {
+        if (!App.frmSettingCalulatorID.getForm().isValid()) { return false; };
+        var url = '@(Url.Action("CaculatorPlan"))';
+        var params = {
+            planProductId: '@( ViewData["PlanProductID"])',
+            stageId: '@( ViewData["StageID"])',
+            quantity: '@( ViewData["Quantity"])',
+            startDate: '@( ViewData["StartDate"])',
+            endDate: '@( ViewData["EndDate"])',
+            departmentId: App.HumanDepartment_strIDs.value.split(',')[0]
+        };
+        onDirectMethod(url, params, 'post', function () { App.winSelectDepartment.hide(); });
+    };
+</script>

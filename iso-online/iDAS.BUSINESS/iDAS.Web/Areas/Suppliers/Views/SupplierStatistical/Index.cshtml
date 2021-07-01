@@ -1,0 +1,338 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().TreePanel()
+                    .Split(true)
+                    .Region(Region.Center)
+                    .ID("gpDepartmentStatistical")
+                    .TitleAlign(TitleAlign.Center)
+                    .Border(false)
+                    .AutoScroll(true)
+                    .RootVisible(false)
+                    .ColumnLines(true)
+                    .RowLines(true)
+                    .TopBar(
+            Html.X().Toolbar()
+                    .ID("tbgpDepartmentStatisticalProfile")
+                    .Items(
+                                Html.X().SearchByDate("App.stDepartmentStatisticalProfile.load();")
+                                                .FromDateID("dfFromDate").ToDateID("dfToDate"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button()
+                                    .Icon(Icon.ChartCurve)
+                                    .ID("groupChart")
+                                        .Text("Xem dưới dạng biểu đồ").Hidden(true)
+                                    .Menu(Html.X().Menu()
+                                        .Items(
+                                                Html.X().MenuItem()
+                                            .Text("Biểu đồ hình cột(SL)")
+                                                        .ID("btnChartColumn")
+                                                .Disabled(true)
+                                                .Listeners(ls => ls.Click.Handler = "showChartColumn();")
+                                                .Icon(Icon.ChartBar)
+
+                                    )
+                            ),
+                                Html.X().Button()
+                                        .Text("In báo cáo")
+                                            .Hidden(true)
+                                        .Icon(Icon.Printer),
+                                        Html.X().ButtonExportExcelFile().GridIDGetFile("gpDepartmentStatistical").isTree(true),
+                                                Html.X().ToolbarFill(),
+                                                        Html.X().ButtonTutorial()
+
+
+                                ))
+                                .Store(
+                                            Html.X().TreeStore().ID("stDepartmentStatisticalProfile")
+                                                .AutoLoad(false)
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData"))
+                                                .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                        ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                                    })
+                                                .Model(
+                                                    Html.X().Model()
+                                                            .Fields(
+                                                                Html.X().ModelField().Name("id"),
+                                                                Html.X().ModelField().Name("text"),
+                                                                Html.X().ModelField().Name("ParentID"),
+                                                                Html.X().ModelField().Name("Data1"),
+                                                                    Html.X().ModelField().Name("Data2"),
+                                                                        Html.X().ModelField().Name("Data3"),
+                                                                        Html.X().ModelField().Name("TotalAmount"),
+                                                                        Html.X().ModelField().Name("TotalPayed"),
+                                                                                Html.X().ModelField().Name("TotalRecive"),
+                                                                        Html.X().ModelField().Name("TotalOwe")
+                                                                )
+                                                )
+                                        )
+                                .ColumnModel(
+                                Html.X().TreeColumn()
+                                        .Text("Nhóm nhà cung cấp")
+                                            .Width(300)
+                                        .DataIndex("text"),
+                                                                                X.Column().DataIndex("Data1").Text("Số nhà cung cấp").Width(110).Renderer("renderTotal"), 
+                                                                                X.Column().DataIndex("Data2").Text("Nhà cung cấp giao dịch").Width(170).Renderer("renderTotalUse"),
+                                    //   Html.X().ComponentColumn()
+                                    //    .Text("Số nhà cung cấp đánh giá")
+                                    //        .Columns(
+                                    //                        X.Column().DataIndex("Data6").Text("Tổng số").Width(70).Renderer("renderUsePass"),
+                                    //                            X.Column().DataIndex("Data6").Text("Đạt").Width(70).Renderer("renderUsePass"),
+                                    //                        X.Column().DataIndex("Data7").Text("Không đạt").Width(70).Renderer("renderUseNotPass")                                                
+                                    //),
+                               Html.X().ComponentColumn()
+                                        .Text("Giao dịch")
+                                            .Columns(
+                                                            X.Column().DataIndex("Data3").Text("Tổng số đơn hàng").Width(150).Renderer("renderTotalOrder"),
+                                                                            X.Column().DataIndex("TotalAmount").Text("Tổng giá trị đơn hàng").Width(150).Renderer("renderTotalAmount"),
+                                                                                   X.Column().DataIndex("TotalRecive").Text("Tổng giá trị đã giao dịch").Width(170).Renderer("renderTotalAmount"),
+                                                                            X.Column().DataIndex("TotalPayed").Text("Thanh toán").Width(150).Renderer("renderTotalAmount"),
+                                                                                X.Column().DataIndex("TotalOwe").Text("Còn nợ").Width(150).Renderer("renderTotalAmount")                                                
+                                    )     
+                        )
+                        .SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "CheckStatus();";
+                            })
+                            )
+                    )
+)
+<script>
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+
+    var optionTime = function () {
+        var date = new Date();
+        var option = App.Time.getValue();
+        var quarter = Math.floor((date.getMonth() + 3) / 3);
+        switch (option) {
+            case 0:
+                App.dfFromDate.setValue(date);
+                App.dfToDate.setValue(date);
+                break;
+            case 1:
+                var startDay = 1;
+                var d = date.getDay();
+                var weekStart = new Date(date.valueOf() - (d <= 0 ? 7 - startDay : d - startDay) * 86400000);
+                var weekEnd = new Date(weekStart.valueOf() + 6 * 86400000);
+                App.dfFromDate.setValue(weekStart);
+                App.dfToDate.setValue(weekEnd);
+                break;
+            case 2:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+                break;
+            case 3:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * quarter - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * quarter + 0, 1));
+                break;
+            case 4:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11, 31));
+                break;
+            case 5:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 0 + 1, 0));
+                break;
+            case 6:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 1, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 1 + 1, 0));
+                break;
+            case 7:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 2, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 2 + 1, 0));
+                break;
+            case 8:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 + 1, 0));
+                break;
+            case 9:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 4, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 4 + 1, 0));
+                break;
+            case 10:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 5, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 5 + 1, 0));
+                break;
+            case 11:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 6, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 6 + 1, 0));
+                break;
+            case 12:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 7, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 7 + 1, 0));
+                break;
+            case 13:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 8, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 8 + 1, 0));
+                break;
+            case 14:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 9, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 9 + 1, 0));
+                break;
+            case 15:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 10, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 10 + 1, 0));
+                break;
+            case 16:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 11, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11 + 1, 0));
+                break;
+            case 17:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 1 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 1 + 0, 1));
+                break;
+            case 18:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 2 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 2 + 0, 1));
+                break;
+            case 19:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 3 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 3 + 0, 1));
+                break;
+            case 20:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 4 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 4 + 0, 1));
+                break;
+            default:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+        }
+        App.gpDepartmentStatistical.getStore().load();
+        CheckStatus();
+    };
+
+    var showChartColumn = function () {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        if (records[0].get('id') != 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowChartColumn", "SupplierStatistical", new { Area = "Suppliers" }, null))',
+                params: { id: records[0].get('id'), fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y'), toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y') },
+                success: function (result) {
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn nhóm thiết bị cần xuất biểu đồ thống kê',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+    };
+    var CheckStatus = function () {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                //App.btnChartColumn.setDisabled(true);
+                break;
+            case 1:
+                //App.btnChartColumn.setDisabled(false);
+                break;
+            default:
+        }
+    };
+    var showDetailStatiscal = function (storeUrl) {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        var cateId = 0;
+        if (records.length > 0) {
+            cateId = records[0].get('id');
+        }
+        var url = '@(Url.Action("SuppliersList", "SupplierStatistical", new { Area = "Suppliers" }))';
+        var params = {
+            urlStore: storeUrl,
+            Name: 'cateId',
+            Value: cateId,
+            Mode: '@(ParameterMode.Value)',
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+        };
+        onDirectMethod(url, params);
+    };
+    var showListOrderStatiscal = function (storeUrl) {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        var cateId = 0;
+        if (records.length > 0) {
+            cateId = records[0].get('id');
+        }
+        var url = '@(Url.Action("SuppliersOrderList", "SupplierStatistical", new { Area = "Suppliers" }))';
+        var params = {
+            urlStore: storeUrl,
+            Name: 'cateId',
+            Value: cateId,
+            Mode: '@(ParameterMode.Value)',
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+        };
+        onDirectMethod(url, params);
+    };
+    function RenderVND111(value, p, record) {
+        if (value == null)
+            return "";
+        var l = (value + "").length;
+        var s = value + "";
+        var rs = "";
+        var count = 0;
+        for (var i = l - 1; i >= 0; i--) {
+            count++;
+            if (count == 3) {
+                rs = "," + s.charAt(i) + rs;
+                count = 0;
+            }
+            else {
+                rs = s.charAt(i) + rs;
+            }
+        }
+        if (rs.charAt(0) == ',') {
+            return rs.substring(1, rs.length) + " VNĐ";
+        }
+        return rs + " VNĐ";
+    };
+    var renderTotal = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotal", "SupplierStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalUse = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalUse", "SupplierStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalOrder = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalOrder", "SupplierStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showListOrderStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalAmount = function (value, p, record) {
+        var urlStoreProfile = '@(Url.Action("renderTotalOrder", "SupplierStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showListOrderStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + RenderVND111(value, p, record) + "</a>";
+    };
+    var TotalRecive = function (value, p, record) {
+        var urlStoreProfile = '@(Url.Action("TotalRecive", "SupplierStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showListOrderStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + RenderVND111(value, p, record) + "</a>";
+    };
+    var renderTotalPayed = function (value, p, record) {
+        var urlStoreProfile = '@(Url.Action("renderTotalPayed", "SupplierStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showListOrderStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + RenderVND111(value, p, record) + "</a>";
+    };
+    var renderTotalOwe = function (value, p, record) {
+        var urlStoreProfile = '@(Url.Action("renderTotalOwe", "SupplierStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showListOrderStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + RenderVND111(value, p, record) + "</a>";
+    };
+</script>

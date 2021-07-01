@@ -1,0 +1,66 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductPriceItem
+
+@(Html.X().Window()
+    .Title("Thông tin chi tiết giá thành sản phẩm")
+    .Icon(Icon.Add)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(1).Layout(LayoutType.Form).Items(
+                            Html.X().ComboBoxFor(m => m.ProductMethodID).FieldLabel("Hình thức")
+                            .ID("cboProductMethod")
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .ReadOnly(true)
+                            .Store(
+                                Html.X().Store().AutoLoad(true)
+                                .Model(
+                                    Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                    )
+                                )
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProductMethods")).Reader(Html.X().JsonReader().Root("data")))
+                                .Listeners(ls => ls.Load.Handler = "App.cboProductMethod.select(App.cboProductMethod.store.getAt(0))")
+                            ),
+                            Html.X().NumberFieldFor(m => m.Price).FieldLabel("Giá thành").ReadOnly(true),
+                            Html.X().TextAreaFor(m => m.Note).FieldLabel("Ghi chú").Height(80).ReadOnly(true)
+                        )
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.3).FieldLabel("Kích hoạt").ReadOnly(true)
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)

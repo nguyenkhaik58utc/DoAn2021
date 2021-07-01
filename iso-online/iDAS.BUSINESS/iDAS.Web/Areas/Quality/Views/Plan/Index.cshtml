@@ -1,0 +1,232 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.QualityPlanItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+    var urlSubmitTask = Url.Action("Insert", "PlanTask", new { area = "Quality" });
+    var urlStoreTask = Url.Action("LoadTasks", "PlanTask", new { area = "Quality" });
+    var paramStoreTask = Html.X().StoreParameter().Name("planId").Value("getPlanId()").Mode(ParameterMode.Raw);
+}
+@(X.Hidden().ID("hdfDepartmentPlanManagement"))
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(2).Frame(false).StyleSpec("border: none;")
+.Items(
+        X.DepartmentPanel().Handler("selectDepartmentPlan"),
+        Html.X().GridPanel()
+                .Region(Region.Center)
+                .Layout(LayoutType.Fit)
+                .Header(false)
+                .ID("GrPlan")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().ButtonCreate().Handler("AddNew();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnUpdatePlan").Handler("UpdateItem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDeletePlan").Handler("onDelete(App.GrPlan.selModel.getSelection()[0].get('ID'));"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetailPlan").Handler("ViewDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonApproval().ID("btnApprovePlan").Handler("ApprovePlan();"),
+                        Html.X().ButtonTask()
+                                .UrlSubmit(urlSubmitTask)
+                                .UrlStore(urlStoreTask)
+                                .ParamStore(paramStoreTask)
+                                .AddWindowTask()
+                                .Text("Giao việc")
+                                .ID("btnTaskPlan")
+                                .Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Icon(Icon.TagPurple)
+                                .ID("btnFollowPlan").Text("Kiểm soát")
+                                .Disabled(true)
+                                .Handler("showFollowPlan();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Icon(Icon.FlagBlack)
+                                .ID("btnEndPlan").Text("Kết thúc")
+                                .Disabled(true)
+                                .Handler("showEndPlan();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                Html.X().Store()
+                    .ID("StorePlan")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlan", "Plan", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("departmentID", "App.hdfDepartmentPlanManagement.value", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("StartTime"),
+                            Html.X().ModelField().Name("EndTime"),
+                            Html.X().ModelField().Name("Cost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("IsAccept"),
+                            Html.X().ModelField().Name("Status")
+                        )
+                     )
+            )
+            .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(40).Align(Alignment.Center),
+                        X.Column().DataIndex("Name").Text("Tên kế hoạch").Width(300).Flex(1),
+                        X.ComponentColumn().Text("Thời gian thực hiện").Columns(
+                        X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                        X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(120).Align(Alignment.Center)),
+                        X.ComponentColumn().Text("Chi phí").Columns(
+                        X.NumberColumn().DataIndex("Cost").Text("Giá trị").Width(100).Align(Alignment.Right),
+                        X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                        X.Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(80)
+                )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+            .BottomBar(
+                   X.CustomPagingToolbar()
+        )
+    )
+)
+<script>
+    var getPlanId = function () {
+        var planId = 0;
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            planId = records[0].get('ID');
+        }
+        return planId;
+    }
+    var deleteUrl = '@(Url.Action("DeletePlan"))';
+    var selectDepartmentPlan = function (records) {
+        App.hdfDepartmentPlanManagement.setValue(records[0].get('id'));
+        App.GrPlan.getStore().reload();
+    };
+    function CheckStatus() {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length == 1) {
+            var IsEdit = records[0].get('IsEdit');
+            var IsAccept = records[0].get('IsAccept');
+            if (IsEdit == true) {
+                App.btnUpdatePlan.setDisabled(false);
+                App.btnDeletePlan.setDisabled(false);
+                App.btnApprovePlan.setDisabled(true);
+                App.btnEndPlan.setDisabled(true);
+            }
+            else {
+                App.btnUpdatePlan.setDisabled(true);
+                App.btnDeletePlan.setDisabled(true);
+                App.btnApprovePlan.setDisabled(false);
+                App.btnEndPlan.setDisabled(false);
+            }
+            if (IsAccept == true) {
+                App.btnTaskPlan.setDisabled(false);
+            }
+            else {
+                App.btnTaskPlan.setDisabled(true);
+            };
+            App.btnDetailPlan.setDisabled(false);
+            App.btnFollowPlan.setDisabled(false);
+        }
+        else {
+            SetDisabled(App.btnDetailPlan, App.btnFollowPlan, App.btnDeletePlan, App.btnUpdatePlan, App.btnApprovePlan, App.btnEndPlan, App.btnTaskPlan);
+        };
+    };
+
+    var AddNew = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "Plan", new { Area = "Quality" }, null))',
+            success: function (result) {
+                mask.hide();
+            }
+        });
+    };
+    var UpdateItem = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "Plan", new { Area = "Quality" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+    var ViewDetail = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "Plan", new { Area = "Quality" }, null))',
+                params: { ID: records[0].get('ID') },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+
+    var ApprovePlan = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ApproveForm", "Plan", new { Area = "Quality" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showEndPlan = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length == 1) {
+            var url = '@(Url.Action("PlanEnd"))';
+            var params = { id: records[0].get('ID') }
+            onDirectMethod(url, params, 'get');
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có mục tiêu nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+    var showFollowPlan = function () {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length == 1) {
+            var url = '@(Url.Action("Follow"))';
+            var params = { id: records[0].get('ID') }
+            onDirectMethod(url, params);
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có mục tiêu nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+</script>

@@ -1,0 +1,179 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@{
+    int cmd = (int)iDAS.Items.DocumentForm.Modifield;
+    int issued = (int)Common.DocumentStatus.Issued;
+}
+@model iDAS.Items.DocumentCategoryItem
+@(
+ Html.X().Window().Maximizable(true)
+    .ID("winDocuments")
+    .Title("Danh sách tài liệu thuộc danh mục tài liệu")
+     .Icon(Icon.TableCell)
+    .Width(950)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().GridPanel()
+            .ID("grDocuments")
+            .MarginSpec("0 0 0 0")
+            .ColumnLines(true)
+            .Header(false)
+            .Border(false)
+            .Height(400)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().Text("Đề nghị sửa đổi").ID("btnInsertModified").Icon(Icon.Add).Disabled(false)
+                            .Handler("AddNewReq();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ID("btnDetailDocument").Handler("ShowDetailDocument")
+                          )
+                    )
+            .Store(
+                Html.X().Store()
+                    .RemotePaging(true)
+                    .AutoLoad(true)
+                    .ID("stDocuments")
+                    .PageSize(20)
+                    .Model(
+                            Html.X().Model()
+                            .Fields(
+                                new ModelField("ID"),
+                                new ModelField("Code"),
+                                new ModelField("Name"),
+                                new ModelField("IssuedDate"),
+                                new ModelField("IssuedTime"),
+                                new ModelField("Type"),
+                                new ModelField("FormH"),
+                                new ModelField("FormS"),
+                                new ModelField("Security"),
+                                new ModelField("Color"),
+                                new ModelField("Status"),
+                                new ModelField("StatusCode")
+                                )
+                             )
+                    .Proxy(
+                        Html.X().AjaxProxy()
+                            .Url(Url.Action("LoadDocumentByCate"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("cateID", Model.ID.ToString(), ParameterMode.Raw));
+                    }
+                 )
+                )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                    .Text("STT")
+                    .Align(Alignment.Center)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(33),
+                Html.X().Column()
+                    .Text("Mã số tài liệu")
+                    .DataIndex("Code")
+                    .StyleSpec("font-weight: bold;text-align: center; ")
+                    .Width(100),
+                Html.X().Column()
+                    .Text("Tên tài liệu")
+                    .DataIndex("Name")
+                    .StyleSpec("font-weight: bold;text-align: center; ")
+                    .Flex(1),
+                Html.X().Column()
+                    .Text("Loại tài liệu")
+                    .DataIndex("Type")
+                    .StyleSpec("font-weight: bold;text-align: center; ")
+                    .Width(100)
+                    .Align(Alignment.Center),
+                Html.X().DateColumnExtend()
+                    .DataIndex("IssuedDate")
+                    .Text("Ngày ban hành")
+                    .Width(100)
+                    .StyleSpec("font-weight: bold;text-align: center")
+                    .Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().Column()
+                .DataIndex("IssuedTime")
+                .Text("Lần ban hành")
+                .Width(100)
+                .StyleSpec("font-weight: bold;text-align: center")
+                .Align(Alignment.Right),
+                Html.X().ComponentColumn()
+                    .Text("Hình thức lưu trữ")
+                    .Columns(
+                        Html.X().CheckColumn()
+                            .DataIndex("FormH")
+                            .Text("Bản cứng")
+                            .Width(80)
+                            .StyleSpec("font-weight: bold;text-align: center"),
+                        Html.X().CheckColumn()
+                            .DataIndex("FormS")
+                            .Text("Bản mềm")
+                            .Width(80).StyleSpec("font-weight: bold;text-align: center")
+                       ),
+                    Html.X().Column().DataIndex("Security")
+                    .Text("Mức độ mật")
+                    .Width(100)
+                    .StyleSpec("font-weight: bold;text-align: center")
+                    .Align(Alignment.Center)
+                    .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" }),
+                Html.X().Column()
+                    .Text("Trạng thái")
+                    .DataIndex("Status")
+                    .StyleSpec("font-weight: bold;text-align: center; ")
+                    .Align(Alignment.Center)
+                    .Width(100)
+            )
+            .Listeners(l => l.SelectionChange.Handler = "checkStatusReq();")
+          .BottomBar(Html.X().CustomPagingToolbar())
+        )
+        .Buttons(Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var ShowDetailDocument = function () {
+        var record = App.grDocuments.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Detail", "Document"))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var RenderNumber = function (value) {
+        return "<b>" + value + "</b>";
+    };
+    var AddNewReq = function () {
+        var record = App.grDocuments.selModel.getSelection();
+        var id = record[0].get('ID');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("InsertModified", "Request", new { Area = "Document" }, null))', params: { id: id, type: '@cmd' }
+        });
+    };
+    var checkStatusReq = function () {
+        var record = App.grDocuments.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnDetailDocument.setDisabled(false);
+            var status = record[0].get('StatusCode');
+            if (status == '@issued')
+                App.btnInsertModified.setDisabled(false);
+            else
+                App.btnInsertModified.setDisabled(true);
+        }
+        else {
+            App.btnDetailDocument.setDisabled(false);
+            App.btnInsertModified.setDisabled(true);
+        }
+    };
+</script>

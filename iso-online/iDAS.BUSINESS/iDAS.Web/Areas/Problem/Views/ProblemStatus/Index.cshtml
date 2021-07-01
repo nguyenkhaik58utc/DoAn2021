@@ -1,0 +1,163 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateProblemStatus = '@(Url.Action("Create", "ProblemStatus", new { area = "Problem" }))';
+    var urlUpdateProblemStatus = '@(Url.Action("Update", "ProblemStatus", new { area = "Problem" }))';
+    var urlDeleteProblemStatus = '@(Url.Action("Delete", "ProblemStatus", new { Area = "Problem" }))';
+    var urlDetailProblemStatus = '@(Url.Action("ShowFrmDetail", "ProblemStatus", new { Area = "Problem" }))';
+    var urlDefaultProblemStatus = '@(Url.Action("Default", "ProblemStatus", new { Area = "Problem" }))';
+    var sortProblemStatusIndex = null;
+    var showCreateProblemStatus = function () {
+        var url = urlCreateProblemStatus;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateProblemStatus = function () {
+        var url = urlUpdateProblemStatus;
+        var record = getProblemStatusSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getProblemStatusSelection = function () {
+        var records = App.ProblemStatusPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setProblemStatusSelection = function () {
+        if (sortProblemStatusIndex != null) {
+            App.ProblemStatusPanel.selModel.select(sortProblemStatusIndex);
+        }
+    };
+
+    var setDefaultProblemStatus = function () {
+        var url = urlDefaultProblemStatus;
+        var defaultSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn đặt trạng thái này làm trạng thái mặc định hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemStatusSelection();
+                            var ProblemStatusId = record == null ? 0 : record.data.ID;
+                            var params = { ProblemStatusId: ProblemStatusId };
+                            onDirectMethod(url, params, 'post', reloadProblemStatus);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', defaultSuccess);
+    };
+
+
+    var showDeleteProblemStatus = function () {
+        var url = urlDeleteProblemStatus;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ trạng thái sự cố này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemStatusSelection();
+                            var ProblemStatusId = record == null ? 0 : record.data.ID;
+                            var params = { ProblemStatusId: ProblemStatusId };
+                            onDirectMethod(url, params, 'post', reloadProblemStatus);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProblemStatus = function () {
+        var url = urlDetailProblemStatus;
+        var record = getProblemStatusSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadProblemStatus = function () {
+        App.ProblemStatusPanel.store.reload();
+    };
+
+    var selectionChangeProblemStatus = function () {
+        var record = getProblemStatusSelection();
+        var isDisabled = record == null;
+        App.btnUpdateProblemStatus.setDisabled(isDisabled);
+        App.btnDeleteProblemStatus.setDisabled(isDisabled);
+        App.btnDetailProblemStatus.setDisabled(isDisabled);
+        App.btnDefaultProblemStatus.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý trạng thái sự cố").Header(false)
+                    .ID("ProblemStatusPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateProblemStatus").ID("btnCreateProblemStatus()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateProblemStatus").Handler("showUpdateProblemStatus();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteProblemStatus").Handler("showDeleteProblemStatus()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailProblemStatus").Handler("showDetailProblemStatus();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.Button().ID("btnDefaultProblemStatus").Handler("setDefaultProblemStatus();").Icon(Icon.TextFontDefault).Text("Mặc định").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreProblemStatus")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("ProblemStatusName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("textDefault").Type(ModelFieldType.String)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setProblemStatusSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Code").Text("Mã trạng thái sự cố").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("ProblemStatusName").Text("Tên trạng thái sự cố").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("Description").Text("Mô tả trạng thái sự cố").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("textDefault").Text("Mặc định").Flex(1).MenuDisabled(true)
+             )
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProblemStatus();")
+    )
+    )

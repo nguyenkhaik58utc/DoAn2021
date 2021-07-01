@@ -1,0 +1,250 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerSurveyItem
+@(Html.X().Window()
+.Title("Thiết lập câu hỏi khảo sát")
+.Icon(Icon.ApplicationSideList)
+.Maximized(true)
+.BodyPadding(2)
+.Constrain(true)
+.Layout(LayoutType.Border)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+        Html.X().HiddenFor(m => m.ID).ID("hdfSurveyID"),
+        Html.X().Hidden().ID("hdfQuestionId"),
+        Html.X().TreePanel()
+                .ID("TreeCustomerQuestion")
+                .Title("Danh sách câu hỏi")
+                .Region(Region.West)
+                .Width(350)
+                .Header(false)
+                .Border(true)
+                .Collapsible(true)
+                .ForceFit(true)
+        //.RootVisible(false)
+                .Root(Html.X().Node().NodeID("0").Expanded(true)
+                            .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "Name", Value = "Bộ câu hỏi khảo sát", Mode = ParameterMode.Value }))
+                            .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "ID", Value = "0", Mode = ParameterMode.Value }))
+                            .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "IsUse", Value = "1", Mode = ParameterMode.Value }))
+                    )
+                .ColumnLines(true)
+                .RowLines(true)
+                .SingleExpand(false)
+                .Split(true)
+                .Collapsible(true)
+                .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().ToolTip("Thêm mới câu hỏi khảo sát").ID("btnAddQuestion").Handler("AddNewQuestion();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateQuestion").ToolTip("Cập nhật khảo sát").Handler("UpdateQuestion();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ToolTip("Xóa khảo sát").ID("btnDeleteQuestion").Handler("DeleteQuestion(App.TreeCustomerQuestion.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ToolTip("Xem chi tiết").ID("btnDetailQuestion").Handler("DetailQuestion();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonRefresh().Handler("App.StoreTreeQuestion.getRootNode().reload();")
+                                )
+                            )
+                .Store(
+                        Html.X().TreeStore().ID("StoreTreeQuestion")
+                        .AutoLoad(true)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadQuestion")))
+                        .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("surveyID", "App.hdfSurveyID.getValue()", ParameterMode.Raw));
+                        })
+                .Model(
+                    Html.X().Model().IDProperty("ID")
+                    .Fields(
+                        Html.X().ModelField().Name("ID"),
+                        Html.X().ModelField().Name("Name"),
+                        Html.X().ModelField().Name("ParentID"),
+                        Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                        Html.X().ModelField().Name("SurveyID")
+                    )
+                )
+                    )
+            .Listeners(ls => ls.SelectionChange.Fn = "onSelectChangeQuestion")
+            .HideHeaders(true)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().TreeColumn()
+                        .Text("Câu hỏi khảo sát")
+                        .Align(Alignment.Left)
+                        .DataIndex("Name")
+                        .Flex(1),
+                Html.X().CheckColumn()
+                        .Text("Sử dụng")
+                        .DataIndex("IsUse")
+                        .Width(100)
+                        .Align(Alignment.Center)
+                    ),
+        Html.X().GridPanel()
+                .Region(Region.Center)
+                .ID("grAnswer")
+                .Border(true)
+                .RowLines(true)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(Html.X().Toolbar().Items(
+                      Html.X().Button().ID("btnAddAnswer").Text("Thêm mới câu trả lời").Icon(Icon.Add).Handler("AddNewAnswer();").Disabled(true)
+                ))
+                .Store(Html.X().Store().ID("StoreAnswer")
+                        .AutoLoad(false)
+                        .RemotePaging(true)
+                        .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("LoadAnswer"))
+                                        .Reader(Html.X().JsonReader()
+                                        .Root("data")
+                                        )
+                        )
+                .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("id", "App.hdfQuestionId.value", ParameterMode.Raw));
+                    })
+                .Model(
+                    Html.X().Model().IDProperty("ID")
+                    .Fields(
+                        Html.X().ModelField().Name("ID"),
+                        Html.X().ModelField().Name("Name"),
+                        Html.X().ModelField().Name("Sum")
+                        )
+                    )
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                    Html.X().Column()
+                            .Text("Câu trả lời")
+                            .DataIndex("Name")
+                            .Flex(1).Editor(Html.X().TextField()),
+                   Html.X().Column().Text("Số khách hàng lựa chọn").DataIndex("Sum").Width(150).Align(Alignment.Right)
+                            )
+                    .Plugins(Html.X().CellEditing().ClicksToEdit(1)
+                            .Listeners(ls =>
+                                    {
+                                        ls.Edit.Fn = "EditAnswer";
+                                    }))
+                )
+    .Buttons(Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var EditAnswer = function (editor, e) {
+        if (!(e.value === e.originalValue)) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateAnswer"))',
+                params: {
+                    data: e.record.data
+                }
+            });
+        };
+    };
+    var AddNewAnswer = function () {
+        var records = App.TreeCustomerQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("AddAnswerForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+            var params = {
+                parentID: records[0].get('ID'),
+                surveyID: App.hdfSurveyID.getValue(),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AddNewQuestion = function () {
+        var url = '@(Url.Action("QuestionUpdateForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+        var records = App.TreeCustomerQuestion.selModel.getSelection();
+        var params;
+        if (records.length == 1) {
+            params = {
+                parentID: records[0].get('ID'),
+                surveyID: App.hdfSurveyID.getValue()
+            };
+        }
+        else {
+            params = {
+                parentID: 0,
+                surveyID: App.hdfSurveyID.getValue()
+            };
+        };
+        onDirectMethod(url, params);
+    };
+    var UpdateQuestion = function () {
+        var records = App.TreeCustomerQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("QuestionUpdateForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                surveyID: App.hdfSurveyID.getValue()
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var DetailQuestion = function () {
+        var records = App.TreeCustomerQuestion.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("QuestionDetailForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                surveyID: App.hdfSurveyID.getValue()
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var DeleteQuestion = function (id) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("DeleteQuestion"))',
+            params: {
+                ID: id,
+            }
+        });
+    };
+    var deleteRefresh = function () {
+        var selectNodes = App.TreeCustomerQuestion.selModel.getSelection();
+        if (selectNodes.length > 0) {
+            if (selectNodes.length == 1) {
+                var selectNodeId = selectNodes[0].getId();
+                var parentNode = App.StoreTreeQuestion.getNodeById(selectNodeId).parentNode;
+                if (parentNode == null) {
+                    App.StoreTreeQuestion.getNodeById(selectNodeId).reload();
+                }
+                else {
+                    parentNode.reload();
+                }
+            }
+        }
+        else {
+            App.StoreTreeQuestion.getRootNode().reload();
+        };
+
+    };
+    var refresh = function () {
+        App.StoreTreeQuestion.getRootNode().reload();
+    };
+    var refreshGridPanel = function () {
+        App.StoreAnswer.reload();
+    };
+    function onSelectChangeQuestion() {
+        var records = App.TreeCustomerQuestion.selModel.getSelection();
+        if (records.length == 1 && records[0].get('ID') != 0) {
+            SetEnabled(App.btnUpdateQuestion, App.btnDeleteQuestion, App.btnDetailQuestion, App.btnAddAnswer);
+            App.hdfQuestionId.setValue(records[0].get('ID'));
+            App.StoreAnswer.reload();
+        }
+        else {
+            SetDisabled(App.btnUpdateQuestion, App.btnDeleteQuestion, App.btnDetailQuestion, App.btnAddAnswer);
+        };
+    };
+</script>

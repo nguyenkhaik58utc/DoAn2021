@@ -1,0 +1,51 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@using iDAS.Utilities
+@model iDAS.Items.ReportTemplateItem
+
+@(Html.X().Window()
+    .ID("UploadReportWindow")
+    .Title("Thêm mới biểu mẫu báo cáo")
+    .Icon(Icon.Add)
+    .Width(500)
+    .Height(150)
+    .Maximizable(true)
+    .Constrain(true)
+    .BodyPadding(0)
+    .Border(false)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+            .Url(Url.Action("Upload"))
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .ID("UploadReportForm")
+            .Items(
+                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên biểu mẫu").AllowBlank(false),
+                Html.X().FileUploadFieldFor(m => m.FileUpload).Multiple(false).ID("ReportUpload"),
+                Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Sử dụng").Value(true)
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("uploadReportSubmit()"),
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var uploadReportSubmit = function () {
+        App.UploadReportForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadReportTemplate();
+                    App.UploadReportWindow.close();
+                }
+            }
+        });
+    };
+</script>

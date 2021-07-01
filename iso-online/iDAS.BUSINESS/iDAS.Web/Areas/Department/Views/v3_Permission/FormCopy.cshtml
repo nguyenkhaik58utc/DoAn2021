@@ -1,0 +1,75 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Base;
+@model iDAS.Web.Areas.Department.Models.DepartmentTitle
+@{
+    var X = Html.X();
+    var formId = X.GetComponentID();
+    var destinationDepartmentID = int.Parse(ViewData["DepartmentID"] + "");
+    var destinationTitleID = int.Parse(ViewData["TitleID"] + "");
+}
+@(X.Window().ID("windowSecurityForm").Title(Model.ID == null ? "Thêm mới" : "Chi tiết").IconCls(Model.ID == null ? "x-fa fa-plus-circle" : "x-fa fa-pencil-square-o")
+    .Width(380).Height(200).Closable(false).Resizable(false).Maximizable(false).Modal(true)
+    .Items(
+        X.FormPanelVBoxFormat().ID(formId).BodyPadding(1)
+        .Items(
+                      X.HiddenFor(m => m.ID),
+                       X.ContainerHBoxTop().MarginSpec("5 0 0 0")
+                    .Items(
+                      X.ComboBoxFor(m => m.DepartmentID).ID("cbbSelectDepartmentCopy").Flex(1).HideLabel(true).AllowBlank(true).MarginSpec("0 0 0 0").Note("Bộ phận").NoteAlign(NoteAlign.Top).EmptyText("Bộ phận...")
+                        .ValueField("ID")
+                        .DisplayField("Name")
+                        .Store(X.Store().ID("storeDeptCopy").AutoLoad(true)
+                                .Model(Html.X().Model()
+                                .IDProperty("ID")
+                                .Fields(new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }))
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadAllCbbDepartment", "v3_Permission", new { area = "Department" }))
+                                                                            .Reader(Html.X().JsonReader().Root("data")))
+                                .Parameters(pr =>
+                                {
+                                    //pr.Add(new StoreParameter("deptId", "App.ListTitle.getValue()", ParameterMode.Value));
+                                }))
+                        .Listeners(l =>
+                        {
+                            l.Change.Handler = "if(App.storeTitleCopy)App.storeTitleCopy.reload()";
+                            l.Select.Handler = "if(App.storeTitleCopy)App.storeTitleCopy.reload()";
+                            //l.AfterRender.Handler = "console.log(App.cbbSelectDepartment)";
+                        })),
+                        X.ContainerHBoxTop().MarginSpec("5 0 0 0")
+                    .Items(
+                    X.ComboBoxFor(m => m.TitleID).ID("cbbSelectTitleCopy").Flex(1).HideLabel(true).AllowBlank(true).MarginSpec("0 0 0 0").Note("Chức danh").NoteAlign(NoteAlign.Top).EmptyText("Chức danh...")
+                     .ValueField("ID")
+                     .DisplayField("Name")
+                     .Store(X.Store().ID("storeTitleCopy").AutoLoad(false)
+                            .Model(Html.X().Model()
+                                    .IDProperty("ID")
+                                    .Fields(new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }))
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCbbSelectTitle", "v3_Permission", new { area = "Department" }))
+                                                    .Reader(Html.X().JsonReader().Root("data")))
+                                    .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("id", "App.cbbSelectDepartmentCopy.getValue()", ParameterMode.Raw));
+                                    })
+                            )
+                     )
+                    , X.ContainerHBoxTop().MarginSpec("30 0 0 0")
+         )
+        .Buttons(
+            X.ButtonSave()
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = formId;
+                    de.Click.ExtraParams.Add(new { DestinationDepartmentID = destinationDepartmentID, DestinationV3TitleId = destinationTitleID });
+                    de.Click.Url = Url.Action("SaveCopy");
+                    de.Click.Success = "this.up('window').close();";
+                }),
+            X.Button().Text("Thoát").Icon(Icon.Cancel).OnClientClick("this.up('window').close();")
+        )
+)
+)
+<script>
+
+</script>

@@ -1,0 +1,77 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.QualityAuditPlanItem
+@(Html.X().Window()
+          .ID("winEditResultISO")
+          .Title("Kết quả đáp ứng yêu cầu tiêu chuẩn")
+          .Icon(Icon.Pencil)
+          .Width(650)
+          .Height(470)
+          .BodyPadding(6)
+          .Maximizable(true)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().FormPanel()
+                .ID("frResultISO")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().FieldSet().Title("Số liệu thống kê").PaddingSpec("5 5 5 5").Items(
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().TextFieldFor(m => m.TotalISOIndexAudit).FieldLabel("Tổng số điều khoản đánh giá").ReadOnly(true).LabelAlign(LabelAlign.Top).MarginSpec("0 5 0 0").ColumnWidth(0.5),
+                    Html.X().TextFieldFor(m => m.NumberISOIndexNotAudit).FieldLabel("Số điều khoản chưa đánh giá").ReadOnly(true).LabelAlign(LabelAlign.Top).ColumnWidth(0.5)
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().TextFieldFor(m => m.NumberISOIndexPass).FieldLabel("Số điều khoản đáp ứng").ReadOnly(true).LabelAlign(LabelAlign.Top).MarginSpec("0 5 0 0").ColumnWidth(0.5),
+                    Html.X().TextFieldFor(m => m.NumberISOIndexNotPass).FieldLabel("Số điều khoản chưa đáp ứng").ReadOnly(true).LabelAlign(LabelAlign.Top).ColumnWidth(0.5)
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().TextFieldFor(m => m.NumberM).FieldLabel("Số điểm M").ReadOnly(true).LabelAlign(LabelAlign.Top).MarginSpec("0 8 0 0").ColumnWidth(0.34),
+                    Html.X().TextFieldFor(m => m.NumberMedium).FieldLabel("Số điểm m").ReadOnly(true).LabelAlign(LabelAlign.Top).MarginSpec("0 8 0 0").ColumnWidth(0.33),
+                    Html.X().TextFieldFor(m => m.NumberObs).FieldLabel("Số điểm Obs").ReadOnly(true).LabelAlign(LabelAlign.Top).ColumnWidth(0.33)
+                    )),
+                    Html.X().FieldSet().Title("Báo cáo đánh giá").Flex(1).PaddingSpec("5 5 5 5")
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .Items(
+                    Html.X().ComboBoxFor(m => m.IsPass).LabelAlign(LabelAlign.Top)
+                         .ID("txResultCriteria")
+                         .FieldLabel("Đáp ứng yêu cầu tiêu chuẩn" + Html.Required())
+                         .Editable(false)
+                         .AllowBlank(false)
+                         .AllowOnlyWhitespace(false)
+                         .BlankText("Kết quả đáp ứng yêu cầu tiêu chuẩn không được trống")
+                         .Items(
+                         new ListItem("Đạt", true),
+                         new ListItem("Không đạt", false)
+                         ),
+                     Html.X().TextAreaFor(m => m.AuditNote)
+                         .ID("txtNoteCriteria")
+                         .AllowBlank(false)
+                         .AllowOnlyWhitespace(false)
+                            .FieldLabel("Nhận xét tình hình chung" + Html.Required()).LabelAlign(LabelAlign.Top)
+                            .Flex(1)
+                     )
+                     )
+                 )
+            .Buttons(
+            Html.X().ButtonSave()
+                .ID("btnSavesPoint")
+                .DirectEvents(de =>
+                {
+                    de.Click.Before = @"if (!App.frResultISO.getForm().isValid()) { return false; } ";
+                    de.Click.Action = "UpdateResultISO";
+                    de.Click.FormID = "frResultISO";
+                    de.Click.Success = "this.up('window').close(); App.stMnQualityAuditPlan.reload();";
+                }),
+            Html.X().ButtonExit()
+            )
+)

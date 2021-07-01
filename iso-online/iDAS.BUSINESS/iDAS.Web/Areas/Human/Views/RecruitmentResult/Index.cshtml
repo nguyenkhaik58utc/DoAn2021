@@ -1,0 +1,259 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentPlanItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    function CheckStatus() {
+        var records = App.GrPlan.selModel.getSelection();
+        if (records.length == 1) {
+            App.hdfPlanIndexID.setValue(records[0].get('ID'));
+            App.StoreProfileResult.reload();
+            App.GrProfileResultIndex.show();
+
+        }
+        else {
+            App.GrProfileResultIndex.hide();
+
+        };
+    };
+    var ViewDetailProfile = function () {
+        var records = App.GrProfileResultIndex.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "RecruitmentProfile", new { Area = "Human" }, null))',
+                params: { ID: records[0].get('ProfileID') }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function CheckStatusProfile() {
+        var records = App.GrProfileResultIndex.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailProfileIndexForm.setDisabled(false);
+            if (records[0].get('IsPass') == false && records[0].get('IsEmployee') == false) {
+                App.btnApprove.setDisabled(false);
+            }
+            else {
+                App.btnApprove.setDisabled(true);
+            };
+            if (records[0].get('IsPass') == true && records[0].get('IsEmployee') == false && records[0].get('IsTrial') == false) {
+                App.btnAddEmployees.setDisabled(false);
+                App.btnAddEmployeeTrial.setDisabled(false);
+            }
+            else {
+                App.btnAddEmployees.setDisabled(true);
+                App.btnAddEmployeeTrial.setDisabled(true);
+            };
+        }
+        else {
+            App.btnDetailProfileIndexForm.setDisabled(true);
+            App.btnAddEmployees.setDisabled(true);
+            App.btnAddEmployeeTrial.setDisabled(true);
+            App.btnApprove.setDisabled(true);
+        };
+    };
+    var ViewDetail = function () {
+        var profileRecords = App.GrProfileResultIndex.selModel.getSelection();
+        if (profileRecords.length > 0) {
+            var url = '@(Url.Action("DetailResultForm", "RecruitmentProfileInterview", new { Area = "Human" }, null))';
+            var params = {
+                ProfileResultID: profileRecords[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+
+        };
+    };
+    var Approve = function () {
+        var profileRecords = App.GrProfileResultIndex.selModel.getSelection();
+        if (profileRecords.length > 0) {
+            var url = '@(Url.Action("ApproveForm", "RecruitmentProfileInterview", new { Area = "Human" }, null))';
+            var params = {
+                ProfileResultID: profileRecords[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AddNewEmployee = function () {
+        Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn thêm ứng viên này vào nhân sự hệ thống?', function (btn) {
+            if (btn == 'yes') {
+                var profileRecords = App.GrProfileResultIndex.selModel.getSelection();
+                if (profileRecords.length == 1) {
+                    if (profileRecords[0].get('IsEmployee') == true) {
+                        Ext.Msg.alert("Thông báo", "Hồ sơ này đã có ở nhân sự");
+                        return;
+                    };
+                    if (profileRecords[0].get('IsPass') == true) {
+                        var url =  '@(Url.Action("AddNewEmployee", "RecruitmentResult", new { Area = "Human" }, null))';
+                        var params = {
+                            ProfileID: profileRecords[0].get('ProfileID')
+                        };
+                        onDirectMethod(url, params);
+                    }
+                    else {
+                        Ext.Msg.alert("Thông báo", "Hồ sơ yêu cầu phải được phê duyệt");
+                    };
+                }
+                else {
+                    MessageBox();
+                };
+            };
+
+        });
+    }; 
+    var AddNewEmployeTrial = function () {
+                var profileRecords = App.GrProfileResultIndex.selModel.getSelection();
+                if (profileRecords.length == 1) {
+                    if (profileRecords[0].get('IsEmployee') == true) {
+                        Ext.Msg.alert("Thông báo", "Hồ sơ này đã có ở nhân sự");
+                        return;
+                    };
+                    if (profileRecords[0].get('IsPass') == true) {
+                        var url = '@(Url.Action("AddNewEmployeeTrialForm", "RecruitmentResult", new { Area = "Human" }, null))';
+                        var params = {
+                            ProfileID: profileRecords[0].get('ProfileID'),
+                            Name: profileRecords[0].get('Name')
+                        };
+                        onDirectMethod(url, params);
+                    }
+                    else {
+                        Ext.Msg.alert("Thông báo", "Hồ sơ yêu cầu phải được phê duyệt");
+                    };
+                }
+                else {
+                    MessageBox();
+                };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Border).Margin(0).Padding(0).Frame(false)
+.Items(
+                    X.Panel()
+                    .Border(true)
+                    .MarginSpec("-1 0 -1 -1")
+                    .Frame(false)
+                    //.Header(false)
+                    .Title(" KẾ HOẠCH TUYỂN DỤNG").TitleAlign(TitleAlign.Center)
+                    .Layout(LayoutType.Fit)
+                    .Collapsible(true)
+                    .Split(true)
+                    .Region(Region.West)
+                    .Width(300)
+                       .Items(
+                            X.GridPanel().Margin(0).Padding(0)
+                            .Header(false)
+                            .ID("GrPlan")
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .Store(
+                            Html.X().Store()
+                                .ID("StorePlan")
+                                      .Listeners(ls => ls.Load.Handler = " if(App.StorePlan.count()>0) App.GrPlan.selModel.doSelect(0);")
+                                .RemotePaging(true)
+                                .PageSize(40)
+                                .AutoDataBind(true)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlanApproved", "RecruitmentPlan", new { Area = "Human" }, null)).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name")
+                                    )
+                                    )
+                            )
+                            .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                    X.Column().DataIndex("Name").Text("Tên kế hoạch tuyển dụng").Flex(1)
+                            )
+                            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus")
+                                )
+
+                            .BottomBar(Html.X().CustomPagingToolbar("40", "100", "200", "500", "1000"))
+                       )
+                       ,
+                      X.Panel()
+                      .Header(false)
+                      .Region(Region.Center)
+                      .Layout(LayoutType.Fit)
+                      .MarginSpec("-1 -1 -1 0")
+                      .Items(
+                                    X.HiddenFor(m => m.ID).ID("hdfPlanIndexID"),
+                                    Html.X().GridPanel().Hidden(true)
+                                    .Header(false)
+                                    .ID("GrProfileResultIndex").Margin(0).Padding(0)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Border(false)
+                                    .Icon(Icon.TextListBullets)
+                                        .TopBar(
+                                                X.Toolbar()
+                                                .Layout(LayoutType.HBox)
+                                                .Items(
+                                                        X.ButtonView().ToolTip("Xem chi tiết hồ sơ").ID("btnDetailProfileIndexForm").Handler("ViewDetail();"),
+                                                        X.ToolbarSeparator(),
+                                                        X.ButtonApproval().ID("btnApprove").Handler("Approve();"),
+                                                        X.ToolbarSeparator(),
+                                                        X.Button().ID("btnAddEmployeeTrial").Text("Thử việc").Handler("AddNewEmployeTrial();").Icon(Icon.UserAdd).Disabled(true),
+                                                            Html.X().ToolbarSeparator(),
+                                                        X.Button().ID("btnAddEmployees").Text("Thêm mới nhân sự").Handler("AddNewEmployee();").Icon(Icon.UserAdd).Disabled(true),
+                                                        Html.X().ToolbarFill(),
+                                                        Html.X().ButtonTutorial()
+                                                    )
+                                        )
+                                .Store(
+                                    Html.X().Store()
+                                        .ID("StoreProfileResult")
+                                        .RemotePaging(true)
+                                        .AutoLoad(false)
+                                        .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProfileResult")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("PlanID", "App.hdfPlanIndexID.value", ParameterMode.Raw));
+                                        })
+                                    .Model(
+                                        Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Birthday"),
+                                        Html.X().ModelField().Name("Gender"),
+                                        Html.X().ModelField().Name("Avatar"),
+                                        Html.X().ModelField().Name("RequirementName"),
+                                        Html.X().ModelField().Name("ProfileID"),
+                                        Html.X().ModelField().Name("RequirementID"),
+                                        Html.X().ModelField().Name("IsEmployee"),
+                                        Html.X().ModelField().Name("IsPass"),
+                                        Html.X().ModelField().Name("IsTrial")
+                                    )
+                             )
+                    )
+                    .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                X.ImageColumn().DataIndex("Avatar"),
+                                X.Column().DataIndex("Name").Text("Họ tên").Flex(1),
+                                X.DateColumnExtend().DataIndex("Birthday").Text("Ngày sinh").Width(200).Align(Alignment.Center),
+                                X.BooleanColumn().DataIndex("Gender").Text("Giới tính").TrueText("Nam").FalseText("Nữ").Width(100).Align(Alignment.Center),
+                                X.CheckColumn().DataIndex("IsPass").Text("Tuyển dụng").Width(100),
+                                Html.X().ComponentColumn().Text("Nhân sự").Columns(
+                                    X.CheckColumn().DataIndex("IsTrial").Text("Thử việc").Width(100),
+                                        X.CheckColumn().DataIndex("IsEmployee").Text("Chính thức").Width(100)
+                                ))
+                                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusProfile"))
+                                .BottomBar(X.CustomPagingToolbar())
+
+                      )
+    )
+)

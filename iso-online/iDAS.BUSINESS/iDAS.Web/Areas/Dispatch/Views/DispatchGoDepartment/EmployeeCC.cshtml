@@ -1,0 +1,249 @@
+﻿@using Ext.Net.MVC
+@using iDAS.Utilities
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DispatchGoItem
+@{
+    var X = Html.X();
+}
+<style>
+    .search-item {
+        font: normal 11px tahoma, arial, helvetica, sans-serif;
+        padding: 6px 5px 6px 0px;
+        border: 1px solid #fff;
+        border-bottom: 1px solid #eeeeee;
+        white-space: normal;
+        clear: left;
+        color: #555;
+    }
+
+    .search-item h3 {
+        display: block;
+        font: inherit;
+        font-weight: bold;
+        color: #222;
+        margin: 0px;
+    }
+
+    .search-item h3 span {
+        float: right;
+        font-weight: normal;
+        margin: 0 0 5px 5px;
+        width: 100px;
+        display: block;
+        clear: none;
+    }
+
+    p {
+        width: 650px;
+    }
+
+    .ext-ie .x-form-text {
+        position: static !important;
+    }
+</style>
+@(Html.X().Window()
+    .ID("winEmployeeCC")
+    .Title("Danh sách người có quyền theo dõi")
+    .Icon(Icon.FlagIn)
+    .Width(750)
+    .Maximizable(true)
+    .BodyPadding(0)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+                .ID("grMnEmployeeCC")
+                .Border(false)
+                .Flex(1)
+                .MinHeight(400)
+                .TopBar(
+        Html.X().Toolbar()
+                .Items(
+            Html.X().ComboBox()
+            .ID("cbEmployees")
+                .DisplayField("Name")
+                .ValueField("ID")
+                .MarginSpec("0 5 0 10")
+                .LabelWidth(90)
+                .EmptyText("Gõ tên cán bộ cần tìm kiếm sau đó lựa chọn...")
+                .FieldLabel("Cán bộ theo dõi")
+                .TypeAhead(false)
+                .Listeners(ls => ls.Select.Handler = "addCC(this.value)")
+                .Width(500)
+                .PageSize(10)
+                .HideBaseTrigger(true)
+                .MinChars(0)
+                .TriggerAction(TriggerAction.Query)
+                .ListConfig(Html.X().BoundList()
+                    .LoadingText("Nhập tên cán bộ cần tìm kiếm...")
+                    .ItemTpl(Html.X().XTemplate()
+                        .Html(
+                        @<text>
+                            <div class="search-item">
+                                <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}" style='width:30px;height:40px; margin: -3px 5px -5.5px 0px; float:left;' />
+                                <h3>{Name}</h3>
+                                {ChucDanh}
+                            </div>
+                        </text>)
+                    )
+                )
+.Store(Html.X().Store()
+    .AutoLoad(false)
+    .Proxy(Html.X().AjaxProxy()
+        .Url(Url.Action("GetAllEmployee"))
+    .ActionMethods(am => am.Read = HttpMethod.POST)
+    .Reader(Html.X().JsonReader().Root("data"))
+    )
+    .Model(Html.X().Model()
+        .Fields(
+            Html.X().ModelField().Name("ID"),
+            Html.X().ModelField().Name("Name"),
+            Html.X().ModelField().Name("FileName"),
+            Html.X().ModelField().Name("FileID"),
+            Html.X().ModelField().Name("Email"),
+            Html.X().ModelField().Name("Phone"),
+            Html.X().ModelField().Name("ChucDanh")
+        )
+    )
+),
+Html.X().ToolbarSeparator(),
+Html.X().ButtonDelete()
+        .Disabled(false)
+        .ID("btnDeleteCC")
+        .Handler("deleteEmployeeCC();")
+)
+)
+.Store(
+    X.Store()
+        .ID("StoreEmployeeCC")
+        .RemotePaging(true)
+        .PageSize(15)
+        .AutoLoad(true)
+        .Proxy(X.AjaxProxy().Url(Url.Action("LoadEmployeeCC")).Reader(X.JsonReader().Root("data"))
+        .IDParam("ID"))
+        .Parameters(ps =>
+            {
+                ps.Add(new StoreParameter("dispatchGoId", Model.ID.ToString(), ParameterMode.Raw));
+            })
+        .Model(
+            X.Model().Fields(
+                X.ModelField().Name("ID"),
+                X.ModelField().Name("Name"),
+                X.ModelField().Name("FileID"),
+                X.ModelField().Name("FileName"),
+                X.ModelField().Name("Role"),
+                X.ModelField().Name("Email"),
+                X.ModelField().Name("Phone")
+            )
+        )
+    )
+.ColumnModel(
+Html.X().RowNumbererColumn()
+        .Text("STT")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Align(Alignment.Center)
+        .Width(33),
+Html.X().Column()
+        .Text("ID")
+        .DataIndex("ID")
+        .Hidden(true),
+            Html.X().TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+                Html.X().XTemplate().Html(@<text>
+                <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                     style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                </text>)
+            ),
+    Html.X().Column()
+            .Text("Họ tên")
+            .DataIndex("Name")
+            .Flex(1)
+            .Wrap(true),
+        Html.X().Column()
+                .Text("Chức vụ")
+                .DataIndex("Role")
+                .Width(100)
+                .Wrap(true),
+        Html.X().Column()
+                .Text("Số điện thoại")
+                .DataIndex("Phone")
+                .Width(100)
+                .Wrap(true),
+        Html.X().Column()
+                .Text("Email")
+                .DataIndex("Email")
+                .Width(130)
+                .Wrap(true)
+    )
+    .SelectionModel(
+        Html.X().RowSelectionModel()
+                .Mode(SelectionMode.Multi)
+                    .Listeners(l =>
+                    {
+                        l.Select.Handler = "App.btnDeleteCC.setDisabled(false)";
+                    })
+                )
+                .View(
+                Html.X().GridView().MarkDirty(false)
+                )
+                .Plugins(Html.X().CellEditing())
+                .BottomBar
+                (
+                Html.X().CustomPagingToolbar()
+                )
+        ).Buttons(
+                    Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var addCC = function (employeeId) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("AddCC", "DispatchGoDepartment", new { Area = "Dispatch" }, null))',
+            params: { dispatchGoId: '@Model.ID', employeeId: employeeId },
+            success: function (result) {
+                App.cbEmployees.setValue('');
+            }
+        });
+    };
+    var deleteEmployeeCC = function () {
+        var records = App.grMnEmployeeCC.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnDeleteCC.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("DeleteCC", "DispatchGoDepartment", new { Area = "Dispatch" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+
+    };
+</script>

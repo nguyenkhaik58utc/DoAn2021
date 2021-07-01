@@ -1,0 +1,138 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@{
+    Layout = null;
+    var view = new GridView();
+    view.GetRowClass.Fn = "getRowClass";
+}
+<style type="text/css">
+    .newNotify .x-grid-cell {
+        background-color: #d8d8d8 !important;
+        opacity: 0.8;
+    }
+</style>
+<script type="text/javascript">
+    var urlNotifyUpdate = '@(Url.Action("UpdateRead", "Notify", null, null))';
+    var updateNew = function (id, isRead) {
+        if (!isRead) {
+            Ext.net.DirectMethod.request({
+                url: urlNotifyUpdate,
+                params: { id: id },
+                success: function (result) {
+                    var text = "<div class='notify'>Thông báo</div>";
+                    if (result != "") {
+                        text = "<div class='notifyNew'>Thông báo " + result + "</div>";
+                    }
+                    App.btnNotify.setText(text);
+                    App.NotifyPanel.getStore().reload();
+                }
+            });
+        }
+    };
+    var getAdditionalData = function (data, idx, record, orig) {
+        return {
+            rowBodyColspan: record.fields.getCount(),
+            rowBody: Ext.String.format('<p style = "margin-top: 0pt; margin-bottom: 3pt; font-size: 0.8em; color: #a7a7a7; clear:left">Gửi ngày {0} vào lúc {1}</p><p style = "margin-top: 0pt; margin-bottom: 0pt;  clear:left font-size: 0.8em; color: #a7a7a7;">{2}</p>', data.DateSend, data.TimeSend, data.Content)
+        };
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        return record.get('IsRead') == false ? 'newNotify' : '';
+    };
+    var rendererNew = function (value, metadata, record) {
+        if (!record.data.IsRead) {
+            value = value + "&nbsp;<span style='margin-right: 0px;padding-right: 35px; background: url(/Content/images/new_red.gif) no-repeat scroll 0px 0px transparent'>&nbsp;</span>";
+        }
+        return value;
+    };
+    var goToUrl = function (notifyId) {
+        var data = App.NotifyStores.getById(notifyId).data;
+        var moduleCode = data.ModuleCode;
+        var id = data.FunctionName.split('/').join("");
+        var icon = "#" + data.Icon;
+        var title = data.FunctionTitle;
+        var link = data.FunctionName;
+        var focusId = data.Param.substring(data.Param.indexOf(":") + 1);
+        var params = {
+            focusId: focusId
+        };
+        window.parent.customTab(id, icon, title, link, params);
+    };
+</script>
+@(
+Html.X().GridPanel()
+    .Header(false)
+    .Border(false)
+    .ID("NotifyPanel")
+    .BodyStyle("border:none")
+    .Margin(0)
+    .Padding(0)
+    .Store(Html.X().Store()
+        .ID("NotifyStores")
+        .AutoLoad(false)
+        .GroupField("ModuleName")
+        .PageSize(1000)
+        .Sorters(Html.X().DataSorter().Property("CreateAt").Direction(Ext.Net.SortDirection.DESC))
+        .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("isAll", "App.hdfIsAll.value", ParameterMode.Raw));
+                    })
+        .Model(Html.X().Model().IDProperty("ID")
+        .Fields(
+                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Content").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("ModuleCode").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("ModuleName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Title").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("DateSend").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("TimeSend").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsRead").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("FuctionCode").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Icon").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("FunctionTitle").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("FunctionName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("Param").Type(ModelFieldType.String)
+             )
+        )
+        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData"))
+        .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+    )
+    .ColumnModel(
+        Html.X().Column().DataIndex("Title").Wrap(true).Flex(1)
+    )
+    .HideHeaders(true)
+    .Listeners(ls => ls.CellClick.Handler = @"updateNew(App.NotifyPanel.getSelectionModel().getLastSelected().data.ID,App.NotifyPanel.getSelectionModel().getLastSelected().data.IsRead);
+                                              goToUrl(App.NotifyPanel.getSelectionModel().getLastSelected().data.ID);"
+               )
+    .View(Html.X().GridView(view))
+    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Multi))
+    .Features(
+        Html.X().GroupingSummary()
+            .GroupHeaderTplString("{name}")           
+            .HideGroupedHeader(true)
+            .EnableGroupingMenu(false)
+            .ShowSummaryRow(false),
+        Html.X().RowWrap()
+    )
+    .BottomBar(
+    Html.X().Toolbar().Layout(LayoutType.Fit)
+           .Items(
+            Html.X().Hidden().ID("hdfIsAll").Value("false"), 
+            Html.X().Button().Text("<span style='color:#04468C;'><b>Xem tất cả thông báo ... </b></span>")
+                    .TextAlign(ButtonTextAlign.Left).Flat(true).Margin(5).Handler("SetNotifyRow(this)")
+           )        
+    )
+)
+<script>
+    var SetNotifyRow = function (obj) {
+        if (App.hdfIsAll.value == 'false') {
+            App.hdfIsAll.setValue('true');
+            obj.setText("<span style='color:#04468C;'><b>Xem thông báo mới ... </b></span>");
+        }
+        else {
+            App.hdfIsAll.setValue('false');
+            obj.setText("<span style='color:#04468C;'><b>Xem tất cả thông báo ... </b></span>");
+        };
+        App.NotifyStores.reload();
+    };
+</script>

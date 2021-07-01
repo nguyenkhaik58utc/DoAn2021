@@ -1,0 +1,165 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentRequirementItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@(Html.X().Hidden().ID("hdfDepartmentRequirement"))
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(2).Frame(false).StyleSpec("border: none;")
+    .Items(
+            Html.X().DepartmentPanel().Handler("onDepartmentReady")
+         , Html.X().Panel()
+            .Header(false)
+            .Region(Region.Center)
+            .Layout(LayoutType.Fit)
+            .Items(
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrRequirement")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),  
+                                Html.X().ButtonCreate().Handler("AddNew();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrRequirement.selModel.getSelection()[0].get('ID'));"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonApproval().ID("btnApprove").Handler("Approve();"),
+                                Html.X().ToolbarFill(),
+                                Html.X().ButtonTutorial()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreRequirement")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRequirement")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("DepartmentID", "App.hdfDepartmentRequirement.value", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Role.Name"),
+                                        Html.X().ModelField().Name("DepartmentName"),
+                                        Html.X().ModelField().Name("Form"),
+                                        Html.X().ModelField().Name("Number"),
+                                        Html.X().ModelField().Name("DateRequired"),
+                                        Html.X().ModelField().Name("IsEdit"),
+                                        Html.X().ModelField().Name("IsSuccess"),
+                                        Html.X().ModelField().Name("Status")
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("Name").Text("Đề nghị tuyển dụng").Width(250).Locked(true),
+                                    Html.X().Column().DataIndex("Role.Name").Text("Chức danh").Width(180).Locked(true),
+                                    Html.X().Column().DataIndex("Form").Text("Hình thức").Flex(1).MinWidth(100),
+                                    Html.X().Column().DataIndex("Number").Text("Số lượng").Align(Alignment.Right).Width(80),
+                                    Html.X().DateColumnExtend().DataIndex("DateRequired").Text("Thời gian cần").Align(Alignment.Center).Format("dd/MM/yyyy"),
+                                    Html.X().Column().DataIndex("Status").Text("Trạng thái").Width(80).Locked(true).Align(Alignment.Center)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                                      .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+            )
+        )
+)
+<script>
+    function onDepartmentReady(records) {
+        App.hdfDepartmentRequirement.setValue(records[0].get('id'));
+        App.GrRequirement.getStore().reload();
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+    var deleteUrl = '@(Url.Action("DeleteRequirement"))';
+    function CheckStatus() {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length == 1) {
+            var IsEdit = records[0].get('IsEdit');
+            if (IsEdit == true) {
+                App.btnUpdate.setDisabled(false);
+                App.btnDelete.setDisabled(false);
+                App.btnApprove.setDisabled(true);
+
+            }
+            else {
+                App.btnUpdate.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.btnApprove.setDisabled(false);
+            }
+            App.btnDetail.setDisabled(false);
+        }
+        else {
+            SetDisabled(App.btnDetail, App.btnDelete, App.btnUpdate, App.btnApprove);
+        };
+    };
+    var AddNew = function () {
+        var url = '@(Url.Action("Insert", "RecruitmentRequirement", new { Area = "Human" }, null))';
+        onDirectMethod(url, null, 'get');
+    };
+    var UpdateItem = function () {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "RecruitmentRequirement", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                ActionForm: "edit"
+            };
+            onDirectMethod(url, params,'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "RecruitmentRequirement", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var Approve = function () {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Approve", "RecruitmentRequirement", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                ActionForm: "approve"
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

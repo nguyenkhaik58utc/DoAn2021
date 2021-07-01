@@ -1,0 +1,122 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCancelItem
+@{
+    var X = Html.X();
+}
+@(
+ Html.X().Window()
+    .ID("winNewCancelProfile")
+    .Title("Thêm mới biên bản hủy hồ sơ")
+    .Icon(Icon.Add)
+    .Width(600)
+    .Height(400)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .ID("frmNewCancelProfile")
+            .Items(
+                Html.X().Hidden().ID("hdfDepartmentID"),
+                Html.X().HiddenFor(m => m.DepartmentIDs).ID("hdfUserID"),
+                    Html.X().Panel()
+                        .ID("TaskDepartmentPanel")
+                       .Height(300)
+                        .Split(true)
+                        .Border(true)
+                        .MarginSpec("1 0 1 1")
+                        .Title("Thành phần tham gia")
+                        .TitleAlign(TitleAlign.Center)
+                        .Layout(LayoutType.Border)
+                        .Collapsible(true)
+                        .Header(true)
+                        .Items(
+
+                                 X.Panel().ID("ApprovalDepartmentPanel").Region(Region.West).Layout(LayoutType.Fit).Width(200)
+                                .Title("SƠ ĐỒ TỔ CHỨC")
+                                .Split(true).Collapsible(true)
+                                    .ItemsFromAction("DepartmentView", "Department", new { Area = "Human" })
+                                    .Listeners(ls => ls.Added.Handler = "onDepartmentAdded(this,onDepartmentReady);"),
+                                        X.GridPanel()
+                                    .ID("GridEmployeeID")
+                                    .Layout(LayoutType.Fit)
+                                    .Header(false)
+                                    .Split(true)
+                                    .Region(Region.Center)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Store(
+                                        Html.X().Store()
+                                        .AutoLoad(false)
+                                        .RemotePaging(true)
+                                        .PageSize(5)
+                                          .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadUsers", "Employee", new { Area = "Human" }, null))
+                                         .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            X.Model().Fields(
+                                                X.ModelField().Name("ID"),
+                                                X.ModelField().Name("Name"),
+                                                X.ModelField().Name("Avatar"),
+                                                X.ModelField().Name("Role")
+                                            )
+                                        )
+                                    )
+                                    .ColumnModel(
+                                        X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                        X.Column().DataIndex("Avatar").Width(31).Text("").Renderer("AvatarRenderer"),
+                                        X.Column().DataIndex("Name").Flex(1).Text("Họ tên")
+                                    )
+                                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Multi)
+                                        .Listeners(l => l.SelectionChange.Handler = "getUserSelected();"))
+                        )
+              )
+         )
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(12)
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewCancelProfile";
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.Before = @"if (!#{frmNewCancelProfile}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                }),
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    function getUserSelected() {
+        var records = App.GridEmployeeID.selModel.getSelection();
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        App.hdfUserID.setValue(strId);
+    };
+    var AvatarRenderer = function (value) {
+        var tpl = "";
+        if (value == "") {
+            tpl = "<img src='/Content/images/underfind.jpg' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        }
+        else {
+            tpl = "<img src='" + value + "' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        };
+        return tpl;
+    };
+    function onDepartmentReady(records) {
+        Ext.getCmp('GridEmployeeID').getStore().reload({ params: { departmentID: records[0].get('id') } });
+    };
+</script>

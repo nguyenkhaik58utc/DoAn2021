@@ -1,0 +1,102 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductCategoryItem
+
+@(Html.X().Window()
+    .Title("Thêm mới danh mục sản phẩm")
+    .Icon(Icon.Add)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().ComboBoxFor(m => m.CenterSystemID).FieldLabel("Hệ thống")
+                            .ID("cboProductCategory")
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .Store(
+                                Html.X().Store().AutoLoad(true)
+                                .Model(
+                                    Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                    )
+                                )
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadSystems")).Reader(Html.X().JsonReader().Root("data")))
+                                .Listeners(ls => ls.Load.Handler = "App.cboProductCategory.select(App.cboProductCategory.store.getAt(0))")
+                            ),
+                            Html.X().TextFieldFor(m => m.Name).AllowBlank(false).BlankText("Chủ đề bắt buộc nhập !").FieldLabel("Danh mục (*)"),
+                            Html.X().TextAreaFor(m => m.Description).ID("Description").FieldLabel("Mô tả").Height(80)
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true)
+                        )
+                    ),
+                    Html.X().SitemapFieldFor(m => m.Sitemap),
+                    Html.X().TextFieldFor(m => m.Tags).FieldLabel("Tags"),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.Position).ColumnWidth(0.4).FieldLabel("Vị trí").Value(0),
+                        Html.X().Container().ColumnWidth(0.2),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.3).HideLabel(true).Value(true).BoxLabel("Kích hoạt")
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "this.up('window').close(); reloadProductCategory();";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+
+<script type="text/javascript">
+     function renderEditor(htmlEditor) {
+        var toolbar = htmlEditor.getToolbar();
+        toolbar.add({ handler: function () { BrowseImage(); }, iconCls: "icon-imageedit", text: "", tooltip: '<b> Insert Image</b><br>Upload a new Image</br>' });
+    };
+    function BrowseImage() {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("frmBrowseImage", "News", new { Area = "Web" }, null))'
+        });
+    };
+    function insertHandler(htmlEditor) {
+        var urlImage = App.urlImage.getValue();
+        App.txtHtml.insertAtCursor(urlImage);
+    };
+</script>

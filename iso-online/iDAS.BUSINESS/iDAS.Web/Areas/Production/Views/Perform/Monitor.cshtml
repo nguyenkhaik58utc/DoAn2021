@@ -1,0 +1,86 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.ProductionPerformItem
+@(Html.X().CustomWindow()
+        .ID("winStage")
+        .Maximizable(false).Maximized(true)
+        .Height(1)
+        .Title("Giám sát sản xuất")
+        .Icon(Icon.BookRed)
+        .Items(
+                    Html.X().HiddenFor(m => m.ID).ID("hdfPerformID"),
+                    Html.X().GridPanel().ID("GrMonitorResult")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .TopBar(
+                                    Html.X().Toolbar()
+                                        .Layout(LayoutType.HBox)
+                                        .Items(
+                                                Html.X().Button().Handler("InsertProductEmployee();").Icon(Icon.ReportUser).Text("Lấy nhân sự sản xuất")
+                                            )
+                                        )
+                            .Store(
+                                Html.X().Store().ID("StoreMonitorResult")
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPerformResult")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("id", "App.hdfPerformID.value", ParameterMode.Raw));
+                                            })
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                    Html.X().ModelField().Name("ID"),
+                                                    Html.X().ModelField().Name("HumanEmployee.ID"),
+                                                    Html.X().ModelField().Name("HumanEmployeeName").Mapping("HumanEmployee.Name"),
+                                                    Html.X().ModelField().Name("Quantity"),
+                                                    Html.X().ModelField().Name("MaterialNumber"),
+                                                    Html.X().ModelField().Name("MaterialExitsNumber"),
+                                                    Html.X().ModelField().Name("IsAbsent")
+                                            )
+                                        )
+                                    )
+                                    .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("HumanEmployeeName").Text("Nhân sự").Flex(1),
+                                        Html.X().Column().DataIndex("Quantity").Text("Số lượng").Align(Alignment.Right).Width(100)
+                                                        .Editor(Html.X().NumberField().MinValue(1)),
+                                        Html.X().Column().DataIndex("MaterialNumber").Text("Nguyên liệu").Align(Alignment.Right).Width(120)
+                                                        .Editor(Html.X().NumberField().MinValue(1)),
+                                        Html.X().Column().DataIndex("MaterialExitsNumber").Text("Nguyên liệu tồn").Align(Alignment.Right).Width(110)
+                                                        .Editor(Html.X().NumberField().MinValue(1)),
+                                        Html.X().CheckColumn().DataIndex("IsAbsent").Text("Vắng mặt").Width(80).Align(Alignment.Center).Editable(true)
+                                        )
+                                .Plugins(
+                                        Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "ResultEdit")
+                                )
+                                .BottomBar(Html.X().CustomPagingToolbar())
+)
+.Buttons(
+            Html.X().ButtonExit()
+      )
+)
+<script>
+    var InsertProductEmployee = function () {
+        var url = '@(Url.Action("InsertProductEmployee"))';
+        var params = {
+            id: App.hdfPerformID.value
+        };
+        onDirectMethod(url, params, 'get');
+    };
+    var ResultEdit = function (editor, e) {
+        if (!(e.value === e.originalValue)) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateResult"))',
+                params: {
+                    data: e.record.data
+                }
+            });
+        }
+    }
+</script>

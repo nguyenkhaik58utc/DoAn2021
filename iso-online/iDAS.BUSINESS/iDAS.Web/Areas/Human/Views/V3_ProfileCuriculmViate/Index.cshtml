@@ -1,0 +1,587 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.Areas.Human.Models.V3_Category;
+@model iDAS.Web.Areas.Human.Models.V3_HumanProfileCuriculmViateResponse
+
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var checkPermission = ViewData["CheckPermission"];
+
+    //danh sách tôn giáo
+    List<V3_ReligionResponse> lstReligion = ViewData["lstReligion"] as List<V3_ReligionResponse>;
+    //danh sách dân tộc
+    List<V3_EthnicResponse> lstEthnic = ViewData["lstEthnic"] as List<V3_EthnicResponse>;
+    //danh sách quốc gia
+    List<V3_NationalityResponse> lstNationality = ViewData["lstNationality"] as List<V3_NationalityResponse>;
+    //danh sách tỉnh thành phố
+    List<V3_CityResponse> lstCity = ViewData["lstCity"] as List<V3_CityResponse>;
+    //danh sách chức vụ quân đội
+    List<V3_MilitaryPositionResponse> lstMilitaryPosition = ViewData["lstMilitaryPosition"] as List<V3_MilitaryPositionResponse>;
+    //danh sách chức vụ đoàn
+    List<V3_YouthPositionResponse> lstYouthPosition = ViewData["lstYouthPosition"] as List<V3_YouthPositionResponse>;
+    //danh sách chức vụ đảng
+    List<V3_PartyPositionResponse> lstPartyPosition = ViewData["lstPartyPosition"] as List<V3_PartyPositionResponse>;
+    //danh sách trình độ lý luận trính trị
+    List<V3_PoliticalTheoryResponse> lstPoliticalTheory = ViewData["lstPoliticalTheory"] as List<V3_PoliticalTheoryResponse>;
+    //danh sách trình độ quản lý nhà nước
+    List<V3_GovermentManagementResponse> lstGovermentManagement = ViewData["lstGovermentManagement"] as List<V3_GovermentManagementResponse>;
+
+}
+<style type="text/css">
+    .customPanel {
+        background-color: transparent;
+        border:none;
+    }
+</style>
+
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false)
+ .Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .DirectEvents(dr => dr.AddScript("BeforeRenderForm();"))
+    .Layout(LayoutType.Form)
+    .Frame(true)
+    .AutoScroll(true)
+    .StyleSpec("border: none;")
+    .Padding(1)
+    .TopBar(X.Toolbar().Layout(LayoutType.HBox)
+                        .Items(
+
+                                 X.Button().Text("Lưu").ID("btnSave")
+                                     .Icon(Icon.DatabaseSave)
+                                        .DirectEvents(de =>
+                                        {
+                                            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                            de.Click.ExtraParams.Add(new { exit = true });
+                                            de.Click.Url = Url.Action("Update");
+                                            de.Click.EventMask.ShowMask = true;
+                                            de.Click.FormID = "frmUpdate";
+                                            de.Click.Complete = "StatusSaveComplete();";
+                                        })
+                              //X.ToolbarSeparator(),-
+                              //    X.Button().Text("Hủy").Icon(Icon.Cancel).ID("btnCancel").Handler("StatusSaveComplete();")
+                              )
+               )
+    .Items(
+                X.FieldSet().Title("Thông tin cơ bản").Border(false)
+                .Layout(LayoutType.Column)
+                .FieldDefaults(df => df.LabelWidth = 100)
+                .Items(
+                            X.HiddenFor(m => m.ID).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                            X.HiddenFor(m => m.HumanEmployeeID).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.Aliases).FieldLabel("Bí danh").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.ComboBoxFor(m => m.NationalityID)
+                                   .ColumnWidth(0.5)
+                                   .FieldLabel("Quốc tịch")
+                                   .EmptyText("Chọn quốc tịch")
+                                   .AllowBlank(true)
+                                   .ID("cbNationality")
+                                   .Editable(false)
+                                   .DisplayField("Name")
+                                   .ValueField("ID")
+                                   .MarginSpec("5 8 0 8")
+                                   .Store(
+                                       X.Store()
+                                           .AutoLoad(true)
+                                           .Model(X.Model()
+                                           .IDProperty("ID")
+                                               .Fields(
+                                                 new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                               )
+                                           ).DataSource(lstNationality)
+                                   ),
+                            X.ComboBoxFor(m => m.EthnicID)
+                               .ColumnWidth(0.5)
+                                   .FieldLabel("Dân tộc")
+                                   .EmptyText("Chọn dân tộc")
+                                   .AllowBlank(true)
+                                   .ID("cbEthnic")
+                                   .Editable(false)
+                                   .DisplayField("Name")
+                                   .ValueField("ID")
+                                   .MarginSpec("5 8 0 8")
+                                   .Store(
+                                       X.Store()
+                                           .AutoLoad(true)
+                                           .Model(X.Model()
+                                               .Fields(
+                                                   new ModelField("ID"),
+                                                   new ModelField("Name")
+                                               )
+                                           ).DataSource(lstEthnic)
+                                   ),
+                             X.ComboBoxFor(m => m.ReligionID)
+                                    .ColumnWidth(0.5)
+                                   .FieldLabel("Tôn giáo")
+                                   .EmptyText("Chọn tôn giáo")
+                                   .AllowBlank(true)
+                                   .ID("cbReligion")
+                                   .Editable(false)
+                                   .DisplayField("Name")
+                                   .ValueField("ID")
+                                   .MarginSpec("5 8 0 8")
+                                   .Store(
+                                       X.Store()
+                                           .AutoLoad(true)
+                                           .Model(X.Model()
+                                               .Fields(
+                                                   new ModelField("ID"),
+                                                   new ModelField("Name")
+                                               )
+                                           ).DataSource(lstReligion)
+                                   ),
+                          X.Label().Cls("x-form-item-label x-unselectable x-form-item-label-left").ColumnWidth(0.1).Text("Nơi sinh").MarginSpec("5 8 0 8"),
+
+                          X.ComboBoxFor(m => m.CityIDOfBirth)
+                          .ColumnWidth(0.4)
+                               .FieldLabel("Tỉnh/TP")
+                               .TypeAhead(true)
+                               .QueryMode(DataLoadMode.Local)
+                               .ForceSelection(true)
+                               .TriggerAction(TriggerAction.All)
+                               .EmptyText("Chọn Tỉnh/TP")
+                               .AllowBlank(true)
+                               .ID("cbCity")
+                               .Editable(false)
+                               .DisplayField("Name")
+                               .ValueField("ID")
+                               .MarginSpec("5 8 0 8")
+                               .Store(
+                                   X.Store()
+                                       .AutoLoad(true)
+                                       .Model(X.Model()
+                                           .Fields(
+                                               new ModelField("ID"),
+                                               new ModelField("Name")
+                                           )
+                                       ).DataSource(lstCity)
+                               ).Listeners(
+                                               ls =>
+                                               {
+                                                   ls.Select.Handler = "App.cbDistrict.clearValue();App.cbDistrict.setDisabled(false);App.cbCommune.clearValue(); App.cbDistrict.getStore().load()";
+                                               }
+                                           ),
+                          X.Label().Cls("x-form-item-label x-unselectable x-form-item-label-left").ColumnWidth(0.1).Text("Quê quán").MarginSpec("5 8 0 8"),
+
+                          X.ComboBoxFor(m => m.CityIDOfHomeTown)
+                          .ColumnWidth(0.4)
+                               .FieldLabel("Tỉnh/TP")
+                               .TypeAhead(true)
+                               .QueryMode(DataLoadMode.Local)
+                               .ForceSelection(true)
+                               .TriggerAction(TriggerAction.All)
+                               .EmptyText("Chọn Tỉnh/TP")
+                               .AllowBlank(true)
+                               .ID("cbCityHomeTown")
+                               .Editable(false)
+                               .DisplayField("Name")
+                               .ValueField("ID")
+                               .MarginSpec("5 8 0 8")
+                               .Store(
+                                   X.Store()
+                                       .AutoLoad(true)
+                                       .Model(X.Model()
+                                           .Fields(
+                                               new ModelField("ID"),
+                                               new ModelField("Name")
+                                           )
+                                       ).DataSource(lstCity)
+                               ).Listeners(
+                                               ls =>
+                                               {
+                                                   ls.Select.Handler = "App.cbDistrictHomeTown.clearValue();App.cbDistrictHomeTown.setDisabled(false);App.cbCommuneHomeTown.clearValue(); App.cbDistrictHomeTown.getStore().load()";
+                                               }
+                                           ),
+                           X.Label().Cls("x-form-item-label x-unselectable x-form-item-label-left").ColumnWidth(0.1).MarginSpec("5 8 0 8"),
+                           X.ComboBoxFor(m => m.DistrictIDOfBirth)
+                                  .FieldLabel("Quận/Huyện")
+                                  .EmptyText("Chọn Quận/Huyện")
+                                  .AllowBlank(true)
+                                  .ID("cbDistrict")
+                                  .Disabled(false)
+                                  .Editable(false)
+                                  .TypeAhead(true)
+                                  .QueryMode(DataLoadMode.Local)
+                                  .ForceSelection(true)
+                                  .TriggerAction(TriggerAction.All)
+                                  .DisplayField("Name")
+                                  .ValueField("ID")
+                                    .ColumnWidth(0.4)
+                                  .MarginSpec("5 8 0 8")
+                                  .Store(
+                                      X.Store()
+                                          .AutoLoad(true)
+                                          .ID("stDistrict")
+                                          .Model(X.Model()
+                                               .Fields(
+                                                  new ModelField("ID"),
+                                                  new ModelField("Name")
+                                              )
+                                          )
+                                          .Proxy(X.AjaxProxy().Url(Url.Action("GetDistrictCb", "V3_ProfileCuriculmViate", new { area = "Human" })).Reader(Html.X().JsonReader().Root("data")))
+                                           .Parameters(ps =>
+                                                         ps.Add(new StoreParameter("CityID", "App.cbCity.getValue()", ParameterMode.Raw))
+                                                         )
+                                          ).Listeners(
+                                                  ls =>
+                                                  {
+                                                      ls.Select.Handler = "App.cbCommune.clearValue();App.cbCommune.setDisabled(false); App.cbCommune.getStore().load()";
+                                                  }
+                                              ),
+                           X.Label().Cls("x-form-item-label x-unselectable x-form-item-label-left").ColumnWidth(0.1).MarginSpec("5 8 0 8"),
+
+                           X.ComboBoxFor(m => m.DistrictIDOfHomeTown)
+                                  .FieldLabel("Quận/Huyện")
+                                  .EmptyText("Chọn Quận/Huyện")
+                                  .AllowBlank(true)
+                                  .ID("cbDistrictHomeTown")
+                                  .Disabled(false)
+                                  .Editable(false)
+                                  .TypeAhead(true)
+                                  .QueryMode(DataLoadMode.Local)
+                                  .ForceSelection(true)
+                                  .TriggerAction(TriggerAction.All)
+                                  .DisplayField("Name")
+                                  .ValueField("ID")
+                                    .ColumnWidth(0.4)
+                                  .MarginSpec("5 8 0 8")
+                                  .Store(
+                                      X.Store()
+                                          .AutoLoad(true)
+                                          .ID("stDistrictHomeTown")
+                                          .Model(X.Model()
+                                               .Fields(
+                                                  new ModelField("ID"),
+                                                  new ModelField("Name")
+                                              )
+                                          )
+                                          .Proxy(X.AjaxProxy().Url(Url.Action("GetDistrictCb", "V3_ProfileCuriculmViate", new { area = "Human" })).Reader(Html.X().JsonReader().Root("data")))
+                                           .Parameters(ps =>
+                                                         ps.Add(new StoreParameter("CityID", "App.cbCityHomeTown.getValue()", ParameterMode.Raw))
+                                                         )
+                                          ).Listeners(
+                                                  ls =>
+                                                  {
+                                                      ls.Select.Handler = "App.cbCommuneHomeTown.clearValue();App.cbCommuneHomeTown.setDisabled(false); App.cbCommuneHomeTown.getStore().load()";
+                                                  }
+                                              ),
+                               X.Label().Cls("x-form-item-label x-unselectable x-form-item-label-left").ColumnWidth(0.1).MarginSpec("5 8 0 8"),
+                               X.ComboBoxFor(m => m.CommuneIDOfBirth)
+                                .FieldLabel("Phường/Xã")
+                                .EmptyText("Chọn Phường/Xã")
+                                   .AllowBlank(true)
+                                  .ID("cbCommune")
+                                    .Disabled(false)
+                                  .Editable(false)
+                                  .TypeAhead(true)
+                                    .ColumnWidth(0.4)
+                                  .QueryMode(DataLoadMode.Local)
+                                  .ForceSelection(true)
+                                  .TriggerAction(TriggerAction.All)
+                                  .DisplayField("Name")
+                                  .ValueField("ID")
+                                  .MarginSpec("5 8 0 8")
+                                .Store(
+                                    X.Store()
+                                        .AutoLoad(true)
+                                         .ID("stCommune")
+                                        .Model(X.Model()
+                                            .Fields(
+                                                new ModelField("ID"),
+                                                new ModelField("Name")
+                                            )
+                                        )
+                                          .Proxy(X.AjaxProxy().Url(Url.Action("GetCommuneCb", "V3_ProfileCuriculmViate", new { area = "Human" }))
+                                          .Reader(Html.X().JsonReader().Root("data")))
+                                           .Parameters(ps =>
+                                                             ps.Add(new StoreParameter("DistrictID", "App.cbDistrict.getValue()", ParameterMode.Raw))
+                                                         )),
+                           X.Label().Cls("x-form-item-label x-unselectable x-form-item-label-left").ColumnWidth(0.1).MarginSpec("5 8 0 8"),
+
+                           X.ComboBoxFor(m => m.CommunelIDOfHomeTown)
+                                .FieldLabel("Phường/Xã")
+                                .EmptyText("Chọn Phường/Xã")
+                                   .AllowBlank(true)
+                                  .ID("cbCommuneHomeTown")
+                                    .Disabled(false)
+                                  .Editable(false)
+                                  .TypeAhead(true)
+                                    .ColumnWidth(0.4)
+                                  .QueryMode(DataLoadMode.Local)
+                                  .ForceSelection(true)
+                                  .TriggerAction(TriggerAction.All)
+                                  .DisplayField("Name")
+                                  .ValueField("ID")
+                                  .MarginSpec("5 8 0 8")
+                                .Store(
+                                    X.Store()
+                                        .AutoLoad(true)
+                                         .ID("stCommuneHomeTown")
+                                        .Model(X.Model()
+                                            .Fields(
+                                                new ModelField("ID"),
+                                                new ModelField("Name")
+                                            )
+                                        )
+                                          .Proxy(X.AjaxProxy().Url(Url.Action("GetCommuneCb", "V3_ProfileCuriculmViate", new { area = "Human" }))
+                                          .Reader(Html.X().JsonReader().Root("data")))
+                                           .Parameters(ps =>
+                                                             ps.Add(new StoreParameter("DistrictID", "App.cbDistrictHomeTown.getValue()", ParameterMode.Raw))
+                                                         )),
+                                                  X.TextFieldFor(m => m.OfficePhone).FieldLabel("Điện thoại cá nhân")
+                                              .ColumnWidth(0.5)
+                                             .MarginSpec("5 8 0 8"),
+                          X.TextFieldFor(m => m.HomePhone).FieldLabel("Điện thoại nhà riêng").MarginSpec("5 8 0 8").ColumnWidth(0.5),
+                          X.TextFieldFor(m => m.residence).FieldLabel("Hộ khẩu thường trú").MarginSpec("5 8 0 8").ColumnWidth(0.5),
+                          X.TextFieldFor(m => m.currentAddress).FieldLabel("Địa chỉ hiện tại").MarginSpec("5 8 0 8").ColumnWidth(0.5),
+                          X.TextFieldFor(m => m.NumberOfIdentityCard).FieldLabel("Số CMT")
+                               .ColumnWidth(0.5)
+                               .MarginSpec("5 8 0 8"),
+                          X.TextFieldFor(m => m.TaxCode).FieldLabel("Mã số thuế")
+                         .ColumnWidth(0.5)
+                        .MarginSpec("5 8 0 8"),
+
+                          X.DateFieldFor(m => m.DateIssueOfIdentityCard).FieldLabel("Ngày cấp CMT")
+                               .ColumnWidth(0.5)
+                               .MarginSpec("5 8 0 8"),
+                        X.TextFieldFor(m => m.NumberOfBankAccounts).FieldLabel("Số tài khoản")
+                           .ColumnWidth(0.5)
+                        .MarginSpec("5 8 0 8"),
+                          X.TextFieldFor(m => m.PlaceIssueOfIdentityCard).FieldLabel("Nơi cấp CMT")
+                            .ColumnWidth(0.5)
+                          .MarginSpec("5 8 0 8"),
+                        X.TextFieldFor(m => m.Bank).FieldLabel("Ngân hàng")
+                         .ColumnWidth(0.5)
+                        .MarginSpec("5 8 0 8"),
+                          X.TextFieldFor(m => m.NumberOfPassport).FieldLabel("Số hộ chiếu")
+                            .ColumnWidth(0.5)
+                          .MarginSpec("5 8 0 8"),
+                          X.TextFieldFor(m => m.PlaceOfPassport).FieldLabel("Nơi cấp hộ chiếu")
+                            .ColumnWidth(0.5)
+                          .MarginSpec("5 8 0 8"),
+                             X.DateFieldFor(m => m.DateOfIssuePassport).FieldLabel("Ngày cấp hộ chiếu")
+                              .ColumnWidth(0.5)
+                             .MarginSpec("5 8 0 8"),
+                             X.DateFieldFor(m => m.PassportExpirationDate).FieldLabel("Ngày hết hạn hộ chiếu")
+                              .ColumnWidth(0.5)
+                             .MarginSpec("5 8 0 8")
+
+                    ),
+                X.FieldSet().Title("Thông tin lý lịch chính trị").Border(false)
+                .Layout(LayoutType.Column)
+                .FieldDefaults(df => df.LabelWidth = 100)
+                .Items(
+                            X.DateFieldFor(m => m.DateOnGroup).FieldLabel("Ngày vào đoàn").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.ComboBoxFor(m => m.YouthPositionID)
+                                  .FieldLabel("Chức vụ đoàn")
+                                  .EmptyText("Chọn Chức vụ đoàn")
+                                  .AllowBlank(true)
+                                  .ID("cbYouthPosition")
+                                  .Editable(false)
+                                  .DisplayField("Name")
+                                  .ValueField("ID")
+                                  .ColumnWidth(0.5)
+                                  .MarginSpec("5 8 0 8")
+                                  .Store(
+                                      X.Store()
+                                          .AutoLoad(true)
+                                          .Model(X.Model()
+                                              .Fields(
+                                                  new ModelField("ID"),
+                                                  new ModelField("Name")
+                                              )
+                                          ).DataSource(lstYouthPosition)
+                                  ),
+                            X.TextFieldFor(m => m.PlaceOfLoadedGroup).FieldLabel("Nơi kết nạp đoàn").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateJoinRevolution).FieldLabel("Ngày tham gia cách mạng").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateAtParty).FieldLabel("Ngày vào Đảng").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateOfJoinParty).FieldLabel("Ngày vào Đảng chính thức").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.PlaceOfLoadedParty).FieldLabel("Nơi kết nạp").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.ComboBoxFor(m => m.PartyPosititonID)
+                                  .FieldLabel("Chức vụ đảng")
+                                  .EmptyText("Chọn Chức vụ đảng")
+                                  .AllowBlank(true)
+                                  .ID("cbPartyPosition")
+                                  .Editable(false)
+                                  .DisplayField("Name")
+                                  .ValueField("ID")
+                                  .ColumnWidth(0.5)
+                                  .MarginSpec("5 8 0 8")
+                                  .Store(
+                                      X.Store()
+                                          .AutoLoad(true)
+                                          .Model(X.Model()
+                                              .Fields(
+                                                  new ModelField("ID"),
+                                                  new ModelField("Name")
+                                              )
+                                          ).DataSource(lstPartyPosition)
+                                  ),
+                            X.TextFieldFor(m => m.NumberOfPartyCard).FieldLabel("Số thẻ Đảng").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.DateOnMilitary).FieldLabel("Ngày nhập ngũ").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.MilitaryPosition).FieldLabel("Chức vụ quân đội").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                      X.ComboBoxFor(m => m.MilitaryPositionLevelID)
+                            .FieldLabel("Cấp bậc quân đội")
+                            .EmptyText("Chọn cấp bậc quân đội")
+                            .AllowBlank(true)
+                            .ID("cbMilitaryPosition")
+                            .Editable(false)
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .ColumnWidth(0.5)
+                            .MarginSpec("5 8 0 8")
+                            .Store(
+                                X.Store()
+                                    .AutoLoad(true)
+                                    .Model(X.Model()
+                                        .Fields(
+                                            new ModelField("ID"),
+                                            new ModelField("Name")
+                                        )
+                                    ).DataSource(lstMilitaryPosition)
+                        ),
+                X.ComboBoxFor(m => m.PoliticalTheoryID)
+                            .FieldLabel("Trình độ lý luận chính trị")
+                            .EmptyText("Chọn trình độ lý luận chính trị")
+                            .AllowBlank(true)
+                            .ID("cbPoliticalTheory")
+                            .Editable(false)
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .ColumnWidth(0.5)
+                            .MarginSpec("5 8 0 8")
+                            .Store(
+                                X.Store()
+                                    .AutoLoad(true)
+                                    .Model(X.Model()
+                                        .Fields(
+                                            new ModelField("ID"),
+                                            new ModelField("Name")
+                                        )
+                                    ).DataSource(lstPoliticalTheory)
+                        ),
+                X.ComboBoxFor(m => m.GovermentManagementID)
+                            .FieldLabel("Trình độ quản lý nhà nước")
+                            .EmptyText("Chọn trình độ quản lý nhà nước")
+                            .AllowBlank(true)
+                            .ID("cbGovermentManagement")
+                            .Editable(false)
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .ColumnWidth(0.5)
+                            .MarginSpec("5 8 0 8")
+                            .Store(
+                                X.Store()
+                                    .AutoLoad(true)
+                                    .Model(X.Model()
+                                        .Fields(
+                                            new ModelField("ID"),
+                                            new ModelField("Name")
+                                        )
+                                    ).DataSource(lstGovermentManagement)
+                                    )
+                            ),
+                X.FieldSet().Title("Thông tin khác").Border(false)
+                .Layout(LayoutType.Column).FieldDefaults(df => df.LabelWidth = 100)
+                .Items(
+                            X.TextAreaFor(m => m.Likes).FieldLabel("Sở thích").Height(100).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                            X.TextAreaFor(m => m.Forte).FieldLabel("Ưu điểm").Height(100).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                            X.TextAreaFor(m => m.Defect).FieldLabel("Nhược điểm").Height(100).ColumnWidth(1).MarginSpec("5 8 0 8")
+                    )
+        )
+    )
+)
+<script>
+
+    var stCommune = null;
+    var check = @Html.Raw(@checkPermission);
+
+    Ext.onReady(function () {
+
+        stCommune = App.stCommune;
+        //hien thi button them
+        if (check == 2 || check == 3) {
+           // SetEnabled(App.btnCreate);
+        }
+    });
+
+    var BeforeRenderForm = function () {
+
+        if (check == 2 || check == 3) {
+            App.btnSave.setDisabled(false);
+        } else {
+            App.btnSave.setDisabled(true);
+        }
+
+        //var form = App.frmUpdate.query("textfield");
+        //for (var i = 0; i < form.length; i++) {
+        //    form[i].setReadOnly(true);
+        //    form[i].setIconCls("");
+        //};
+    };
+
+    var StatusSaveComplete = function () {
+        //App.btnSave.setDisabled(true);
+        //App.btnCancel.setDisabled(true);
+        //App.btnEdit.setDisabled(false);
+        //var form = App.frmUpdate.query("textfield");
+        //for (var i = 0; i < form.length; i++) {
+        //    form[i].setReadOnly(true);
+        //    form[i].setIconCls("");
+        //}
+    };
+
+
+    //xử lý sự kiện combobox
+    // var enableDistrictCombo = function (combo) {
+    //    var value = combo.getValue();
+    //    if (value != null && value != '') {
+    //        App.cbDistrict.setDisabled(false);
+    //    }
+    //};
+
+    //var enableCommuneCombo = function (combo) {
+    //    var value = combo.getValue();
+    //    if (value != null && value != '') {
+    //       App.cbCommune.setDisabled(false);
+    //    }
+    //};
+
+    //var reloadDistrict = function (combo) {
+    //    var stDistrict = null;
+    //    stDistrict = App.stDistrict;
+    //    var value = combo.getValue();
+    //    //App.cbDistrict.setSelection(0);
+    //    stDistrict.proxy = new Ext.data.HttpProxy({
+    //        method: "GET",
+    //        url: "/Human/V3_ProfileCuriculmViate/GetDistrictCb?CityID=" + value
+    //    });
+    //    stDistrict.reader = new Ext.data.JsonReader({
+    //        root: "data"
+    //    });
+    //    stDistrict.loadPage();
+
+    //    //if (value != null && value != '') {
+    //    //    App.cbDistrict.setDisabled(false);
+    //    //}
+    //};
+
+    //var reloadCommune = function (combo) {
+    // var value = combo.getValue();
+    //    //stCommune.proxy = new Ext.data.HttpProxy({
+    //    //    method: "GET",
+    //    //    url: "/Human/V3_ProfileCuriculmViate/GetCommuneCb?DistrictID=" + value
+    //    //});
+    //    //stCommune.reader = new Ext.data.JsonReader({
+    //    //    root: "data"
+    //    //});
+    //    //stCommune.loadPage(1);
+    //    if (value != null && value != '') {
+    //        App.cbCommune.setDisabled(false);
+    //    }
+
+    //}
+</script>

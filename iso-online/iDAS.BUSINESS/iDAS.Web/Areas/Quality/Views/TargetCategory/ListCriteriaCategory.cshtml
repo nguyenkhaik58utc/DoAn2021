@@ -1,0 +1,86 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@(Html.X().Window()
+    .Title("Danh sách bộ tiêu chí đánh giá")
+    .Icon(Icon.ApplicationViewDetail)
+    .Height(420)
+    .Width(720)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(0)
+    .Border(true)
+    .Center()
+    .Items(
+             Html.X().TreePanel()
+                    .Header(false)
+                    .Border(false)
+                    .Title("Bộ tiêu chí đánh giá")
+                    .Region(Region.West)
+                    .ID("trCriteriaCategory")
+                    .Width(350)
+                    .TitleAlign(TitleAlign.Center)
+                    .Collapsible(true)
+                    .Split(true)                    
+                    .RowLines(true)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .RootVisible(false)
+                    .SingleExpand(false)
+                    .Root(Html.X().Node().NodeID("0").Text("Root"))                 
+                    .Store(Html.X().TreeStore()
+                            .ID("stCriteriaCategory")
+                            .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetData", "CriteriaCategory", new { area = "Quality" })))
+                            .Model(
+                            Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .Align(Alignment.Center)
+                                    .Width(33),
+                            Html.X().TreeColumn()
+                                .Text("Bộ tiêu chí đánh giá")
+                                .Align(Alignment.Left)
+                                .DataIndex("Name")
+                                .Flex(1),
+                                     Html.X().CheckColumn().DataIndex("IsSelected")
+                                               .Text("Chọn").Align(Alignment.Center).Editable(true)
+                                               .Editor(
+                                                       Html.X().Checkbox()
+                                                           ).Width(60)
+                    )
+                         .Plugins(
+                                    Html.X().RowEditing()
+                                    .SaveBtnText("Cập nhật")
+                                    .CancelBtnText("Hủy bỏ")
+                                        .Listeners(l =>
+                                        {
+                                            l.Edit.Fn = "onEditSelected";
+                                            l.CancelEdit.Handler = "if(e.record.phantom){e.store.remove(e.record);}";
+                                        })
+                              )                   
+                  )
+            .Buttons(
+                Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var onEditSelected = function (editor, e) {      
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            App.cbCategoryCriteriaID.reset();
+            App.cbCategoryCriteriaID.setValue(e.record.data.ID);
+        }
+    };
+</script>

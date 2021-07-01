@@ -1,0 +1,139 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateProblemResidentAgency = '@(Url.Action("Create", "ProblemResidentAgency", new { area = "Problem" }))';
+    var urlUpdateProblemResidentAgency = '@(Url.Action("Update", "ProblemResidentAgency", new { area = "Problem" }))';
+    var urlDeleteProblemResidentAgency = '@(Url.Action("Delete", "ProblemResidentAgency", new { Area = "Problem" }))';
+    var urlDetailProblemResidentAgency = '@(Url.Action("ShowFrmDetail", "ProblemResidentAgency", new { Area = "Problem" }))';
+    var sortProblemResidentAgencyIndex = null;
+    var showCreateProblemResidentAgency = function () {
+        var url = urlCreateProblemResidentAgency;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateProblemResidentAgency = function () {
+        var url = urlUpdateProblemResidentAgency;
+        var record = getProblemResidentAgencySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getProblemResidentAgencySelection = function () {
+        var records = App.ProblemResidentAgencyPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setProblemResidentAgencySelection = function () {
+        if (sortProblemResidentAgencyIndex != null) {
+            App.ProblemResidentAgencyPanel.selModel.select(sortProblemResidentAgencyIndex);
+        }
+    };
+
+
+    var showDeleteProblemResidentAgency = function () {
+        var url = urlDeleteProblemResidentAgency;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ cơ quan thường trú này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemResidentAgencySelection();
+                            var ProblemResidentAgencyId = record == null ? 0 : record.data.ID;
+                            var params = { ID: ProblemResidentAgencyId };
+                            onDirectMethod(url, params, 'post', reloadProblemResidentAgency);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProblemResidentAgency = function () {
+        var url = urlDetailProblemResidentAgency;
+        var record = getProblemResidentAgencySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadProblemResidentAgency = function () {
+        App.ProblemResidentAgencyPanel.store.reload();
+    };
+
+    var selectionChangeProblemResidentAgency = function () {
+        var record = getProblemResidentAgencySelection();
+        var isDisabled = record == null;
+        App.btnUpdateProblemResidentAgency.setDisabled(isDisabled);
+        App.btnDeleteProblemResidentAgency.setDisabled(isDisabled);
+        App.btnDetailProblemResidentAgency.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý cơ quan thường trú").Header(false)
+                    .ID("ProblemResidentAgencyPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateProblemResidentAgency").ID("btnCreateProblemResidentAgency()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateProblemResidentAgency").Handler("showUpdateProblemResidentAgency();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteProblemResidentAgency").Handler("showDeleteProblemResidentAgency()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailProblemResidentAgency").Handler("showDetailProblemResidentAgency();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreProblemResidentAgency")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("ResidentAgencyGroupName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Description").Type(ModelFieldType.String)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setProblemResidentAgencySelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên cơ quan thường trú").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("ResidentAgencyGroupName").Text("Tên nhóm cơ quan thường trú").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("Description").Text("Mô tả cơ quan thường trú").Flex(1).MenuDisabled(true)
+             )
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProblemResidentAgency();")
+            .Plugins(Html.X().FilterHeader())
+                .BottomBar(
+                        X.CustomPagingToolbar()
+                )
+    )
+    )

@@ -1,0 +1,103 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceCommandItem
+           @{
+               int contractId = (int)ViewData["contractId"];
+           }
+@( Html.X().Window()
+    .Title("Xem chi tiết kế hoạch thực hiện hợp đồng")
+    .Icon(Icon.Zoom)
+    .ID("winDetailPlanPerform")
+    .Width(800)
+    .Height(460)
+    .Layout(LayoutType.Fit)
+    .Constrain(true)
+    .Modal(true)
+    .BodyPadding(0)
+    .Border(false)
+    .Items(
+   
+            Html.X().GridPanel()
+                                    .ID("grMnPhase")
+                                    .Region(Region.Center)
+                                    .MarginSpec("1 1 1 0")
+                                    .Border(true)  
+                                .Store(Html.X().Store()
+                                        .ID("stMnPhase")
+                                        .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetDataIsContractID", "PlanStage"))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                        )
+                                        .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("contractId", contractId.ToString(), ParameterMode.Raw));
+                                        })
+                                        .RemoteSort(true)
+                                        .AutoLoad(true)
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                                .GroupField("ParentName")
+                                                .Sorters(Html.X().DataSorter().Property("ParentName").Direction(Ext.Net.SortDirection.ASC))
+
+                                       .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                           Html.X().ModelField().Name("ParentName"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("StartTime"),
+                                    Html.X().ModelField().Name("EndTime"),
+                                    Html.X().ModelField().Name("Cost"),
+                                    Html.X().ModelField().Name("IsEdit"),
+                                    Html.X().ModelField().Name("IsAccept"),
+                                    Html.X().ModelField().Name("IsApproval"),
+                                            Html.X().ModelField().Name("RateFinish")
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                     Html.X().Column().DataIndex("Name").Text("Công đoạn").Width(300).Flex(1),
+                                     Html.X().ComponentColumn().Text("Thời gian thực hiện").Columns(
+                                     Html.X().DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(80).Align(Alignment.Center),
+                                     Html.X().DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(80).Align(Alignment.Center)),
+                                     Html.X().ComponentColumn().Text("Chi phí").Columns(
+                                     Html.X().NumberColumn().DataIndex("Cost").Text("Giá trị").Width(70).Align(Alignment.Right),
+                                     Html.X().Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                                           Html.X().ComponentColumn()
+                    .Text("Tiến độ")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Component(Html.X().ProgressBar().Text("%"))
+                        .Listeners(ls => ls.Bind.Handler = "cmp.updateProgress(record.get('RateFinish')/100, record.get('RateFinish') + '%');")   
+
+
+                                ).SelectionModel(
+                                    Html.X().RowSelectionModel()
+                                            .Mode(SelectionMode.Multi)
+                                            .Listeners(l =>
+                                            {
+                                                l.Select.Handler = "CheckStatus();";
+                                            })
+                                            )
+                                              .View(
+                                            Html.X().GridView().MarkDirty(false)
+                                            )
+                                                .Features(
+                                    Html.X().GroupingSummary()
+                                    .ShowSummaryRow(false)
+                                    .ID("GroupingSummary")
+                                    .GroupHeaderTplString("{name}")
+                                    .HideGroupedHeader(true)
+                                    .EnableGroupingMenu(false)
+                            )
+
+
+                .BottomBar(
+                            Html.X().CustomPagingToolbar()
+            )
+          )
+.Buttons(                                      
+    Html.X().ButtonExit()
+   )
+)

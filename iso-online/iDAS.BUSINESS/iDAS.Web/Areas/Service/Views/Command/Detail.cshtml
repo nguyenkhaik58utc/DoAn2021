@@ -1,0 +1,190 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceCommandItem
+@( Html.X().Window()
+    .Title("Xem chi tiết lệnh cung cấp dịch vụ")
+    .Icon(Icon.Zoom)
+     .Height(450)
+        .Width(1000)
+        .Constrain(true)
+        .Maximizable(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(false)
+        .Center()
+        .Items(Html.X().FormPanel()
+            .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+            .ID("frmDetailCommand")
+            .Border(false)
+            .Items(Html.X().TabPanel()
+            .Region(Region.Center)
+                .ActiveTabIndex(0)
+                .Layout(LayoutType.Fit)
+                .Border(true)
+                .Items(Html.X().Panel()
+                    .BodyPadding(6)
+                    .Icon(Icon.ApplicationViewDetail)
+                                   .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .StyleSpec("border: none;")
+                    .Title("Thông tin chi tiết")
+                    .Frame(true)
+                    .Items(
+                      Html.X().HiddenFor(m => m.ID),
+                               Html.X().HiddenFor(m => m.CreateByEmployeeID),
+                                    Html.X().HiddenFor(m => m.UpdateByEmployeeID),
+                                        Html.X().TextFieldFor(m => m.Name)
+                                        .ReadOnly(true)
+                                        .FieldLabel("Tên lệnh")
+                                        .TabIndex(2)
+                                        .AllowBlank(false)
+                                            .BlankText("Tên kế hoạch không được để trống!"),
+                                              Html.X().Container()
+                                                    .Layout(LayoutType.Column)
+                                                    .ColSpan(2)
+                                                    .MarginSpec("0 0 3 0")
+                                                    .Items(
+
+                                                        Html.X().DateTimeFieldFor(m => m.StartTime).ReadOnly(true)
+                                                                 .FieldLabel("Bắt đầu")
+                                                                 .ColumnWidth(0.5).MarginSpec("0 5 0 0"),
+                                                                     Html.X().DateTimeFieldFor(m => m.EndTime).ReadOnly(true)
+                                                                         .FieldLabel("Kết thúc")
+                                                                          .ColumnWidth(0.5)),
+                                                    Html.X().TextAreaFor(m => m.Note)
+                                                            .TabIndex(3)
+                                                                .FieldLabel("Yêu cầu").ReadOnly(true)
+                                                            .BlankText("Yêu cầu không được bỏ trống!")
+                                                            .Flex(1),
+                                                        Html.X().EmployeeFieldFor(m => m.Perform).ReadOnly(true).MarginSpec("-2 0 0 105")
+                                                        .Title("Người kiểm soát và thực hiện")
+                                                        .ID("txtPerform")
+                                        ),
+                           Html.X().Panel()
+                            .Icon(Icon.Page)
+                            .Border(false)
+                            .BodyPadding(0)
+                            .Padding(0)
+                            .Margin(0)
+                            .StyleSpec("border:none")
+                            .Frame(true)
+                            .AutoScroll(true)
+                            .Title("Dịch vụ cung cấp")
+                            .Layout(LayoutType.Fit)
+                            .Items(
+                                Html.X().GridPanel()
+                                        .ID("grMnCommandContractDetail")
+                                        .Border(false)
+                                                     .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                            Html.X().Button().Text("Xem chi tiết").ToolTip("Xem chi tiết").ID("btnDetailContractDetail")
+                                                   .Icon(Icon.Zoom).Handler("ViewDetailContractDetail();").Disabled(true)
+                                     )
+                                  )
+                                    .Store(Html.X().Store()
+                                                .ID("stMnCommandContractEdit")
+                                            .Proxy(Html.X().AjaxProxy()
+                                                    .Url(Url.Action("GetDataContractShow", "Command"))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                            )
+                                                .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("commandId", Model.ID.ToString(), ParameterMode.Value));
+
+                                                })
+                                            .RemoteSort(true)
+                                            .AutoLoad(true)
+                                            .RemotePaging(true)
+                                            .PageSize(20)
+                                            .Model(
+                                            Html.X().Model()
+                                                    .Fields(
+                                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                        Html.X().ModelField().Name("CustomerID").Type(ModelFieldType.Int),
+                                                        Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("CustomerName").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                                                    )
+                                                  )
+                                              )
+                                        .ColumnModel(
+                                            Html.X().RowNumbererColumn()
+                                                    .Text("STT")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Align(Alignment.Center)
+                                                    .Width(33),
+                                            Html.X().Column()
+                                                    .Text("ID")
+                                                    .DataIndex("ID")
+                                                    .Hidden(true),
+                                                     Html.X().Column()
+                                                    .Text("Mã")
+                                                    .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("Code")
+                                                   .Width(69),
+                                            Html.X().Column()
+                                                    .Text("Tên hợp đồng")
+                                                    .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("Name")
+                                                   .Flex(1)
+
+                                                    .Wrap(true),
+                                                    Html.X().Column()
+                                                    .Text("Khách hàng")
+                                                    .StyleSpec("font-weight: bold;text-align: center")
+                                                    .DataIndex("CustomerName")
+                                                    .Width(270)
+                                                         .Wrap(true),
+                                                              Html.X().CheckColumn().DataIndex("IsSelected")
+                                                               .Text("Chọn").Align(Alignment.Center).Editable(false)
+                                                               .Width(60)
+
+                                    ).SelectionModel(
+                                        Html.X().RowSelectionModel()
+                                                .Mode(SelectionMode.Multi)
+                                                .Listeners(l =>
+                                                {
+                                                    l.Select.Handler = "App.btnDetailContractDetail.setDisabled(false);";
+                                                })
+                                                )
+                                                  .View(
+                                                Html.X().GridView().MarkDirty(false)
+                                                )
+                                                .BottomBar
+                                                (
+                                                     Html.X().CustomPagingToolbar())
+
+                                                )
+                                            ),
+                        Html.X().ApprovalPanelFor(m => m)
+            )
+    )
+            .Buttons(
+                Html.X().ButtonExit()
+            )
+
+)
+<script type="text/javascript">
+    var ViewDetailContractDetail = function () {
+        var records = App.grMnCommandContractDetail.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

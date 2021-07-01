@@ -1,0 +1,258 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@section headtag
+{
+<style type="text/css">
+    #Copyright a {
+        text-decoration: none !important;
+        margin-left: 5px !important;
+        color: #15428B !important;
+        font-family: verdana !important;
+        font-size: 10px !important;
+    }
+</style>
+
+    @(Html.X().XScript().ScriptBlock(
+        @"<script>
+            var addTab = function (tabPanel, record) {
+                var tab = tabPanel.getComponent(record.getId());
+                if (!tab) {
+                    tab = tabPanel.add({
+                        id: record.getId(),
+                        title: record.data.text,
+                        iconCls: record.data.iconCls,
+                        closable: true,
+                        loader: {
+                            url: record.data.hrefTarget,
+                            renderer: 'frame',
+                            loadMask: {
+                                showMask: true,
+                                msg:  'Đang tải dữ liệu ...'
+                            }
+                        },
+                    });
+                }
+            tabPanel.setActiveTab(tab);
+        };
+        </script>"
+        )
+    )
+}
+
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        //Header
+        Html.X().Panel()
+            .ID("Header1")
+            .Region(Region.North)
+            .Height(40)
+            .Header(false)
+            .Border(false)
+            .Layout(LayoutType.Fit)
+            .Loader(
+                Html.X().ComponentLoader()
+                    .LoadMask(lm => { lm.ShowMask = true; lm.Msg = "Đang tải dữ liệu ..."; })
+                            .Url(Url.Action("LoadHeaderSystem"))
+                            .Mode(LoadMode.Script)
+                            .Params(new { containerId = "Header1" })
+                        ),
+        //Menu
+             Html.X().MenuPanel()
+                    .Region(Region.West)
+                    .Title("MENU CHỨC NĂNG")
+                    .Icon(Icon.Table)
+                    .Split(true)
+                    .Width(245)
+                    .MinWidth(175)
+                    .MaxWidth(400)
+                    .Padding(0)
+                    .Tools(Html.X().Tool().ID("ToolRefresh").Type(ToolType.Refresh).Handler("App.SubMenu.reload();"))
+                    .BodyPadding(0)
+                    .Collapsible(true)
+                    .Split(true)
+                    .ID("MainMenu")
+                    .MarginSpec("5 0 5 5")
+                    .Menu(
+                            a =>
+                            {
+                                a.Add(
+                                    Html.X().Panel()
+                                    .ID("SubMenu")
+                                    .Layout(LayoutType.Accordion)
+                                    .LayoutConfig(new AccordionLayoutConfig { HideCollapseTool = true })
+                                    .Header(false)
+                                    .Margin(0)
+                                    .Items(
+                                            Html.X().Panel().ID("hiddenPanel").Height(300).Hidden(true)
+                                    )
+                                    .Loader(
+                                            Html.X().ComponentLoader()
+                                                .LoadMask(lm => { lm.ShowMask = true; lm.Msg = "Đang tải dữ liệu ..."; })
+                                                .Url(Url.Action("LoadMenuSystem"))
+                                                .Mode(LoadMode.Script)
+                                                .Params(new { containerId = "SubMenu" })
+                                            )
+
+                                      );
+                            }
+                            ),
+        Html.X().Hidden().ID("ModuleCodeValue"),
+             Html.X().Panel()
+                .Hidden(true)
+                .ID("PinMenu")
+                .Region(Region.West)
+                .Title("MENU CHỨC NĂNG")
+                .Icon(Icon.Table)
+                .AutoScroll(true)
+                .Collapsible(true)
+                .Split(true)
+                .Width(245)
+                .MinWidth(175)
+                .MaxWidth(400)
+                .MarginSpec("5 0 5 5")
+                .Layout(LayoutType.Accordion)
+                .LayoutConfig(new AccordionLayoutConfig { HideCollapseTool = true, Fill = false })
+                .Items
+                (
+
+                        Html.X().TreePanel().ID("trPinMenu")
+                            .Tools(Html.X().Tool().ID("ToolUnpin").Type(ToolType.Unpin).Handler("UnpinMenu();"))
+                            .Border(false)
+                            .AutoScroll(true)
+                            .RootVisible(false)
+                            .Width(245)
+                            .Padding(0)
+                            .Listeners(ls =>
+                                {
+                                    ls.ItemClick.Handler = "if (record.data.hrefTarget) {e.stopEvent();addTab(App.MainContent, record);}";
+                                })
+                            .Store(
+                                    Html.X().TreeStore()
+                                        .AutoLoad(false)
+                                        .Proxy(
+                                                    Html.X().AjaxProxy().Url(Url.Action("LoadMenu"))
+                                                )
+                                    .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("moduleCode", "App.ModuleCodeValue.getValue()", ParameterMode.Raw));
+                                                ps.Add(new StoreParameter("expand", "true", ParameterMode.Raw));
+                                            }
+                                    )
+                    )
+                ),
+
+        //Content
+        Html.X().TabPanel()
+            .ID("MainContent")
+            .MarginSpec("5 5 5 0")
+            .Layout(LayoutType.Fit)
+            .Region(Region.Center)
+            .Plugins(plugins => plugins.Add(new TabCloseMenu() { CloseTabText = "Đóng tab này", CloseAllTabsIcon = Icon.ApplicationCascade, CloseOtherTabsIcon = Icon.ApplicationOsxDouble, CloseTabIcon = Icon.ApplicationPut, CloseOthersTabsText = "Đóng tab khác", CloseAllTabsText = "Đóng tất cả các tab" })),
+
+        //Footer
+        Html.X().Panel()
+            .ID("Footer1")
+            .Region(Region.South)
+            .Height(28)
+            .Layout(LayoutType.Column)
+            .Header(false)
+            .BodyStyle("background-color:#dfe8f6;")
+            .Items(
+                         Html.X().HyperLink().ID("Copyright").MarginSpec("5 0 0 0").Text("Copyright © 2013 Quality Consultancy & Technology Development Ltd. All rights reserved").ColumnWidth(0.93).NavigateUrl("http://www.idasonline.com").Target("_blank"),
+                 Html.X().ImageButton().Href("http://www.idasonline.com").HrefTarget("_blank").ImageUrl("../../Content/images/iDAS-logo.png").MarginSpec("0 0 0 5").Width(62).Height(25).ColumnWidth(0.06)
+         )
+    )
+)
+<script>
+    var UnpinMenu = function () {
+        App.MainMenu.show();
+        App.PinMenu.hide();
+    };
+    var PinItemMenu = function (treepanel) {
+        App.PinMenu.show();
+        App.MainMenu.hide();
+        App.ModuleCodeValue.setValue(treepanel.id);
+        App.trPinMenu.setTitle(treepanel.title);
+        App.trPinMenu.store.load();
+    };
+    Ext.define("Ext.net.MenuPanel",
+         {
+             extend: "Ext.panel.Panel",
+             alias: "widget.netmenupanel",
+             saveSelection: true,
+             selectedIndex: -1,
+             layout: "fit",
+             initComponent: function () {
+                 this.menu = Ext.apply(this.menu, { floating: false, border: false });
+                 this.items = [this.menu]; Ext.net.MenuPanel.superclass.initComponent.call(this);
+                 this.menu = this.items.get(0);
+                 this.menu.layout =
+                     {
+                         type: 'vbox',
+                         align: 'stretch',
+                         autoSize: false,
+                         clearInnerCtOnLayout: true,
+                         overflowHandler: 'Scroller'
+                     };
+                 if (this.selectedIndex > -1) {
+                     var item = this.menu.items.get(this.selectedIndex);
+                     if (item.rendered) {
+                         item.activate();
+                     }
+                     else {
+                         item.on("afterrender", item.activate, item, { single: true });
+                     }
+                     this.getSelIndexField().setValue(this.selectedIndex);
+                 }
+                 this.menu.on("click", this.setSelection, this); this.menu.deactivateActiveItem = Ext.Function.bind(this.deactivateActiveItem, this);
+             },
+             deactivateActiveItem: function () {
+                 var me = this, menu = me.menu; if (menu.activeItem) {
+                     if (!(me.saveSelection && menu.activeItem && menu.items.indexOf(menu.activeItem) == me.selectedIndex)) { menu.activeItem.deactivate(); }
+                     if (!menu.activeItem.activated) { delete menu.activeItem; }
+                 }
+                 if (menu.focusedItem) { menu.focusedItem.blur(); if (!menu.focusedItem.$focused) { delete menu.focusedItem; } }
+             },
+             setSelectedIndex: function (index) {
+                 this.setSelection(this.menu, this.menu.getComponent(index));
+             },
+             getSelIndexField: function () {
+                 if (!this.selIndexField) { this.selIndexField = new Ext.form.Hidden({ id: this.id + "_SelIndex", name: this.id + "_SelIndex" }); this.on("beforedestroy", function () { this.destroy(); }, this.selIndexField); }
+                 return this.selIndexField;
+             },
+             setSelection: function (menu, item, e) {
+                 if (this.saveSelection) {
+                     if (arguments.length === 1) { item = menu; }
+                     if (item) {
+                         this.clearSelection();
+                         this.selectedIndex = this.menu.items.indexOf(item);
+                         this.getSelIndexField().setValue(this.selectedIndex);
+                         if (item.activate != null) {
+                             item.activate();
+                         }
+                     }
+                 }
+             },
+             clearSelection: function () {
+                 var selectedCmp; if (this.selectedIndex > -1) {
+                     selectedCmp = this.menu.getComponent(this.selectedIndex);
+                     if (selectedCmp) {
+                         if (selectedCmp.deactivate != null) {
+                             selectedCmp.deactivate();
+                         }
+                     }
+                 }
+                 this.selectedIndex = -1;
+                 this.getSelIndexField().setValue(null);
+             },
+             afterRender: function () {
+                 Ext.net.MenuPanel.superclass.afterRender.call(this);
+                 if (this.hasId()) {
+                     this.getSelIndexField().render(this.el.parent() || this.el);
+                 }
+             }
+         });
+</script>

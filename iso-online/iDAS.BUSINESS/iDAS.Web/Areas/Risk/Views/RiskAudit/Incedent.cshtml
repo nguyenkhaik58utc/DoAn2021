@@ -1,0 +1,75 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+    var id = (int)ViewData["ID"];
+}
+<script>
+    function CheckStatusRiskIncedent() {
+        var records = App.GrRiskIncedent.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetailRiskIncedent);
+        }
+        else {
+            SetDisabled(App.btnDetailRiskIncedent);
+        };
+    };
+    var ShowViewIncedent = function () {
+        var records = App.GrRiskIncedent.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "RiskIncedent"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Window().Maximized(true).Height(1).Layout(LayoutType.Fit)
+            .Icon(Icon.Bug).Title("Thông tin sự cố rủi ro")
+            .Items(
+                    Html.X().Hidden().Value(id).ID("hdfRiskID"),
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrRiskIncedent")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                    Html.X().Toolbar()
+                                            .Layout(LayoutType.HBox)
+                                            .Items(Html.X().ButtonView().ID("btnDetailRiskIncedent").Handler("ShowViewIncedent();"))
+                                    )
+                            .Store(
+                                    Html.X().Store().ID("StoreRiskIncedent")
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "RiskIncedent")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                            .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("riskId", "App.hdfRiskID.value", ParameterMode.Raw));
+                                            })
+                                        .Model(
+                                                Html.X().Model().Fields(
+                                                        Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("Title"),
+                                                        Html.X().ModelField().Name("Content"),
+                                                        Html.X().ModelField().Name("Time")
+                                                )
+                                             )
+                                    )
+                        .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    X.DateColumnExtend().DataIndex("Time").Text("Thời gian").Align(Alignment.Center),
+                                    X.Column().DataIndex("Title").Text("Tiêu đề").Width(250).Wrap(true),
+                                    X.Column().DataIndex("Content").Text("Nội dung").Flex(1)
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusRiskIncedent"))
+                        .BottomBar(Html.X().CustomPagingToolbar())
+                    )
+    )
+

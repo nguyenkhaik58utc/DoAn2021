@@ -1,0 +1,117 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+
+@model iDAS.Items.SystemItem
+
+@(
+ Html.X().Window()
+    .ID("winNewCenterSystem")
+    .Title("Tạo mới thông tin Hệ thống")
+    .Icon(Icon.Add)
+    .Width(450)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("frmNewCenterSystem")
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 120)
+            .DefaultAnchor("100%")
+            .Items(
+                Html.X().TextFieldFor(m => m.Code).ID("txtCode")
+                    .FieldLabel("Mã hệ thống*")
+                    .TabIndex(1)
+                    .AllowBlank(false).BlankText("Mã hệ thống bắt buộc nhập!"),
+                Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                    .FieldLabel("Tên hệ thống*")
+                    .TabIndex(2)
+                    .AllowBlank(false).BlankText("Tên hệ thống động bắt buộc nhập!"),
+                Html.X().TextFieldFor(m => m.Url).ID("txtUrl")
+                    .FieldLabel("Url")
+                    .TabIndex(3)
+                    //.AllowBlank(false).BlankText("Tên hệ thống động bắt buộc nhập!")
+                    ,
+                    Html.X().TextFieldFor(m => m.DBSource).ID("txtDatabaseDataSource")
+                    .FieldLabel("DataSource")
+                    .MaxLength(50)
+                    .Text("192.168.1.111")
+                    .TabIndex(3)  ,
+
+                Html.X().TextFieldFor(m => m.DBUserID).ID("txtDatabaseUserID")
+                    .FieldLabel("UserID")
+                    .MaxLength(50)
+                    .Text("sa")
+                    .TabIndex(3)  ,
+                Html.X().TextFieldFor(m => m.DBPassword).ID("txtDatabasePassword")
+                    .InputType(Ext.Net.InputType.Password)    
+                    .FieldLabel("Password")
+                    .TabIndex(3).MaxLength(50) ,     
+                    
+                Html.X().TextAreaFor(m => m.Description).ID("txtDes")
+                    .FieldLabel("Mô tả")
+                    .TabIndex(3)
+                    ,
+                Html.X().CheckboxFor(m => m.IsActive).ID("ckIsActive")                   
+                    .BoxLabel("Kích hoạt")
+                    .HideLabel(true)
+                   // .MarginSpec("0 0 0 15")
+                    .Value(true)
+                    .TabIndex(4)
+                      
+        //
+                //
+        ))
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaveMultis")
+                .Icon(Icon.DiskMultiple)
+                .Text("Lưu lại")
+                .TabIndex(4)
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frmNewCenterSystem";
+                        de.Click.ExtraParams.Add(new { exit = false });
+
+                        de.Click.Url = Url.Action("InsertSystem");
+                        de.Click.Before = @"if (!#{frmNewCenterSystem}.getForm().isValid()) { return false; }";
+                        de.Click.EventMask.ShowMask = true;
+                        de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                        de.Click.Success = "App.frmNewCenterSystem.reset();";
+                    })
+                ,
+
+                 Html.X().Button()
+                    .ID("btnSaveSingle")
+                    .Icon(Icon.Disk)
+                    .Text("Lưu và thoát")
+                    .TabIndex(4)
+                        .DirectEvents(de =>
+                        {
+                            de.Click.FormID = "frmNewCenterSystem";
+                            de.Click.ExtraParams.Add(new { exit = true });
+                            de.Click.Url = Url.Action("InsertSystem");
+                            de.Click.Before = @"if (!#{frmNewCenterSystem}.getForm().isValid()) { return false; }";
+                            de.Click.EventMask.ShowMask = true;
+                            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                        })
+                    ,    
+
+            Html.X().Button()
+                .Text("Nhập lại")
+                .Icon(Icon.ArrowRefresh)
+                .TabIndex(5)
+                .OnClientClick("App.frmNewCenterSystem.reset();")
+                        ,
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Hủy")
+                .TabIndex(6)
+                .Handler("App.frmNewCenterSystem.reset(); App.winNewCenterSystem.close();")
+        )
+)

@@ -1,0 +1,47 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerContractItem
+@(
+ Html.X().Window()
+.ID("winCancelContract")
+.Title("Hủy hợp đồng")
+.Icon(Icon.StopRed)
+.Width(350)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+ Html.X().FormPanel()
+            .AutoScroll(true)
+            .ID("frmCancelContract")
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .Frame(true)
+            .FieldDefaults(df => { df.LabelWidth = 90; df.LabelStyle = "padding-left: 5px;"; })
+            .StyleSpec("border: none;")
+            .Items(
+                        Html.X().HiddenFor(m => m.ID).ID("hdfCancelContractID"),
+                        Html.X().CheckboxFor(m=>m.IsCancel).FieldLabel("Hủy hợp đồng").BoxLabel("Có"),
+                        Html.X().TextAreaFor(m => m.CancelNote).FieldLabel("Lý do").Flex(1).LabelAlign(LabelAlign.Top)
+            ))
+            .Buttons(
+                Html.X().Button()
+                                .Text("Lưu lại")
+                                .Icon(Icon.DatabaseSave)
+                                .DirectEvents(de =>
+                                            {
+                                                de.Click.Before = @"if (!App.frmCancelContract.getForm().isValid()) { return false; }; ";
+                                                de.Click.ExtraParams.Add(new { exit = true });
+                                                de.Click.Url = Url.Action("CancelContract");
+                                                de.Click.EventMask.ShowMask = true;
+                                                de.Click.FormID = "frmCancelContract";
+                                                de.Click.Success = "this.up('window').close();";
+                                            })
+                , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

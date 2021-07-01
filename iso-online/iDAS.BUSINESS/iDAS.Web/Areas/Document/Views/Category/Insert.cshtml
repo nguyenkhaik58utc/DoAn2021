@@ -1,0 +1,39 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DocumentCategoryItem
+@(
+ Html.X().CustomWindow()
+    .ID("winNewCate")
+    .Title("Thêm mới danh mục tài liệu")
+    .Icon(Icon.Add)
+    .Items(
+        Html.X().CustomFormPanel()
+            .ID("frmNewCate")
+            .Items(
+                        Html.X().TextFieldFor(m => m.Name)
+                            .FieldLabel("Tên danh mục" + Html.Required())
+                            .TabIndex(1)
+                            .AllowOnlyWhitespace(false)
+                            .MaxLength(200).MaxLengthText("Tên danh mục không được dài quá 200 ký tự!")
+                            .AllowBlank(false).BlankText("Tên danh mục bắt buộc nhập!"),
+                        Html.X().DepartmentFieldFor(m => m.Department).FieldLabel("Phòng ban" + Html.Required()).Multiple(false).AllowBlank(false),
+                        Html.X().TextAreaFor(m => m.Note)
+                            .ID("txtContent")
+                            .FieldLabel("Ghi chú")
+                            .TabIndex(3).MinHeight(100).Flex(1)
+                            .MaxLength(1000)
+                    )
+        )
+        .Buttons(
+            Html.X().ButtonSave()
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewCate";
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.Before = @"if (!#{frmNewCate}.getForm().isValid()) { return false; }";
+                }),
+            Html.X().ButtonExit()
+        )
+)

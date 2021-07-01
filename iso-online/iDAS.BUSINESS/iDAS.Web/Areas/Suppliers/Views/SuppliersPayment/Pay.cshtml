@@ -1,0 +1,47 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.SuppliersBillItem
+@(Html.X().Window()
+.ID("winRequirementListAdd")
+.Title("Thanh toán đơn hàng")
+.Width(800)
+.MaxHeight(600)
+.Icon(Icon.Add)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .MarginSpec("0 -4 0 0")
+    .BodyPadding(0)
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 110; })
+    .Items(
+                    Html.X().HiddenFor(m => m.SuppliersOrderID), Html.X().HiddenFor(m => m.ID),
+
+                Html.X().DateFieldFor(m => m.PayDate).SelectedDate(DateTime.Now).FieldLabel("Thanh toán ngày" + Html.Required()).ColumnWidth(0.6).MarginSpec("5 8 0 8"),
+                Html.X().NumberFieldFor(m => m.PayedMoney).FieldLabel("Số tiền" + Html.Required()).AllowBlank(false).BlankText("Trường bắt buộc nhập").LabelWidth(60).ColumnWidth(0.4).MarginSpec("5 4 0 8"),
+            Html.X().TextAreaFor(m => m.Note)
+                .FieldLabel("Ghi chú")
+                .EmptyText("Ghi Chú ...")
+                .ColumnWidth(1).MarginSpec("5 8 0 8").Height(80)
+           )
+      )
+    .Buttons(
+        Html.X().ButtonSave()
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; };";
+                                de.Click.Url = Url.Action("Update");
+                                de.Click.FormID = "frmUpdate";
+                            }),
+        Html.X().ButtonExit())
+)

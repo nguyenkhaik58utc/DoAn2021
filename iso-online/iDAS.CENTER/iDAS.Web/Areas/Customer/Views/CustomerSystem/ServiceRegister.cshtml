@@ -1,0 +1,176 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@{
+    var X = Html.X();
+    var id = ViewData["id"];
+}
+@model iDAS.Items.CustomerSystemServiceItem
+@(Html.X().Window()
+    .ID("winProductRegister")
+    .Title("Danh sách Dịch vụ đăng ký")
+    .Icon(Icon.ApplicationViewDetail)
+    .Constrain(true)
+    .Width(970)
+    .Height(500)
+    .Center()
+    .Layout(LayoutType.Fit)
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Items(
+                Html.X().GridPanel()
+                    .Border(false)
+                    .ID("GridServiceRegister")
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                                Html.X().Button().Text("Cập nhật").ID("btnUpdateSystemService").Icon(Icon.PencilGo).Disable(true)
+                                        .Handler("UpdateSystem();"),
+                                Html.X().Button().Text("Hủy").ID("btnCancelSystem").Icon(Icon.Cancel).Disable(true)
+                                        .Handler("CancelSystem();")
+                            )
+                    )
+                    .Store(
+                            Html.X().StoreForModel()
+                            .AutoLoad(true)
+                            .ID("StoreServiceRegister").ItemID("ID")
+                            .PageSize(5)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadServiceRegister")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("id", id.ToString(), ParameterMode.Value));
+                                })
+                        )
+                    .ColumnModel(
+                            Html.X().RowNumbererColumn().Text("STT").Width(30).StyleSpec("font-weight: bold;").Align(Alignment.Center),
+                            Html.X().Column().DataIndex(Model, m => m.ID).Hidden(true),
+                            Html.X().Column().DataIndex(Model, m => m.SystemID).Hidden(true),
+                            Html.X().Column().DataIndex(Model, m => m.ISOID).Hidden(true),
+                            Html.X().Column().DataIndex(Model, m => m.ISOName).Text("ISO").Width(180).StyleSpec("font-weight: bold; text-align: center;"),
+                            Html.X().Column().DataIndex(Model, m => m.FormName).Text("Hình thức").Width(105).StyleSpec("font-weight: bold; text-align: center;"),
+                            Html.X().DateColumn().DataIndex(Model, m => m.RegisterAt).Text("Ngày yêu cầu").Width(105).StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Center),
+                            Html.X().Column().DataIndex(Model, m => m.IsUse).Renderer("RenderIsUse").Text("Yêu cầu").Width(100).StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Center),
+                            Html.X().CheckColumn().DataIndex(Model, m => m.IsNew).Text("Yêu cầu mới").Width(100).StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Center),
+                            Html.X().CheckColumn().DataIndex(Model, m => m.IsActive).Text("Xử lý").Width(100).StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Center)
+
+                        )
+                        .BottomBar(
+                                    Html.X().PagingToolbar()
+                                    .EmptyMsg("Hiện không có dữ liệu")
+                                    .NextText("Trang kế tiếp")
+                                    .PrevText("Trang trước")
+                                    .LastText("Trang cuối cùng")
+                                    .FirstText("Trang đầu tiên")
+                                    .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                                    .BeforePageText("Trang")
+                                    .AfterPageText("của {0}")
+                                    .RefreshText("Tải lại Dữ liệu")
+                                    .Items(
+                                        Html.X().ToolbarSpacer(10),
+                                        Html.X().ComboBox()
+                                            .Width(40)
+                                            .Items("5", "10", "15", "20", "25")
+                                            .SelectedItems("5")
+                                            .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                                    )
+                                    .Plugins(Html.X().ProgressBarPager())
+                            )
+                            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)).Listeners(l =>
+                                                            {
+                                                                l.SelectionChange.Handler = "ChangeStatus()";
+                                                            })
+                            .Features(Html.X().GridFilters()
+                                            .MenuFilterText("Tìm kiếm")
+                                            .Filters(
+                                                Html.X().StringFilter().DataIndex("Name")))
+                )
+        .Buttons(
+                    Html.X().Button()
+                        .ID("btnCancel")
+                        .Icon(Icon.Cancel)
+                        .Text("Thoát")
+                        .Handler("App.winProductRegister.close();")
+                 )
+)
+<script>
+    var UpdateSystem = function () {
+        var records = App.GridServiceRegister.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận',
+                msg: 'Bạn có chắc chắn cập nhật dịch vụ đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Help',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var id = records[0].get('ID');
+                        var customerSystemId = '@(id)';
+                        var systemId = records[0].get('SystemID');
+                        var isoID = records[0].get('ISOID');
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("UpdateServiceSystem", "CustomerSystem", new { Area = "Customer" }, null))',
+                            params: {
+                                id: id,
+                                customerSystemId: customerSystemId,
+                                systemId: systemId,
+                                isoId: isoID
+                            },
+                        });
+                    }
+                }
+            });
+        };
+    };
+    var CancelSystem = function () {
+        var records = App.GridServiceRegister.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận',
+                msg: 'Bạn có chắc chắn cập nhật dịch vụ đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Help',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var id = records[0].get('ID');
+                        var customerSystemId = '@(id)';
+                        var systemId = records[0].get('SystemID');
+                        var isoID = records[0].get('ISOID');
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("CancelServiceSystem", "CustomerSystem", new { Area = "Customer" }, null))',
+                            params: {
+                                id: id,
+                                customerSystemId: customerSystemId,
+                                systemId: systemId,
+                                isoId: isoID
+                            },
+                        });
+                    }
+                }
+            });
+        };
+    };
+    var ChangeStatus = function () {
+        var records = App.GridServiceRegister.selModel.getSelection();
+        if (records.length == 1) {
+            if (records[0].get('IsUse') == false) {
+                App.btnUpdateSystemService.setDisabled(true);
+                App.btnCancelSystem.setDisabled(false);
+            }
+            else {
+                App.btnUpdateSystemService.setDisabled(false);
+                App.btnCancelSystem.setDisabled(true);
+            }
+        }
+        else {
+            App.btnUpdateSystemService.setDisabled(true);
+            App.btnCancelSystem.setDisabled(true);
+        };
+    };
+    var template = '<span style="color:{0};">{1}</span>';
+    var RenderIsUse = function (value) {
+        var showValue = (value == true) ? "Sử dụng" : "Không sử dụng";
+        return Ext.String.format(template, (value == true) ? "green" : "red", showValue);
+    };
+</script>

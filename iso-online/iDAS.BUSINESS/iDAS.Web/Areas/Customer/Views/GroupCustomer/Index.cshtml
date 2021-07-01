@@ -1,0 +1,144 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script type="text/javascript">
+    var onSelectGroupCustomer = function () {
+        var component = App.treeCustomerCateID;
+        var records = component.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnAddGroupCustomer, App.btnUpdateGroupCustomer, App.btnDetailGroupCustomer);
+            if (records[0].get('ParentID') == 0)
+            {
+                App.btnDeleteGroupCustomer.setDisabled(true);
+            }
+            else {
+                App.btnDeleteGroupCustomer.setDisabled(false);
+            }
+        }
+        else {
+            SetDisabled(App.btnAddGroupCustomer,App.btnUpdateGroupCustomer,App.btnDeleteGroupCustomer,App.btnDetailGroupCustomer);
+        };
+    };
+    var ShowAdd = function () {
+        var records = App.treeCustomerCateID.selModel.getSelection();
+        var url = '@(Url.Action("Update", "GroupCustomer", new { Area = "Customer"}))';
+        var params = { parentId: records[0].get('id'), groupCustomerID: 0 };
+        onDirectMethod(url,params,'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.treeCustomerCateID.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "GroupCustomer", new { Area = "Customer"}))';
+            var params = { parentId: records[0].get('id'), groupCustomerID: records[0].get('id') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteUrl = '@(Url.Action("Delete", "GroupCustomer", new { Area = "Customer" }))';
+    var DeleteGroupCustomer = function () {
+        var records = App.treeCustomerCateID.selModel.getSelection();
+        if (records.length > 0) {
+            onDelete(records[0].get('id'), ReloadTree);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function ReloadTree(result) {
+        if (result == true) {
+            var node = App.treeCustomerCateID.selModel.getSelection()[0];
+            if (node != null) {
+                App.treeCustomerCateID.store.reload({ node: node.parentNode })
+            };
+        };
+    };
+    var ShowView = function () {
+        var records = App.treeCustomerCateID.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "GroupCustomer", new { Area = "Customer" }))';
+            var params = { groupCustomerID: records[0].get('id') };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var expandCustomerCategory = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 3 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+    };
+</script>
+<style>
+    .ForEmployee {
+        font-weight: bold;
+    }
+
+    .ForEmployeeNotCreat {
+        font-weight: bold;
+        font-style: italic;
+    }
+</style>
+@(
+ Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+.Items(
+    Html.X().TreePanel()
+                .Layout(LayoutType.Fit)
+                .Split(true)
+                .Region(Region.West).Width(300)
+                .Header(false)
+                .ID("treeCustomerCateID")
+                .TitleAlign(TitleAlign.Center)
+                .Border(false)
+                .AutoScroll(true)
+                .RootVisible(false)
+                .RowLines(true).ColumnLines(true)
+                .SyncFx()
+                .TopBar(Html.X().Toolbar().ID("toolbarID")
+                                    .Layout(LayoutType.HBox)
+                                    .Items(
+                                            Html.X().ButtonCreate().ID("btnAddGroupCustomer").Disabled(true).Handler("ShowAdd();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonUpdate().ID("btnUpdateGroupCustomer").Handler("ShowUpdate();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonDelete().ID("btnDeleteGroupCustomer").Handler("DeleteGroupCustomer()"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonView().ID("btnDetailGroupCustomer").Handler("ShowView();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonRefresh().Handler("App.treeCustomerCateID.store.reload();App.treeCustomerCateID.expandAll()")
+                                        )
+                            )
+                    .Store(
+                            Html.X().TreeStore().ID("StoreGroupCustomer")
+                                .AutoSync(true)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "GroupCustomer", new { Area = "Customer" }))
+                                .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                .Model(
+                                            Html.X().Model().Fields(
+                                            Html.X().ModelField().Name("id"),
+                                            Html.X().ModelField().Name("text"),
+                                            Html.X().ModelField().Name("ParentID"),
+                                            Html.X().ModelField().Name("DepartmentName"),
+                                            Html.X().ModelField().Name("UpdateAt")
+                                ))
+                        )
+                            .ColumnModel(
+                                        Html.X().TreeColumn()
+                                                .Flex(1)
+                                                .DataIndex("text").Text("Nhóm"),
+                                        Html.X().Column().DataIndex("DepartmentName").Text("Phòng ban").Width(250), 
+                                        Html.X().Column().DataIndex("UpdateAt").Text("Ngày cập nhật").Width(120).Align(Alignment.Center)       
+                            )
+                        .Listeners(ls => { ls.SelectionChange.Handler = "onSelectGroupCustomer();";
+                                            ls.Load.Handler = "expandCustomerCategory(records);";})
+       )
+)

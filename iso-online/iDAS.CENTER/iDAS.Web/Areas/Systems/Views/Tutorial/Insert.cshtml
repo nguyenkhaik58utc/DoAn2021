@@ -1,0 +1,131 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@model iDAS.Items.TutorialItem
+@{
+    var required = "<span style='color: red;'>(*)</span>";
+}
+@(Html.X().Window()
+        .ID("winAdd")
+        .Title("Thêm mới hướng dẫn")
+        .Icon(Icon.Add)
+        .Frame(true)
+        .Constrain(true)
+        .Width(500)
+        .BodyPadding(5)
+        .Center()
+        .Resizable(false)
+        .Modal(true)
+        .Items(
+            Html.X().FormPanel().DefaultAnchor("100%")
+            .ID("frmAdd")
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .AutoScroll(true)
+            .Margin(0)
+            .Items(
+                        Html.X().HiddenFor(m=>m.SystemCode).ID("hdfSystemCode"),
+                        Html.X().ComboBoxFor(m=>m.ModuleCode).ID("cbxModuleCode").AllowBlank(false).FieldLabel("Module" + required)
+                                    .QueryMode(DataLoadMode.Local)
+                                    .TriggerAction(TriggerAction.All)
+                                    .EmptyText("Chọn Module ...")
+                                    .DisplayField("Name")
+                                    .ValueField("Code")
+                                    .Store(
+                                        Html.X().Store()
+                                                .AutoLoad(true)
+                                                .Model(
+                                                        Html.X().Model()
+                                                            .IDProperty("Code")
+                                                            .Fields(
+                                                                new ModelField("Code", ModelFieldType.String) { Mapping = "Code" },
+                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                    )
+                                                        )
+                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetModule"))
+                                                                .Reader(Html.X().JsonReader().Root("data"))
+                                                            )
+                                                        .Parameters(ps =>
+                                                                    {
+                                                                        ps.Add(new StoreParameter("systemCode", "App.hdfSystemCode.value", ParameterMode.Raw));
+                                                                    }
+                                                                )
+                                        )
+                                     .Listeners(ls=>ls.Change.Handler="ModuleChange(this.value);")
+                        ,
+                        Html.X().ComboBoxFor(m => m.FunctionCode).ID("cbxFunctionCode").AllowBlank(false).FieldLabel("Chức năng" + required)
+                                    .ReadOnly(true)
+                                    .QueryMode(DataLoadMode.Local)
+                                    .TriggerAction(TriggerAction.All)
+                                    .EmptyText("Chọn chức năng ...")
+                                    .DisplayField("Name")
+                                    .ValueField("Code")
+                                    .Store(
+                                        Html.X().Store().ID("stFunction").AutoLoad(false)
+                                                .AutoLoad(true)
+                                                .Model(
+                                                        Html.X().Model()
+                                                            .IDProperty("Code")
+                                                            .Fields(
+                                                                new ModelField("Code", ModelFieldType.String) { Mapping = "Code" },
+                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                    )
+                                                        )
+                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetFunction"))
+                                                                .Reader(Html.X().JsonReader().Root("data"))
+                                                            )
+                                                        .Parameters(ps =>
+                                                                    {
+                                                                        ps.Add(new StoreParameter("systemCode", "App.hdfSystemCode.value", ParameterMode.Raw));
+                                                                        ps.Add(new StoreParameter("moduleCode", "App.cbxModuleCode.value", ParameterMode.Raw));
+                                                                    }
+                                                                )    
+                                        ),
+                        Html.X().FileUploadField().ID("fileUploadFieldID").FieldLabel("Tệp hướng dẫn").ButtonText("Chọn tệp...").Icon(Icon.Attach),
+                        Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Sử dụng")
+                    )
+            )
+      .Buttons(
+                Html.X().Button().ID("btnInsert")
+                        .Text("Lưu lại")
+                        .Icon(Icon.DiskMultiple)
+                            .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmAdd.getForm().isValid()) { return false; } ";
+                                de.Click.Url = Url.Action("Insert");
+                                de.Click.EventMask.ShowMask = true;
+                                de.Click.FormID = "frmAdd";
+                            }),
+                Html.X().Button().ID("btnInsertExit")
+                        .Text("Lưu lại và thoát")
+                        .Icon(Icon.Disk)
+                                .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmAdd.getForm().isValid()) { return false; } ";
+                                    de.Click.ExtraParams.Add(new { exit = true });
+                                    de.Click.Url = Url.Action("Insert");
+                                    de.Click.EventMask.ShowMask = true;
+                                    de.Click.FormID = "frmAdd";
+                                }),
+
+                Html.X().Button()
+                        .Text("Nhập lại")
+                        .Icon(Icon.ArrowRefresh)
+                        .OnClientClick("App.frmAdd.reset();"),
+                Html.X().Button()
+                        .Text("Hủy")
+                        .Icon(Icon.Cancel)
+                        .OnClientClick("this.up('window').close();")
+                  )
+)
+<script>
+    function ModuleChange(value) {
+        if (value) {
+            App.cbxFunctionCode.setReadOnly(false);
+            App.stFunction.reload();
+        }
+        else {
+            App.cbxFunctionCode.setReadOnly(true);
+        };
+    };
+</script>

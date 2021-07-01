@@ -1,0 +1,76 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.AccountingPaymentPlanItem
+@{
+    long TotalContract = Model.TotalContract == null ? 0 : (long)Model.TotalContract;
+}
+@(
+ Html.X().Window()
+.ID("winRealPayment")
+.Title("Cập nhật thu hồi công nợ")
+.Header(false)
+.Icon(Icon.Money)
+.Width(330)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+ Html.X().FormPanel()
+            .AutoScroll(true)
+            .ID("frmRealPayment")
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .FieldDefaults(df => { df.LabelWidth = 90; df.LabelStyle = "padding-left: 5px;"; df.InputWidth = 210; })
+            .StyleSpec("border: none;")
+            .Items(
+                                    Html.X().HiddenFor(m => m.ID).ID("hdfRealPaymentPlanID"),
+                                    Html.X().NumberFieldFor(m => m.ValueReal).FieldLabel("Số thu")
+                                            .MinValue(0).MaxValue(TotalContract)
+                                            .AllowDecimals(true)
+                                            .ID("nffRealValueID").Listeners(ls => ls.Change.Handler = "ValueChange(this.value);")
+                                            .Icon(Icon.MoneyDollar),
+                                    Html.X().NumberFieldFor(m => m.RateReal).FieldLabel("Tỉ lệ thu hồi (%)")
+                                            .MinValue(0).AllowDecimals(true)
+                                            .MaxValue(100)
+                                            .ID("nffRealRateID").Listeners(ls => ls.Change.Handler = "RateChange(this.value);")
+                                            .Icon(Icon.ChartBar),
+                                    Html.X().DateFieldFor(m => m.TimeReal).FieldLabel("Thời gian")
+            ))
+            .Buttons(
+                Html.X().Button()
+                                .Text("Lưu lại")
+                                .Icon(Icon.DatabaseSave)
+                                .DirectEvents(de =>
+                                            {
+                                                de.Click.Before = @"if (!App.frmRealPayment.getForm().isValid()) { return false; }; ";
+                                                de.Click.ExtraParams.Add(new { exit = true });
+                                                de.Click.Url = Url.Action("RealPayment");
+                                                de.Click.EventMask.ShowMask = true;
+                                                de.Click.FormID = "frmRealPayment";
+                                                de.Click.Success = "this.up('window').close();App.StoreAccountingPayment.reload();";
+                                            })
+                , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)
+<script>
+    var TotalContract = '@TotalContract';
+    function ValueChange(value) {
+        var rate = GetRate(value, TotalContract);
+        App.nffRealRateID.setValue(rate);
+    };
+    function RateChange(value) {
+        var value = GetValue(value, TotalContract);
+        App.nffRealValueID.setValue(value);
+    };
+    function GetRate(value, total) {
+        return value / total * 100;
+    };
+    function GetValue(rate, total) {
+        return rate / 100 * total;
+    };
+</script>

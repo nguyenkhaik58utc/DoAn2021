@@ -1,0 +1,69 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductDataSizeItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin dung lượng sử dụng")
+    .Icon(Icon.Add)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.Size).AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Dung lượng *").ColumnWidth(0.4).Value(1),
+                        Html.X().Container().ColumnWidth(0.05),
+                        Html.X().TextFieldFor(m => m.Unit).FieldLabel("Đơn vị").ColumnWidth(0.2).LabelStyle("width: 50px").Value("GB")
+                    ),
+                    Html.X().TextAreaFor(m => m.Note).FieldLabel("Ghi chú").Height(80),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.Price).FieldLabel("Chi phí").ColumnWidth(0.45).Value(0),
+                        Html.X().Container().ColumnWidth(0.1),
+                        Html.X().NumberFieldFor(m => m.UseTime).FieldLabel("Thời gian sử dụng").ColumnWidth(0.35).LabelStyle("width: 120px").Value(12),
+                        Html.X().Label().Text("Tháng")
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().CheckboxFor(m => m.IsUpgrade).ColumnWidth(0.4).BoxLabel("Nâng cấp").FieldLabel("Gói sử dụng"),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.3).Value(true).BoxLabel("Kích hoạt").HideLabel(true)
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "this.up('window').close(); reloadProductDataSize();";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)

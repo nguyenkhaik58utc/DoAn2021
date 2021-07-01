@@ -1,0 +1,68 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Web.Areas.Timekeeping.Models.WorkOutDTO
+@{
+    var X = Html.X();
+    var formId = X.GetComponentID();
+    var SatrusCombobox = new List<ListItem>();
+    SatrusCombobox.Add(new ListItem("Chờ duyệt", 0));
+    SatrusCombobox.Add(new ListItem("Phê duyệt", 1));
+    SatrusCombobox.Add(new ListItem("Từ chối", 2));
+    // var currentId = (int)ViewData["CurrentUserId"];
+}
+@(X.Window()
+        .Title("Chi tiết")
+        .Icon(Icon.Zoom)
+        // .Height(350)
+        .Width(600)
+        .Items(
+            X.FormPanelVBoxFormat()
+                .ID(formId)
+                .BodyPadding(6)
+                .Items(
+                    X.HiddenFor(u => u.Id),
+                    // X.HiddenFor(u => u.UserId),
+                    X.HiddenFor(u => u.EmployeeId),
+                    X.Panel().Layout(LayoutType.HBox).Border(false).MarginSpec("0 0 5 0")
+                    .Items(
+                        X.DateFieldFormatFor(u => u.StartTime).EmptyText("Bắt đầu").Flex(1).HideLabel(true).AllowBlank(false).ReadOnly(true),
+                        X.ComboBoxHourFormatFor(u => u.StartTimeHour).ID("ccbTimeOffHourFrom").Width(100).EmptyText("Giờ").ReadOnly(true),
+                        X.ComboBoxMiniturFormatFor(u => u.StartTimeMinitu).ID("ccbTimeOffMinituFrom").Width(100).EmptyText("Phút").ReadOnly(true)
+                    ),
+                    X.Panel().Layout(LayoutType.HBox).Border(false).MarginSpec("0 0 5 0")
+                    .Items(
+                        X.DateFieldFormatFor(u => u.EndTime).EmptyText("Kết thúc").Flex(1).HideLabel(true).AllowBlank(false).ReadOnly(true),
+                        X.ComboBoxHourFormatFor(u => u.EndTimeHour).ID("ccbTimeOffHourTo").Width(100).EmptyText("Giờ").ReadOnly(true),
+                        X.ComboBoxMiniturFormatFor(u => u.EndTimeMinitu).ID("ccbTimeOffMinituTo").Width(100).EmptyText("Phút").ReadOnly(true)
+                    ),
+                    X.TextFieldFor(u => u.Address).EmptyText("Địa điểm làm việc").HideLabel(true).AllowBlank(false).ReadOnly(true),
+                    X.TextAreaFor(u => u.Reason).EmptyText("Lý do làm ngoài").HideLabel(true).AllowBlank(false).ReadOnly(true),
+                    X.ComboBoxFormatFor(u => u.Status).EmptyText("Trạng thái").Items(SatrusCombobox).AllowBlank(true).ReadOnly(true)
+                    ,
+                     Html.X().EmployeeFieldForV3(u => u.Perform).ReadOnly(true).Title("Người duyệt " + Html.Required()).MarginSpec("0 0 0 0")
+                    //X.FieldSet().Title("Người duyệt (*)").MarginSpec("10 0 10 0").Padding(1).Items(
+                    //    X.EmployeeFieldFor(u => u.EmployeePerform).UrlEmployeeStore(Url.Action("LoadData", "Employee", new { area = "Generic" }))
+                    //)
+                    )
+            //,
+            //    X.Checkbox().ID("chbForward").FieldLabel("Chuyển tiếp").Hidden(operation == "Update")
+            //    //.Disabled(isFinal || operation != 1)
+            //    .Listeners(ls => ls.Change.Handler = "enableForward()"),
+            //    X.Label().Hidden(operation == 0 || sentByBO.Name == "" || sentByBO.Name == null).Text("Chuyển tiếp từ: " + sentByBO.Name),
+
+            //     Html.X().EmployeeFieldFor(u => u.Perform).Title("Chuyển tiếp tới" + Html.Required()).MarginSpec("0 0 0 115")
+            )
+            .Buttons(
+            X.ButtonExit()
+        )
+)
+<script>
+    Ext.getBody().unmask();
+
+    var enableForward = function () {
+        var state = App.chbForward.getValue();
+        App.fieldForward.setDisabled(!state);
+    };
+</script>

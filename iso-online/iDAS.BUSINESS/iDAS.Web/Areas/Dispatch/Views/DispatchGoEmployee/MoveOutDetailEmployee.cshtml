@@ -1,0 +1,94 @@
+﻿@using Ext.Net.MVC
+@using iDAS.Utilities
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DispatchGoObjectItem
+@{
+    var X = Html.X();
+    int employee = (int)iDAS.Items.DispatchObjectType.Employee;
+    string title = ViewData["Title"].ToString();
+    Icon icon = (Ext.Net.Icon)ViewData["Icon"];
+    bool isBtEdit = (bool)ViewData["IsEdit"];
+}
+@(Html.X().Window()
+    .ID("winAddDispatchGoOutDetail2")
+    .Title(title)
+    .Icon(icon)
+    .BodyPadding(6).Border(true)
+    .Modal(true)
+    .Resizable(false)
+     .Width(600)
+    .Center()
+    .Items(
+        Html.X().FormPanel()
+            .ID("frOutDetail2")
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .Items(
+                Html.X().HiddenFor(m => m.ID),
+                Html.X().HiddenFor(m => m.DispatchGo),
+                X.DateFieldFor(m => m.Date)
+                    .ID("dtMoveAt")
+                    .FieldLabel("Ngày chuyển" + Html.Required())
+                    .Value(DateTime.Now)
+                    .Format("dd/MM/yyyy")
+                    .AllowBlank(false).BlankText("Ngày chuyển công văn bắt buộc nhập!"),
+                X.TextFieldFor(m => m.Name)
+                    .ID("txtName")
+                    .FieldLabel("Người nhận" + Html.Required())
+                    .AllowOnlyWhitespace(false)
+                    .AllowBlank(false).BlankText("Người nhận công văn bắt buộc nhập!"),
+                X.TextFieldFor(m => m.Position)
+                    .ID("txtPosition")
+                    .FieldLabel("Chức vụ"),
+                X.TextFieldFor(m => m.Company)
+                    .ID("txtCompany")
+                    .FieldLabel("Tổ chức"),
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                X.TextFieldFor(m => m.EmailPerson)
+                    .ID("txtEmailPerson")
+                    .InputType(Ext.Net.InputType.Email).InvalidText("Dữ liệu nhập vào phải đúng định dạng email (example@gmail.com)")
+                    .FieldLabel("Email")
+                    .ColumnWidth(0.5),
+                X.TextFieldFor(m => m.TelPerson)
+                    .ID("txtTelPerson")
+                    .FieldLabel("Di động")
+                    .ColumnWidth(0.5).MarginSpec("0 0 0 10")
+                ),
+                Html.X().TextAreaFor(m => m.Address).Height(50).FieldLabel("Địa chỉ" + Html.Required())
+                      .AllowOnlyWhitespace(false)
+                    .AllowBlank(false).BlankText("Địa chỉ nhận công văn bắt buộc nhập!"),
+                Html.X().TextAreaFor(m => m.NoteMove).Height(100).FieldLabel("Nội dung gửi")
+                    )).Buttons(
+                         Html.X().Button()
+                            .ID("btnSaveInsert")
+                            .Text("Lưu lại")
+                            .Hidden(isBtEdit)
+                            .Icon(Icon.Disk)
+                            .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frOutDetail2.getForm().isValid()) { return false; } ";
+                                de.Click.ExtraParams.Add(new { type = employee, fName = "winAddDispatchGoOutDetail2" });
+                                de.Click.Url = Url.Action("InsertMoveOutDetail");
+                                de.Click.EventMask.ShowMask = true;
+                                de.Click.FormID = "frOutDetail2";
+                            }),
+                        Html.X().Button()
+                            .ID("btnSaveUpdate")
+                            .Text("Lưu lại")
+                            .Icon(Icon.Disk)
+                            .Hidden(!isBtEdit)
+                            .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frOutDetail2.getForm().isValid()) { return false; } ";
+                                de.Click.ExtraParams.Add(new { type = employee, fName = "winAddDispatchGoOutDetail2" });
+                                de.Click.Url = Url.Action("UpdateMoveOutDetail");
+                                de.Click.EventMask.ShowMask = true;
+                                de.Click.FormID = "frOutDetail2";
+                            }),
+                        Html.X().ButtonExit()
+    )
+)

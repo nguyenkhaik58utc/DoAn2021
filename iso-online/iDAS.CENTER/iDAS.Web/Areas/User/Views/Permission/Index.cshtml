@@ -1,0 +1,112 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model iDAS.Items.ActionItem
+
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@section headtag
+{
+    <script>
+        var showPermission = function (roleId, roleName) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmPermission", "Permission", new { Area = "User" }, null))',
+                params: { roleId: roleId, roleName: roleName }
+            });
+        };
+    </script>
+}
+@(Html.X().TextField().ID("RoleID").Hidden(true))
+@(Html.X().TextField().ID("GroupID").Hidden(true))
+@(Html.X().TextField().ID("ModuleID").Hidden(true))
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().Panel()
+            .Region(Region.Center)
+            .Layout(LayoutType.Border)
+            .Border(false)
+            .Items(
+                Html.X().TreePanel()
+                    .ID("TreePanel1")
+                    .Title("SƠ ĐỒ TỔ CHỨC")
+                    .Region(Region.West)
+                    .Border(true)
+                    .Split(true)
+                    .Width(300)
+                    .Collapsible(true)
+                    .MarginSpec("1 1 1 1")
+                    .Icon(Icon.TextListBullets)
+                    .ForceFit(true)
+                    .Header(false)
+                    .TitleAlign(TitleAlign.Center)
+                    .RootVisible(false)
+                    .SingleExpand(false)
+                    .SelectionModel(sm => sm.Add(Html.X().RowSelectionModel().SelectedIndex(0)))
+                    .Store(
+                        Html.X().TreeStore()
+                            .ID("StoreGroups")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadGroups", "Group")).Reader(Html.X().JsonReader().Root("data")))
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("id"),
+                                    Html.X().ModelField().Name("text")
+                                )
+                            )
+                    )
+                        .ColumnModel(Html.X().TreeColumn().Text("Sơ đồ tổ chức").StyleSpec("font-weight: bold; text-align: center;").DataIndex("text").Flex(1))
+                    .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "if (selected.length<=0) return; App.GridPanel1.setTitle('CHỨC DANH THUỘC TỔ CHỨC CỦA ['+ selected[0].data.text+']'); App.GroupID.value=selected[0].data.id; App.GridPanel1.getStore().proxy.extraParams={groupId: App.GroupID.value}; App.GridPanel1.getStore().load();";
+                    }),
+
+                Html.X().GridPanel()
+                    .ID("GridPanel1")
+                    .Title("CHỨC DANH THUỘC TỔ CHỨC")
+                    .MarginSpec("1 1 1 1")
+                          .Header(false)
+                    .TitleAlign(TitleAlign.Center)
+                    .Region(Region.Center)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .Store(
+                        Html.X().Store()
+                            .AutoLoad(false)
+                            .ID("StoreRoles")
+                            .Listeners(ls => ls.Load.Fn = "function(records, operation, success){App.GridPanel1.getSelectionModel().select(0, true);}")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRoles", "Role")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                            Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Width(33).Align(Alignment.Center),
+                            Html.X().Column().DataIndex("Name")
+                                            .Text("Tên chức danh")
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Editor(Html.X().TextField()).Width(350),
+                            Html.X().CommandColumn().Text("Phân quyền")
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Align(Alignment.Center)
+                                            .Center()
+                                            .Sortable(false).Resizable(false).Width(90)
+                                            .Commands(
+                                                        Html.X().GridCommand()
+                                                                .CommandName("Pemist")
+                                                                .Icon(Icon.Key)
+                                                                .ToolTip(tt => tt.Text = "Phân quyền cho chức danh")
+                                                    )
+                                            .Listeners(ls => ls.Command.Handler = "showPermission(record.data.ID, record.data.Name);")
+                                )
+                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single))
+                    .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "if (selected.length<=0) App.RoleID.value = null; else App.RoleID.value = selected[0].data.ID;"; // App.GridPanel3.getStore().proxy.extraParams={roleId: App.RoleID.value, moduleId: App.ModuleID.value}; App.GridPanel3.getStore().load();
+                    })
+            )
+
+    )
+)

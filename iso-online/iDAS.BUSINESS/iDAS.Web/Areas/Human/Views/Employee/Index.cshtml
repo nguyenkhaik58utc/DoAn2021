@@ -1,0 +1,196 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Human.Controllers
+@model iDAS.Items.HumanEmployeeItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+<script>
+    var deleteUrl = '@(Url.Action("DeleteUser"))';
+    function CheckStatus() {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            SetEnabled(App.btnChangDepartment);
+            if (records.length == 1) {
+                SetEnabled(App.btnDetail, App.btnDelete, App.btnDelete, App.btnSetting, App.btnSettingV3, App.btnUpdate, App.btnAccount, App.btnProfile);
+            }
+            else {
+                SetDisabled(App.btnDetail, App.btnSetting, App.btnSettingV3, App.btnDelete, App.btnUpdate, App.btnAccount, App.btnProfile);
+            };
+        }
+        else {
+            SetDisabled(App.btnDetail, App.btnSetting, App.btnSettingV3, App.btnDelete, App.btnUpdate, App.btnAccount, App.btnProfile, App.btnChangDepartment);
+        };
+    };
+    var ShowInsert = function () {
+        onDirectMethod('@(Url.Action("Insert", "Employee", new { area = "Human" }))', null, 'get')
+    };
+    var ShowUpdate = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var postUrl = '@(Url.Action("Update", "Employee", new { area = "Human" }))';
+            onDirectMethod(postUrl, { Id: records[0].get('ID') }, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            openEmployeeDetail(records[0].get('ID'));
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var RoleSetting = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var postUrl = '@(Url.Action("SettingForm", "Employee", new { area = "Human"}))';
+            onDirectMethod(postUrl, { Id: records[0].get('ID') });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var RoleSettingV3 = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var postUrl = '@(Url.Action("SettingFormV3", "Employee", new { area = "Human"}))';
+            onDirectMethod(postUrl, { Id: records[0].get('ID') });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showChangeDepartment = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        var record = App.DepartmentPanelId.down('treepanel').selModel.getSelection();
+        if (records.length > 0 && record.length > 0) {
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = records[i]; i++) {
+                aId[i] = records[i].get('ID');
+            }
+            strId = aId.join();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowChangeDepartment", "Employee", new { Area = "Human" }, null))',
+                params: { strEmployeesId: strId, departmentId: record[0].get('id') }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban sau đó chọn nhân sự nào cần chuyển tổ chức?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnChangDepartment.setDisabled(true);
+                }
+            });
+        };
+    };
+    var AcountSetting = function () {
+        var records = App.GrEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateAccount", "Employee", new { area = "Human" }))';
+            var params = { Id: records[0].get('ID') };
+            onDirectMethod(url, params,'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ProfileForm = function () {
+        var id  = 
+        var url = '@(Url.Action("ProfileForm", "ProfileCuriculmViate", new { area = "Human" }))';
+        var params = { Id: App.GrEmployee.selModel.getSelection()[0].data.ID };
+        onDirectMethod(url, params);
+    };
+
+    var ExportExcel = function () {
+        var url = '@(Url.Action("Index", "V3_EmployeeExport", new { area = "Human" }))';
+        var params = { Id: App.GrEmployee.selModel.getSelection()[0].data.ID };
+        onDirectMethod(url, params);
+    };
+    function OnSelectDepartment(records) {
+        App.hdfParentDepartmentId.setValue(records[0].get('id'));
+        App.GrEmployee.getStore().reload({ page: 1 });
+    };
+</script>
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+            X.Hidden().ID("hdfParentDepartmentId"),
+            X.DepartmentPanel().Handler("OnSelectDepartment").ID("DepartmentPanelId"),
+            X.GridPanel()
+                    .Title("Danh sách thành viên").Header(false)
+                    .ID("GrEmployee")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                        X.Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                            X.ButtonCreate().Handler("ShowInsert();"),
+                            X.ToolbarSeparator(),
+                            X.ButtonUpdate().ID("btnUpdate").Handler("ShowUpdate();"),
+                            X.ToolbarSeparator(),
+                            X.ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrEmployee.selModel.getSelection()[0].get('ID'));"),
+                            X.ToolbarSeparator(),
+                            X.ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                            X.ToolbarSeparator(),
+                            X.Button().Text("Thiết lập chức danh").ToolTip("Thiết lập chức danh").ID("btnSetting").Handler("RoleSetting();").Icon(Icon.Creditcards).Disabled(true),
+                            X.ToolbarSeparator(),
+                            X.Button().Text("Thiết lập chức danh_V3").ToolTip("Thiết lập chức danh_v3").ID("btnSettingV3").Handler("RoleSettingV3();").Icon(Icon.Creditcards).Disabled(true),
+                            X.ToolbarSeparator(),
+                            X.Button().Text("Tài khoản hệ thống").ID("btnAccount").Handler("AcountSetting();").Disabled(true).Icon(Icon.UserAdd),
+                            X.ToolbarSeparator(),
+                            X.Button().Text("Hồ sơ nhân sự").ID("btnProfile").Handler("ProfileForm();").Disabled(true).Icon(Icon.UserBrown),
+                            X.ToolbarSeparator(),
+                            X.Button().Text("Chuyển tổ chức").ToolTip("Chuyển tổ chức").ID("btnChangDepartment").Handler("showChangeDepartment();").Icon(Icon.DoorIn).Disabled(true),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                            )
+
+                )
+                
+                .Store(
+                    X.StoreForModel()
+                        .ID("StoreEmployee")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(X.AjaxProxy().Url(Url.Action("LoadUsers")).Reader(X.JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("departmentID", "App.hdfParentDepartmentId.value", ParameterMode.Raw));
+                            })
+                    )
+                .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                        X.TemplateColumn().DataIndex(Model, m => m.FileID).Width(31).Filterable(false).Tpl(
+                          X.XTemplate().Html(@<text>
+                            <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                 style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                        </text>)
+                        ),
+                        X.Column().DataIndex(Model, m => m.Name).Flex(1).Text("Họ tên").Width(120).StyleSpec("font-weight: bold;text-align: center"),
+                        X.DateColumnExtend().DataIndex(Model, m => m.Birthday).Text("Ngày sinh").Align(Alignment.Right).Width(100).StyleSpec("font-weight: bold;text-align: center"),
+                        X.Column().DataIndex(Model, m => m.Email).Text("Email").Width(150).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center"),
+                        X.Column().DataIndex(Model, m => m.Phone).Text("Số điện thoại").Width(100).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center"),
+                        X.Column().DataIndex(Model, m => m.ChucDanh).Text("Chức danh").Width(150).Align(Alignment.Right).StyleSpec("font-weight: bold;text-align: center")
+
+                )
+                .SelectionModel(X.CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Multi).Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                .Plugins(Html.X().FilterHeader())
+                .BottomBar(
+                        X.CustomPagingToolbar()
+                )
+        )
+)

@@ -1,0 +1,399 @@
+﻿@using iDAS.Web.ExtExtend
+@using Ext.Net
+@using Ext.Net.MVC
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border).Padding(2)
+    .Items(
+        Html.X().Hidden().ID("hdfDepartmentID"),
+        Html.X().TreePanel()
+                    .Split(true)
+                    .Region(Region.Center)
+                    .ID("gpDepartmentStatistical")
+                    .TitleAlign(TitleAlign.Center)
+                    .AutoScroll(true)
+                    .RootVisible(false)
+                    .ColumnLines(true)
+                    .RowLines(true)
+                    .TopBar(
+            Html.X().Toolbar()
+                    .ID("tbgpDepartmentStatisticalProfile")
+                    .Items(
+                                Html.X().SearchByDate("App.StorePlanIndex.load();")
+                                                .FromDateID("dfFromDate").ToDateID("dfToDate"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Hidden(true)
+                                    .Icon(Icon.ChartCurve)
+                                    .Disabled(true)
+                                    .ID("groupChart")
+                                    .Text("Xem dưới dạng biểu đồ")
+                                   .Menu(Html.X().Menu()
+                                      .Items(
+                                              Html.X().MenuItem()
+                                           .Text("Biểu đồ hình tròn(%)")
+                                           .ID("btnChartPie")
+                                           .Hidden(true)
+                                           .Disabled(true)
+                                           .Listeners(ls => ls.Click.Handler = "showChartPie();")
+                                           .Icon(Icon.ChartPie),
+                                              Html.X().MenuItem()
+                                           .Text("Biểu đồ hình cột(SL)")
+                                                     .ID("btnChartColumn")
+                                               .Disabled(true)
+                                               .Listeners(ls => ls.Click.Handler = "showChartColumn();")
+                                               .Icon(Icon.ChartBar)
+
+                                   )
+                                   ), Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonExportExcelFile().GridIDGetFile("gpDepartmentStatistical").isTree(true),   
+                                Html.X().Button()
+                                        .Text("In báo cáo")
+                                            .Hidden(true)
+                                        .Icon(Icon.Printer),
+                                                Html.X().ToolbarFill(),
+                                                        Html.X().ButtonTutorial()
+
+
+                                ))
+                                .Store(
+                                            Html.X().TreeStore().ID("StorePlanIndex")
+                                                .AutoLoad(false)
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData"))
+                                                .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                        ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                                        ps.Add(new StoreParameter("depID", "App.hdfDepartmentID.getValue()", ParameterMode.Raw));
+                                                    })
+                                                .Model(
+                                                    Html.X().Model()
+                                                            .Fields(
+                                                                Html.X().ModelField().Name("id"),
+                                                                Html.X().ModelField().Name("text"),
+                                                                Html.X().ModelField().Name("ParentID"),
+                                                                Html.X().ModelField().Name("Data1"),
+                                                                    Html.X().ModelField().Name("Data2"),
+                                                                    Html.X().ModelField().Name("Data3"),
+                                                                    Html.X().ModelField().Name("Data4"),
+                                                                    Html.X().ModelField().Name("Data5"),
+                                                                    Html.X().ModelField().Name("Data6")
+                                                                )
+                                                )
+                                        )
+                                .ColumnModel(
+                                Html.X().TreeColumn()
+                                        .Text("Nhóm thiết bị")
+                                        .Width(300)
+                                        .DataIndex("text"),
+                                            Html.X().Column()
+                                                    .DataIndex("Data1")
+                                                 .Text("Tổng số thiết bị")
+                                                    .Width(180).Align(Alignment.Right).Renderer("renderTotal"),
+                                                    Html.X().Column()
+                                                        .DataIndex("Data2")
+                                                     .Text("Thiết bị sử dụng")
+                                                            .Width(100).Align(Alignment.Right).Renderer("renderTotalUse"),
+                                Html.X().ComponentColumn()
+                                .Text("Kiểm định")
+                                .Columns(
+                                    Html.X().Column()
+                                                .DataIndex("Data3")
+                                            .Text("Đạt")
+                                                    .Width(70).Align(Alignment.Right).Renderer("renderErrorsPass"),
+                                                Html.X().Column()
+                                                    .DataIndex("Data4")
+                                                .Text("Không đạt")
+                                                        .Width(70).Align(Alignment.Right).Renderer("renderErrNotPass")
+                                            ),
+                                        Html.X().ComponentColumn()
+                                                    .Text("Hiệu chuẩn")
+                                                    .Columns(
+                                            Html.X().Column()
+                                                        .DataIndex("Data5")
+                                                    .Text("Đạt")
+                                                            .Width(70).Align(Alignment.Right).Renderer("renderMaintainPass"),
+                                            Html.X().Column()
+                                                        .DataIndex("Data6")
+                                                    .Text("Không đạt")
+                                                    .Width(70)
+                                                            .Align(Alignment.Right).Renderer("renderMaintainNotPass")
+                                                    )
+                                            )
+                        .SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "CheckStatus();";
+                                
+                            })
+                                ).Listeners(ls =>
+                                    {
+                                        ls.Load.Handler = "expandDepartmentWindow(records);";
+                                    })
+,
+                         Html.X().DepartmentPanel().Handler("onDepartmentReady").Width(300)
+                    )
+)
+<script>
+
+    var expandDepartmentWindow = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                var node = records[i];
+                if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+                    node.expand();
+                }
+            }
+        }
+    };
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    function onDepartmentReady(records) {
+        App.hdfDepartmentID.setValue(records[0].get('id'));
+        App.gpDepartmentStatistical.getStore().load();
+    };
+    var optionTime = function () {
+        var date = new Date();
+        var option = App.Time.getValue();
+        var quarter = Math.floor((date.getMonth() + 3) / 3);
+        switch (option) {
+            case 0:
+                App.dfFromDate.setValue(date);
+                App.dfToDate.setValue(date);
+                break;
+            case 1:
+                var startDay = 1;
+                var d = date.getDay();
+                var weekStart = new Date(date.valueOf() - (d <= 0 ? 7 - startDay : d - startDay) * 86400000);
+                var weekEnd = new Date(weekStart.valueOf() + 6 * 86400000);
+                App.dfFromDate.setValue(weekStart);
+                App.dfToDate.setValue(weekEnd);
+                break;
+            case 2:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+                break;
+            case 3:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * quarter - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * quarter + 0, 1));
+                break;
+            case 4:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11, 31));
+                break;
+            case 5:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 0, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 0 + 1, 0));
+                break;
+            case 6:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 1, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 1 + 1, 0));
+                break;
+            case 7:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 2, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 2 + 1, 0));
+                break;
+            case 8:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 + 1, 0));
+                break;
+            case 9:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 4, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 4 + 1, 0));
+                break;
+            case 10:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 5, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 5 + 1, 0));
+                break;
+            case 11:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 6, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 6 + 1, 0));
+                break;
+            case 12:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 7, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 7 + 1, 0));
+                break;
+            case 13:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 8, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 8 + 1, 0));
+                break;
+            case 14:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 9, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 9 + 1, 0));
+                break;
+            case 15:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 10, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 10 + 1, 0));
+                break;
+            case 16:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 11, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 11 + 1, 0));
+                break;
+            case 17:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 1 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 1 + 0, 1));
+                break;
+            case 18:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 2 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 2 + 0, 1));
+                break;
+            case 19:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 3 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 3 + 0, 1));
+                break;
+            case 20:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), 3 * 4 - 3, 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), 3 * 4 + 0, 1));
+                break;
+            default:
+                App.dfFromDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+                App.dfToDate.setValue(new Date(date.getFullYear(), date.getMonth(), 1));
+        }
+        App.gpDepartmentStatistical.getStore().load();
+        CheckStatus();
+    };
+    var showChartPie = function () {
+        if (App.hdfDepartmentID.getValue() != 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowChartPie", "ListProfileStatistical", new { Area = "Profile" }, null))',
+                params: { id: App.hdfDepartmentID.getValue(), fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y'), toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y') },
+                success: function (result) {
+
+                }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban cần xuất biểu đồ thống kê',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    App.btnCateChartPie.setDisabled(true);
+                    App.btnCateChartColumn.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+    var showChartColumn = function () {
+        if (App.hdfDepartmentID.getValue() != 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowChartColumn", "ListProfileStatistical", new { Area = "Profile" }, null))',
+                params: { id: App.hdfDepartmentID.getValue(), fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y'), toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y') },
+                success: function (result) {
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban cần xuất biểu đồ thống kê',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    App.btnCateChartPie.setDisabled(true);
+                    App.btnCateChartColumn.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+    var showCateChartPie = function () {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowCateChartPie", "ListProfileStatistical", new { Area = "Profile" }, null))',
+                params: { cateId: records[0].get('CateID'), fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y'), toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y') },
+                success: function (result) {
+                }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban cần xuất biểu đồ thống kê',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+    };
+    var showCateChartColumn = function () {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowCateChartColumn", "ListProfileStatistical", new { Area = "Profile" }, null))',
+                params: { cateId: records[0].get('CateID'), fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y'), toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y') },
+                success: function (result) {
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban cần xuất biểu đồ thống kê',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+    };
+    var CheckStatus = function () {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                break;
+            case 1:
+                break;
+            default:
+        }
+    };
+    var showDetailStatiscal = function (storeUrl) {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        var cateId = 0;
+        if (records.length > 0) {
+            cateId = records[0].get('id');
+        }
+        var url = '@(Url.Action("ViewEquipmentMeasures", "EquipmentDepartmentStatistical", new { Area = "Equipment" }))';
+        var params = {
+            urlStore: storeUrl,
+            Name: 'cateId',
+            Value: cateId,
+            Mode: '@(ParameterMode.Value)',
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+            depId: App.hdfDepartmentID.getValue()
+        };
+        onDirectMethod(url, params);
+    };
+    var renderTotal = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotal", "EquipmentDepartmentStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalUse = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalUse", "EquipmentDepartmentStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderErrorsPass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderErrorsPass", "EquipmentDepartmentStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderErrNotPass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderErrNotPass", "EquipmentDepartmentStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderMaintainPass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderMaintainPass", "EquipmentDepartmentStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderMaintainNotPass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderMaintainNotPass", "EquipmentDepartmentStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+</script>

@@ -1,0 +1,109 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ProductionStageItem
+@(Html.X().CustomWindow()
+            .Title("Chi tiết công đoạn sản xuất")
+            .Icon(Icon.Zoom)
+            .BodyPadding(0)
+            .Height(1).Maximized(true)
+            .Constrain(true)
+            .Modal(true)
+            .Layout(LayoutType.Fit)
+            .Items(
+                    Html.X().CustomFormPanel().ID("frmUpdate").Title("Thông tin công đoạn").PaddingSpec("0 0 0 0")
+                            .Items(
+                                    Html.X().CustomFormPanel().Items(
+                                    Html.X().HiddenFor(m => m.ID),
+                                    Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên công đoạn").ReadOnly(true)
+                                            .EmptyText("Tên công đoạn sản xuất...")
+                                            .BlankText("Tên công đoạn sản xuất không được bỏ trống!")
+                                            .AllowOnlyWhitespace(false),
+                                    Html.X().ProductFieldFor(m => m.Product).FieldLabel("Thuộc sản phẩm").ReadOnly(true),
+                                    Html.X().NumberFieldFor(m => m.Position).FieldLabel("Thứ tự").InputWidth(100).MinValue(0).ReadOnly(true),
+                                    Html.X().Container().Layout(LayoutType.Column).Height(24)
+                                        .Items(
+                                                    Html.X().NumberFieldFor(m => m.ResultQuantity).ReadOnly(true).MinValue(1).FieldLabel("Định mức nỗ lực").InputWidth(100).ColumnWidth(0.4),
+                                                    Html.X().NumberFieldFor(m => m.MenDay).ReadOnly(true).MinValue(1).FieldLabel("Sản phẩm/ngày công").InputWidth(100).ColumnWidth(0.4)
+                                                        .LabelWidth(105).LabelSeparator("").LabelAlign(LabelAlign.Right)
+                                    ),
+                                    Html.X().ProductFieldFor(m => m.ResultProduct).ReadOnly(true).FieldLabel("Thành phẩm"),
+                                        Html.X().Container().Layout(LayoutType.Column).Height(24)
+                                                            .Items(
+                                                                 Html.X().NumberFieldFor(m => m.Quantity).ReadOnly(true).MinValue(1).FieldLabel("Số thành phẩm").InputWidth(100).ColumnWidth(0.4),
+                                                                 Html.X().Label().Text("/ 1 sản phẩm")
+                                                            ),
+                                    Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Sử dụng").ReadOnly(true)
+                                ),
+                    Html.X().TabPanel().MinHeight(200).Flex(1).Margin(1)
+                            .Items(
+                                    Html.X().GridPanel().ID("GrHaftProductResult").Title("Bán thành phẩm")
+                                                .ColumnLines(true)
+                                                .ForceFit(true)
+                                                .Border(false)
+                                                .Store(
+                                                    Html.X().Store()
+                                                            .RemotePaging(true)
+                                                            .DataSource(Model.Products)
+                                                            .Model(
+                                                                Html.X().Model().Fields(
+                                                                    Html.X().ModelField().Name("StockProductID"),
+                                                                    Html.X().ModelField().Name("ProductName"),
+                                                                    Html.X().ModelField().Name("Quatity")
+                                                                )
+                                                            )
+                                                        )
+                                                        .ColumnModel(
+                                                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                    Html.X().Column().DataIndex("ProductName").Text("Tên bán thành phẩm").Flex(1),
+                                                                    Html.X().Column().DataIndex("Quatity").Text("Số lượng").Align(Alignment.Center).Width(180)
+                                                        ),
+                                        Html.X().GridPanel().ID("GrEquipment").Title("Thiết bị")
+                                            .ColumnLines(true)
+                                            .ForceFit(true)
+                                            .Border(false)
+                                            .Store(
+                                                    Html.X().Store()
+                                                            .RemotePaging(true)
+                                                            .DataSource(Model.Equipements)
+                                                            .Model(
+                                                                Html.X().Model().Fields(
+                                                                    Html.X().ModelField().Name("EquipmentProductionCategoryID"),
+                                                                    Html.X().ModelField().Name("EquipementName"),
+                                                                    Html.X().ModelField().Name("Quatity")
+                                                                )
+                                                            )
+                                                    )
+                                            .ColumnModel(
+                                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                        Html.X().Column().DataIndex("EquipementName").Text("Tên thiết bị").Flex(1),
+                                                        Html.X().Column().DataIndex("Quatity").Text("Số lượng").Align(Alignment.Center).Width(180)
+                                                    ),
+                                Html.X().GridPanel().ID("GrMaterial").Title("Nguyên vật liệu")
+                                            .ColumnLines(true)
+                                            .ForceFit(true)
+                                            .Border(false)
+                                            .Store(
+                                                Html.X().Store()
+                                                        .RemotePaging(true)
+                                                        .DataSource(Model.Materials)
+                                                        .Model(
+                                                            Html.X().Model().Fields(
+                                                                Html.X().ModelField().Name("StockMaterialID"),
+                                                                Html.X().ModelField().Name("MaterialName"),
+                                                                Html.X().ModelField().Name("Quatity")
+                                                            )
+                                                        )
+                                                    )
+                                            .ColumnModel(
+                                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                        Html.X().Column().DataIndex("MaterialName").Text("Tên vật liệu").Flex(1),
+                                                        Html.X().Column().DataIndex("Quatity").Text("Số lượng").Align(Alignment.Center).Width(180)
+                                                    )
+                    )
+                    )
+)
+.Buttons(
+            Html.X().ButtonExit()
+      )
+)

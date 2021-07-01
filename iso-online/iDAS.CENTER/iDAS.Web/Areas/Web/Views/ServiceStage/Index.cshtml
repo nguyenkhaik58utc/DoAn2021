@@ -1,0 +1,137 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ServiceStageItem
+
+@(Html.X().Window()
+    .Title("Công đoạn thực hiện dịch vụ")
+    .Icon(Icon.TableGo)
+    .Modal(true)
+    .Width(750)
+    .Height(400)
+    .Constrain(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Items(
+        Html.X().GridPanel()
+        .ID("ServiceStagePanel")
+        .Header(false)
+        .ColumnLines(true)
+        .Border(false)
+        .ForceFit(true)
+        .Collapsible(true)
+        .Split(true)
+        .Icon(Icon.TextListBullets)
+        .TopBarItem(
+            Html.X().Button().Text("Thêm").ID("btnCreateServiceStage").Icon(Icon.Add).Handler("showCreateServiceStage();"),
+            Html.X().Button().Text("Sửa").ID("btnUpdateServiceStage").Icon(Icon.Pencil).Handler("showUpdateServiceStage();").Disabled(true),
+            Html.X().Button().Text("Xóa").ID("btnDeleteServiceStage").Icon(Icon.Delete).Handler("showDeleteServiceStage();").Disabled(true),
+            Html.X().Button().Text("Xem chi tiết").ID("btnDetailServiceStage").Icon(Icon.Zoom).Handler("showDetailServiceStage();").Disabled(true)
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .Parameters(Html.X().StoreParameter().Name("serviceId").Value("getServiceId()").Mode(ParameterMode.Raw))
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectServiceStage()")
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").Hidden(true),
+            Html.X().Column().Text("Tên công đoạn").DataIndex(Model, m => m.Name).StyleSpec("font-weight: bold;text-align: center").Width(200).Wrap(true),
+            Html.X().Column().Text("Mô tả").DataIndex(Model, m => m.Description).StyleSpec("font-weight: bold;text-align: center").Flex(1).Align(Alignment.Left),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(100).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex(Model, m => m.CreateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeServiceStage()")
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var urlCreateServiceStage = '@Url.Action("Create", "ServiceStage", new { area = "Web" })';
+    var urlUpdateServiceStage = '@Url.Action("Update", "ServiceStage", new { area = "Web" })';
+    var urlDeleteServiceStage = '@Url.Action("Delete", "ServiceStage", new { area = "Web" })';
+    var urlDetailServiceStage = '@Url.Action("Detail", "ServiceStage", new { area = "Web" })'; 
+    var urlViewServiceStageFile = '@Url.Action("Index", "ServiceStageFile", new { area = "Web" })'; 
+
+    var getServiceId = function () {
+        var record = getServiceSelection();
+        var serviceId = record == null ? 0 : record.data.ID;
+        return serviceId;
+    };
+    var getServiceStageSelection = function () {
+        return App.ServiceStagePanel.getSelectionModel().getLastSelected();
+    };
+    var reloadServiceStage = function () {
+        App.ServiceStagePanel.getStore().reload();
+        deSelectServiceStage();
+    };
+    var deSelectServiceStage = function () {
+        App.ServiceStagePanel.selModel.lastSelected = null;
+        selectionChangeServiceStage();
+    };
+    var showCreateServiceStage = function () {
+        var url = urlCreateServiceStage;
+        var serviceId = getServiceId();
+        var params = { serviceId: serviceId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateServiceStage = function () {
+        var url = urlUpdateServiceStage;
+        var record = getServiceStageSelection();
+        var ServiceStageId = record == null ? 0 : record.data.ID;
+        var params = { ServiceStageId: ServiceStageId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteServiceStage = function () {
+        var url = urlDeleteServiceStage;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getServiceStageSelection();
+                            var ServiceStageId = record == null ? 0 : record.data.ID;
+                            var params = { ServiceStageId: ServiceStageId };
+                            onDirectMethod(url, params, 'post', reloadServiceStage);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailServiceStage = function () {
+        var url = urlDetailServiceStage;
+        var record = getServiceStageSelection();
+        var ServiceStageId = record == null ? 0 : record.data.ID;
+        var params = { ServiceStageId: ServiceStageId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showViewServiceStageFile = function () {
+        var url = urlViewServiceStageFile;
+        onDirectMethod(url, null, 'get');
+    };
+    var selectionChangeServiceStage = function () {
+        var record = getServiceStageSelection();
+        App.btnUpdateServiceStage.setDisabled(record == null);
+        App.btnDeleteServiceStage.setDisabled(record == null);
+        App.btnDetailServiceStage.setDisabled(record == null); 
+    };
+</script>

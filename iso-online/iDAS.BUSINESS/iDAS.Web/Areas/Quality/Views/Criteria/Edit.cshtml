@@ -1,0 +1,72 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@model iDAS.Items.QualityCriteriaItem
+
+@(Html.X().Window()
+                .ID("winEditCriteria")
+                .Title("Sửa thông tin tiêu chí đánh giá")
+                .Icon(Icon.Pencil)        
+                .Width(500)
+                .BodyPadding(6)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                Html.X().FormPanel()
+                .ID("frCriteria")
+                .Layout(LayoutType.Form)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                        Html.X().HiddenFor(m => m.ID),
+                        Html.X().HiddenFor(m => m.CategoryID),
+                        Html.X().TextFieldFor(m => m.CategoryName).FieldLabel("Bộ tiêu chí").ReadOnly(true),
+            Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên tiêu chí" + Html.Required()).AllowBlank(false).BlankText("Tên quy mô không được trống!").AllowOnlyWhitespace(false),
+            Html.X().NumberFieldFor(m => m.Factory).MinValue(0).FieldLabel("Hệ số").ID("txtFactory").BlankText("Hệ số không được trống!").AllowOnlyWhitespace(false),
+            Html.X().NumberFieldFor(m => m.MinPoint).MinValue(0).FieldLabel("Điểm tối thiểu").ID("txtMinPoint")
+                    .Listeners(ls => { ls.Change.Handler = "markChange(this,this.next(),true);"; ls.Change.Buffer = 500; })
+                    .BlankText("Điểm tối thiểu không được trống!").AllowOnlyWhitespace(false),
+            Html.X().NumberFieldFor(m => m.MaxPoint).MinValue(0).FieldLabel("Điểm tối đa").ID("txtMaxPoint")
+                    .Listeners(ls => { ls.Change.Handler = "markChange(this.prev(),this,false)"; ls.Change.Buffer = 500; })
+                    .BlankText("Điểm tối đa không được trống!").AllowOnlyWhitespace(false),
+                                    Html.X().TextAreaFor(m => m.Note).FieldLabel("Diễn giải" + Html.Required()).AllowBlank(false).EmptyText("Ví dụ: từ 1->5 điểm là không đạt, từ 5->10 điểm là đạt"),  
+            Html.X().CheckboxFor(m => m.IsUse).BoxLabel("Sử dụng").HideLabel(true).MarginSpec("0 0 0 105")
+               )
+            )
+    .Buttons(
+        Html.X().Button()
+        .ID("btnSaves")
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .TabIndex(18)
+        .DirectEvents(de =>
+        {
+            de.Click.Before = @"if (!App.frCriteria.getForm().isValid()) { return false; } ";
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Action = "Update";
+            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+            de.Click.FormID = "frCriteria";
+            de.Click.Success = "this.up('window').close();";
+        }),
+        Html.X().Button()
+        .ID("btnCancel")
+        .Text("Hủy")
+        .Icon(Icon.Cancel)
+        .TabIndex(20)
+        .Handler("App.frCriteria.reset(); this.up('window').close();")
+        )
+)
+<script type="text/javascript">
+    var markChange = function (minObj, maxObj, isMin) {
+        if (minObj.value > maxObj.value) {
+            if (isMin) {
+                maxObj.setValue(minObj.value);
+            }
+            else {
+                minObj.setValue(maxObj.value);
+            };
+        }
+    };
+</script>

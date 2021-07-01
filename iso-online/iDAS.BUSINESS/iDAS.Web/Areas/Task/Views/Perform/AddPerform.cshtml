@@ -1,0 +1,99 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.TaskPerformItem 
+@{
+    int taskId = (int)ViewData["TaskID"];
+}  
+@(Html.X().Window()
+        .ID("winAddTaskPerform")
+        .Title("Thêm mới báo cáo thực hiện công việc")
+        .Icon(Icon.ReportAdd)     
+        .Width(700)
+        .BodyPadding(5)
+        .Constrain(true)
+        .Maximizable(true)
+        .Modal(true)
+        .Layout(LayoutType.Fit)
+        .Resizable(false)
+        .Center()
+        .Items(   
+                Html.X().FormPanel()
+                        .ID("frmTaskPerform")
+                        .Frame(true)
+                        .Border(false)
+                        .StyleSpec("border:none")
+                        .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })                           
+                        .Items(                                        
+                        Html.X().HiddenFor(m => m.PerformBy),                                     
+                        Html.X().HiddenFor(m=>m.TaskID)                                       
+                                .ID("txtTaskID"),
+                                     Html.X().TextAreaFor(m => m.ContentTask)
+                                        .ID("txtContentTask")
+                                        .FieldLabel("Nội dung công việc")
+                                        .FieldCls("x-form-text-change")
+                                        .ReadOnly(true)
+                                        .TabIndex(3)
+                                        .Height(110),
+                            Html.X().DateTimeFieldFor(m => m.Time)
+                                .AllowBlank(false)
+                                .FieldLabel("Ngày báo cáo" + Html.Required())
+                                .MarginSpec("3 0 3 0"),
+                            Html.X().FileUploadFieldFor(m => m.AttachmentFiles),
+                            Html.X().TextAreaFor(m => m.Content)
+                                .ID("txtPerformContent")
+                                .FieldLabel("Nội dung" + Html.Required())
+                                .AllowOnlyWhitespace(false)
+                                .AllowBlank(false)
+                                .TabIndex(3)
+                                .Flex(1)
+                                .BlankText("Nội dung Báo cáo Công việc không được để trống!")
+                                .EmptyText("Nhập Nội dung Báo cáo Công việc...")
+                                .Height(110),
+                            Html.X().TextAreaFor(m => m.Feedback)
+                                .ID("txtPerformFeedback")
+                                .FieldLabel("Phản hồi")                          
+                                .TabIndex(3)                                   
+                                .EmptyText("Nhập Nội dung đề xuất, phản hồi...")
+                                .Height(50),                                    
+                            Html.X().Container()
+                                .Layout(LayoutType.HBox)
+                                .MarginSpec("0 0 0 0")
+                                .Items(
+                            Html.X().NumberFieldFor(m=>m.Rate)
+                                .ID("txtPercentComplete")
+                                .MarginSpec("0 10 0 0")
+                                .FieldLabel("% Hoàn thành" + Html.Required())                                   
+                                .MinValue(0)
+                                .TabIndex(4)
+                                .MaxValue(100)
+                                .AllowBlank(false)
+                                .BlankText("% Hoàn thành Công việc không được bỏ trống!")
+                    )                        
+                )                        
+            )
+            .Buttons(
+                 Html.X().ButtonReset()
+                            .ID("btnReset")
+                            .MarginSpec("0 10 0 0")
+                            .Handler("App.frmTaskPerform.reset();"),
+                        Html.X().Button()
+                            .ID("btnPerformSave")
+                            .Icon(Icon.ReportDisk)
+                            .TabIndex(6)
+                            .Text("Gửi Báo cáo")
+                            .DirectEvents(de =>
+                            {
+                                de.Click.FormID = "frmTaskPerform";
+                                de.Click.Url = Url.Action("Insert");
+                                de.Click.Before = @"if (!#{frmTaskPerform}.getForm().isValid()) { return false; }";
+                                de.Click.EventMask.ShowMask = true;
+                                de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+                                de.Click.Success = "this.up('window').close();";
+                                    
+                            }),                                  
+                Html.X().ButtonExit()
+            )
+ )

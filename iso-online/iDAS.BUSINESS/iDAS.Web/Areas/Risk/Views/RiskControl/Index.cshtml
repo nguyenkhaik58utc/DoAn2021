@@ -1,0 +1,293 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitTask = Url.Action("InsertTask", "RiskControlTask", new { area = "Risk" });
+    var urlStoreTask = Url.Action("LoadTasks", "RiskControlTask", new { area = "Risk" });
+    var paramStoreTask = Html.X().StoreParameter().Name("RiskControlID").Value("getRiskControlID()").Mode(ParameterMode.Raw);
+}
+<script>
+    var getRiskControlID = function () {
+        var RiskControlID = 0;
+        var records = App.GrRiskControl.selModel.getSelection();
+        if (records.length > 0) {
+            RiskControlID = records[0].get('ID');
+        }
+        return RiskControlID;
+    }
+    var deleteUrl = '@(Url.Action("Delete", "RiskControl"))';
+    var showwRisk = function () {
+        var riskRecords = App.GrRisk.selModel.getSelection();
+        if (riskRecords.length > 0) {
+            var params = {
+                id: riskRecords[0].get('ID'),
+            };
+            if (riskRecords[0].get('IsFromLegal') == true)
+            {
+                onDirectMethod('@(Url.Action("DetailForm", "RiskLegals"))', params);
+            };
+            if (riskRecords[0].get('IsFromRegulatory') == true) {
+                onDirectMethod('@(Url.Action("DetailForm","RiskRegulatories"))', params);
+            };
+            if (riskRecords[0].get('IsFromRequire') == true) {
+                onDirectMethod('@(Url.Action("DetailForm", "RiskContracts"))', params);
+            };
+            if (riskRecords[0].get('IsFromAction') == true) {
+                onDirectMethod('@(Url.Action("DetailForm", "RiskFromAction"))', params);
+            };
+        };
+    };
+    var riskRenderer = function (value) {
+        return "<a onclick='showwRisk()' style ='cursor: pointer;color: blue;'>" + value + "</a>";
+    };
+    function CheckStatusRiskControl() {
+        var records = App.GrRiskControl.selModel.getSelection();
+        if (records.length == 1) {
+            var IsEdit = records[0].get('IsEdit');
+            if (IsEdit == true) {
+                SetEnabled(App.btnUpdateRiskControl, App.btnDeleteRiskControl, App.btnDetailOrder);
+                App.btnApproval.setDisabled(true);
+            }
+            else {
+                SetEnabled(App.btnApproval, App.btnDetailOrder);
+                SetDisabled(App.btnUpdateRiskControl, App.btnDeleteRiskControl);
+            }
+            if (records[0].get('IsAccept') && records[0].get('IsApproval')) {
+                SetEnabled(App.btnTaskRisk);
+            }
+            else {
+                SetDisabled(App.btnTaskRisk);
+            }
+        }
+        else {
+            SetDisabled(App.btnTaskRisk);
+            SetDisabled(App.btnUpdateRiskControl, App.btnDeleteRiskControl, App.btnDetailOrder, App.btnApproval);
+        };
+    };
+    var ShowIncedent = function () {
+        var riskRecords = App.GrRisk.selModel.getSelection();
+        if (riskRecords.length > 0) {
+            var params = {
+                riskId: riskRecords[0].get('ID'),
+            };
+            onDirectMethod('@(Url.Action("Index", "RiskIncedent"))', params);
+        }
+    };
+    var ShowInsert = function () {
+        var riskRecords = App.GrRisk.selModel.getSelection();
+        if (riskRecords.length > 0) {
+            var params = {
+                riskId: riskRecords[0].get('ID'),
+                impact: riskRecords[0].get('Impact'),
+                consequence: riskRecords[0].get('Consequence'),
+                riskCategoryId: riskRecords[0].get('RiskCategoryID')
+            };
+            onDirectMethod('@(Url.Action("Update"))', params, 'get');
+        }
+    };
+    var ShowUpdate = function () {
+        var records = App.GrRiskControl.selModel.getSelection();
+        var riskRecords = App.GrRisk.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = {
+                ID: records[0].get('ID'),
+                riskId: riskRecords[0].get('ID'),
+                impact: riskRecords[0].get('Impact'),
+                riskCategoryId: riskRecords[0].get('RiskCategoryID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowViewDetail = function () {
+        var records = App.GrRiskControl.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowApproval = function () {
+        var records = App.GrRiskControl.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Approve"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    }
+    var onSelectRisk = function () {
+        var records = App.GrRisk.selModel.getSelection();
+        if (records.length > 0) {
+            App.hdfRiskID.setValue(records[0].get("ID"));
+            App.StoreRiskControl.reload();
+            App.btnInsertRiskControl.setDisabled(false);
+            App.btnIncedent.setDisabled(false);
+        }
+        else {
+            App.btnInsertRiskControl.setDisabled(true);
+            App.btnIncedent.setDisabled(true);
+        }
+    };
+    var selectDepartmentRisk = function (records) {
+        App.RiskDepartmentID.setValue(records[0].get('id'));
+        App.GrRisk.getStore().load();
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(2).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().Hidden().ID("RiskDepartmentID").Value(0),
+                    Html.X().DepartmentPanel().Handler("selectDepartmentRisk"),
+                    Html.X().Hidden().ID("hdfRiskID"),
+                    Html.X().GridPanel().ID("GrRisk").Region(Region.West).Width(300).Split(true).Collapsible(true)
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(true)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().Button().Text("Theo dõi sự cố rủi ro").Icon(Icon.Bug).Handler("ShowIncedent();").ID("btnIncedent").Disabled(true)
+                                    )
+                                 )
+                            .Store(
+                                    Html.X().Store().ID("StoreRisk")
+                                        .RemotePaging(true)
+                                        .AutoLoad(false)
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRisk", "RiskControl", new { Area = "Risk" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("departmentId", "App.RiskDepartmentID.value", ParameterMode.Raw));
+                                                })
+                                        .Model(
+                                                Html.X().Model().Fields(
+                                                        Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("Name"),
+                                                        Html.X().ModelField().Name("RiskCategoryID"),
+                                                        Html.X().ModelField().Name("IsFromLegal"),
+                                                        Html.X().ModelField().Name("IsFromRegulatory"),
+                                                        Html.X().ModelField().Name("IsFromRequire"),
+                                                        Html.X().ModelField().Name("IsFromAction"),
+                                                        Html.X().ModelField().Name("Consequence")
+                                                    )
+                                               )
+
+                                )
+                            .ColumnModel(
+                                            X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                            X.Column().DataIndex("Name").Renderer("riskRenderer").Text("Tên rủi ro").Width(200)
+                                        )
+                            .Plugins(
+                                Html.X().FilterHeader().Remote(true)
+                                )
+                            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                        .Listeners(ls => ls.SelectionChange.Handler = "onSelectRisk()"))
+                            .BottomBar(Html.X().CustomPagingToolbar("20", "40", "60", "100", "200")),
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrRiskControl")
+                            .Region(Region.Center)
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(true)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowInsert();").ID("btnInsertRiskControl").Disabled(true).Hidden(true),
+                                    Html.X().ToolbarSeparator().Hidden(true),
+                                    Html.X().ButtonUpdate().ID("btnUpdateRiskControl").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteRiskControl").Handler("onDelete(App.GrRiskControl.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailOrder").Handler("ShowViewDetail();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonApproval().ID("btnApproval").Handler("ShowApproval();"),
+                                    Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask().Text("Giao việc").ID("btnTaskRisk").Disabled(true),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                                )
+                            )
+                            .Store(
+                            Html.X().Store().ID("StoreRiskControl")
+                                .RemotePaging(true)
+                                .PageSize(20).AutoLoad(false)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "RiskControl", new { Area = "Risk" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("riskId", "App.hdfRiskID.value", ParameterMode.Raw));
+                                    })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                            Html.X().ModelField().Name("ID"),
+                                            Html.X().ModelField().Name("Controls"),
+                                            Html.X().ModelField().Name("LikeLiHood"),
+                                            Html.X().ModelField().Name("NowLikeLiHood"),
+                                            Html.X().ModelField().Name("Impact"),
+                                            Html.X().ModelField().Name("Consequence"),
+                                            Html.X().ModelField().Name("CompleteTime"),
+                                            Html.X().ModelField().Name("IsEdit"),
+                                            Html.X().ModelField().Name("IsAccept"),
+                                            Html.X().ModelField().Name("IsApproval"),
+                                            Html.X().ModelField().Name("Status")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    X.Column().DataIndex("Controls").Text("Mô tả").Width(200).Locked(true),
+                                    Html.X().Column().Text("Định lượng rủi ro hiện tại").Filterable(false)
+                                                .Columns(
+                                                            Html.X().Column().Text("Khả năng").Align(Alignment.Right).Wrap(true)
+                                                                    .DataIndex("NowLikeLiHood").Width(80),
+                                                            Html.X().Column().Text("Mức độ").Align(Alignment.Right).Wrap(true)
+                                                                    .DataIndex("Impact").Width(80),
+                                                            Html.X().Column().Text("Hệ số").Align(Alignment.Right).Wrap(true)
+                                                                    .DataIndex("Consequence").Width(80),
+                                                            Html.X().Column().Text("Giá trị rủi ro").Align(Alignment.Right).Wrap(true)
+                                                                    .DataIndex("")
+                                                                    .Renderer(new Renderer { Fn = "function(value, meta, record) { return record.get('NowLikeLiHood')*record.get('Impact')*record.get('Consequence'); }" })
+                                                                    .Width(100)
+                                                        ),
+                                    Html.X().Column().Text("Định lượng rủi ro đề nghị").Filterable(false)
+                                                .Columns(
+                                                            Html.X().Column().Text("Khả năng").Align(Alignment.Right).Wrap(true)
+                                                                    .DataIndex("LikeLiHood").Width(80),
+                                                            Html.X().Column().Text("Mức độ").Align(Alignment.Right).Wrap(true)
+                                                                    .DataIndex("Impact").Width(80),
+                                                            Html.X().Column().Text("Hệ số").Align(Alignment.Right).Wrap(true)
+                                                                    .DataIndex("Consequence").Width(80),
+                                                            Html.X().Column().Text("Giá trị rủi ro").Align(Alignment.Right).Wrap(true)
+                                                                    .DataIndex("")
+                                                                    .Renderer(new Renderer { Fn = "function(value, meta, record) { return record.get('LikeLiHood')*record.get('Impact')*record.get('Consequence'); }" })
+                                                                    .Width(100)
+                                                        ),
+                                    X.DateColumn().DataIndex("CompleteTime").Text("Thời gian hoàn thành").Align(Alignment.Center).Width(150).Filterable(false),
+                                    X.Column().DataIndex("Status").Text("Trạng thái").Width(100).Align(Alignment.Center).Filterable(false)
+                            )
+                        .Plugins(
+                                Html.X().FilterHeader().Remote(true)
+                                )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusRiskControl"))
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar()
+            )
+     )
+)
+

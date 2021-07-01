@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateDisciplineCategory = '@(Url.Action("Create", "V3_DisciplineCategory", new { area = "Human" }))';
+    var urlUpdateDisciplineCategory = '@(Url.Action("Update", "V3_DisciplineCategory", new { area = "Human" }))';
+    var urlDeleteDisciplineCategory = '@(Url.Action("Delete", "V3_DisciplineCategory", new { Area = "Human" }))';
+    var urlDetailDisciplineCategory = '@(Url.Action("ShowFrmDetail", "V3_DisciplineCategory", new { Area = "Human" }))';
+    var sortDisciplineCategoryIndex = null;
+    var showCreateDisciplineCategory = function () {
+        var url = urlCreateDisciplineCategory;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateDisciplineCategory = function () {
+        var url = urlUpdateDisciplineCategory;
+        var record = getDisciplineCategorySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getDisciplineCategorySelection = function () {
+        var records = App.DisciplineCategoryPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setDisciplineCategorySelection = function () {
+        if (sortDisciplineCategoryIndex != null) {
+            App.DisciplineCategoryPanel.selModel.select(sortDisciplineCategoryIndex);
+        }
+    };
+
+    var showDeleteDisciplineCategory = function () {
+        var url = urlDeleteDisciplineCategory;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ hình thức kỉ luật này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getDisciplineCategorySelection();
+                            var DisciplineCategoryId = record == null ? 0 : record.data.ID;
+                            var params = { DisciplineCategoryId: DisciplineCategoryId };
+                            onDirectMethod(url, params, 'post', reloadDisciplineCategory);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailDisciplineCategory = function () {
+        var url = urlDetailDisciplineCategory;
+        var record = getDisciplineCategorySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadDisciplineCategory = function () {
+        App.DisciplineCategoryPanel.store.reload();
+    };
+
+    var selectionChangeDisciplineCategory = function () {
+        var record = getDisciplineCategorySelection();
+        var isDisabled = record == null;
+        App.btnUpdateDisciplineCategory.setDisabled(isDisabled);
+        App.btnDeleteDisciplineCategory.setDisabled(isDisabled);
+        App.btnDetailDisciplineCategory.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý thành phố").Header(false)
+                    .ID("DisciplineCategoryPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateDisciplineCategory").ID("btnCreateDisciplineCategory()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateDisciplineCategory").Handler("showUpdateDisciplineCategory();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteDisciplineCategory").Handler("showDeleteDisciplineCategory()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailDisciplineCategory").Handler("showDetailDisciplineCategory();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreDisciplineCategory")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setDisciplineCategorySelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên hình thức kỉ luật").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeDisciplineCategory();")
+    )
+    )

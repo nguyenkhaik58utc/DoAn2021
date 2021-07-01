@@ -1,0 +1,120 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.WebCustomerContactItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("WebCustomerContactPanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateWebCustomerContact").Icon(Icon.Add).Handler("showCreateWebCustomerContact();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateWebCustomerContact").Icon(Icon.Pencil).Handler("showUpdateWebCustomerContact();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteWebCustomerContact").Icon(Icon.Delete).Handler("showDeleteWebCustomerContact();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailWebCustomerContact").Icon(Icon.Zoom).Handler("showDetailWebCustomerContact();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Email").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Content").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsSent").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectWebCustomerContact()")
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeWebCustomerContact();")
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex(Model, m => m.ID).Hidden(true),
+            Html.X().Column().Text("Tên khách hàng").DataIndex(Model, m => m.Name).StyleSpec("font-weight: bold;text-align: center").Width(220).Align(Alignment.Center),
+            Html.X().Column().Text("Email").DataIndex(Model, m => m.Email).StyleSpec("font-weight: bold;text-align: center").Width(200).Align(Alignment.Center),
+            Html.X().Column().Text("Nội dung liên hệ").DataIndex(Model, m => m.Content).StyleSpec("font-weight: bold;text-align: center").Flex(1).Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Liên hệ lại").DataIndex(Model, m => m.IsSent).StyleSpec("font-weight: bold;text-align: center").Width(80).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày liên hệ").DataIndex(Model, m => m.CreateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày liên hệ lại").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script type="text/javascript">
+    var urlCreateWebCustomerContact = '@Url.Action("Create", "WebCustomerContact", new { area = "Web" })';
+    var urlUpdateWebCustomerContact = '@Url.Action("Update", "WebCustomerContact", new { area = "Web" })';
+    var urlDeleteWebCustomerContact = '@Url.Action("Delete", "WebCustomerContact", new { area = "Web" })';
+    var urlDetailWebCustomerContact = '@Url.Action("Detail", "WebCustomerContact", new { area = "Web" })';
+
+    var getWebCustomerContactSelection = function () {
+        return App.WebCustomerContactPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadWebCustomerContact = function () {
+        App.WebCustomerContactPanel.getStore().reload();
+        deSelectWebCustomerContact();
+    }
+    var deSelectWebCustomerContact = function () {
+        App.WebCustomerContactPanel.selModel.lastSelected = null;
+        selectionChangeWebCustomerContact();
+    }
+    var showCreateWebCustomerContact = function () {
+        var url = urlCreateWebCustomerContact;
+        onDirectMethod(url, null, 'get');
+    };
+    var showUpdateWebCustomerContact = function () {
+        var url = urlUpdateWebCustomerContact;
+        var record = getWebCustomerContactSelection();
+        var WebCustomerContactId = record == null ? 0 : record.data.ID;
+        var params = { WebCustomerContactId: WebCustomerContactId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteWebCustomerContact = function () {
+        var url = urlDeleteWebCustomerContact;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getWebCustomerContactSelection();
+                            var WebCustomerContactId = record == null ? 0 : record.data.ID;
+                            var params = { WebCustomerContactId: WebCustomerContactId };
+                            onDirectMethod(url, params, 'post', reloadWebCustomerContact);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailWebCustomerContact = function () {
+        var url = urlDetailWebCustomerContact;
+        var record = getWebCustomerContactSelection();
+        var WebCustomerContactId = record == null ? 0 : record.data.ID;
+        var params = { WebCustomerContactId: WebCustomerContactId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeWebCustomerContact = function () {
+        var record = getWebCustomerContactSelection();
+        App.btnUpdateWebCustomerContact.setDisabled(record == null);
+        App.btnDeleteWebCustomerContact.setDisabled(record == null);
+        App.btnDetailWebCustomerContact.setDisabled(record == null);
+    };
+</script>

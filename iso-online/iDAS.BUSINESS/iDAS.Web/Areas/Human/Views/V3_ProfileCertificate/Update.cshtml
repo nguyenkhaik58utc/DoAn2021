@@ -1,0 +1,97 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Utilities;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Human.Models.V3_Category;
+@model iDAS.Web.Areas.Human.Models.V3_HumanProfileCertificateDTO
+@{
+    var X = Html.X();
+    //danh sách loại hợp đồng
+    List<V3_CertificateLevelResponse> lstCertificateLevel = ViewData["lstCertificateLevel"] as List<V3_CertificateLevelResponse>;
+    //danh sách tình trạng hợp đồng
+    List<V3_CertificateTypeResponse> lstCertificateType = ViewData["lstCertificateType"] as List<V3_CertificateTypeResponse>;
+}
+@(Html.X().Window()
+.ID("WinCertificate")
+.Title("Hồ sơ chứng chỉ")
+.Icon(Icon.Pencil)
+.Width(500)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Form)
+    .Frame(true)
+    .Border(false)
+    .MarginSpec("0 -4 -3 -4")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => df.LabelWidth = 100)
+    .DefaultAnchor("100%")
+    .Items(
+            X.HiddenFor(m=>m.ID),
+               X.HiddenFor(m => m.HumanEmployeeID),
+               X.TextFieldFor(m => m.Name).FieldLabel("Tên chứng chỉ"+Html.Required()).AllowOnlyWhitespace(false).MarginSpec("0 8 0 8").Width(450),
+                 //X.TextFieldFor(m => m.Type).FieldLabel("Xếp loại").MarginSpec("0 8 0 8").Width(450),
+                 X.ComboBoxFor(m => m.CertificateLevelID)
+                                                       .Width(450)
+                                                       .FieldLabel("Xếp loại")
+                                                       .EmptyText("Chọn Xếp loại")
+                                                       .AllowBlank(true)
+                                                       .ID("cbCertificateLevel")
+                                                       .Editable(false)
+                                                       .DisplayField("Name")
+                                                       .ValueField("ID")
+                                                       .MarginSpec("5 8 0 8")
+                                                       .Store(
+                                                           X.Store()
+                                                               .AutoLoad(true)
+                                                               .Model(X.Model()
+                                                               .IDProperty("ID")
+                                                                   .Fields(
+                                                                     new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                     new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                   )
+                                                               ).DataSource(lstCertificateLevel)
+                                                       ),
+                 //X.TextFieldFor(m => m.Level).FieldLabel("Trình độ").MarginSpec("0 8 0 8").Width(450),
+                 X.ComboBoxFor(m => m.CertificateTypeID)
+                                                       .Width(450)
+                                                       .FieldLabel("Trình độ")
+                                                       .EmptyText("Chọn trình độ")
+                                                       .AllowBlank(true)
+                                                       .ID("cbCertificateType")
+                                                       .Editable(false)
+                                                       .DisplayField("Name")
+                                                       .ValueField("ID")
+                                                       .MarginSpec("5 8 0 8")
+                                                       .Store(
+                                                           X.Store()
+                                                               .AutoLoad(true)
+                                                               .Model(X.Model()
+                                                               .IDProperty("ID")
+                                                                   .Fields(
+                                                                     new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                     new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                   )
+                                                               ).DataSource(lstCertificateType)
+                                                       ),
+               X.TextFieldFor(m => m.PlaceOfTraining).FieldLabel("Nơi đào tạo").MarginSpec("0 8 0 8").Width(450),
+               X.DateFieldFor(m => m.DateIssuance).FieldLabel("Ngày cấp").MarginSpec("0 8 0 8").Width(450),
+               X.DateFieldFor(m => m.DateExpiration).FieldLabel("Ngày hết hạn").MarginSpec("0 8 0 8").Width(450)
+           )
+    )
+    .Buttons(
+                Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+                            de.Click.Url = Url.Action("Update");
+                            de.Click.FormID = "frmUpdate";
+                        })
+                , Html.X().ButtonExit())
+)

@@ -1,0 +1,204 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@{
+    int borrow = (int)iDAS.Items.ProfileForm.Borrow;
+    int paid = (int)iDAS.Items.ProfileForm.Paid;
+    int stnew = (int)iDAS.Items.ProfileStatus.New;
+    int stpaid = (int)iDAS.Items.ProfileStatus.Paid;
+    int borrowing = (int)iDAS.Items.ProfileStatus.Borrow;
+    int overpaid = (int)iDAS.Items.ProfileStatus.OverPaid;
+}
+@model iDAS.Items.ProfileCategoryItem
+@(
+ Html.X().Window()
+    .ID("winDocuments")
+    .Title("Danh sách hồ sơ thuộc danh mục hồ sơ")
+     .Icon(Icon.TableCell)
+    .Width(1000)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().GridPanel()
+            .ID("grProfiles")
+            .MarginSpec("0 0 0 0")
+            .ColumnLines(true)
+            .Header(false)
+            .Border(false)
+            .Height(450)
+            .TopBar(
+                Html.X().Toolbar()
+                .Layout(LayoutType.HBox)
+                .Items(
+                    Html.X().Button()
+                        .Text("Mượn hồ sơ")
+                        .Disabled(true)
+                        .Icon(Icon.PackageGo)
+                        .Handler("showForm(" + borrow + ");")
+                        .ID("btnBorrow"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().Button()
+                            .Text("Trả hồ sơ")
+                            .Disabled(true)
+                            .Icon(Icon.PackageIn)
+                            .ID("btnPaid")
+                            .Handler("showForm(" + paid + ");"),
+                            Html.X().ToolbarSeparator(),
+                              Html.X().ButtonView()
+                            .Disabled(true)
+                            .ID("btnDetail")
+                                        .Handler("viewDetailProfile()")
+                          )
+                    )
+            .Store(
+                Html.X().Store()
+                    .RemotePaging(true)
+                    .AutoLoad(true)
+                    .ID("stProfiles")
+                    .PageSize(20)
+                    .Model(
+                            Html.X().Model()
+                            .Fields(
+                                   Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Code").Type(ModelFieldType.String),//Ma Ho so
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),//Ten Ho so
+                                    Html.X().ModelField().Name("ReceivedAt").Type(ModelFieldType.Date),//Thoi gian tiep nhan HS
+                                    Html.X().ModelField().Name("StoragePartTime").Type(ModelFieldType.String),//Thoi gian luu tai bo phan
+                                    Html.X().ModelField().Name("StoreRoomTime").Type(ModelFieldType.String),//Thoi gian luu tai phong luu tru
+                                    Html.X().ModelField().Name("ReceivedName").Type(ModelFieldType.String),//Nguoi luu tru
+                                    Html.X().ModelField().Name("StorageForm").Type(ModelFieldType.String),//Hinh thuc luu tru
+                                    Html.X().ModelField().Name("Status").Type(ModelFieldType.String),//Trang thai
+                                    Html.X().ModelField().Name("StatusCode").Type(ModelFieldType.Int),//Trang thai
+                                    Html.X().ModelField().Name("FormH").Type(ModelFieldType.Boolean),//Hinh thuc luu tru
+                                    Html.X().ModelField().Name("FormS").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("FlagBorrow").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("Security").Type(ModelFieldType.String),//Muc do mat
+                                    Html.X().ModelField().Name("Color").Type(ModelFieldType.String)
+                                )
+                             )
+                    .Proxy(
+                        Html.X().AjaxProxy()
+                            .Url(Url.Action("LoadProfileByCate"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                .Parameters(ps =>
+                {
+                    ps.Add(new StoreParameter("cateID", Model.ID.ToString(), ParameterMode.Raw));
+                }
+                 )
+                )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                    .Text("STT")
+                    .Align(Alignment.Center)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(33),
+                    Html.X().Column()
+                        .DataIndex("Code")
+                        .Text("Mã hồ sơ")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(110),
+                        Html.X().Column()
+                            .DataIndex("Name")
+                            .Text("Tên hồ sơ")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Flex(1),
+                        Html.X().ComponentColumn().Text("Thời gian lưu trữ tại").Columns(
+                            Html.X().Column()
+                                    .Text("Bộ phận")
+                                    .DataIndex("StoragePartTime")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Width(90)
+                                    .Align(Alignment.Left),
+                            Html.X().Column()
+                                .Text("Phòng lưu trữ")
+                                .DataIndex("StoreRoomTime")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(90)
+                                ),
+                        Html.X().ComponentColumn().Text("Loại Hồ sơ").Columns(
+                            Html.X().CheckColumn()
+                                .DataIndex("FormH")
+                                .Text("Bản cứng")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(70)
+                                .Align(Alignment.Center),
+                            Html.X().CheckColumn()
+                                .DataIndex("FormS")
+                                .Text("Bản mềm")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(70)
+                                .Align(Alignment.Center)
+                            ),
+                        Html.X().Column()
+                            .Text("Mức độ bảo mật")
+                            .DataIndex("Security")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                            .Width(100)
+                            .Align(Alignment.Center),
+                        Html.X().Column()
+                            .Text("Người lưu trữ")
+                            .DataIndex("ReceivedName")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(120),
+                        Html.X().Column()
+                                .Text("Trạng thái")
+                                .DataIndex("Status")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(100)
+                                .Align(Alignment.Center)
+                        )
+                        .SelectionModel(
+                        Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Handler = "checkStatusProfileView();")
+                    )
+          .BottomBar(Html.X().CustomPagingToolbar())
+        )
+        .Buttons(
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var ShowFrmDocCate = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmDocCate", "Profile", new { Area = "Profile" }, null))'
+        });
+    };
+    var viewDetailProfile = function () {
+        var records = App.grProfiles.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetail", "Profile", new { Area = "Profile" }, null))', params: { id: records[0].get('ID') }
+            });
+        } else {
+            MessageBox();
+        }
+    };
+    var checkStatusProfileView = function () {
+        var record = App.grProfiles.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnDetail.setDisabled(false);
+            App.btnPaid.setDisabled(true);
+            if (record[0].get('FlagBorrow') && (record[0].get('StatusCode') == '@stnew' || record[0].get('StatusCode') == '@stpaid')) {
+                App.btnBorrow.setDisabled(false);
+            }
+            else {
+                App.btnBorrow.setDisabled(true);
+            }
+            if (record[0].get('StatusCode') == '@borrowing' || record[0].get('StatusCode') == '@overpaid')
+                App.btnPaid.setDisabled(false);
+        } else {
+            App.btnBorrow.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnPaid.setDisabled(true);
+        }
+    };
+</script>

@@ -1,0 +1,183 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SuppliersOrderItem
+@(Html.X().Window()
+.ID("winRequirementList")
+    .Title("Danh sách đợt thanh toán đơn hàng")
+.Layout(LayoutType.Fit)
+    .Width(800)
+    .Height(400)
+    .Icon(Icon.User)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+                Html.X().HiddenFor(m => m.ID).ID("hdfOrderID"),
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrPayListOrder")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().ButtonCreate().ID("btnAdd").Handler("AddNewPartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonUpdate().ID("btnUpdatePartial").Handler("UpdatePartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete().ID("btnDeletePartial").Handler("DeleteRecords();"),
+
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView().ID("btnDetailPartial").Handler("ViewDetailPartial();"),
+                               
+                                Html.X().ToolbarFill()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StorePayListOrder")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetPayListOrder")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("id", "App.hdfOrderID.value", ParameterMode.Raw));
+                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                                        new ModelField("ID", ModelFieldType.Int),
+                                                        new ModelField("SuppliersOrder.CODE", ModelFieldType.String),
+                                                        new ModelField("SuppliersOrder.SupplierName", ModelFieldType.String),
+                                                        new ModelField("SuppliersOrder.Amount", ModelFieldType.String),
+                                                                new ModelField("SuppliersOrder.AmountRecive", ModelFieldType.String),
+                                                        new ModelField("PayDate", ModelFieldType.Date),
+                                                        new ModelField("PayedMoney", ModelFieldType.Auto)
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("SuppliersOrder.CODE").Text("Mã đơn hàng").Width(70),
+                                        Html.X().Column().DataIndex("SuppliersOrder.SupplierName").Text("Tên nhà cung cấp").Wrap(true).Width(200),
+                                                Html.X().Column().DataIndex("SuppliersOrder.Amount").Text("Giá trị đơn hàng").Wrap(true).Width(100),
+                                                            Html.X().Column().DataIndex("SuppliersOrder.AmountRecive").Text("Giá trị hàng đã nhận").Wrap(true).Width(120),//.Renderer("RenderAmountVND")
+                                        Html.X().DateColumnExtend().DataIndex("PayDate").Text("Ngày TT").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                Html.X().Column().DataIndex("PayedMoney").Text("Số tiền").Wrap(true).Width(80)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+            )
+.Buttons(
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    function CheckStatus() {
+        var records = App.GrPayListOrder.selModel.getSelection();
+        if (records.length == 1) {            
+            SetEnabled(App.btnDeletePartial, App.btnUpdatePartial, App.btnDetailPartial);
+            if (records[0].get('PayedMoney') >= records[0].get('SuppliersOrder.AmountRecive'))
+                App.btnAdd.setDisabled(true);
+        }
+        else {
+            SetDisabled(App.btnDeletePartial, App.btnUpdatePartial, App.btnDetailPartial);
+        };
+    };
+    var ViewDetailPartial = function () {
+        var records = App.GrPayListOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetail", "SuppliersPayment", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var UpdatePartial = function () {
+        var records = App.GrPayListOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "SuppliersPayment", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                ActionForm: '@(iDAS.Utilities.Form.Edit)'
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AddNewPartial = function () {
+        
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrm", "SuppliersPayment", new { Area = "Suppliers" }, null))',
+            params: {
+                id: App.hdfOrderID.getValue()
+            }
+        });
+    };
+    
+    var DeleteRecords = function () {
+        var records = App.GrPayListOrder.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var url = '@(Url.Action("DeleteRequirement", "SuppliersPayment", new { Area = "Suppliers" }, null))';
+                        var params = {
+                            ID: records[0].get('ID'),
+                        };
+                        onDirectMethod(url, params);
+                    }
+                }
+            });
+        }
+    };
+    var AddMultiplePartial = function () {
+
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("EmployeeWindow", "SuppliersBidOrders", new { Area = "Suppliers" }, null))',
+            params: {
+                multi: true
+            }
+        });
+    };
+    var selectEmployee = function (records) {
+        var url = '@(Url.Action("InsertMultiple"))';
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        var id = App.hdfOrderID.value;
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: {
+                employeeIds: strId,
+                id: id
+            }
+        });
+    };
+    var RenderAmountVND = function (value, p, record) {
+        if (value == null)
+            return "";
+        return value.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, "$1,") + " VNĐ";
+    };
+</script>

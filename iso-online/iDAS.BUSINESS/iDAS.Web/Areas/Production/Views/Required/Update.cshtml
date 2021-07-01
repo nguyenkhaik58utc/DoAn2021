@@ -1,0 +1,97 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.ProductionRequirementItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới yêu cầu sản xuất";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật yêu cầu sản xuất";
+    }
+}
+@(Html.X().CustomWindow()
+            .Title(title)
+            .Icon(IconView)
+            .Items(
+                    Html.X().CustomFormPanel().ID("frmUpdate")
+                                .Items(
+                                        Html.X().HiddenFor(m=>m.ID),
+                                        Html.X().EmployeeFieldFor(m=>m.HumanEmployee).Title("Người yêu cầu"+Html.Required()),
+                                        Html.X().ProductFieldFor(m=>m.Product).AllowBlank(false).FieldLabel("Sản phẩm"+Html.Required()),
+                                        Html.X().NumberFieldFor(m => m.Quantity).InputWidth(200).AllowBlank(false).MinValue(1).FieldLabel("Số lượng" + Html.Required()),
+                                        Html.X().ComboBoxFor(m => m.ProductionLevel.ID).InputWidth(200).AllowBlank(false)
+                                                    .ID("cbLevelID")
+                                                    .MarginSpec("0 0 5 0")
+                                                    .FieldLabel("Mức độ" + Html.Required())
+                                                    .EmptyText("Chọn mức độ")
+                                                    .BlankText("Mức độ ưu tiên chưa được chọn!")
+                                                    .DisplayField("Name")
+                                                    .Editable(false)
+                                                    .ColumnWidth(0.5)
+                                                    .ValueField("ID")
+                                                    .Tpl(
+                                                        @<text>
+                                                            <tpl for=".">
+                                                                <div class="x-boundlist-item">
+                                                                    <div style="text-align: center; width: 100%; background-color: {Color}; border: #cecece 1px solid;">{Name}</div>
+                                                                </div>
+                                                            </tpl>
+                                                        </text>
+                                                    )
+                                                    .Store(
+                                                        Html.X().Store()
+                                                            .ID("StoreProductionLevel")
+                                                            .AutoLoad(true)
+                                                            .Model(
+                                                                Html.X().Model().IDProperty("ID")
+                                                                    .Fields(
+                                                                        new ModelField("ID", ModelFieldType.Int),
+                                                                        new ModelField("Name", ModelFieldType.String),
+                                                                        new ModelField("Color", ModelFieldType.String)
+                                                                    )
+                                                            )
+                                                            .Proxy(Html.X().AjaxProxy()
+                                                                .Url(Url.Action("LoadDataActived", "ProductionLevel", new { area = "Production" }))
+                                                                .Reader(Html.X().JsonReader().Root("data"))
+                                                            )
+                                                    )
+                                                    .Listeners(ls => ls.Change.Handler = "getColor(App.cbLevelID, App.StoreProductionLevel);"),
+                                        Html.X().DateFieldFor(m => m.EndTime).FieldLabel("Thời hạn" + Html.Required()).InputWidth(200),
+                                        Html.X().TextAreaFor(m=>m.Note).FieldLabel("Ghi chú").Flex(1).MinHeight(100)
+                                )
+                   )
+.Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.FormID = "frmUpdate";
+                                    de.Click.Success = "this.up('window').close();";
+                                }),
+            Html.X().ButtonExit()
+      )
+)
+<script>
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        if (record != null) {
+            var color = record.get('Color');
+            obj.setFieldStyle('text-align: center; background-image: none; background-color: ' + color + ';');
+        }
+        else {
+            return false;
+        }
+    };
+</script>

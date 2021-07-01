@@ -1,0 +1,166 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete", "RiskSolution"))';
+    function CheckStatusRiskSolution() {
+        var records = App.GrRiskSolution.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateRiskSolution, App.btnDeleteRiskSolution, App.btnDetailRiskSolution);
+        }
+        else {
+            SetDisabled(App.btnUpdateRiskSolution, App.btnDeleteRiskSolution, App.btnDetailRiskSolution);
+        };
+    };
+    var ShowSolutionDetail = function () {
+        var riskRecords = App.GrRiskTemp.selModel.getSelection();
+        if (riskRecords.length > 0) {
+            var params = {
+                riskTempId: riskRecords[0].get('ID'),
+            };
+            onDirectMethod('@(Url.Action("RiskTempDetail"))', params);
+        }
+    };
+    var ShowInsert = function () {
+        var riskRecords = App.GrRiskTemp.selModel.getSelection();
+        if (riskRecords.length > 0) {
+            var params = {
+                riskTempId: riskRecords[0].get('ID')
+            };
+            onDirectMethod('@(Url.Action("Update"))', params, 'get');
+        }
+    };
+    var ShowUpdate = function () {
+        var records = App.GrRiskSolution.selModel.getSelection();
+        var riskRecords = App.GrRiskTemp.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = {
+                id: records[0].get('ID'),
+                riskTempId: riskRecords[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowViewDetail = function () {
+        var records = App.GrRiskSolution.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = { id: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var onSelectSolution = function () {
+        var records = App.GrRiskTemp.selModel.getSelection();
+        if (records.length > 0) {
+            App.hdfriskTempId.setValue(records[0].get("ID"));
+            App.StoreRiskLibrarySolution.reload();
+            App.btnInsertRiskSolution.setDisabled(false);
+        }
+        else {
+            App.btnInsertRiskSolution.setDisabled(true);
+        }
+    };
+    var riskTempRender = function (value) {
+        return "<a onclick='ShowSolutionDetail()' style ='cursor: pointer;color: blue;'>" + value + "</a>";
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(2).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().Hidden().ID("hdfriskTempId"),
+                    Html.X().GridPanel().ID("GrRiskTemp").Region(Region.West).Width(300).Split(true).Collapsible(true)
+                            .Title("Kiểm soát kỹ thuật").TitleAlign(TitleAlign.Center)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(true)
+                            .Icon(Icon.TextListBullets)
+                            .Store(
+                                    Html.X().Store().ID("StoreSolutionDetail")
+                                        .RemotePaging(true)
+                                        .GroupField("ISOCode")
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadSolution")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                                Html.X().Model().Fields(
+                                                        Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("Clause"),
+                                                        Html.X().ModelField().Name("ISOCode")
+                                                    )
+                                               )
+                                )
+                            .ColumnModel(
+                                            X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                            X.Column().DataIndex("Clause").Renderer("riskTempRender").Text("Điều khoản").Width(200)
+                                        )
+                            .Features(
+                                Html.X().GroupingSummary()
+                                        .ID("GroupingSummaryRiskTemp")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false).ShowSummaryRow(false)
+                                )            
+                            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                        .Listeners(ls => ls.SelectionChange.Handler = "onSelectSolution()"))
+                            .BottomBar(Html.X().CustomPagingToolbar()),
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrRiskSolution")
+                            .Region(Region.Center)
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(true)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowInsert();").ID("btnInsertRiskSolution").Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateRiskSolution").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteRiskSolution").Handler("onDelete(App.GrRiskSolution.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailRiskSolution").Handler("ShowViewDetail();"),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                                )
+                            )
+                            .Store(
+                            Html.X().Store().ID("StoreRiskLibrarySolution")
+                                .AutoLoad(false)
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "RiskSolution", new { Area = "Risk" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("riskTempId", "App.hdfriskTempId.value", ParameterMode.Raw));
+                                    })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                            Html.X().ModelField().Name("ID"),
+                                            Html.X().ModelField().Name("Description"),
+                                            Html.X().ModelField().Name("Content")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    X.Column().DataIndex("Description").Text("Mô tả").Flex(1),
+                                    X.Column().Text("Nội dung").DataIndex("Content").Width(300)
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusRiskSolution"))
+                        .BottomBar(Html.X().CustomPagingToolbar())
+     )
+)
+

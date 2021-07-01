@@ -1,0 +1,68 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.SuppliersGroupItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+   
+    if (Model.ID == 0)
+    {
+
+        IconView = Icon.Add;
+        title = "Thêm mới nhóm NCC";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật nhóm NCC";
+    }
+}
+@(Html.X().CustomWindow()
+.ID("winGroupSupp")
+.Title(title)
+.Icon(IconView)
+.Items(
+    Html.X().CustomFormPanel()
+    .FieldDefaults(df => { df.LabelWidth = 110; })
+    .ID("frmUpdate")
+    .Items(
+            X.HiddenFor(m => m.ID).ID("hdfID"),
+            X.HiddenFor(m => m.ParentID).ID("hdfParentID"),
+                X.TextFieldFor(m => m.Name).MaxLength(100).MaxLengthText("Tên nhóm không được quá 100 ký tự")
+                .FieldLabel("Nhóm NCC" + Html.Required())
+                .EmptyText("Nhập tên nhóm nhà cung cấp...")
+                .BlankText("Tên nhóm nhà cung cấp không được bỏ trống!")
+                .AllowOnlyWhitespace(false),
+                X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú").Flex(1).Height(150).EmptyText("Nhập ghi chú nhóm NCC..").MaxLength(500).MaxLengthText("Ghi chú không được quá 500 ký tự")
+                   )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                de.Click.Url = Url.Action("Update");
+                                de.Click.Success = "if(result.result){ ReLoadNode();this.up('window').close();}";
+                                de.Click.FormID = "frmUpdate";
+                            })
+        , Html.X().ButtonExit())
+)
+<script>
+    var ReLoadNode = function (id) {
+        var nodeSelected = App.treeGroupSupplierID.selModel.getSelection()[0];       
+        console.log(nodeSelected.get("ParentID"));
+        if (nodeSelected.get("ParentID") == 0) {
+            App.treeGroupSupplierID.store.reload({ node: nodeSelected });
+            nodeSelected.data.expanded = true;
+            nodeSelected.expand();
+        }
+        else {
+            nodeSelected.parentNode.reload();
+            nodeSelected.expand();
+        };
+    };
+</script>

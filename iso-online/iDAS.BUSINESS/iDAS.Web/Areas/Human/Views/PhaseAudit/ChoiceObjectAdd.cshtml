@@ -1,0 +1,55 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    var phaseAuditId = ViewData["phaseAuditId"];
+}
+@(Html.X().Window()
+    .ID("windowObject").Layout(LayoutType.Fit)
+        .Title("Danh sách nhân sự")
+        .Icon(Icon.ApplicationSideList)
+        .Border(false)
+        .Height(450)
+        .Width(950)
+            .ItemsFromAction("EmployeeViewMulti", "Employee", new { Area = "Human", gridEmployeeId = "grEmployeeApprove" })
+        .Buttons(
+            Html.X().Button()
+            .Icon(Icon.Accept)
+            .Listeners(ls => ls.Click.Handler = "SaveObject();")
+            .ToolTip("Chọn đối tượng tham gia đánh giá năng lực")
+            .Text("Chọn")
+            .ID("btnSelectObject"),
+            Html.X().ButtonExit()                           
+            .Listeners(ls => ls.Click.Handler = "CancelObject();")                            
+            )
+)
+<script type="text/javascript">
+    var AvatarRenderer = function (value) {
+        var tpl = "<img src='" + value + "' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        return tpl;
+    };
+    function SaveObject() {
+        if (App.windowObject.hidden == true) {
+            App.windowObject.show();
+        }
+        else {
+            var records = App.grEmployeeApprove.selModel.getSelection();
+            if (records.length >= 1) {
+                var phaseAuditId = '@(phaseAuditId)';            
+                for (var i = 0; i < records.length; i++) {
+                    if (Ext.StoreMgr.lookup(App.grMnObject.store).findExact('ID', records[i].get('ID')) < 0) {
+                        App.grMnObject.store.add({ ID: records[i].get('ID'), FileID: records[i].get('FileID'),FileName: records[i].get('FileName'), Role: records[i].get('Role'), phaseAuditId: 0, IsCaptain: false, IsAuditor: true, Type: true, Email: records[i].get('Email'), EmployeeName: records[i].get('Name'), Phone: records[i].get('Phone') });
+                    }
+                }
+                App.windowObject.hide();
+            }
+            else {
+                MessageBox();
+            };
+
+        };
+    };
+    function CancelObject() {
+        App.windowObject.hide();
+    };
+</script>

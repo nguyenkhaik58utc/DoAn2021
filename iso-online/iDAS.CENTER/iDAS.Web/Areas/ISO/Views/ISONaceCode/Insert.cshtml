@@ -1,0 +1,58 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@model iDAS.Items.ISONaceCodeItem
+@(
+ Html.X().Window()
+    .ID("winISONaceCode")
+    .Title("Thêm mới thông tin lĩnh vực ngành nghề")
+    .Icon(Icon.Add)
+    .Width(500)
+    .BodyPadding(5)
+    .Modal(true)
+    .Constrain(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmISONaceCode")
+        .Layout(LayoutType.Form)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => df.LabelWidth = 140)
+        .DefaultAnchor("100%")
+        .Items(
+                Html.X().TextFieldFor(m => m.Code).FieldLabel("Mã ngành nghề" + Html.Required())
+                        .AllowBlank(false).MaxLength(100)
+                        .BlankText("Mã lĩnh vực ngành nghề bắt buộc nhập!"),
+                Html.X().TextFieldFor(m => m.Name)
+                        .FieldLabel("Lĩnh vực ngành nghề" + Html.Required())
+                        .AllowBlank(false).MaxLength(100)
+                        .BlankText("Tên lĩnh vực ngành nghề bắt buộc nhập!"),
+                Html.X().CheckboxFor(m => m.IsActive).BoxLabel("Kích hoạt").FieldLabel("Trạng thái").Value(true)
+               )
+            )
+        .Buttons(
+                Html.X().Button()
+                    .ID("btnSaves")
+                    .Icon(Icon.Disk)
+                    .Text("Lưu lại")
+                        .DirectEvents(de =>
+                        {
+                            de.Click.FormID = "frmISONaceCode";
+                            de.Click.Url = Url.Action("InsertISONaceCode");
+                            de.Click.Before = @"if (!#{frmISONaceCode}.getForm().isValid()) { return false; }";
+                            de.Click.EventMask.ShowMask = true;
+                            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                            de.Click.Success = "App.winISONaceCode.close();";
+                        })
+                    ,
+                Html.X().Button()
+                    .ID("btnCancel")
+                    .Icon(Icon.Cancel)
+                    .Text("Hủy")
+                    .Handler("App.frmISONaceCode.reset(); App.winISONaceCode.close();")
+    )
+)
+

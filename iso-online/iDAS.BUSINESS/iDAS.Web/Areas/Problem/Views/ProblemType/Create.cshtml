@@ -1,0 +1,73 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.Problem.ProblemTypeItem
+@(Html.X().Window().RenderTo("ProblemTypePanel")
+    .ID("CreateProblemTypeWindow")
+    .Title("Thêm mới loại sự cố")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreateProblemTypeForm")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Items(
+                Html.X().TabPanel().ID("TabMainType").ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Frame(true)
+                            .BodyPadding(5)
+                            .ID("tabTypeCreate")
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin loại sự cố")
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().TextFieldFor(m => m.ProblemTypeName).FieldLabel("Tên loại sự cố" + Html.Required())
+                                    .EmptyText("Nhập tên loại sự cố")
+                                    .BlankText("Bạn phải nhập tên loại sự cố!")
+                                    .AllowBlank(false).AllowOnlyWhitespace(false),
+                                Html.X().TextFieldFor(m => m.Code).FieldLabel("Mã loại sự cố" + Html.Required())
+                                    .EmptyText("Nhập mã loại sự cố").BlankText("Bạn phải nhập mã loại sự cố").AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").EmptyText("Nhập mô tả")
+                                
+                            )
+                    )
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createProblemTypeSubmit(false)"),
+        Html.X().ButtonSaveAndExit().Handler("createProblemTypeSubmit(true)"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var createProblemTypeSubmit = function (exit) {
+        App.CreateProblemTypeForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadProblemType();
+                    if (exit) {
+                        App.CreateProblemTypeWindow.close();
+                    }
+                    else {
+                        App.CreateProblemTypeForm.reset();
+                        App.TabMainType.setActiveTab('tabTypeCreate');
+                    }
+                }
+            }
+        });
+    };
+</script>

@@ -1,0 +1,59 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityCriteriaCategoryItem
+@{
+    var hiddenAuditor = ViewData["hiddenAuditor"];
+}
+    @(Html.X().Window()
+                .ID("winEditCriteriaCategory")
+                .Title("Sửa thông tin bộ tiêu chí đánh giá")
+                .Icon(Icon.Pencil)
+                         .Height(270)
+                  .Width(550)
+                .BodyPadding(6)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                Html.X().FormPanel()
+                .ID("frCriteriaCategory")
+                       .Layout(LayoutType.VBox)
+                                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                        Html.X().HiddenFor(m => m.ID),
+                        Html.X().HiddenFor(m=>m.ParentID),
+                               Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên bộ tiêu chí" + Html.Required()).LabelAlign(LabelAlign.Top)
+                            .BlankText("Tên bộ tiêu chí không được trống!").AllowOnlyWhitespace(false),
+                                                   Html.X().EmployeeFieldFor(m => m.Audit).Hidden((bool)hiddenAuditor).Title("Người đánh giá"),
+                    Html.X().CheckboxFor(m => m.IsUse).BoxLabel("Sử dụng").HideLabel(true) 
+
+               )
+            )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnSaves")
+            .Text("Lưu lại")
+            .Icon(Icon.Disk)
+            .TabIndex(18)
+            .DirectEvents(de =>
+            {
+                de.Click.Before = @"if (!App.frCriteriaCategory.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "Update";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frCriteriaCategory";
+                de.Click.Success = " this.up('window').close();";
+            }),
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+            .Handler("App.frCriteriaCategory.reset(); this.up('window').close();")
+            )
+    )

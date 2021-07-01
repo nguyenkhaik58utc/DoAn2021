@@ -1,0 +1,47 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    var auditProgramId = ViewData["auditProgramId"];
+}
+@(Html.X().Window().ID("windowObject").Layout(LayoutType.Fit)
+                        .Title("Danh sách nhân sự")
+                        .Icon(Icon.ApplicationSideList)
+                        .Border(false)
+                        .Height(450)
+                        .Width(800)
+                        .ItemsFromAction("EmployeeViewMulti", "Employee", new { Area = "Human", gridEmployeeId = "grEmployeeApprove" })
+                        .Buttons(
+                Html.X().ButtonChoice()
+                        .Listeners(ls => ls.Click.Handler = "SaveObject();")
+                        .ID("btnSelectObject"),
+                Html.X().ButtonExit()
+                        .Listeners(ls => ls.Click.Handler = "CancelObject();")
+                        )
+)
+<script type="text/javascript">
+    function SaveObject() {
+        if (App.windowObject.hidden == true) {
+            App.windowObject.show();
+        }
+        else {
+            var records = App.grEmployeeApprove.selModel.getSelection();
+            if (records.length >= 1) {
+                var auditProgramId = '@(auditProgramId)';
+                for (var i = 0; i < records.length; i++) {
+                    if (Ext.StoreMgr.lookup(App.grMnObject.store).findExact('EmployeeID', records[i].get('ID')) < 0) {
+                        App.grMnObject.store.add({ EmployeeID: records[i].get('ID'), FileID: records[i].get('FileID'), FileName: records[i].get('FileName'), Role: records[i].get('Role'), QualityAuditProgramID: 0, IsCaptain: false, IsAuditor: true, Type: true, Email: records[i].get('Email'), EmployeeName: records[i].get('Name'), Phone: records[i].get('Phone') });
+                    }
+                }
+                App.windowObject.hide();
+            }
+            else {
+                MessageBox();
+            };
+
+        };
+    };
+    function CancelObject() {
+        App.windowObject.hide();
+    };
+</script>

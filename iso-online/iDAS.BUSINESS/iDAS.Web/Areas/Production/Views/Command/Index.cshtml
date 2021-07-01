@@ -1,0 +1,251 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+
+    function CheckStatusCommand() {
+        var records = App.GrCommand.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetailCommand, App.btnFinish);
+            var isFinish = records[0].data.IsFinish;
+            if (isFinish == true) {
+                SetDisabled(App.btnUpdateCommand, App.btnDeleteCommand, App.btnStart, App.btnPause, App.btnContinue);
+            }
+            else {
+                SetEnabled(App.btnUpdateCommand, App.btnDeleteCommand, App.btnStart, App.btnPause, App.btnContinue);
+            };
+            var isStart = records[0].data.IsStart;
+            var isPause = records[0].data.IsPause;
+            if (isStart == true) {
+                App.btnStart.hide();
+                if (isPause) {
+                    App.btnPause.hide();
+                    App.btnContinue.show();
+                }
+                else {
+                    App.btnPause.show();
+                    App.btnContinue.hide();
+                };
+            }
+            else {
+                App.btnStart.show();
+                App.btnPause.hide();
+                App.btnContinue.hide();
+            };
+        }
+        else {
+            SetDisabled(App.btnUpdateCommand, App.btnDeleteCommand, App.btnDetailCommand, App.btnStart, App.btnPause, App.btnContinue, App.btnFinish);
+        };
+    };
+    var ShowAdd = function () {
+        var records = App.DepartmentPanelId.down("treepanel").selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "Command", new { Area = "Production" }))';
+            var params = {
+                departmentId: App.hdfParentDepartmentId.value,
+                departmentName: records[0].data.text
+            };
+            onDirectMethod(url, params, 'get');
+        };
+    };
+    var ShowUpdate = function () {
+        var records = App.GrCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "Command", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowView = function () {
+        var records = App.GrCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "Command", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var StartCommand = function () {
+        var records = App.GrCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("StartCommand", "Command", new { Area = "Production" }))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var PauseCommand = function (value) {
+        var records = App.GrCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("PauseCommand", "Command", new { Area = "Production" }))';
+            var params = {
+                id: records[0].get('ID'),
+                isPause: value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var FinishCommand = function (value) {
+        var records = App.GrCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Finish", "Command", new { Area = "Production" }))';
+            var params = {
+                id: records[0].get('ID'),
+            };
+            onDirectMethod(url, params,'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function onSelectDepartment(records) {
+        if (records.length > 0) {
+            App.hdfParentDepartmentId.setValue(records[0].get('id'));
+            App.GrCommand.getStore().reload({ page: 1 });
+            App.StorePlanInDay.reload({ page: 1 });
+            App.btnAddCommand.setDisabled(false);
+        }
+        else {
+            App.btnAddCommand.setDisabled(true);
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Margin(0).Frame(false).Padding(2)
+            .Items(
+                    Html.X().Hidden().ID("hdfParentDepartmentId"),
+                    Html.X().DepartmentPanel().Handler("onSelectDepartment").ID("DepartmentPanelId"),
+                    Html.X().Panel().Region(Region.Center).Layout(LayoutType.Border).Border(false)
+                                .Items(
+                                        Html.X().GridPanel().Region(Region.Center).ID("GrCommand")
+                                                    .Header(false)
+                                                    .ColumnLines(true)
+                                                    .ForceFit(true)
+                                                    .TopBar(
+                                                        Html.X().Toolbar()
+                                                        .Layout(LayoutType.HBox)
+                                                        .Items(
+                                                            Html.X().ButtonCreate().Handler("ShowAdd();").ID("btnAddCommand").Disabled(true),
+                                                            Html.X().ToolbarSeparator(),
+                                                            Html.X().ButtonUpdate().ID("btnUpdateCommand").Handler("ShowUpdate();"),
+                                                            Html.X().ToolbarSeparator(),
+                                                            Html.X().ButtonDelete().ID("btnDeleteCommand").Handler("onDelete(App.GrCommand.selModel.getSelection()[0].get('ID'));"),
+                                                            Html.X().ToolbarSeparator(),
+                                                            Html.X().ButtonView().ID("btnDetailCommand").Handler("ShowView();"),
+                                                             Html.X().ToolbarSeparator(),
+                                                            Html.X().Button().ID("btnStart").ToolTip("Bắt đầu lệnh").Text("Bắt đầu")
+                                                                            .Handler("StartCommand();").Icon(Icon.PlayGreen).Disabled(true),
+                                                            Html.X().Button().ID("btnPause").ToolTip("Tạm dừng lệnh sản xuất").Text("Tạm dừng").Hidden(true)
+                                                                            .Handler("PauseCommand(true);").Icon(Icon.StopBlue).Disabled(true),
+                                                            Html.X().Button().ID("btnContinue").ToolTip("Tiếp tục lệnh sản xuất").Text("Tiếp tục").Hidden(true)
+                                                                            .Handler("PauseCommand(false);").Icon(Icon.PlayGreen).Disabled(true),
+                                                            Html.X().ToolbarSeparator(),
+                                                           Html.X().Button().ID("btnFinish").ToolTip("Kết thúc lệnh sản xuất").Text("Kết thúc")
+                                                                                .Handler("FinishCommand();").Icon(Icon.FlagYellow).Disabled(true),
+                                                            Html.X().ToolbarFill(),
+                                                            Html.X().ButtonTutorial()
+                                                    ))
+                                                    .Store(
+                                                        Html.X().Store().ID("StoreCommand")
+                                                                .RemotePaging(true)
+                                                                .PageSize(20)
+                                                                .GroupField("ProductName")
+                                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Command", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                                .Parameters(ps =>
+                                                                    {
+                                                                        ps.Add(new StoreParameter("departmentId", "App.hdfParentDepartmentId.value", ParameterMode.Raw));
+                                                                    })
+                                                                .Model(
+                                                                    Html.X().Model().Fields(
+                                                                        Html.X().ModelField().Name("ID"),
+                                                                        Html.X().ModelField().Name("Code"),
+                                                                        Html.X().ModelField().Name("ProductionName"),
+                                                                        Html.X().ModelField().Name("Quantity"),
+                                                                        Html.X().ModelField().Name("StartTime"),
+                                                                        Html.X().ModelField().Name("EndTime"),
+                                                                        Html.X().ModelField().Name("Status"),
+                                                                        Html.X().ModelField().Name("IsStart").Type(ModelFieldType.Boolean),
+                                                                        Html.X().ModelField().Name("IsPause").Type(ModelFieldType.Boolean),
+                                                                        Html.X().ModelField().Name("IsFinish").Type(ModelFieldType.Boolean)
+                                                                    )
+                                                              )
+                                                )
+                                                .ColumnModel(
+                                                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                            Html.X().Column().DataIndex("Code").Text("Mã lệnh").Flex(1),
+                                                            Html.X().Column().DataIndex("ProductionName").Text("Sản phẩm").Align(Alignment.Center).Width(200),
+                                                            Html.X().Column().DataIndex("Quantity").Text("Số lượng").Align(Alignment.Center).Width(100),
+                                                            Html.X().Column().Text("Thời gian")
+                                                            .Columns(
+                                                                     Html.X().DateColumnExtend().DataIndex("StartTime").Text("Bắt đầu").Align(Alignment.Center).Width(100),
+                                                                       Html.X().DateColumnExtend().DataIndex("EndTime").Text("Kết thúc").Align(Alignment.Center).Width(100)
+                                                            ),
+
+                                                            Html.X().Column().DataIndex("Status").Text("Trạng thái").Width(120).Align(Alignment.Center)
+                                                    )
+                                                .Features(
+                                                        Html.X().GridFilters()
+                                                            .MenuFilterText("Tìm kiếm")
+                                                            .Filters(
+                                                                Html.X().StringFilter().DataIndex("Name"),
+                                                                Html.X().BooleanFilter().DataIndex("IsUse").YesText("Có").NoText("Không")
+                                                            )
+                                                    )
+                                                .SelectionModel(
+                                                                Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                                                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusCommand")
+                                                                )
+                                                .BottomBar(Html.X().CustomPagingToolbar())
+                                                ,
+                                        Html.X().GridPanel().Height(200).Title("Kế hoạch sản xuất hôm nay").Region(Region.South).TitleAlign(TitleAlign.Center)
+                                                .ColumnLines(true)
+                                                .ForceFit(true)
+                                                .Collapsible(true).Split(true)
+                                                .Store(
+                                                    Html.X().Store().ID("StorePlanInDay")
+                                                            .RemotePaging(true)
+                                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlanInDay")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                            .Parameters(ps =>
+                                                                {
+                                                                    ps.Add(new StoreParameter("departmentId", "App.hdfParentDepartmentId.value", ParameterMode.Raw));
+                                                                })
+                                                            .Model(
+                                                                Html.X().Model().Fields(
+                                                                    Html.X().ModelField().Name("ID"),
+                                                                    Html.X().ModelField().Name("Level"),
+                                                                    Html.X().ModelField().Name("Color"),
+                                                                    Html.X().ModelField().Name("Menday"),
+                                                                    Html.X().ModelField().Name("Quantity")
+                                                                )
+                                                          )
+                                            )
+                                            .ColumnModel(
+                                                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                            Html.X().Column().Text("Mức độ yêu cầu").Width(100).DataIndex("Level").Align(Alignment.Right)
+                                                              .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" }),
+                                                            Html.X().Column().DataIndex("Menday").Text("Số nhân sự cần").Align(Alignment.Right).Width(120),
+                                                            Html.X().Column().DataIndex("Quantity").Text("Số lượng").Align(Alignment.Right)
+                                                )
+                            )
+        )
+)
+

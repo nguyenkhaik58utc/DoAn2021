@@ -1,0 +1,328 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend
+@using iDAS.Web.Areas.Human.Controllers;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Menu()
+        .ID("cmMenu")
+        .Items(
+            new MenuItem { Text = "Xem chi tiết", ID = "cmView", Icon = Icon.Zoom, Handler = "detailRecord();" },
+        Html.X().MenuSeparator(),
+            new MenuItem { Text = "Thêm", ID = "cmAdd", Disabled = true, Icon = Icon.Add, Handler = "addNew();" },
+                  new MenuItem { Text = "Sửa", ID = "cmEdit", Disabled = true, Icon = Icon.Pencil, Handler = "updateRecordDetail();" },
+                    new MenuItem { Text = "Xóa", ID = "cmDelete", Disabled = true, Icon = Icon.Delete, Handler = "deleteRecordDetail();" }
+        )
+)
+@(Html.X().Viewport()
+          .Layout(LayoutType.Border)
+          .ID("vpService")
+          .Items(           
+                       Html.X().GridPanel()
+                               .ID("gpService")
+                               .Title("DANH MỤC DỊCH VỤ")
+                               .Header(true)    
+                               .TitleAlign(TitleAlign.Center)
+                               .Region(Region.West)
+                               .Width(450)      
+                               .MarginSpec("1 5 1 1")                   
+                               .ColumnLines(true)
+                               .Border(true)
+                               .Icon(Icon.TextListBullets)
+                               .ResizableConfig(new Resizer { Handles = ResizeHandle.East })     
+                               .Store(
+                                 Html.X().Store()
+                                                .ID("stService")                   
+                                                .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("GetDataStage", "Service"))
+                                                .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    .RemoteSort(true)
+                                    .RemotePaging(true)
+                                    .PageSize(20)     
+                                    .GroupField("CategoryName")
+                                    .Sorters(Html.X().DataSorter().Property("CategoryName").Direction(Ext.Net.SortDirection.ASC))
+                                    .Model(
+                                        Html.X().Model()
+                                            .Fields(
+                                                new ModelField("ID", ModelFieldType.Int),
+                                                new ModelField("Code", ModelFieldType.String),
+                                                new ModelField("Cost", ModelFieldType.Float),
+                                                new ModelField("Name", ModelFieldType.String),
+                                                new ModelField("CategoryID", ModelFieldType.Int),
+                                                new ModelField("CategoryName", ModelFieldType.String),                                          
+                                                new ModelField("Note", ModelFieldType.String),
+                                                new ModelField("IsUse", ModelFieldType.Boolean)                                             
+                                             )
+                                    )
+                               
+                            )
+                            .ColumnModel(
+                                        Html.X().RowNumbererColumn()
+                                                .Text("STT")
+                                                .StyleSpec("font-weight: bold; text-align: center;")
+                                                .Width(30)
+                                                .Align(Alignment.Center),
+                                         Html.X().Column()
+                                                 .DataIndex("Code")
+                                                 .Text("Mã dịch vụ")
+                                                 .StyleSpec("font-weight: bold; text-align: center;")
+                                                 .Width(80)
+                                                 .Wrap(true), 
+                                            Html.X().Column()                                                
+                                                    .DataIndex("Name")
+                                                    .Text("Tên dịch vụ")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Flex(1)
+                                                    .Wrap(true)
+                                           )
+                            .SelectionModel(
+                                        Html.X().RowSelectionModel()
+                                                .Mode(SelectionMode.Multi)
+                                                .Listeners(ls =>
+                                                            ls.Select.Handler = "App.btnAddDetail.setDisabled(false); App.grServiceStage.getStore().reload();"
+                                                 )
+                            )
+                          .View(
+    Html.X().GridView().MarkDirty(false)
+    )  
+    .Features(
+    Html.X().GroupingSummary()
+            .ID("GroupingSummaryProduct")
+            .GroupHeaderTplString("{name}")
+            .HideGroupedHeader(true)
+            .EnableGroupingMenu(false)
+    )
+       .BottomBar(Html.X().CustomPagingToolbar()),
+    Html.X().GridPanel()
+                        .ID("grServiceStage")
+                        .Border(true)
+                        .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                        .Region(Region.Center)
+              .MarginSpec("1 1 1 1")   
+                        .TopBar(
+                        Html.X().Toolbar()
+                                .Items(
+                                    Html.X().ButtonCreate()
+                                            .ID("btnAddDetail")
+                                            .Disabled(true)
+                                             .Handler("addNew();"),  
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate()
+                                                .ID("btnUpdateDetail")
+                                                .Disabled(true)
+                                                .Handler("updateRecordDetail();"),
+                                        Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete()
+                                                .ID("btnDeleteDetail")
+                                                .Disabled(true)
+                                                .Handler("deleteRecordDetail();"),
+                                                      Html.X().ToolbarSeparator(),
+                                               Html.X().ButtonView()
+                                                        .ID("btnViewDetail")
+                                                        .Disabled(true)
+                                                        .Handler("detailRecord();"),
+                                                       Html.X().ToolbarFill(),
+                                                             Html.X().ButtonTutorial()
+                                                   
+                                )
+                             )
+                    .Store(Html.X().Store()
+                            .ID("stStage")
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetData"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                                 .Parameters(ps => ps.Add(new StoreParameter("serviceId", "App.gpService.selModel.getSelection().length>0?App.gpService.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw)))
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                            Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("ServiceID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Time").Type(ModelFieldType.Float),
+                                        Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("TimeUnitID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Order").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Note").Type(ModelFieldType.String)
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Center)
+                                    .Width(33),                              
+                                      Html.X().Column()
+                                                .Text("Thứ tự")                                                    
+                                                .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("Order")
+                                                        .Align(Alignment.Right)
+                                               .Width(53)
+                                                .Wrap(true),
+                            Html.X().Column()
+                                    .Text("ID")
+                                    .DataIndex("ID")
+                                    .Hidden(true),                                       
+                            Html.X().Column()
+                                    .Text("Tên công đoạn")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                         .DataIndex("Name")
+                                         .Width(250)
+                                         .Flex(1)
+                                    .Wrap(true),
+                                          Html.X().Column()
+                                            .Text("Thời gian")
+                                            .StyleSpec("font-weight: bold;text-align: center")
+                                                .DataIndex("Time")
+                                                .Align(Alignment.Right)                                               
+                                           .Width(100)
+                                            .Wrap(true),
+                                                     Html.X().NumberColumn()
+                                                .Text("Đơn vị")                                                    
+                                                .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("TimeUnitID")
+                                                        .Renderer("if(value==1){return 'Tháng';} else if(value==2) {return 'Ngày';} else if(value==3){return 'Giờ';}else return 'Phút';")
+                                               .Width(100)
+                                                .Wrap(true),                                           
+                                          Html.X().Column()
+                                                        .DataIndex("IsUse")
+                                                        .Text("Tình trạng")
+                                                        .Renderer("GetBooleanChar")
+                                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                                        .Width(100)      
+
+                    ).SelectionModel(
+                        Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                .Listeners(l =>
+                                {
+                                    l.Select.Handler = "checkStatusDetail()";
+                                })
+                                )
+
+                                  .View(
+                                Html.X().GridView().MarkDirty(false)
+                                )
+                                .Plugins(Html.X().CellEditing())
+                                .BottomBar
+                                (
+                                            Html.X().CustomPagingToolbar()
+                )
+
+)    
+)
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var addNew = function () {
+        var records = App.gpService.selModel.getSelection();
+        if(records.length>0)
+        {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAdd", "Stage", new { Area = "Service" }, null))',
+                params: { serviceId: records[0].get('ID') },
+                success: function () {
+                }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn một dịch vụ cần thiết lập công đoạn thực hiện?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Information'              
+            });
+        }
+    };
+    var GetBooleanChar = function (value, p, record) {
+        var sUse = "<span style='color:blue'>Sử dụng</span>";
+        var sNot = "<span style='color:red'>Không sử dụng</span>";
+        if (value == "1") {
+            return sUse;
+        } else {
+            return sNot;
+        }
+    };
+    var checkStatusDetail = function () {
+        var records = App.grServiceStage.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                App.cmAdd.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.cmDelete.setDisabled(true);
+                break;
+            case 1:
+                    App.btnUpdateDetail.setDisabled(false);
+                    App.btnDeleteDetail.setDisabled(false);
+                    App.btnViewDetail.setDisabled(false);
+                    App.cmAdd.setDisabled(false);
+                    App.cmEdit.setDisabled(false);
+                    App.cmDelete.setDisabled(false);
+                break;
+            default:
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                App.cmAdd.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.cmDelete.setDisabled(true);
+        }
+    };
+
+    var deleteRecordDetail = function () {
+        var record = App.grServiceStage.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa công đoạn đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "Stage", new { Area = "Service" }, null))',
+                            params: { id: id },
+                            success: function () {
+
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    };
+    
+    var detailRecord = function () {
+        var record = App.grServiceStage.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetail", "Stage", new { Area = "Service" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var updateRecordDetail = function () {
+        var record = App.grServiceStage.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmUpdate", "Stage", new { Area = "Service" }, null))',
+                params: { id: id}
+            });
+        }
+    };
+
+   
+</script>

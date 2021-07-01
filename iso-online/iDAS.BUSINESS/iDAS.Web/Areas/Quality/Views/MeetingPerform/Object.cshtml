@@ -1,0 +1,117 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.QualityMeetingItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+.Title("Xác nhận thành phần tham gia cuộc họp")
+.Icon(Icon.Group)
+.Width(780)
+.Height(450)
+.Maximizable(true)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+        X.HiddenFor(m => m.ID).ID("hdfmeetingID"),
+        X.GridPanel().Layout(LayoutType.Fit)
+        .ID("GrMeetingObject")
+            .Header(false)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().Text("Xem thông tin nhân sự").ToolTip("Xem thông tin nhân sự").ID("btnDetailObject").Icon(Icon.Zoom).Handler("ViewDetailEmployee();").Disabled(true)
+                    )
+                    )
+            .Store(
+                        Html.X().Store().ID("storeMeetingObject")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMeetingPlanObject", "MeetingPlan", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                        .Parameters(ps => ps.Add(new StoreParameter("meetingID", "App.hdfmeetingID.getValue()", ParameterMode.Raw)))
+                        .Model(
+                            Html.X().Model().Fields(
+                                        X.ModelField().Name("ID"),
+                                        X.ModelField().Name("Name"),
+                                        X.ModelField().Name("Avatar"),
+                                        X.ModelField().Name("MeetingID"),
+                                        X.ModelField().Name("EmployeeID"),
+                                        X.ModelField().Name("Email"),
+                                        X.ModelField().Name("RoleName"),
+                                        X.ModelField().Name("Phone"),
+                                        X.ModelField().Name("IsMeeting")
+                            )
+                        )
+                    )
+                    .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                                X.Column().DataIndex("Avatar").Width(31).Text("").Renderer("AvatarRenderer"),
+                                X.Column().DataIndex("Name").Width(150).Text("Họ tên"),
+                                X.Column().DataIndex("RoleName").Flex(1).Text("Chức danh"),
+                                X.Column().DataIndex("Phone").Width(110).Text("Điện thoại"),
+                                X.Column().DataIndex("Email").Width(110).Text("Email"),
+                                X.CheckColumn().DataIndex("IsMeeting").Width(80).Text("Tham gia").Editable(true)
+                            ).Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditObjectMeeting"))
+                            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusObject();"))
+                    .BottomBar(
+                            X.CustomPagingToolbar()
+            )
+      )
+.Buttons(Html.X().ButtonExit())
+)
+<script>
+    var onEditObjectMeeting = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateMeetingPerformObject", "MeetingPerform"))',
+                params: {
+                    data: e.record.data
+                }
+            });
+        }
+    };
+    var CheckStatusObject = function () {
+        var records = App.GrMeetingObject.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailObject.setDisabled(false);
+        }
+        else {
+            App.btnDetailObject.setDisabled(true);
+        };
+    };
+    var AvatarRenderer = function (value) {
+        var tpl = "";
+        if (value == "") {
+            tpl = "<img src='/Content/images/underfind.jpg' style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;'/>";
+        }
+        else {
+            tpl = "<img src='" + value + "' style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;'/>";
+        };
+        return tpl;
+    };
+    var ViewDetailEmployee = function () {
+        var records = App.GrMeetingObject.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "Employee", new { Area = "Human" }, null))',
+                params: { ID: records[0].get('EmployeeID') }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    }
+</script>

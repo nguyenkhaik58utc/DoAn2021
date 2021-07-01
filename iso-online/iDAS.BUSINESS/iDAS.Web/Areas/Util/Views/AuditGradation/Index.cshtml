@@ -1,0 +1,601 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+        .Layout(LayoutType.Border)
+        .Items
+        (
+        Html.X().Menu()
+            .ID("cmMenu")
+            .Items(
+                new MenuItem { Text = "Xem chi tiết", ID = "cmDetail", Icon = Icon.Zoom, Handler = "showFormDetail();" },
+                Html.X().MenuSeparator(),
+                new MenuItem { Text = "Thêm mới", ID = "cmAdd", Icon = Icon.Add, DirectClickAction = "ShowFrmAdd" },
+                new MenuItem { Text = "Sửa", ID = "cmEdit", Disabled = true, Icon = Icon.Pencil, Handler = "updateForm();" },
+                new MenuItem { Text = "Xóa", ID = "cmDelete", Disabled = true, Icon = Icon.Delete, Handler = "deleteRecord();" }
+                ),
+        Html.X().GridPanel()
+                .ID("grMnAuditGradation")
+                .Border(true)
+                .Region(Region.North)
+                .Title("Danh sách các đợt đánh giá nhân sự của tổ chức")
+                .Icon(Icon.ApplicationViewDetail)
+                .Margin(1)
+                .Collapsible(true)
+                .Height(220)
+                .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                .TopBar(
+                Html.X().Toolbar()
+                        .Items(
+                            Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+                            Html.X().ButtonCreate()
+                                    .ID("btnInsertNews")
+                                    .DirectClickAction("ShowFrmAdd"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate()
+                                    .ID("btnEdit")
+                                    .Handler("updateForm();")
+                                    .Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                    .ID("btnDelete")
+                                    .Handler("deleteRecord();")
+                                    .Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView()
+                                    .ID("btnDetail")
+                                    .Handler("showFormDetail();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Text("Gửi thông báo đánh giá")
+                                    .Icon(Icon.ArrowRight)
+                                    .Handler("SendTick"),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+
+                        )
+                     )
+            .Store(Html.X().Store()
+                    .ID("stMnAuditGradation")
+                    .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("GetData"))
+                    .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                    })
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Model(
+                    Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StartTime").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("EndTime").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("Content").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("IsPerform").Type(ModelFieldType.Boolean)
+                            )
+                          )
+                      )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                            .Text("STT")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .Width(33),
+                    Html.X().Column()
+                            .Text("ID")
+                            .DataIndex("ID")
+                            .Hidden(true),
+                    Html.X().Column()
+                            .Text("Tên đợt đánh giá")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("Name")
+                           .Flex(1)
+                            .Wrap(true),
+                   Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                .Columns(
+                Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                    .Width(120)
+                    .Text("Bắt đầu")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Align(Alignment.Center)
+                    .DataIndex("StartTime")
+                    .Format("dd/MM/yyyy HH:mm"),
+                Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                    .Width(120)
+                    .Text("Kết thúc")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Align(Alignment.Center)
+                    .DataIndex("EndTime")
+                    .Format("dd/MM/yyyy HH:mm")
+            ),
+             Html.X().Column()
+                            .Text("Trạng thái thực hiện")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("IsPerform")
+                            .Filterable(false)
+                            .Align(Alignment.Center)
+                           .Width(130)
+                                .Renderer("if(value){return '<span style=\"color:blue;\">Đã thực hiện</span>'} else{return '<span style=\"color:red;\">Chưa thực hiện</span>'};")
+            )
+            .Plugins(
+            Html.X().FilterHeader()
+                    .Remote(true)
+            )
+            .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+            .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                            l.Select.Handler = " App.btnRates.setDisabled(true);checkStatus();App.grRoleAudit.getStore().reload();App.grCriterial.getStore().reload();";
+                        })
+                        )
+                        .Plugins(Html.X().CellEditing())
+                        .BottomBar
+                        (
+                    Html.X().CustomPagingToolbar()),
+        Html.X().Panel()
+            .Header(false)
+            .Region(Region.Center)
+            .Border(false)
+            .Layout(LayoutType.Border)
+            .Items(
+        Html.X().GridPanel()
+            .Border(true)
+            .ForceFit(true)
+            .Width(550)
+            .Region(Region.West)
+            .Split(true)
+            .Collapsible(true)
+            .Icon(Icon.User)
+            .Title("Chức danh đánh giá")
+            .ID("grRoleAudit")
+            .MarginSpec("0 0 1 1")
+            .Padding(0)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                    Html.X().Button()
+                            .ID("btnRates")
+                            .Disabled(true)
+                            .Text("Xếp loại")
+                            .Icon(Icon.ApplicationViewDetail)
+                                .Handler("showDetailRate();"),
+                            Html.X().ToolbarFill(),
+                            Html.X().Label().Text("(Double click vào cột 'Hệ số' và 'Đánh giá' để thay đổi giá trị)").StyleSpec("color:red").MarginSpec("2 2 2 0")
+                    )
+                    )
+            .Store(Html.X().Store()
+                .ID("stRoleAudit")
+                .AutoLoad(false)
+                .RemotePaging(true)
+                .PageSize(20)
+                .GroupField("DepartmentName")
+                .Sorters(Html.X().DataSorter().Property("DepartmentName").Direction(Ext.Net.SortDirection.ASC))
+                .Model(Html.X().Model().IDProperty("ID")
+                    .Fields(
+                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                        Html.X().ModelField().Name("HumanRoleID").Type(ModelFieldType.Int),
+                        Html.X().ModelField().Name("Factory").Type(ModelFieldType.Int),
+                        Html.X().ModelField().Name("RoleName").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("MinValue").Type(ModelFieldType.Float),
+                        Html.X().ModelField().Name("MaxValue").Type(ModelFieldType.Float),
+                        Html.X().ModelField().Name("DepartmentName").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("IsAudit").Type(ModelFieldType.Boolean)
+                    )
+                )
+                .Proxy(Html.X().AjaxProxy()
+                .Url(Url.Action("GetRoleAuditData"))
+                .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("humanAuditGradationId", "App.grMnAuditGradation.selModel.getSelection().length>0?App.grMnAuditGradation.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                        })
+                )
+                .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("Chức danh").DataIndex("RoleName").Wrap(true).Flex(1),
+                    Html.X().Column().Text("Hệ số").DataIndex("Factory").Wrap(true).Align(Alignment.Right).Width(60).Renderer("changeColor")
+                .Editor(Html.X().NumberField().MinValue(1).AllowBlank(false)),
+                Html.X().Column().Text("Tổng điểm Min").DataIndex("MinValue").Wrap(true).Align(Alignment.Right).Width(95),
+                Html.X().Column().Text("Tổng điểm Max").DataIndex("MaxValue").Wrap(true).Align(Alignment.Right).Width(95),
+                Html.X().CheckColumn().Text("Đánh giá").DataIndex("IsAudit").Wrap(true).Width(60).Editable(true)
+                )
+                .Listeners(ls => ls.Select.Handler = "checkStatusRoleAudit();App.grCriterial.getStore().reload();")
+            .View(Html.X().GridView().StripeRows(false))
+            .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Single))
+            .Features(
+                    Html.X().GroupingSummary()
+                                .GroupHeaderTplString("{name}")
+                                .HideGroupedHeader(true)
+                                .EnableGroupingMenu(false)
+                                .ShowSummaryRow(false),
+                    Html.X().RowWrap()
+                    )
+            .Plugins(
+            Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "edit")
+                )
+            .BottomBar(Html.X().CustomPagingToolbar().DisplayInfo(false)),
+        Html.X().GridPanel()
+            .Border(true)
+            .Title("Tiêu chí đánh giá")
+            .Icon(Icon.Tick)
+            .Region(Region.Center)
+            .ID("grCriterial")
+            .MarginSpec("0 1 1 0")
+            .Padding(0)
+            .TopBar(
+                        Html.X().Toolbar()
+                                .Items(
+                                Html.X().Button()
+                                        .ID("btnSearch")
+                                        .Disabled(true)
+                                        .Icon(Icon.DatabaseCopy)
+                                        .Text("Sử dụng bộ tiêu chí chung")
+                                        .Handler("showFormCoppyData();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonCreate()
+                                        .ID("btnAddCriterial")
+                                        .Disabled(true)
+                                        .Handler("showFormAddCriterial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonUpdate()
+                                        .ID("btnEditCriterial")
+                                            .Handler("updateFormCriterial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete()
+                                        .ID("btnDeleteCriterial")
+                                        .Handler("deleteCriterial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView()
+                                        .ID("btnDetailCriterial")
+                                            .Handler("showCriterialDetail();"),
+        //Html.X().ToolbarSeparator(),
+        //Html.X().Button().ID("btnCoppyData").Disabled(true).ToolTip("Sử dụng lại tiêu chí đánh giá của đợt đánh giá cũ").Icon(Icon.DatabaseCopy).Text("Sử dụng lại dữ liệu của đợt cũ")
+        //        .Handler(""),
+                                Html.X().ToolbarFill()
+                          )
+                    )
+            .Store(Html.X().Store()
+                .ID("stCriterial")
+                .AutoLoad(false)
+                .RemotePaging(true)
+                .PageSize(20)
+                .GroupField("HumanAuditCriteriaCategoryName")
+                .Sorters(Html.X().DataSorter().Property("CreateAt").Direction(Ext.Net.SortDirection.DESC))
+                .Model(Html.X().Model().IDProperty("ID")
+                    .Fields(
+                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                        Html.X().ModelField().Name("HumanAuditCriteriaCategoryName").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("Factory").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date)
+                    )
+                )
+                .Proxy(
+                Html.X().AjaxProxy()
+                .Url(Url.Action("GetCriterialData"))
+                .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("humanAuditGradationRoleId", "App.grRoleAudit.selModel.getSelection().length>0?App.grRoleAudit.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                        })
+            )
+            .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                    Html.X().Column().Text("Tiêu chí").DataIndex("Name").Wrap(true).Flex(1),
+                        Html.X().Column().Text("Hệ số").DataIndex("Factory").Wrap(true).Align(Alignment.Right).Width(60)
+                )
+                .Listeners(ls => ls.Select.Handler = "checkStatusCriterial();")
+            .View(Html.X().GridView().StripeRows(false))
+            .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi).IgnoreRightMouseSelection(true))
+            .Features(
+                Html.X().GroupingSummary()
+                            .GroupHeaderTplString("{name}")
+                            .HideGroupedHeader(true)
+                            .EnableGroupingMenu(false)
+                            .ShowSummaryRow(false),
+                Html.X().RowWrap()
+                )
+            .BottomBar(Html.X().CustomPagingToolbar().DisplayInfo(false))
+          )
+     )
+)
+<script type="text/javascript">
+    var template = '<span title="Click để thay đổi hệ số" style="color:{0};">{1}</span>';
+    var changeColor = function (value, p, record) {
+        return Ext.String.format(template, (value > 1) ? "green" : "red", value);
+    };
+    var deleteUrl = '@(Url.Action("DeleteCriteria", "AuditGradation", new { Area = "Human" }, null))';
+    var deleteCriterial = function () {
+        var records = App.grCriterial.selModel.getSelection();
+        if (records.length > 0) {
+            onDelete(records[0].get('ID'));
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showCriterialDetail = function () {
+        var records = App.grCriterial.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetailCriteria", "AuditGradation", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function updateFormCriterial() {
+        var records = App.grCriterial.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowUpdateCriteria", "AuditGradation", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showFormAddCriterial = function () {
+        var records = App.grRoleAudit.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("FormAddRoleCriteria", "AuditGradation", new { Area = "Human" }, null))';
+            var params = {
+                roleAuditId: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var edit = function (editor, e) {
+        var records = App.grMnAuditGradation.selModel.getSelection();
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            if (e.field == "IsAudit" && records[0].get('IsPerform')) {
+                Ext.MessageBox.show({
+                    title: 'Thông báo', msg: 'Đợt đánh giá đã thực hiện không được thay đổi chức danh đánh giá!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            App.grRoleAudit.getStore().reload();
+                        }
+                    }
+                });
+                } else {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("HandleChangeRoleAudits"))',
+                    params: {
+                        id: e.record.data.ID,
+                        field: e.field,
+                        oldValue: e.originalValue,
+                        newValue: e.value
+                    }
+                });
+            }
+        }
+    };
+    function showFormCoppyData() {
+        var records = App.grRoleAudit.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowCoppy", "AuditGradation", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var SendTick = function () {
+        var records = App.grMnAuditGradation.selModel.getSelection();
+        if (records.length >= 1) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Đề nghị kiểm tra lại tất cả các thông tin? Nếu đã thực hiện gửi thông báo thì sẽ không được sửa tiêu chí đánh giá theo chức danh nữa!',
+                buttons: { yes: 'Tiến hành gửi', no: 'Hủy bỏ' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("SendTickAudit", "AuditGradation", new { Area = "Human" }, null))',
+                            params: { AuditGradationId: records[0].get('ID') }
+                        });
+                    }
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showFormDetail = function () {
+        var records = App.grMnAuditGradation.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "AuditGradation", new { Area = "Human" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var checkStatusRoleAudit = function () {
+        var record = App.grMnAuditGradation.selModel.getSelection();
+        var records = App.grRoleAudit.selModel.getSelection();
+        if (records.length == 1) {
+            if (record[0].get('IsPerform')) {
+                App.btnSearch.setDisabled(true);
+                App.btnAddCriterial.setDisabled(true);
+            } else {
+                App.btnSearch.setDisabled(false);
+                App.btnAddCriterial.setDisabled(false);
+            }
+            App.btnRates.setDisabled(false);
+        }
+        else {
+            App.btnRates.setDisabled(true);
+        };
+    };
+    var checkStatusCriterial = function () {
+        var record = App.grMnAuditGradation.selModel.getSelection();
+        var records = App.grCriterial.selModel.getSelection();
+        if (records.length == 1) {
+            if (!record[0].get('IsPerform')) {
+                App.btnEditCriterial.setDisabled(false);
+                App.btnDeleteCriterial.setDisabled(false);
+            }
+            App.btnDetailCriterial.setDisabled(false);
+        }
+        else {
+            App.btnEditCriterial.setDisabled(true);
+            App.btnDeleteCriterial.setDisabled(true);
+            App.btnDetailCriterial.setDisabled(true);
+        };
+    };
+    var checkStatus = function () {
+        var records = App.grMnAuditGradation.selModel.getSelection();
+        var selections = App.grRoleAudit.selModel.getSelection();
+        App.stRoleAudit.remove(selections);
+        if (records.length > 0) {
+            if (!records[0].get('IsPerform')) {
+                App.cmDelete.setDisabled(false);
+                App.cmEdit.setDisabled(false);
+                App.btnDelete.setDisabled(false);
+                App.btnEdit.setDisabled(false);
+            }
+            else {
+                App.cmDelete.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.btnEditCriterial.setDisabled(true);
+                App.btnDeleteCriterial.setDisabled(true);
+                App.btnSearch.setDisabled(true);
+                App.btnAddCriterial.setDisabled(true);
+            }
+            App.cmDetail.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+        }
+        else {
+            App.cmDelete.setDisabled(true);
+            App.cmDetail.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.cmEdit.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+        }
+    };
+    function updateForm() {
+        var records = App.grMnAuditGradation.selModel.getSelection();
+        if (records.length > 0) {
+            var postUrl = '/Human/AuditGradation/ShowUpdate/';
+            if (records.length > 0) {
+                postUrl += records[0].get('ID');
+            }
+            Ext.net.DirectMethod.request({
+                url: postUrl
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+    var deleteRecord = function () {
+        var records = App.grMnAuditGradation.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnEdit.setDisabled(true);
+                        App.btnDelete.setDisabled(true);
+                        App.btnDetail.setDisabled(true);
+                        App.cmEdit.setDisabled(true);
+                        App.cmDelete.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "AuditGradation", new { Area = "Human" }, null))',
+                                params: { id: records[0].get('ID') }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+    var showDetailRate = function () {
+        var records = App.grRoleAudit.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AuditLevels", "AuditGradation", new { Area = "Human" }, null))',
+                params: { id: records[0].get('ID') },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+</script>

@@ -1,0 +1,89 @@
+﻿@section headtag
+{
+    @(Html.X().XScript().ScriptBlock(
+        @"<script>
+            var addTab = function (tabPanel, record) {
+                var tab = tabPanel.getComponent(record.getId());
+                if (!tab) {
+                    tab = tabPanel.add({
+                        id: record.getId(),
+                        title: record.data.text,
+                        iconCls: record.data.iconCls,
+                        closable: true,
+                        loader: {
+                            url: record.data.hrefTarget,                        
+                            renderer: 'frame',
+                            loadMask: {
+                                showMask: true,
+                                msg:  'Đang tải dữ liệu ...' 
+                            }
+                        },
+                    });
+                }
+            tabPanel.setActiveTab(tab);
+        };
+        </script>"
+        )
+    )
+}
+
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        //Header
+        Html.X().Panel()
+            .ID("Header1")
+            .Region(Region.North)
+            .Height(40)
+            .Header(false)
+            .Border(false)
+            .Layout(LayoutType.Fit)
+            .Loader(
+                Html.X().ComponentLoader()
+                    .LoadMask(lm => { lm.ShowMask = true; lm.Msg = "Đang tải dữ liệu ..."; })
+                            .Url(Url.Action("LoadHeaderSystem"))
+                            .Mode(LoadMode.Script)
+                            .Params(new { containerId = "Header1" })
+                        ),
+        //.ItemsFromAction("LoadHeaderSystem"),
+
+        //Menu 
+        Html.X().Panel()
+            .ID("Menu1")
+            .Region(Region.West)
+            .Title("MENU CHỨC NĂNG")
+            .Icon(Icon.Table)
+            .Collapsible(true)
+            .Split(true)
+            .Width(245)
+            .MinWidth(175)
+            .MaxWidth(400)
+            .MarginSpec("5 0 5 5")
+            .Layout(LayoutType.Accordion)
+            .Loader(
+                        Html.X().ComponentLoader()
+                            .LoadMask(lm => { lm.ShowMask = true; lm.Msg = "Đang tải dữ liệu ..."; })
+                            .Url(Url.Action("LoadMenuSystem"))
+                            .Mode(LoadMode.Script)
+                            .Params(new { containerId = "Menu1" })
+                        ),
+            //.ItemsFromAction("LoadMenuSystem"),
+
+        //Content
+        Html.X().TabPanel()
+            .ID("Content1")
+            .MarginSpec("5 5 5 0")
+            .Layout(LayoutType.Fit)
+            .Region(Region.Center),
+
+        //Footer
+        Html.X().Panel()
+            .ID("Footer1")
+            .Region(Region.South)
+            .Height(28)
+            .Header(false)
+            .BodyStyle("background-color:#dfe8f6;")
+            .Html("<a id='banquyen' target='_blank' href='http://www.das.com.vn/'> Copyright © 2013 DAS-TECHNOLOGY Ltd. All rights reserved </a>")
+    )
+)
+

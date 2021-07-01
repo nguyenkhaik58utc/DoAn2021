@@ -1,0 +1,181 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@(Html.X().Viewport().AutoScroll(false)
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        Html.X().Hidden().ID("hdfDepartmentID"),
+ 
+            Html.X().Panel()
+                            .Title("SƠ ĐỒ TỔ CHỨC").TitleAlign(TitleAlign.Center)
+                            .Header(false)
+                            .Collapsible(true)
+                            .Region(Region.West).Width(300)
+                            .MarginSpec("-1 0 -1 -1")
+                            .Split(true)
+                            .Layout(LayoutType.Fit)
+                                    .ItemsFromAction("List", "Department", new { area = "Department" }),
+     Html.X().GridPanel()
+            .ID("GrDocument")
+            .Title("Danh sách tài liệu")
+            .Header(false)
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().ID("btnDetail").Text("Xem chi tiết tài liệu").Icon(Icon.Zoom).Handler("ShowDetail"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                      )
+                   )
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(false)
+                    .ID("StDocument")
+                    .RemotePaging(true)
+                        .PageSize(20).GroupField("DocumentDeptName")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "DocumentDistribution")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("DepartId", "App.hdfDepartmentID.getValue() > 0 ? App.hdfDepartmentID.getValue():0", ParameterMode.Raw));
+                            })
+                    .Model(
+                            Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("Department").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("DocumentID").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("Number").Type(ModelFieldType.Int),
+                                                        Html.X().ModelField().Name("NumberObsolete").Type(ModelFieldType.Int),
+                                                        Html.X().ModelField().Name("DistributionDate").Type(ModelFieldType.Date),
+                                                        Html.X().ModelField().Name("ObsoleteDate").Type(ModelFieldType.Date),
+                                                        Html.X().ModelField().Name("DocumentDeptName").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("ObsoleteTypeDisp").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("IssuedTypeDisp").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("IssuedName").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("ObsoleteName").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("AttachmentFileIDs") 
+                                                        )
+                    )
+            )
+                .ColumnModel(
+                                        Html.X().RowNumbererColumn()
+                                            .Text("STT")
+                                            .Align(Alignment.Center)
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Width(33),
+                                            Html.X().Column().DataIndex("DocumentID").Hidden(true),
+                                        Html.X().Column()
+                                            .DataIndex("Name")
+                                            .Text("Tên tài liệu").Filterable(false)
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Flex(1),                                       
+                                        Html.X().ComponentColumn().Text("Thời gian").Columns(
+                                            Html.X().DateColumnExtend()
+                                                .DataIndex("DistributionDate")
+                                                .Text("Phân phối")
+                                                .StyleSpec("font-weight: bold; text-align: center;")
+                                                .Align(Alignment.Center)
+                                                .Format("dd/MM/yyyy")
+                                                .Width(80),
+                                            Html.X().DateColumnExtend()
+                                                .DataIndex("ObsoleteDate")
+                                                .Text("Thu hồi")
+                                                .StyleSpec("font-weight: bold; text-align: center;")
+                                                .Align(Alignment.Center)
+                                                .Format("dd/MM/yyyy")
+                                                .Width(80)
+                                                ),
+                                               Html.X().ComponentColumn().Text("Số lượng").Columns(
+                                                Html.X().Column()
+                                                    .DataIndex("Number")
+                                                    .Text("P/phối")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Align(Alignment.Right)
+                                                    .Width(60),
+                                                Html.X().Column()
+                                                    .DataIndex("NumberObsolete")
+                                                    .Text("T/hồi")
+                                                    .Align(Alignment.Right)
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(50)
+                                                  ),     
+                                        Html.X().ComponentColumn().Text("Hình thức").Columns(
+                                            Html.X().Column()
+                                                        .DataIndex("IssuedTypeDisp")
+                                                .Text("Ph/phối")
+                                                .StyleSpec("font-weight: bold; text-align: center;")
+                                                .Width(80),
+                                            Html.X().Column()
+                                                        .DataIndex("ObsoleteTypeDisp")
+                                                .Text("T/hồi")
+                                                .StyleSpec("font-weight: bold; text-align: center;")
+                                                .Width(80)
+                                                ),
+                                                    Html.X().ComponentColumn().Text("Người").Columns(
+                                                Html.X().Column()
+                                                            .DataIndex("IssuedName")
+                                                    .Text("Ph/phối")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(80),
+                                                Html.X().Column()
+                                                            .DataIndex("ObsoleteName")
+                                                    .Text("T/hồi")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(80)
+                                                    ),
+                                                   Html.X().ColumnFileExtend("AttachmentFileIDs")
+                                        )
+                .Plugins(
+                            Html.X().FilterHeader().Remote(true)
+                    )
+                    .Features(
+                                        Html.X().Grouping()
+                                        .ID("GroupingSummaryDocumentName")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                )    
+            .BottomBar(Html.X().CustomPagingToolbar()
+            )
+         )
+    )
+<script type="text/javascript">
+    function onDepartmentReady(records, value) {
+        if (value) {
+            App.hdfDepartmentID.setValue(records[0].get('id'));
+            App.GrDocument.getStore().reload();
+        }
+    };
+    var ShowDetail = function () {
+        var record = App.GrDocument.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Detail", "Document", new { Area = "Document" }, null))';
+            var params = { id: record[0].get('DocumentID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+</script>

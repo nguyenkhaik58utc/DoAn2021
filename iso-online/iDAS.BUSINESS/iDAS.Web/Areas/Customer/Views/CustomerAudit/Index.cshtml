@@ -1,0 +1,178 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitNC = Url.Action("Insert", "CustomerAuditNC", new { area = "Customer" });
+    var urlStoreNC = Url.Action("LoadNC", "CustomerAuditNC", new { area = "Customer" });
+    var paramStoreNC = Html.X().StoreParameter().Name("id").Value("getCustomerAuditId()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+    .Items(
+            Html.X().GridPanel()
+                .Header(false)
+                .ID("GrAuditCustomer")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .Border(false)
+                .Icon(Icon.TextListBullets)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                            Html.X().ButtonCreate().Handler("AddNew();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrAuditCustomer.selModel.getSelection()[0].get('ID'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ToolTip("Xem chi tiết").ID("btnDetail").Handler("ViewDetail();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnObject").Text("Đối tượng đánh giá").Icon(Icon.Group).Handler("SettingObject();").Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Text("Gửi email đánh giá").ID("btnSendMailAudit").Disabled(true)
+                                     .Icon(Icon.EmailGo).Handler("SendMailAudit();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnResult").Text("Thống kê đánh giá").Icon(Icon.Sum).Handler("ResultForm();").Disabled(true),
+                             //Html.X().ToolbarSeparator(),
+                            Html.X().ButtonNC().UrlSubmit(urlSubmitNC).UrlStore(urlStoreNC).ParamStore(paramStoreNC).AddWindowNC()
+                                        .ID("btnNC").Disabled(true).Hidden(true),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                    )
+                )
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreCustomerAudit")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerAudit", "CustomerAudit", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("StartTime"),
+                                Html.X().ModelField().Name("EndTime"),
+                                Html.X().ModelField().Name("IsActive")
+                            )
+                        )
+                )
+                .ColumnModel(
+                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            Html.X().Column().DataIndex("Name").Text("Đợt đánh giá").Flex(1),
+                            Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                                    .Columns(
+                                            Html.X().DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                                            Html.X().DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").MinWidth(120).Align(Alignment.Center)
+                                    ),
+                            Html.X().CheckColumn().DataIndex("IsActive").Text("Kích hoạt").MinWidth(120)
+                    )
+                .Features(
+                        Html.X().GridFilters()
+                            .MenuFilterText("Tìm kiếm")
+                            .Filters(
+                                Html.X().StringFilter().DataIndex("Name"),
+                                Html.X().DateFilter().DataIndex("StartTime").AfterText("Sau").BeforeText("Trước").OnText("Tại"),
+                                Html.X().DateFilter().DataIndex("EndTime").AfterText("Sau").BeforeText("Trước").OnText("Tại"),
+                                Html.X().BooleanFilter().DataIndex("IsActive").YesText("Đã kích hoạt").NoText("Chưa kích hoạt")
+                            )
+                    ) 
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatus() {
+        var records = App.GrAuditCustomer.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetail, App.btnDelete, App.btnUpdate, App.btnObject, App.btnResult, App.btnNC, App.btnSendMailAudit);
+        }
+        else {
+            SetDisabled(App.btnDetail,App.btnDelete,App.btnUpdate,App.btnObject,App.btnResult,App.btnNC,App.btnSendMailAudit);
+        };
+    };
+    var AddNew = function () {
+        var url = '@(Url.Action("UpdateForm", "CustomerAudit", new { Area = "Customer" }, null))';
+        onDirectMethod(url, null);
+    };
+    var UpdateItem = function () {
+        var records = App.GrAuditCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "CustomerAudit", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrAuditCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerAudit", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var SendMailAudit = function () {
+        var records = App.GrAuditCustomer.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("SendMailAudit", "CustomerAudit", new { Area = "Customer" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SettingObject = function () {
+        var records = App.GrAuditCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ObjectForm", "CustomerAudit", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ResultForm = function () {
+        var records = App.GrAuditCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ResultForm", "CustomerAudit", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+
+    var getCustomerAuditId = function () {
+        var auditId = 0;
+        var records = App.GrAuditCustomer.selModel.getSelection();
+        if (records.length > 0) {
+            auditId = records[0].get('ID');
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có Công việc nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        };
+        return auditId;
+    };
+</script>

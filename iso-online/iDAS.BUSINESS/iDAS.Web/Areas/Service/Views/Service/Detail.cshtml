@@ -1,0 +1,113 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceItem
+@(Html.X().Window()
+.ID("winDetailService")
+.Title("Xem thông tin dịch vụ")
+.Icon(Icon.Zoom)
+.Width(600)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frEditService")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().HiddenFor(m => m.ID)
+                .FieldLabel("Id")
+                .ID("txtId")
+                .LabelWidth(120)
+                .Height(160)
+                .AnchorHorizontal("100%")
+                .TabIndex(5),
+Html.X().Container()
+        .Layout(LayoutType.Form)
+        .Items(
+        Html.X().ComboBoxFor(m => m.CategoryID)
+                .ReadOnly(true)
+                .ID("cbServiceGroupId")
+                .FieldLabel("Nhóm dịch vụ")
+                .LabelWidth(120)
+                .BlankText("Nhóm dịch vụ không được trống")
+                .AnchorHorizontal("100%")
+                .Editable(false)
+                .AllowBlank(false)
+                .TabIndex(1)
+                .QueryMode(DataLoadMode.Local)
+                .ForceSelection(true)
+                .DisplayField("Name")
+                .ValueField("ID")
+                .Store(Html.X().Store()
+                .AutoLoad(true)
+                .Model(Html.X().Model()
+                .IDProperty("ID")
+                .Fields(
+                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                )
+                )
+                .Proxy(Html.X().AjaxProxy()
+                .Url(Url.Action("GetDataCbo"))
+                .Reader(Html.X().JsonReader().Root("data")
+                )
+        )
+),
+
+    Html.X().TextFieldFor(m => m.Code)
+                .FieldLabel("Mã dịch vụ").ReadOnly(true)
+            .ID("txtCode")
+            .AllowBlank(false)
+            .LabelWidth(120)
+            .BlankText("Mã dịch vụ không được trống")
+            .AllowOnlyWhitespace(false)
+            .TabIndex(2),
+    Html.X().TextFieldFor(m => m.Name)
+                .FieldLabel("Tên dịch vụ").ReadOnly(true)
+            .ID("txtName")
+            .AllowBlank(false)
+            .LabelWidth(120)
+            .BlankText("Tên dịch vụ không được trống")
+            .AllowOnlyWhitespace(false)
+            .TabIndex(2),
+             Html.X().NumberFieldFor(m => m.Cost)
+            .FieldLabel("Giá tham khảo")
+            .ID("txtCost")
+            .AllowBlank(false)
+            .LabelWidth(120)
+                .AllowOnlyWhitespace(false).ReadOnly(true)
+            .MinValue(0)
+            .AllowDecimals(true)
+            .TabIndex(2),
+    Html.X().ComboBoxFor(m => m.IsUse)
+            .TabIndex(4)
+            .LabelWidth(120)
+            .Editable(false)
+                .FieldLabel("Tình trạng").ReadOnly(true)
+            .ID("cbIsUse")
+            .Items(
+                    new ListItem("Sử dụng", true),
+                    new ListItem("Không sử dụng", false)
+             ),
+        Html.X().TextAreaFor(m => m.Note)
+                .FieldLabel("Diễn giải")
+                .ReadOnly(true)
+                .ID("txtDescription")
+                .LabelWidth(120)
+                .Height(150)
+                .AnchorHorizontal("100%")
+                .TabIndex(5)
+                )
+             )
+
+)
+.Buttons(
+Html.X().ButtonExit()
+)
+)

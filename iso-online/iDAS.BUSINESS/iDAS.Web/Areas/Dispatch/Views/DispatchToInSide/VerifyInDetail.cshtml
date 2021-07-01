@@ -1,0 +1,70 @@
+﻿@using Ext.Net.MVC
+@using iDAS.Utilities
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    var X = Html.X();
+    var fromType = (bool)ViewData["fromType"];
+}
+@model iDAS.Items.DispatchGoObjectItem
+@(Html.X().Window()
+    .ID("winVerifyInDetail")
+    .Title("Xác nhận công văn đến")
+    .Icon(Icon.Accept)
+    .BodyPadding(0)
+    .Border(true)
+    .Modal(true)
+    .Resizable(false)
+     .Width(600)
+    .Center()
+    .Items(
+        Html.X().FormPanel()
+            .ID("frVerifyInDetail")
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .Items(
+                Html.X().HiddenFor(m => m.SendBy),
+                Html.X().HiddenFor(m => m.ID),
+                Html.X().HiddenFor(m => m.Type),
+                Html.X().HiddenFor(m => m.DispatchGo),
+                Html.X().HiddenFor(m => m.ObjectID),
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                    X.DateFieldFor(m => m.CreateAt)
+                        .ID("dtCreateAt")
+                        .FieldLabel("Ngày chuyển")
+                        .Format("dd/MM/yyyy")
+                        .ReadOnly(true)
+                        .ColumnWidth(0.5),
+                     X.DateFieldFor(m => m.Date)
+                        .ID("dtMoveAt")
+                        .FieldLabel("Ngày nhận")
+                        .Value(DateTime.Now)
+                        .Format("dd/MM/yyyy")
+                         .ColumnWidth(0.5)
+                         .MarginSpec("0 0 0 10")
+                         .ReadOnly(true)
+                     ),
+                    X.EmployeeFieldFor(m => m.UserReceive).ReadOnly(true).Title("Người xác nhận công văn").ID("fsEmployee").MarginSpec("0 0 5 115"),
+                    Html.X().TextAreaFor(m => m.NoteMove).Height(100).FieldLabel("Nội dung gửi").ReadOnly(true),
+                    Html.X().TextAreaFor(m => m.NoteVerify).Height(100).FieldLabel("Nội dung xác nhận")
+                    )
+                    ).Buttons(
+                         Html.X().Button()
+                            .ID("btnSaveVerify")
+                                .Text("Xác nhận")
+                                        .Icon(Icon.Disk)
+                                        .DirectEvents(de =>
+                                        {
+                                            de.Click.Before = @"if (!App.frVerifyInDetail.getForm().isValid()) { return false; } ";
+                                            de.Click.ExtraParams.Add(new { fromType = fromType });
+                                            de.Click.Url = Url.Action("UpdateVerifyInDetail");
+                                            de.Click.EventMask.ShowMask = true;
+                                            de.Click.FormID = "frVerifyInDetail";
+                                        }),
+                            Html.X().ButtonExit()
+    )
+)

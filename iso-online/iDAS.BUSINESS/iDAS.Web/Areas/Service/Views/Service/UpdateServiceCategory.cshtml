@@ -1,0 +1,66 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceCategoryItem
+@(Html.X().Window()
+.ID("winEditService")
+.Title("Sửa thông tin nhóm dịch vụ")
+.Icon(Icon.Pencil)
+.Width(600)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frService")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+        .Layout(LayoutType.Form)
+        .Items(
+        Html.X().HiddenFor(m=>m.ID),
+    Html.X().TextFieldFor(m => m.Name)
+            .FieldLabel("Tên nhóm" + Html.Required())
+            .ID("txtName")
+            .AllowBlank(false)
+            .LabelWidth(120)
+            .BlankText("Tên dịch vụ không được trống")
+            .AllowOnlyWhitespace(false),
+        Html.X().TextAreaFor(m => m.Note)
+                .FieldLabel("Diễn giải")
+                .ID("txtDescription")
+                .LabelWidth(120)
+                .Height(150)
+                .AnchorHorizontal("100%"),
+                Html.X().ComboBoxFor(m => m.IsUse)
+            .TabIndex(4)
+            .LabelWidth(120)
+            .Editable(false)
+            .FieldLabel("Tình trạng" + Html.Required())
+            .ID("cbIsUse")
+            .Items(
+                    new ListItem("Sử dụng", true),
+                    new ListItem("Không sử dụng", false)
+             )
+                )
+             )
+        )
+        .Buttons(
+        Html.X().ButtonSave()
+        .ID("btnSave")
+        .DirectEvents(de =>
+        {
+            de.Click.ExtraParams.Add(new { val = false });
+            de.Click.Before = @"if (!App.frService.getForm().isValid()) { return false; } ";
+            de.Click.Action = "UpdateCate";
+            de.Click.FormID = "frService";
+            de.Click.Success = "App.winEditService.close();";
+        }),
+        Html.X().ButtonExit()
+        )
+)

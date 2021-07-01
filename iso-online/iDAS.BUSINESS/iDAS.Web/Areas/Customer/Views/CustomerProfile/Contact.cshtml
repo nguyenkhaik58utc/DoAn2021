@@ -1,0 +1,87 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerContactItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    string ID = Model.ID.ToString();
+}
+@(
+ Html.X().Viewport().Border(false).Layout(LayoutType.Fit).Items(
+Html.X().GridPanel()
+                .Header(false)
+                .ID("GrCustomerContact")
+                .ColumnLines(true)
+                .Layout(LayoutType.Fit)
+                .ForceFit(true)
+                .Border(false)
+                .StyleSpec("border: none;")
+                .TopBar(
+                            Html.X().Toolbar().Hidden(true)
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().ButtonView().Disabled(false).ToolTip("Xem chi tiết").ID("btnDetailCustomerContact")
+                                        .Handler("ViewContact();")
+                            )
+                    )
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreCustomerContact")
+                        .AutoLoad(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadContactInfo", "CustomerContact")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("customerId", ID, ParameterMode.Value));
+                            })
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("AttachmentFileID"),
+                                Html.X().ModelField().Name("FileName"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("Email"),
+                                Html.X().ModelField().Name("Phone")
+                            )
+                        )
+                )
+                .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                X.TemplateColumn().DataIndex("AttachmentFileID").Width(31).Tpl(
+                                        X.XTemplate().Html(@<text>
+                                    <img src="@Url.Action("LoadImage", "File", new { area = "Generic"})?fileId={AttachmentFileID}&fileName={FileName}"
+                                         style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                                        </text>)
+                                    ),
+                                X.Column().DataIndex("Name").Text("Người liên hệ").Flex(1),
+                                X.Column().DataIndex("Phone").Text("Số điện thoại").Width(100).Align(Alignment.Right),
+                                X.Column().DataIndex("Email").Text("Email").Width(100),
+                                Html.X().ImageCommandColumn()
+                                    .Width(17).Align(Alignment.Center)
+                                    .Commands(
+                                        Html.X().ImageCommand()
+                                            .Icon(Icon.Zoom)
+                                            .ToolTip(t =>
+                                            {
+                                                t.Text = "Xem chi tiết";
+                                            })
+                                            .CommandName("Detail")
+                                    )
+                                    .Listeners(l =>
+                                    {
+                                        l.Command.Handler = "ViewContact(record.data.ID);";
+                                    })
+                    )
+            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script>
+    var ViewContact = function (id) {
+        var url = '@(Url.Action("DetailContactForm", "CustomerContact", new { Area = "Customer" }, null))';
+        var params = {
+            id: id
+        };
+        onDirectMethod(url, params);
+    };
+</script>

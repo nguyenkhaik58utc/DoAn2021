@@ -1,0 +1,187 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.FileExportItem
+
+@{
+    string _tit = "Xuất Excel";
+    Icon _ic = Icon.DiskDownload;
+}
+@(Html.X().Window()
+        .Maximized(true)
+        .Constrain(true)
+            .Layout(LayoutType.Anchor)
+            .Modal(true).Title(_tit).Icon(_ic)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(true)
+          .ID("vpfExport")
+          .Items(
+              Html.X().FormPanel().ID("frExport").Layout(LayoutType.Fit).Border(false).Region(Region.North)
+                                    .Items
+                                    (
+                                    Html.X().Panel()
+                                    .ID("Tab1")
+                                    .Border(false)
+                                    .StyleSpec("border:none")
+                                    .Frame(true)
+                                    .Layout(LayoutType.Fit)
+                                    .AutoScroll(true)
+                                    .Items(
+                                    Html.X().FieldSet()
+                                    .Title("Thông tin file")
+                                    .Layout(LayoutType.Column)
+                                    .Items(
+                                    Html.X().Container()
+                                    .ColumnWidth(0.3)
+                                    .Layout(LayoutType.Form)
+                                    .MarginSpec("0 5 0 0")
+                                    .Items(
+                                   Html.X().NumberFieldFor(m => m.PageIndex)
+                                        .AllowBlank(false)
+                                                .FieldLabel("Số trang").MinValue(1).MaxValue(9999).ReadOnly(true)
+                                        .ID("txt_PageIndex")
+                                            .TabIndex(2)
+                                        .LabelWidth(100)
+                                        .MarginSpec("3 0 2 0"),
+                                                Html.X().NumberFieldFor(m => m.PageSize)
+                                        .AllowBlank(false)
+                                                .FieldLabel("Số bản ghi").MinValue(1).MaxValue(9999).ReadOnly(true)
+                                                .ID("txt_PageSize")
+                                        .TabIndex(2)
+                                        .LabelWidth(100)
+                                        .MarginSpec("3 0 2 0")
+                                        , Html.X().ComboBoxFor(m => m.TypeExport).FieldLabel("Kiểu xuất").LabelWidth(100).ColumnWidth(0.5)
+                                            .ID("ComboBoxType")
+                                            .Editable(false).MarginSpec("3 0 2 0")
+                                            .QueryMode(DataLoadMode.Local)
+                                            .Items(new ListItem("Tạo file mới", 1),
+                                                        new ListItem("Xuất theo mẫu", 2))
+
+                                    ),
+                                    Html.X().Container()
+                                    .ColumnWidth(0.7)
+                                    .Layout(LayoutType.Column)
+                                        .MarginSpec("10 5 0 0").Items(
+                                            Html.X().ComboBoxFor(m => m.Sort).FieldLabel("Sắp xếp").LabelWidth(100).ColumnWidth(0.5)
+                                            .ID("ComboBoxCountry").Select(1)
+                                            .Editable(false).MarginSpec("3 0 3 10")
+                                            .QueryMode(DataLoadMode.Local)
+                                            .Items(new ListItem("Tăng dần", "asc"),
+                                                        new ListItem("Giảm dần", "desc")),
+                                                             Html.X().TextFieldFor(m => m.SortName)
+                                                .AllowBlank(false).ColumnWidth(0.5)
+                                                .MaxLength(500).LabelWidth(100).ID("txtSortName")
+                                                .MaxLengthText("Trường không vượt quá 500 ký tự")
+                                                .FieldLabel("Tên trường cần sx").MarginSpec("3 0 3 10")
+                                            , Html.X().TextFieldFor(m => m.Title).ColumnWidth(1)
+                                                .MaxLength(500).LabelWidth(100).MarginSpec("3 0 3 10")
+                                                .MaxLengthText("Trường không vượt quá 500 ký tự")
+                                                .FieldLabel("Tiêu đề file")
+                                                    , Html.X().FileUploadField().ID("fileUpload").FieldLabel("Đường dẫn file").MarginSpec("3 0 3 10").LabelWidth(100).ColumnWidth(1)
+
+                                    )))
+                                    .AnchorHorizontal("100%").AnchorVertical("28%")),
+               Html.X().GridPanel()
+               .ID("gpProductOder")
+                        .Region(Region.South)
+                        .ColumnLines(true)
+
+                        .MarginSpec("0 1 0 1")
+                        .AnchorHorizontal("100%")
+                        .AnchorVertical("70%")
+                        .Border(true)
+            .Store(Html.X().Store().
+                ID("stField")
+                       .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetField"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        ).AutoLoad(true)
+                        .RemoteSort(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(Html.X().Model()
+                            .IDProperty("dataIndex")
+                            .Fields(
+                             new ModelField("dataIndex", ModelFieldType.String),
+                             new ModelField("text", ModelFieldType.String),
+                             new ModelField("hidden", ModelFieldType.Boolean),
+                             new ModelField("position", ModelFieldType.Int)
+                    )
+                )
+            )
+            .ColumnModel(
+
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+        //Html.X().Column().DataIndex("dataIndex").Hidden(true),
+                Html.X().Column()
+                    .Text("Tên trường")
+                                .DataIndex("dataIndex"),
+                Html.X().SummaryColumn()
+                        .Text("Tên hiển thị")
+                                .DataIndex("text").Editor(Html.X().TextField())
+                        .Flex(1),
+                Html.X().Column()
+                            .Text("Vị trí")
+                            .Align(Alignment.Right)
+                                .Wrap(true).Editor(Html.X().NumberField().MinValue(1))
+                                .DataIndex("position"),
+                        Html.X().CheckColumn().Text("Ẩn?").Align(Alignment.Left).DataIndex("hidden")
+                        .StopSelection(false)
+                        .Editable(true)
+                        .Width(55)
+                    .Width(55)
+            )
+
+            .Features(
+                                        Html.X().Summary().Dock(SummaryDock.Bottom)
+                                        )
+            .Plugins(
+                                    Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "edit")
+                                )
+                                         .Listeners(ls =>
+                        {
+                            ls.SelectionChange.Handler = "RowSelectChange();";
+                        })
+                .BottomBar(Html.X().CustomPagingToolbar())).Buttons(
+                    Html.X().ButtonSave()
+                    .ID("btnSave").Text("Xuất File")
+                    .DirectEvents(de =>
+                    {
+                        de.Click.ExtraParams.Add(new { val = false });
+                        de.Click.Before = @"if (!App.frExport.getForm().isValid()) { return false; } ";
+                        de.Click.Action = "ExportExcel";
+                        de.Click.FormID = "frExport";
+                        de.Click.Success = "this.up('window').close();getFile();";
+                    }),
+                Html.X().ButtonExit()
+            )
+
+)
+
+<script type="text/javascript">
+    var edit = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("HandleChangesFieldExport"))',
+                    params: {
+                        dataIndex: e.record.data.dataIndex,
+                        text: e.record.data.text,
+                        position: e.record.data.position,
+                        hidden: e.record.data.hidden
+                    }
+                });
+        }
+
+    };
+    var getFile = function () {
+        Ext.net.DirectMethod.request({ url: '@(Url.Action("GetFile"))', isUpload: true });
+    };
+    var RowSelectChange = function () {
+        var records = App.gpProductOder.selModel.getSelection();
+        if (records.length == 1) {
+            App.txtSortName.setValue(records[0].get('dataIndex'))
+        };
+    };
+</script>

@@ -1,0 +1,208 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@model iDAS.Items.ISOStandardItem
+@{
+    SelectedRowCollection select = ViewData["Selected"] != null ? (SelectedRowCollection)ViewData["Selected"] : null;
+}
+@(
+ Html.X().Window()
+    .ID("winDetailIso")
+    .Title("Chi tiết thông tin tiêu chuẩn ISO")
+    .Icon(Icon.Zoom)
+    .Width(660)
+    .Height(350)
+    .Modal(true)
+    .Border(false)
+    .Layout(LayoutType.Fit)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmEditIso")
+        .Layout(LayoutType.Fit)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .Items(
+            Html.X().TabPanel().Layout(LayoutType.Fit)
+                        .Items(
+                                Html.X().FormPanel().Layout(LayoutType.Column).Frame(true).Title("Thông tin").StyleSpec("border: none;")
+                                        .FieldDefaults(df => { df.ReadOnly = true; })
+                                                    .Items(
+                                                            Html.X().HiddenFor(m => m.ID).ID("hdfiSONaneCodeId"),
+                                                            Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                                                                    .FieldLabel("Tiêu chuẩn*").ColumnWidth(1).MarginSpec("2 0 2 0")
+                                                                    .AllowBlank(false).BlankText("Tên tiêu chuẩn bắt buộc nhập!"),
+                                                            Html.X().Container().Layout(LayoutType.Column).ColumnWidth(0.7)
+                                                                    .Items(
+                                                                            Html.X().TextFieldFor(m => m.Code).ID("txtCode")
+                                                                                .FieldLabel("Mã tiêu chuẩn*")
+                                                                                .ColumnWidth(1).MarginSpec("2 0 2 0")
+                                                                                .AllowBlank(false).BlankText("Mã tiêu chuẩn bắt buộc nhập!"),
+                                                                            Html.X().TextFieldFor(m=>m.UrlAvatar).ColumnWidth(1).MarginSpec("2 0 2 0")
+                                                                                .FieldLabel("Đường dẫn ảnh").EmptyText("/Content/images/underfind.jpg")
+                                                                                .Listeners(ls => ls.Change.Handler = "App.ImageAvatar.setImageUrl(this.value);"),
+                                                                            Html.X().CheckboxFor(m => m.IsAnnex).ID("ckIsAnnex")
+                                                                                .FieldLabel("Kèm phụ lục").ColumnWidth(0.5).BoxLabel("xác nhận"),
+                                                                            Html.X().CheckboxFor(m => m.IsActive).ID("ckIsActive")
+                                                                                .FieldLabel("Kích hoạt").ColumnWidth(0.5).BoxLabel("xác nhận")
+                                                                    ),
+                                                            Html.X().Container().Layout(LayoutType.Column).ColumnWidth(0.3)
+                                                                .Items(
+                                                                         Html.X().FieldSet().Title("Ảnh đại diện")
+                                                                                    .Layout(LayoutType.Form)
+                                                                                    .Margin(0).Width(120).StyleSpec("float: right;")
+                                                                                    .PaddingSpec("0 5 5 5")
+                                                                                    .Items(
+                                                                                            Html.X().ImageButton().ID("ImageAvatar").Height(150).Text("Ảnh đại diện").ImageUrl(Model.UrlAvatar)
+                                                                                                .ToolTip("Ảnh đại diện").StyleSpec("border: 0.5px solid #b5b8c8; width:100%;")
+                                                                                            )
+                                                                
+                                                                )        
+                                                        ),                          
+                                Html.X().Panel()
+                                        .Title("Danh sách Module thuộc tiêu chuẩn ISO")
+                                        .ID("Tab2")
+                                        .Frame(true)
+                                        .Layout(LayoutType.Fit)
+                                        .StyleSpec("border: none;")
+                                        .Height(350)
+                                        .Items(
+                                            Html.X().GridPanel()
+                                                .ID("grModuleIso")
+                                                .ColumnLines(true)
+                                                .Header(false)
+                                                .Border(true)
+                                                .TopBar(
+                                                    Html.X().Toolbar()
+                                                        .Layout(LayoutType.HBox)
+                                                        .Items(
+                                                            Html.X().ComboBox().ID("cboSystem")
+                                                                .QueryMode(DataLoadMode.Local)
+                                                                .TriggerAction(TriggerAction.All)
+                                                                .SelectOnFocus(true)
+                                                                .LabelWidth(60)
+                                                                .EmptyText("Chọn hệ thống ...")
+                                                                .Width(400)
+                                                                .DisplayField("SystemName")
+                                                                .ValueField("SystemCode")
+                                                                .FieldLabel("Hệ thống")
+                                                                .LabelStyle("color: #000;font: 12px/14px tahoma,arial,verdana,sans-serif;margin-top: 0px;")
+                                                                .MarginSpec("0 0 0 0")
+                                                                .Store(
+                                                                    Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("Code")
+                                                                        .Fields(
+                                                                                new ModelField("SystemCode", ModelFieldType.String) { Mapping = "Code" },
+                                                                                new ModelField("SystemName", ModelFieldType.String) { Mapping = "Name" }
+                                                                                )
+                                                                            )
+                                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataSystem"))
+                                                                        .Reader(Html.X().JsonReader().Root("data"))
+                                                                        )
+                                                                            .Listeners(ls => ls.Load.Handler = "App.cboSystem.select(App.cboSystem.store.getAt(0)); App.grModuleIso.getStore().load()")
+                                                                        )
+                                                                        .Listeners(ls =>
+                                                                                    ls.Change.Handler = "App.grModuleIso.getStore().load()")
+                                                                    )
+                                                            )
+                                                            .Store(
+                                                                Html.X().Store()
+                                                                    .AutoLoad(false)
+                                                                    .RemotePaging(true)
+                                                                    .AutoLoad(true)
+                                                                    .ID("stModuleIso")
+                                                                    .PageSize(10)
+                                                                    .Model(
+                                                                            Html.X().Model().IDProperty("ID")
+                                                                            .Fields(
+                                                                                new ModelField("ID"),
+                                                                                new ModelField("Name"),
+                                                                                new ModelField("IsSelected"),
+                                                                                new ModelField("IsRequired"),
+                                                                                new ModelField("IsShow"),
+                                                                                new ModelField("IsActive")
+                                                                                ))
+                                                                            .Proxy(
+                                                                                Html.X().AjaxProxy()
+                                                                                   .Url(Url.Action("LoadModules"))
+                                                                                   .Reader(Html.X().JsonReader().Root("data"))
+                                                                                )
+                                                                        .Parameters(ps =>
+                                                                            {
+                                                                                ps.Add(new StoreParameter("iSONaneCodeId", "App.hdfiSONaneCodeId.getValue()", ParameterMode.Raw));
+                                                                                ps.Add(new StoreParameter("systemCode", "App.cboSystem.getValue()", ParameterMode.Raw));
+                                                                            }
+                                                                        )
+                                                            )
+                                                        .ColumnModel(
+                                                            Html.X().RowNumbererColumn()
+                                                                .Text("STT")
+                                                                .Align(Alignment.Center)
+                                                                .StyleSpec("font-weight: bold; text-align: center;")
+                                                                .Width(33),
+                                                            Html.X().Column()
+                                                                .DataIndex("ID")
+                                                                .ID("ID")
+                                                                .Hidden(true),
+                                                            Html.X().Column()
+                                                                .Text("Tên module")
+                                                                .DataIndex("Name")
+                                                                .StyleSpec("font-weight: bold;text-align: center; ")
+                                                                .Width(300)
+                                                                .Flex(1),
+                                                            Html.X().CheckColumn()
+                                                                .Text("Kích hoạt")
+                                                                .DataIndex("IsActive")
+                                                                .StyleSpec("font-weight: bold;text-align: center; ").Width(100)
+                                                                    ,
+                                                            Html.X().CheckColumn()
+                                                                .Text("Hiển thị")
+                                                                .DataIndex("IsShow")
+                                                                .StyleSpec("font-weight: bold;text-align: center; ").Width(100)
+                                                                   ,
+                                                            Html.X().CheckColumn()
+                                                                .Text("Bắt buộc")
+                                                                .DataIndex("IsRequired")
+                                                                .StyleSpec("font-weight: bold;text-align: center; ").Width(100)
+
+                                                        )
+
+                                                             .View(Html.X().GridView().TrackOver(false))
+                                                                .Features(
+                                                                 Html.X().Summary().Dock(SummaryDock.Bottom)
+                                                        )
+                                                    .BottomBar(
+                                                        Html.X().PagingToolbar()
+                                                        .EmptyMsg("Hiện không có dữ liệu")
+                                                        .NextText("Trang kế tiếp")
+                                                        .PrevText("Trang trước")
+                                                        .LastText("Trang cuối cùng")
+                                                        .FirstText("Trang đầu tiên")
+                                                        .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                                                        .BeforePageText("Trang")
+                                                        .AfterPageText("của {0}")
+                                                        .RefreshText("Tải lại Dữ liệu")
+                                                        .Items(
+                                                            Html.X().Label("Số bản ghi trên 1 trang"),
+                                                            Html.X().ToolbarSpacer(10),
+                                                            Html.X().ComboBox()
+                                                                .Width(50)
+                                                                .Items("10", "20", "30", "50", "100")
+                                                                .SelectedItems("10")
+                                                               .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                                                        )
+                                                        .Plugins(Html.X().ProgressBarPager())
+                                                 )
+                                    )
+                            )
+                    )
+        )
+        .Buttons(
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Thoát")
+                .TabIndex(8)
+                .Handler("App.frmEditIso.reset(); App.winDetailIso.close();")
+        )
+)

@@ -1,0 +1,139 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.FaqAnswerItem
+
+@(Html.X().Window()
+    .Title("Danh sách câu trả lời")
+    .Icon(Icon.Tick)
+    .Modal(true)
+    .Width(750)
+    .Height(400)
+    .Constrain(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Items(
+        Html.X().GridPanel()
+        .ID("FaqAnswerPanel")
+        .Header(false)
+        .ColumnLines(true)
+        .Border(false)
+        .ForceFit(true)
+        .Collapsible(true)
+        .Split(true)
+        .Icon(Icon.TextListBullets)
+        .TopBarItem(
+            Html.X().Button().Text("Thêm").ID("btnCreateFaqAnswer").Icon(Icon.Add).Handler("showCreateFaqAnswer();"),
+            Html.X().Button().Text("Sửa").ID("btnUpdateFaqAnswer").Icon(Icon.Pencil).Handler("showUpdateFaqAnswer();").Disabled(true),
+            Html.X().Button().Text("Xóa").ID("btnDeleteFaqAnswer").Icon(Icon.Delete).Handler("showDeleteFaqAnswer();").Disabled(true),
+            Html.X().Button().Text("Xem chi tiết").ID("btnDetailFaqAnswer").Icon(Icon.Zoom).Handler("showDetailFaqAnswer();").Disabled(true)
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .Parameters(Html.X().StoreParameter().Name("faqQuestionId").Value("getFaqQuestionId()").Mode(ParameterMode.Raw))
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Answer").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectFaqAnswer()")
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").Hidden(true),
+            Html.X().Column().Text("Câu trả lời").DataIndex(Model, m => m.Answer).StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex(Model, m => m.CreateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeFaqAnswer()")
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var urlCreateFaqAnswer = '@Url.Action("Create", "FaqAnswer", new { area = "Web" })';
+    var urlUpdateFaqAnswer = '@Url.Action("Update", "FaqAnswer", new { area = "Web" })';
+    var urlDeleteFaqAnswer = '@Url.Action("Delete", "FaqAnswer", new { area = "Web" })';
+    var urlDetailFaqAnswer = '@Url.Action("Detail", "FaqAnswer", new { area = "Web" })';
+    var urlViewFaqAnswer = '@Url.Action("Index", "FaqAnswer", new { area = "Web" })';
+
+    var getFaqQuestionId = function () {
+        var record = getFaqQuestionSelection();
+        var faqQuestionId = record == null ? 0 : record.data.ID;
+        return faqQuestionId;
+    };
+    var getFaqAnswerSelection = function () {
+        return App.FaqAnswerPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadFaqAnswer = function () {
+        App.FaqAnswerPanel.getStore().reload();
+        deSelectFaqAnswer();
+    };
+    var deSelectFaqAnswer = function () {
+        App.FaqAnswerPanel.selModel.lastSelected = null;
+        selectionChangeFaqAnswer();
+    };
+    var showCreateFaqAnswer = function () {
+        var url = urlCreateFaqAnswer;
+        var faqQuestionId = getFaqQuestionId();
+        var params = { faqQuestionId: faqQuestionId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateFaqAnswer = function () {
+        var url = urlUpdateFaqAnswer;
+        var record = getFaqAnswerSelection();
+        var FaqAnswerId = record == null ? 0 : record.data.ID;
+        var params = { FaqAnswerId: FaqAnswerId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteFaqAnswer = function () {
+        var url = urlDeleteFaqAnswer;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getFaqAnswerSelection();
+                            var FaqAnswerId = record == null ? 0 : record.data.ID;
+                            var params = { FaqAnswerId: FaqAnswerId };
+                            onDirectMethod(url, params, 'post', reloadFaqAnswer);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailFaqAnswer = function () {
+        var url = urlDetailFaqAnswer;
+        var record = getFaqAnswerSelection();
+        var FaqAnswerId = record == null ? 0 : record.data.ID;
+        var params = { FaqAnswerId: FaqAnswerId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showViewFaqAnswer = function () {
+        var url = urlViewFaqAnswer;
+        var record = getFaqAnswerSelection();
+        var FaqAnswerId = record == null ? 0 : record.data.ID;
+        var params = { FaqAnswerId: FaqAnswerId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeFaqAnswer = function () {
+        var record = getFaqAnswerSelection();
+        App.btnUpdateFaqAnswer.setDisabled(record == null);
+        App.btnDeleteFaqAnswer.setDisabled(record == null);
+        App.btnDetailFaqAnswer.setDisabled(record == null);
+        App.btnViewFaqAnswer.setDisabled(record == null);
+    };
+</script>

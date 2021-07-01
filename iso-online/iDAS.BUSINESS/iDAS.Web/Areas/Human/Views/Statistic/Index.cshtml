@@ -1,0 +1,147 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().ID("vieStatisticEmp")
+    .Layout(LayoutType.Border)
+    .Listeners(ls =>
+    {
+        ls.AddScript("getGrid();");
+    })
+    .Items(
+        X.TreePanel()
+            .Split(true)
+            .Region(Region.Center)
+            .ID("gpDepartmentStatistical")
+            .TitleAlign(TitleAlign.Center)
+            .Border(false)
+            .AutoScroll(true)
+            .RootVisible(false)
+            .ColumnLines(true)
+            .RowLines(true)
+            .Listeners(ls =>
+            {
+                ls.Load.Handler = "expandDepartmentWindow(records);";
+            })
+            .TopBar(
+                X.Toolbar()
+                    .ID("tbgpDepartmentStatisticalProfile")
+                    .Items(
+                        Html.X().ButtonExportExcelFile().GridIDGetFile("gpDepartmentStatistical").isTree(true),
+                        Html.X().ButtonExportExcelFile().GridIDGetFile("grdStatistic").isTree(false).Icon(Icon.PageExcel).Text("Xuất excel").ID("btnExStatistic").Hidden(true)
+                          )
+                    )
+            .Store(
+                Html.X().TreeStore().ID("stStatistical")
+                    .AutoLoad(true)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetEmpTotal"))
+                    .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                    //.Parameters(ps =>
+                    //{
+                        //ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                        //ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                    //})
+                    .Model(
+                        Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("id"),
+                                Html.X().ModelField().Name("text"),
+                                Html.X().ModelField().Name("ParentID"),
+                                Html.X().ModelField().Name("Data1")
+                                )
+                    )
+                )
+            .ColumnModel(
+                X.TreeColumn().Text("Sơ đồ tổ chức").Width(300).DataIndex("text").Flex(1),
+                X.Column().DataIndex("Data1").Text("Tổng số nhân sự").Width(120).Renderer("renderTotal")
+                )
+                .SelectionModel(
+                    Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Single)
+                    )
+            )
+)
+<script>
+    var expandDepartmentWindow = function (records) {
+
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                var node = records[i];
+                if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+                    node.expand();
+                }
+            }
+        }
+    };
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+
+    var showDetailStatiscal = function (storeUrl) {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        var depId = 0;
+        if (records.length > 0) {
+            depId = records[0].get('id');
+        }
+        var url = '@(Url.Action("ViewEmpoyeeList", "Statistic", new { Area = "Human" }))';
+
+        var params = {
+            urlStore: storeUrl,
+            Mode: '@(ParameterMode.Value)',
+            depId: depId
+        };
+        onDirectMethod(url, params);
+    };
+
+    var renderTotal = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotalDetail", "Statistic", new { Area = "Human" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+
+    var getGrid = function(){
+        var url = '@(Url.Action("GetGridPanel", "Statistic", new { Area = "Human" }, null))';
+            var params = {
+                containerId: "vieStatisticEmp"
+            };
+            onDirectMethod(url, params);
+    }
+
+    var renderDetail = function (value, metadata, record, rowIndex, colIndex, store, obj) {
+        if (value != null) {
+            var colIndex1 = colIndex+1
+            var departmentID = App.grdStatistic.columns[colIndex1].tag;
+            return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscalTitle(" + departmentID + ")\">" + value + "</a>";
+        }
+    };
+
+    var showDetailStatiscalTitle = function (departmentID) {
+        var records = App.grdStatistic.selModel.getSelection();
+        var titleID = 0;
+        if (records.length > 0) {
+            titleID = records[0].get('TitleID');
+        }
+
+        console.log(departmentID);
+        console.log(titleID);
+
+        var storeUrl = '@(Url.Action("LoadTotalDetailTitle", "Statistic", new { Area = "Human" }))';
+        var url = '@(Url.Action("ViewEmpoyeeList", "Statistic", new { Area = "Human" }))';
+        var params = {
+            urlStore: storeUrl,
+            Mode: '@(ParameterMode.Value)',
+            depId: departmentID,
+            titleId: titleID
+        };
+
+        onDirectMethod(url, params);
+    };
+
+    var exStatistic = function () {
+        App.btnExStatistic.fireEvent(App.btnExStatistic.clickEvent);
+    }
+</script>

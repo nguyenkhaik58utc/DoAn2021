@@ -1,0 +1,210 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.EquipmentProductionMaintainItem
+@(Html.X().Window()
+    .ID("WinMaintain")
+    .Title("Bảo dưỡng thiết bị")
+    .Icon(Icon.BulletConnect)
+    .Height(500)
+    .Maximized(true)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .AutoScroll(true)
+    .Items(
+            Html.X().HiddenFor(m => m.EquipmentProductionID).ID("hdfEquipmentProductionID"),
+            Html.X().GridPanel()
+                .Header(false)
+                .ID("GrMaintain")
+                .ColumnLines(true)
+                .Layout(LayoutType.Fit)
+                .ForceFit(true)
+                .StyleSpec("border: none;")
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().ToolTip("Thêm mới thông tin bảo dưỡng thiết bị")
+                                .ID("btnAddContact").Icon(Icon.Add).Disabled(false).Handler("AddMaintain();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnUpdateMaintain").ToolTip("Cập nhật thông tin bảo dưỡng thiết bị")
+                                .Handler("UpdateMaintain();").Icon(Icon.Pencil).Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ToolTip("Xóa thông tin bảo dưỡng thiết bị").Icon(Icon.Delete).ID("btnDeleteMaintain")
+                                .Handler("DeleteMaintain();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ToolTip("Xem chi tiết").ID("btnDetailMaintain").Icon(Icon.Zoom)
+                                .Handler("DetailMaintain();").Disabled(true),
+                        Html.X().Button().ID("btnUpdateMaintainReal").Text("Kết quả bảo dưỡng")
+                                .Handler("UpdateMaintainReal();").Icon(Icon.ChartBar).Disabled(true)       
+                    )
+            )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreMaintain")
+                            .AutoLoad(true)
+                            .GroupField("Year")
+                            .Sorters(
+                                        Html.X().DataSorter().Property("Year").Direction(Ext.Net.SortDirection.DESC)
+                                )
+                            .PageSize(12)
+                            .RemotePaging(true)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMaintainByProduct", "EquipmentProductionMaintain")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("id", "App.hdfEquipmentProductionID.value", ParameterMode.Raw));
+                                        })
+                            .Model(
+                                Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Number"),
+                                        Html.X().ModelField().Name("PlanTime"),
+                                        Html.X().ModelField().Name("RealTime"),
+                                        Html.X().ModelField().Name("IsComplete"),
+                                        Html.X().ModelField().Name("HumanDepartment.Name"),
+                                        Html.X().ModelField().Name("Year"),
+                                        Html.X().ModelField().Name("Note"),
+                                        Html.X().ModelField().Name("Status")
+                                )
+                            )
+                    )
+                    .Features(Html.X().GroupingSummary()
+                                        .ID("GroupingSummaryYear")
+                                        .GroupHeaderTplString("Năm {name}")
+                                        .HideGroupedHeader(true)
+                                        .ShowSummaryRow(false)
+                                        .EnableGroupingMenu(false)
+                                )
+                    .ColumnModel(
+                                    Html.X().Column().DataIndex("Number").Renderer("NumberRender").Text("Lần bảo dưỡng").Width(100).Align(Alignment.Center).Locked(true),
+                                    Html.X().ComponentColumn().Text("Thời gian bảo dưỡng").Locked(true)
+                                            .Columns(
+                                                Html.X().DateColumnExtend().DataIndex("PlanTime").Format("dd/MM/yyyy").Text("Kế hoạch").Width(150).Align(Alignment.Center),
+                                                Html.X().DateColumnExtend().DataIndex("RealTime").Format("dd/MM/yyyy").Text("Thực tế").Width(150).Align(Alignment.Center)
+                                            ),
+                                    Html.X().CheckColumn().DataIndex("IsComplete").Text("Hoàn thành").Width(100),
+                                    Html.X().Column().DataIndex("Status").Text("Kết quả").Width(150).Align(Alignment.Center),
+                                     Html.X().Column().DataIndex("HumanDepartment.Name").Text("Đơn vị").Width(150),
+                                    Html.X().Column().DataIndex("Note").Text("Ghi chú").MinWidth(200).Flex(1).Wrap(true)
+                        )
+                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusContact()"))
+                    .BottomBar(Html.X().CustomPagingToolbar("12", "24", "36", "48", "96"))
+
+    )
+    .Buttons(
+            Html.X().Button()
+                    .ID("btnMaintainCancel")
+                    .Text("Đóng")
+                    .Icon(Icon.Cancel)
+                    .Handler("this.up('window').close();")
+                )
+)
+<script>
+    function NumberRender(value) {
+        return "Lần "+ value;
+    };
+    function CheckStatusContact() {
+        var records = App.GrMaintain.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnUpdateMaintain.setDisabled(false);
+            App.btnDetailMaintain.setDisabled(false);
+            App.btnDeleteMaintain.setDisabled(false);
+            App.btnUpdateMaintainReal.setDisabled(false);
+        }
+        else {
+            App.btnUpdateMaintain.setDisabled(true);
+            App.btnDetailMaintain.setDisabled(true);
+            App.btnDeleteMaintain.setDisabled(true);
+            App.btnUpdateMaintainReal.setDisabled(true);
+        };
+    };
+    var AddMaintain = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "EquipmentProductionMaintain", new { Area = "Equipment" }))',
+            params: {
+                productionId: App.hdfEquipmentProductionID.value
+            }
+        });
+    };
+    var UpdateMaintain = function () {
+        var records = App.GrMaintain.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "EquipmentProductionMaintain", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var UpdateMaintainReal = function () {
+        var records = App.GrMaintain.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateRealForm", "EquipmentProductionMaintain", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DetailMaintain = function () {
+        var records = App.GrMaintain.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "EquipmentProductionMaintain", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DeleteMaintain = function () {
+        var records = App.GrMaintain.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var id = records[0].get('ID');
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "EquipmentProductionMaintain", new { Area = "Equipment" }, null))',
+                        params: {
+                            id: id,
+                        }
+                    });
+                }
+            })
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+</script>

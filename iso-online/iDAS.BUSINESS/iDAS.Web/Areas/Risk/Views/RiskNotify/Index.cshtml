@@ -1,0 +1,254 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script type="text/javascript">
+    var getAdditionalData = function (data, idx, record, orig) {
+        return {
+            rowBodyColspan: record.fields.getCount(),
+            rowBody: Ext.String.format('<p style = "margin-top: 0pt; margin-bottom: 3pt; font-size: 0.8em; color: #a7a7a7; clear:left">Gửi ngày {0} vào lúc {1}</p><p style = "margin-top: 0pt; margin-bottom: 0pt;  clear:left font-size: 0.8em; color: #a7a7a7;">{2}</p>', data.DateSend, data.TimeSend, data.Content)
+        };
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        return record.get('IsRead') == false ? 'idas-focus' : '';
+    };
+</script>
+@(Html.X().Menu()
+    .ID("cmMenuNotify")
+    .Items(
+        new MenuItem { Text = "Chưa đọc", ID = "cmUnRead", Icon = Icon.Email, Handler = "UnRead()" },
+        Html.X().MenuSeparator(),
+        new MenuItem { Text = "Xóa", ID = "cmDeleteNotify", Icon = Icon.Delete, Handler = "deleteRecord();" },
+        Html.X().MenuSeparator()
+    )
+)
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+            .Items(
+                Html.X().GridPanel()
+        .Header(false)
+        .Border(false)
+        .Layout(LayoutType.Fit)
+        .ID("grNotifyPanel")
+        .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemContextMenuNotify")
+        .Margin(0)
+        .Padding(0)
+        .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                                Html.X().ButtonView()
+                                        .ID("btnNotifytView")
+                                        .Disabled(true)
+                                        .Handler("showFrmRead();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete()
+                                        .ID("btnNotifytDelete")
+                                        .Disabled(true)
+                                        .Handler("deleteRecord();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button()
+                                        .ID("btnCheckRead")
+                                        .Text("Đánh dấu đã đọc")
+                                        .Icon(Icon.EmailOpen)
+                                        .Handler("CheckRead()"),
+                                         Html.X().ToolbarSeparator()
+                      )
+                )
+        .Store(Html.X().Store()
+            .ID("stNotifyStores")
+            .AutoLoad(true)
+            .RemotePaging(true)
+            .PageSize(20)
+            .GroupField("ModuleName")
+            .Sorters(Html.X().DataSorter().Property("ModuleName").Direction(Ext.Net.SortDirection.ASC))
+            .Model(Html.X().Model().IDProperty("ID")
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Content").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("ModuleCode").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("ModuleName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Title").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("DateSend").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("TimeSend").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsRead").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("FuctionCode").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Icon").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("FunctionTitle").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("FunctionName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Param").Type(ModelFieldType.String)
+
+                )
+            )
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData"))
+            .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+        )
+        .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                        Html.X().Column().Text("Thông báo").DataIndex("Title").Wrap(true).Flex(1).Renderer("TitleRenderer"),
+                        Html.X().Column().Text("Nội dung").DataIndex("Content").Wrap(true).Width(350),
+                        Html.X().Column().Text("Ngày thông báo").Width(180).DataIndex("DateSend").Wrap(true),
+                        Html.X().Column().Text("").Width(60).DataIndex("IsRead").Wrap(true)
+                                    .Renderer("renderRead")
+                    )
+        .Listeners(ls => ls.Select.Handler = "App.btnNotifytView.setDisabled(false); App.btnNotifytDelete.setDisabled(false);")
+        .View(Html.X().GridView().GetRowClass(a => a.Fn = "getRowClass").StripeRows(false))
+        .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi).IgnoreRightMouseSelection(true))
+        .Plugins(Html.X().FilterHeader().Remote(true))
+        .Features(
+                    Html.X().GroupingSummary()
+                                .GroupHeaderTplString("{name}")
+                                .HideGroupedHeader(true)
+                                .EnableGroupingMenu(false)
+                                .ShowSummaryRow(false),
+                    Html.X().RowWrap()
+                )
+
+        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+<script>
+
+    var template = '<img src="/icons/{0}/ext.axd" />';
+    var renderRead = function (value) {
+        return Ext.String.format(template, (value == true ? "email_open-png" : "email-png"));
+    };
+    var showFrmRead = function () {
+        var records = App.grNotifyPanel.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmRead", "RiskNotify", new { Area = "Risk" }, null))',
+                params: { id: records[0].get('ID') }
+            });
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có thông báo nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        };
+        var index = App.grNotifyPanel.getStore().indexOfId(records[0].get('ID'));
+        var rowEl = App.grNotifyPanel.getView().getRow(index);
+        rowEl.scrollIntoView(App.grNotifyPanel.getGridEl(), false);
+    };
+    var deleteRecord = function () {
+        var records = App.grNotifyPanel.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnNotifytDelete.setDisabled(true);
+                        App.btnNotifytView.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var stringId = "";
+                            for (var i = 0; i < records.length; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            stringId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "RiskNotify", new { Area = "Risk" }, null))',
+                                params: { stringId: stringId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var UnRead = function () {
+        var records = App.grNotifyPanel.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnNotifytDelete.setDisabled(true);
+                        App.btnNotifytView.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var aId = new Array();
+                var stringId = "";
+                for (var i = 0; i < records.length; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                stringId = aId.join();
+                var params = { stringId: stringId };
+                var url = '@(Url.Action("UnRead", "RiskNotify", new { Area = "Risk" }, null))';
+                onDirectMethod(url, params);
+                break;
+        }
+    };
+    var CheckRead = function () {
+        var records = App.grNotifyPanel.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnNotifytDelete.setDisabled(true);
+                        App.btnNotifytView.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var aId = new Array();
+                var stringId = "";
+                for (var i = 0; i < records.length; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                stringId = aId.join();
+                var params = { stringId: stringId };
+                var url = '@(Url.Action("CheckRead", "RiskNotify", new { Area = "Risk" }, null))';
+                onDirectMethod(url, params);
+                break;
+        }
+    };
+    var itemContextMenuNotify = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenuNotify.showAt(e.getXY());
+    };
+    var showNotifi = function (notifyId) {
+        var data = App.stNotifyStores.getById(notifyId).data;
+        var moduleCode = data.ModuleCode;
+        var id = data.FunctionName.split('/').join("");
+        var icon = "#" + data.Icon;
+        var title = data.FunctionTitle;
+        var link = data.FunctionName;
+        var focusId = data.Param.substring(data.Param.indexOf(":") + 1);
+        var params = {
+            focusId: focusId
+        };
+        if (data.IsRead == false)
+        {
+            var url = '@(Url.Action("CheckRead", "RiskNotify", new { Area = "Risk" }, null))';
+            onDirectMethod(url, { stringId: notifyId.toString() });
+        }
+        window.parent.customTab(id, icon, title, link, params);
+    };
+    var TitleRenderer = function (value, meta, record) {
+        var id = record.data.ID;
+        return "<a class='a-grid-cell' onclick='showNotifi(" + id + ")'>" + value + "</a>";
+    };
+</script>

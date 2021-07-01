@@ -1,0 +1,107 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var strId = ViewData["id"].ToString();
+    var strName = ViewData["Name"].ToString();
+}
+@(Html.X().Window()
+.BodyPadding(0)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Maximized(true)
+.Height(1)
+.Title("Biểu đồ thống kế khách hàng")
+.Icon(Icon.ChartBar)
+.Items(
+     Html.X().Chart()
+            .ID("ChartTaskPerson")
+            .Shadow(true)
+            .StandardTheme(StandardChartTheme.Category1)
+            .Background(new DrawBackground() { Fill="White"})
+            .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Top).LabelFont("11px Tahoma").BoxStroke("#084594"))
+            .Animate(true)
+            .Store(Html.X().Store()
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadChart"))
+                                    .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("id", strId, ParameterMode.Raw));
+                                        })
+                            .Model(Html.X().Model()
+                                        .Fields(
+                                                    Html.X().ModelField().Name("TimeFix"),
+                                                    Html.X().ModelField().Name("SumCustomer"),
+                                                    Html.X().ModelField().Name("CustomerNormal"),
+                                                    Html.X().ModelField().Name("CustomerPotential"),
+                                                    Html.X().ModelField().Name("CustomerOfficial")
+                                            )
+                                    )
+                    )
+            .Axes(
+                    Html.X().NumericAxis().Fields(new string[] { "SumCustomer" })
+                                .Grid(true)
+                                .Title("Đơn vị: khách hàng")
+                                .Minimum(0)
+                                    .Label(Html.X().AxisLabel()
+                                    .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                                ),
+                    Html.X().CategoryAxis().Position(Position.Bottom)
+                                .Fields("TimeFix")
+                                .Title("Biểu đồ thống kê khách hàng năm " + DateTime.Now.Year + " ( " + strName + ")")
+                )
+            .Series(
+                        Html.X().ColumnSeries()
+                                .Axis(Position.Bottom)
+                                .Highlight(true)
+                                .XField("TimeFix")
+                                .YField(new string[] { "SumCustomer" })
+                                .Title("Tổng khách hàng")
+                                .Tips(Html.X().ChartTip()
+                                                .TrackMouse(true)
+                                                .Width(210)
+                                                .Height(28)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('SumCustomer') + ' khách hàng');")
+                                        ),
+                        Html.X().LineSeries()
+                                .XField("TimeFix")
+                                .YField("CustomerNormal")
+                                .Title("Khách hàng tiếp cận")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                .Tips(Html.X().ChartTip()
+                                                .Width(210)
+                                                .Height(28)
+                                                .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('CustomerNormal') + ' khách hàng tiếp cận');")
+                                        )
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Arrow, Size = 5, Radius = 5, StrokeWidth = 0 })
+                               ,
+                        Html.X().LineSeries()
+                                .XField("TimeFix")
+                                .YField("CustomerPotential")
+                                .Title("Khách hàng tiềm năng")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                .Tips(Html.X().ChartTip()
+                                        .Width(210)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                        .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('CustomerPotential') + ' khách hàng tiềm năng');")
+                                    )
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Circle, Size = 5, Radius = 5, StrokeWidth = 0 })
+                                ,
+                        Html.X().LineSeries()
+                                .XField("TimeFix")
+                                .YField("CustomerOfficial")
+                                .Title("Khách hàng thực tế")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                .Tips(Html.X().ChartTip()
+                                            .Width(210)
+                                            .Height(28)
+                                            .TrackMouse(true)
+                                            .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('CustomerOfficial') + ' khách hàng thực tế');")
+                                    )
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Cross, Size = 5, Radius = 5, StrokeWidth = 0 })
+                        )
+        )
+)

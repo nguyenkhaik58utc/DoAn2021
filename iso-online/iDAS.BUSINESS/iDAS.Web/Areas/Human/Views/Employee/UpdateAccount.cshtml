@@ -1,0 +1,65 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@model iDAS.Items.HumanUserItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+.ID("winUpdateAccount")
+.Title("Cập nhật thông tin tài khoản nhân sự")
+.Icon(Icon.ApplicationViewDetail)
+.Width(550)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdateAccount")
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .MarginSpec("0 -4 -3 -4")
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 120)
+            .DefaultAnchor("100%")
+                .Items(
+                    X.HiddenFor(m => m.ID),
+                    X.TextFieldFor(m => m.Account).FieldLabel("Tài khoản:").MarginSpec("0 8 0 10").Width(450),
+                    X.TextFieldFor(m => m.Password).Text(iDAS.Utilities.Password.EmptyPass).FieldLabel("Mật khẩu:").MarginSpec("0 8 0 10").Width(450),
+                    X.CheckboxFor(m => m.IsActive).BoxLabel("Kích hoạt").MarginSpec("0 8 0 10").MarginSpec("0 0 0 140").HideLabel(true),
+                    Html.X().CheckboxFor(m => m.IsLocked).BoxLabel("Khóa tài khoản").MarginSpec("0 8 0 10").MarginSpec("0 0 0 140").HideLabel(true),
+                    Html.X().CheckboxFor(m => m.IsProtected).ReadOnly(true).BoxLabel("Quản trị").MarginSpec("0 8 0 10").MarginSpec("0 0 0 140").HideLabel(true)
+                        )
+)
+.Buttons(
+        Html.X().Button()
+            .Text("Lưu lại")
+            .ID("btnUpdateSave")
+            .Icon(Icon.DatabaseSave)
+            .DirectEvents(de => { })
+            .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmUpdateAccount.getForm().isValid()) { return false; } ";
+                            de.Click.Url = Url.Action("UpdateAccount");
+                            de.Click.EventMask.ShowMask = true;
+                            de.Click.FormID = "frmUpdateAccount";
+                            de.Click.Success = "this.up('window').close();";
+                        })
+
+        , Html.X().Button()
+                .Text("Hủy")
+                .Icon(Icon.Cancel)
+                .TabIndex(15)
+            .OnClientClick("this.up('window').close();"))
+)
+<script>
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("GrdPosition").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+</script>

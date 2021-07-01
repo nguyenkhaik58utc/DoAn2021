@@ -1,0 +1,161 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("ProductPanel")
+        .Border(false)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateProduct").Icon(Icon.Add).Handler("showCreateProduct();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateProduct").Icon(Icon.Pencil).Handler("showUpdateProduct();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteProduct").Icon(Icon.Delete).Handler("showDeleteProduct();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailProduct").Icon(Icon.Zoom).Handler("showDetailProduct();").Disabled(true),
+                Html.X().Button().Text("Module").ID("btnViewProductModule").Icon(Icon.Cog).Handler("showViewProductModule();").Disabled(true),
+                Html.X().Button().Text("Bảng giá").ID("btnViewProductPrice").Icon(Icon.Money).Handler("showViewProductPrice();").Disabled(true),
+                Html.X().ToolbarFill(),
+                Html.X().ComboBox().ID("cboProductCategory")
+                .QueryMode(DataLoadMode.Local)
+                .EmptyText("Chọn Danh mục sản phẩm ...")
+                .DisplayField("Name")
+                .ValueField("ID")
+                .FieldLabel("<b>Danh mục</b>")
+                .MarginSpec("0 10 0 0")
+                .Flex(1)
+                .LabelWidth(60)
+                .Editable(false)
+                .Store(
+                    Html.X().Store().AutoLoad(true)
+                    .Model(
+                        Html.X().Model().IDProperty("ID")
+                        .Fields(
+                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                        )
+                    )
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProductCategories")).Reader(Html.X().JsonReader().Root("data")))
+                    .Listeners(ls => ls.Load.Handler = "App.cboProductCategory.select(App.cboProductCategory.store.getAt(0))")
+                )
+                .Listeners(ls => ls.DirtyChange.Handler = "reloadProduct();")
+                .Listeners(ls => ls.Select.Handler = "reloadProduct();")
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .AutoLoad(false)
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Parameters(Html.X().StoreParameter().Name("productCategoryId").Value("App.cboProductCategory.value").Mode(ParameterMode.Raw))
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectProduct()")
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProduct();")
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex(Model, m => m.ID).Hidden(true),
+            Html.X().Column().Text("Tên sản phẩm").DataIndex(Model, m => m.Name).StyleSpec("font-weight: bold;text-align: center").Width(250),
+            Html.X().Column().Text("Mô tả").DataIndex(Model, m => m.Description).StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex(Model, m => m.CreateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script type="text/javascript">
+    var urlCreateProduct = '@Url.Action("Create", "Product", new { area = "Web" })';
+    var urlUpdateProduct = '@Url.Action("Update", "Product", new { area = "Web" })';
+    var urlDeleteProduct = '@Url.Action("Delete", "Product", new { area = "Web" })';
+    var urlDetailProduct = '@Url.Action("Detail", "Product", new { area = "Web" })';
+    var urlViewProductModule = '@Url.Action("Index", "ProductModule", new { area = "Web" })';
+    var urlViewProductPrice = '@Url.Action("Index", "ProductPrice", new { area = "Web" })';
+
+    var getProductSelection = function () {
+        return App.ProductPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadProduct = function () {
+        App.ProductPanel.getStore().reload();
+        deSelectProduct();
+    }
+    var deSelectProduct = function () {
+        App.ProductPanel.selModel.lastSelected = null;
+        selectionChangeProduct();
+    }
+    var showCreateProduct = function () {
+        var url = urlCreateProduct;
+        var productCategoryId = App.cboProductCategory.value;
+        var params = { productCategoryId: productCategoryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateProduct = function () {
+        var url = urlUpdateProduct;
+        var record = getProductSelection();
+        var productId = record == null ? 0 : record.data.ID;
+        var params = { productId: productId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteProduct = function () {
+        var url = urlDeleteProduct;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProductSelection();
+                            var productId = record == null ? 0 : record.data.ID;
+                            var params = { productId: productId };
+                            onDirectMethod(url, params, 'post', reloadProduct);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProduct = function () {
+        var url = urlDetailProduct;
+        var record = getProductSelection();
+        var productId = record == null ? 0 : record.data.ID;
+        var params = { productId: productId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showViewProductModule = function () {
+        var url = urlViewProductModule;
+        onDirectMethod(url, null, 'get');
+    };
+    var showViewProductPrice = function () {
+        var url = urlViewProductPrice;
+        onDirectMethod(url, null, 'get');
+    };
+    var selectionChangeProduct = function () {
+        var record = getProductSelection();
+        App.btnUpdateProduct.setDisabled(record == null);
+        App.btnDeleteProduct.setDisabled(record == null);
+        App.btnDetailProduct.setDisabled(record == null); 
+        App.btnViewProductModule.setDisabled(record == null); 
+        App.btnViewProductPrice.setDisabled(record == null); 
+    };
+</script>

@@ -1,0 +1,134 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SuppliersOrderRequirementItem
+@{
+    var X = Html.X();
+    var requirmentId = ViewData["requirmentId"] != null ? ViewData["requirmentId"].ToString() : "0";
+}
+@(
+Html.X().ApprovalWindow()
+            .UrlSubmit(Url.Action("Appproved", "SuppliersOrders", new { Area = "Suppliers" }, null))
+        .ItemsExtend(
+            Html.X().TabPanel().Title("Phê duyệt phiếu đăng ký")
+            .ActiveTabIndex(0)
+            .Border(true)
+            .Items(Html.X().Panel()
+                .BodyPadding(6)
+                .Icon(Icon.ApplicationViewDetail)
+                .Layout(LayoutType.Form)
+                .StyleSpec("border: none;")
+                .Title("Thông tin phiếu đăng ký")
+                .Frame(true)
+                .Items(
+
+                                Html.X().HiddenFor(m => m.ID), Html.X().HiddenFor(m => m.CreateBy),Html.X().HiddenFor(m => m.UpdateBy),Html.X().HiddenFor(m => m.CreateUserID),Html.X().HiddenFor(m => m.CreateUserName),
+                                    Html.X().TextFieldFor(m => m.Name)
+                                    .AllowBlank(false)
+                                    .MaxLength(255)
+                                    .MaxLengthText("Trường không vượt quá 255 ký tự")
+                                        .FieldLabel("Tên" )
+                                    .ID("txt_Title")
+                                    .TabIndex(2)
+                                    .LabelWidth(70)
+                                    .MarginSpec("3 0 2 0").ReadOnly(true),
+                                    Html.X().TextFieldFor(m => m.CODE)
+                                    .ReadOnly(true)
+                                    .MaxLength(20)
+                                    .MaxLengthText("Trường không vượt quá 20 ký tự")
+                                        .FieldLabel("Số phiếu" )
+                                    .ID("txt_Address")
+                                    .TabIndex(2)
+                                    .LabelWidth(70)
+                                    .MarginSpec("0 0 2 0"),
+                                    Html.X().TextFieldFor(m => m.Note).
+                                    FieldLabel("Lý do nhập")
+                                    .ID("txt_Note")
+                                    .TabIndex(3)
+                                        .LabelWidth(70).ReadOnly(true),
+
+                                Html.X().GridPanel()
+                   .ID("gpProductOder")
+                            .Region(Region.South)
+                            .ColumnLines(true)
+                            .Title("DANH SÁCH VẬT TƯ HÀNG HÓA ĐỀ NGHỊ MUA")
+                            .TitleAlign(TitleAlign.Center)
+                            .Icon(Icon.TextListBullets)
+                            .MarginSpec("0 1 0 1")
+                            .Border(true)                                
+                            .Store(Html.X().Store().
+                                ID("stProductOrder")
+                               .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetData"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                            .RemoteSort(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(Html.X().Model()
+                                .IDProperty("ID")
+                                .Fields(
+                                 new ModelField("ID", ModelFieldType.Int),
+                                 new ModelField("ProductCode", ModelFieldType.String),
+                                 new ModelField("ProductName"),
+                                 new ModelField("ProductUnitName", ModelFieldType.String),
+                                 new ModelField("Quantity", ModelFieldType.Auto),
+                                 new ModelField("ProductRetail_Price", ModelFieldType.Auto),
+                                     new ModelField("Note", ModelFieldType.Auto)
+                        )
+                    )
+
+                )
+                .ColumnModel(
+                    Html.X().Column().Text("ID").DataIndex("ID").Width(35),
+                    Html.X().Column()
+                        .Text("Mã")
+                            .DataIndex("ProductCode").Width(100),
+                    Html.X().SummaryColumn()
+                            .Text("Tên hàng hóa")
+                            .SummaryType(SummaryType.Count)
+                            .SummaryRenderer("return 'Tổng : ' + ((value != 0 || value > 1) ? '(' + value +' Vật tư hàng hóa)' : '(0 Vật tư hàng hóa)');")
+                            .DataIndex("ProductName")
+                            .Flex(1),
+                    Html.X().Column()
+                            .Text("ĐVT")
+                            .DataIndex("ProductUnitName").Width(50),
+                    Html.X().Column()
+                                .Text("Số lượng").Renderer("RenderNumber")
+                                .Align(Alignment.Right)
+                                .Wrap(true)                                                                
+                                .DataIndex("Quantity"),
+                            
+                        Html.X().Column().Text("Ghi chú").Align(Alignment.Left).DataIndex("Note").Width(200)
+
+                )
+                    .SelectionModel(Html.X().CellSelectionModel())
+                .Features(
+
+                                            Html.X().Summary().Dock(SummaryDock.Bottom)
+                                            )
+
+        .BottomBar(Html.X().CustomPagingToolbar())
+
+                            )
+                     )
+    )
+)
+
+
+<script>
+    function CheckStatusApproval() {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailView.setDisabled(false);
+        }
+        else {
+            App.btnDetailView.setDisabled(true);
+        };
+    };
+</script>
+
+
+
+

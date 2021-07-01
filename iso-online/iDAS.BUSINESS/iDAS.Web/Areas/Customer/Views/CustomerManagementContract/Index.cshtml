@@ -1,0 +1,316 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerContractItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatus() {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnAccountingPayment.setDisabled(false);
+            App.btnStop.setDisabled(false);
+            if (records[0].get('IsCancel') == false) {
+                App.btnFinish.setDisabled(false);
+                App.btnPause.setDisabled(false);
+                App.btnPlay.setDisabled(false);
+            }
+            else {
+                App.btnFinish.setDisabled(true);
+                App.btnPause.setDisabled(true);
+                App.btnPlay.setDisabled(true);
+            };
+            App.btnUpdateContract.setDisabled(false);
+            App.btnDeleteContract.setDisabled(false);
+            App.btnDetailContract.setDisabled(false);
+            App.btnPlanPerform.setDisabled(false);
+            if ((records[0].get('IsSend') == true)
+                    && (records[0].get('IsSignCustomer') == true)
+                    && records[0].get('IsEdit') == false
+                    && records[0].get('IsApproval') == true
+                    && records[0].get('IsAccept') == true) {
+                App.btnApproval.setDisabled(false);
+                App.btnCustomerPayment.setDisabled(true);
+            }
+            else {
+                App.btnApproval.setDisabled(true);
+                App.btnCustomerPayment.setDisabled(false);
+            };
+            if (records[0].get('IsPause') == true) {
+                App.btnPause.hide();
+                App.btnPlay.show();
+                App.toolbarPause.show();
+            }
+            else {
+                App.btnPause.show();
+                App.btnPlay.hide();
+                App.toolbarPause.show();
+            }
+        }
+        else {
+            App.btnFinish.setDisabled(true);
+            App.btnStop.setDisabled(true);
+            App.btnPause.setDisabled(true);
+            App.btnPlay.setDisabled(true);
+            App.btnUpdateContract.setDisabled(true);
+            App.btnDeleteContract.setDisabled(true);
+            App.btnDetailContract.setDisabled(true);
+            App.btnPlanPerform.setDisabled(true);
+            App.btnCustomerPayment.setDisabled(true);
+            App.btnAccountingPayment.setDisabled(true);
+            App.btnApproval.setDisabled(true);
+        };
+
+    };
+    var AddNewContract = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+        });
+    };
+    var UpdateContractItem = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetailContract = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AccountingPayment = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AccountingPaymentForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SendAccountingPayment = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AccountingPaymentDetailForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ApprovalAccountingPayment = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ApproveForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var PlanPerForm = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("PlanPerform", "PerformPlan", new { Area = "Service" }, null))',
+                params: {
+                    contractId: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var PauseContract = function (isPause) {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', isPause == true ? 'Bạn có muốn dừng hợp đồng này ?' : 'Bạn có muốn tiếp tục hợp đồng này ?', function (btn) {
+                if (btn == 'yes')
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("PauseContract", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                        params: {
+                            id: records[0].get('ID'),
+                            IsPause: isPause
+                        }
+                    });
+            })
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var CancelContract = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("CancelContractForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    id: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var FinishContract = function (isFinish) {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("FinishContractForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false)
+.Items(
+        Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerContract")
+                .Header(false)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .Border(false)
+                .Icon(Icon.TextListBullets)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().ID("btnUpdateContract").ToolTip("Cập nhật hợp đồng")//.Text("Cập nhật")
+                            .Handler("UpdateContractItem();").Icon(Icon.Pencil).Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ToolTip("Xóa hợp đồng")//.Text("Xóa")
+                            .Icon(Icon.Delete).ID("btnDeleteContract").Handler("onDelete(App.GrCustomerContract.selModel.getSelection()[0].get('ID'));").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()//.Text("Xem chi tiết")
+                            .ToolTip("Xem chi tiết").ID("btnDetailContract")
+                            .Icon(Icon.Zoom).Handler("ViewDetailContract();").Disabled(true),
+                                       Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnCustomerPayment").Text("Đề xuất thanh toán (khách hàng)").ToolTip("Đề xuất thanh toán của khách hàng")
+                            .Handler("AccountingPayment();").Icon(Icon.Money).Disabled(true),
+                                       Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnAccountingPayment").Text("Đề xuất thanh toán (kế toán)").ToolTip("Đề xuất thanh toán của kế toán")
+                            .Handler("SendAccountingPayment();").Icon(Icon.Money).Disabled(true),
+                                       Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnApproval").Text("Ký xác nhận")
+                            .Handler("ApprovalAccountingPayment();").Icon(Icon.Accept).Disabled(true),
+                                       Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnPlanPerform").Text("Kế hoạch thực hiện").ToolTip("Xem kế hoạch thực hiện")
+                                    .Handler("PlanPerForm();").Icon(Icon.ChartBar).Disabled(true),
+                                      Html.X().ToolbarSeparator().ID("toolbarPause").Hidden(true),
+                        Html.X().Button().ID("btnPause").ToolTip("Tạm dừng hợp đồng").Text("Tạm dừng").Hidden(true)
+                                    .Handler("PauseContract(true);").Icon(Icon.StopBlue).Disabled(true),
+                        Html.X().Button().ID("btnPlay").ToolTip("Tiếp tục hợp đồng").Text("Tiếp tục").Hidden(true)
+                                        .Handler("PauseContract(false);").Icon(Icon.PlayGreen).Disabled(true),
+                                      Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnStop").ToolTip("Hủy hợp đồng").Text("Hủy")
+                                        .Handler("CancelContract();").Icon(Icon.StopRed).Disabled(true),
+                                      Html.X().ToolbarSeparator(),
+                       Html.X().Button().ID("btnFinish").ToolTip("Hoàn thành hợp đồng").Text("Hoàn Thành")
+                                            .Handler("FinishContract(true);").Icon(Icon.FlagYellow).Disabled(true),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                ))
+                .Store(
+                Html.X().Store().ID("StoreCustomerContract")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .GroupField("CustomerName")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadContract", "CustomerManagementContract", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("Code"),
+                            Html.X().ModelField().Name("CustomerID"),
+                            Html.X().ModelField().Name("CustomerName"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("Total"),
+                            Html.X().ModelField().Name("FinishDate"),
+                            Html.X().ModelField().Name("AttachmentFileIDs"),
+                            Html.X().ModelField().Name("IsSignCustomer").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsSend").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsEdit").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsApproval").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsAccept").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("RateFinish").Type(ModelFieldType.Float),
+                            Html.X().ModelField().Name("IsPause").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                        )
+                    )
+            )
+            .ColumnModel(
+                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                    X.Column().DataIndex("Code").Text("Mã hợp đồng").Width(150),
+                    X.Column().DataIndex("Name").Text("Tên hợp đồng").Flex(1),
+                    X.DateColumnExtend().DataIndex("FinishDate").Text("Thời hạn").Format("dd/MM/yyyy").Width(120).Align(Alignment.Center),
+                    X.NumberColumn().DataIndex("Total").Text("Tổng giá trị").Width(120).Align(Alignment.Right),
+                    Html.X().ComponentColumn()
+                        .Text("Tiến độ")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Component(Html.X().ProgressBar().Text("%"))
+                        .Listeners(ls => ls.Bind.Handler = "cmp.updateProgress(record.get('RateFinish')/100, record.get('RateFinish') + '%');"),
+                    X.Column().DataIndex("Status").Text("Trạng thái").Wrap(true).Width(100).Align(Alignment.Center),
+                    Html.X().ColumnFileExtend("AttachmentFileIDs")
+                )
+            .Features(
+                        Html.X().GroupingSummary()
+                                .ID("GroupingSummaryContract")
+                                .GroupHeaderTplString("{name}")
+                                .HideGroupedHeader(true)
+                                .EnableGroupingMenu(false).ShowSummaryRow(false),
+                        Html.X().GridFilters()
+                                .MenuFilterText("Tìm kiếm")
+                                .Filters(
+                                        Html.X().StringFilter().DataIndex("Code"),
+                                        Html.X().StringFilter().DataIndex("Name"),
+                                        Html.X().DateFilter().DataIndex("FinishDate").AfterText("Sau").BeforeText("Trước").OnText("Tại"),
+                                        Html.X().NumericFilter().DataIndex("Total").EmptyText("Nhập giá trị so sánh")
+                                        )
+                    )
+            .SelectionModel(Html.X().RowSelectionModel()
+            .Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+

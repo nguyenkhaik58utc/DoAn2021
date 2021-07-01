@@ -1,0 +1,186 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var recordProblemGroups = null;
+    var urlCreateProblemGroup = '@(Url.Action("Create", "ProblemGroup", new { area = "Problem" }))';
+    var urlUpdateProblemGroup = '@(Url.Action("Update", "ProblemGroup", new { area = "Problem" }))';
+    var urlDeleteProblemGroup = '@(Url.Action("Delete", "ProblemGroup", new { Area = "Problem" }))';
+    var urlDetailProblemGroup = '@(Url.Action("ShowFrmDetail", "ProblemGroup", new { Area = "Problem" }))';
+    var sortProblemGroupIndex = null;
+    var showCreateProblemGroup = function () {
+        var url = urlCreateProblemGroup;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateProblemGroup = function () {
+        var url = urlUpdateProblemGroup;
+        var record = getProblemGroupSelection();
+        var ID = record == null ? 0 : record;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getProblemGroupSelection = function () {
+        var records = App.ProblemGroupTree.getSelectionModel().getLastSelected();
+        if (records != null)
+            return records.data.id;
+        else return null;
+        
+    };
+    var setProblemGroupSelection = function () {
+        if (sortProblemGroupIndex != null) {
+            App.ProblemGroupTree.selModel.select(sortProblemGroupIndex);
+        }
+    };
+
+    var showDeleteProblemGroup = function () {
+        var url = urlDeleteProblemGroup;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ nhóm sự cố này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemGroupSelection();
+                            var ID = record == null ? 0 : record;
+                            var params = { ID: ID };
+                            onDirectMethod(url, params, 'post', reloadProblemGroupNode);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProblemGroup = function () {
+        var url = urlDetailProblemGroup;
+        var record = getProblemGroupSelection();
+        var ID = record == null ? 0 : record;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getProblemGroupRecords = function () {
+        var records = App.ProblemGroupTree.getView().store.getRange();
+        var node = getProblemGroupSelection();
+        var data = [];
+        records.forEach(function (obj) {
+            var selected = obj.data.id == node.data.id;
+            var item = {
+                id: obj.data.id,
+                expanded: obj.data.expanded,
+                selected: selected
+            };
+            data.push(item);
+        });
+        return data;
+    };
+
+    var refreshProblemGroup = function () {
+        recordProblemGroups = getProblemGroupRecords();
+        App.ProblemGroupTree.selModel.deselectAll()
+        App.ProblemGroupTree.getRootNode().reload();
+    };
+
+    var reloadProblemGroupNode = function () {
+        recordProblemGroups = getProblemGroupRecords();
+        var node = getProblemGroupSelection();
+        App.ProblemGroupTree.store.reload({ node: node.parentNode });
+    };
+
+    var reloadProblemGroup = function () {
+        recordProblemGroups = getProblemGroupRecords();
+        var node = getProblemGroupSelection();
+        App.ProblemGroupTree.store.reload({ node: node });
+        node.data.leaf = false;
+        node.data.expanded = true;
+        node.expand();
+    };
+
+    var selectionChangeProblemGroup = function () {
+        var record = getProblemGroupSelection();
+        var isDisabled = record == null;
+        App.btnUpdateProblemGroup.setDisabled(isDisabled);
+        App.btnDeleteProblemGroup.setDisabled(isDisabled);
+        App.btnDetailProblemGroup.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border).ID("ViewProblemGroup")
+    .Padding(2)
+    .Items(
+        Html.X().TreePanel()
+            .ID("ProblemGroupTree")
+            .Header(false)
+            .Border(false)
+            .Region(Region.Center)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)
+            .ColumnLines(true)
+            .Expand(true)
+            .RowLines(true)
+            .SingleExpand(false)
+            .TopBarItem(
+                X.ButtonCreate().Handler("showCreateProblemGroup").ID("btnCreateProblemGroup()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateProblemGroup").Handler("showUpdateProblemGroup();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteProblemGroup").Handler("showDeleteProblemGroup()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailProblemGroup").Handler("showDetailProblemGroup();").Disabled(true),
+                        X.Button()
+                            .Text("Expand All")
+                            .Handler("this.up('treepanel').expandAll();"),
+
+                        X.Button()
+                            .Text("Collapse All")
+                            .Handler("this.up('treepanel').collapseAll();"),
+                        Html.X().ToolbarFill()
+            )
+            .Store(
+                Html.X().TreeStore()
+                    .ID("StoreProblemGroupTree")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataTree")).Reader(Html.X().JsonReader().Root("data")))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("ProblemGroupName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("ParentID").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("ProblemTypeID").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                    )
+                    .Listeners(ls => ls.Load.Handler = "setProblemGroupSelection()")
+            )
+            .ColumnModel(
+                Html.X().TreeColumn().Text("Cơ cấu nhóm sự cố")
+                    .MenuDisabled(true).Sortable(false)
+                    .Align(Alignment.Left).DataIndex("text").Flex(1),
+                Html.X().DateColumn().Text("Ngày tạo")
+                    .MenuDisabled(true).Sortable(false).Format("dd/MM/yyyy")
+                    .DataIndex("CreatedAt").Width(150).Align(Alignment.Center),
+                Html.X().DateColumn().Text("Ngày cập nhật")
+                    .MenuDisabled(true).Sortable(false).Format("dd/MM/yyyy")
+                    .DataIndex("UpdatedAt").Width(150).Align(Alignment.Center)
+            )
+            .Listeners(l =>
+            {
+                l.SelectionChange.Handler = "selectionChangeProblemGroup();";
+            })
+    )
+    )

@@ -1,0 +1,446 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.TaskHistoryItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+    .Title("Thực hiện việc xác nhận điều chỉnh công việc")
+    .Icon(Icon.ArrowRefresh)
+    .Header(true)
+    .Height(1)
+    .Maximized(true)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(0)
+    .Border(true)
+    .Items(
+    Html.X().FormPanel()
+            .ID("frmApprove")
+            .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .FieldDefaults(lb => lb.LabelWidth = 110)
+            .Items (
+                Html.X().TabPanel()
+                        .Margin(1)
+                        .Region(Region.Center)
+                        .Items(
+                         Html.X().Panel()
+                            .BodyPadding(6)
+                            .Icon(Icon.ApplicationViewDetail)
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .StyleSpec("border: none;")
+                            .Title("Nội dung công việc cũ")
+                            .Frame(true)
+                            .Items(
+                                Html.X().ComboBoxFor(m => m.ParentOldID)
+                                    .FieldLabel("Phát sinh từ công việc")
+                                    .EmptyText("Chọn công việc cha ...")
+                                    .ID("cbParentOldID")
+                                    .QueryMode(DataLoadMode.Local)
+                                    .Editable(false)
+                                    .ForceSelection(true)
+                                    .AllowBlank(true)
+                                    .HideBaseTrigger(true)
+                                    .ReadOnly(true)
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+                                    .Store(Html.X().Store()
+                                                .AutoLoad(true)
+                                                .Model(Html.X().Model()
+                                                .IDProperty("ID")
+                                                .Fields(
+                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }))
+                                                .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("LoadComboTask", "Task", new { area = "Task" }))
+                                                .Reader(Html.X().JsonReader().Root("data"))))
+                                                .Triggers(Html.X().FieldTrigger().Icon(TriggerIcon.SimpleEdit)
+                                                ),
+                                Html.X().TextFieldFor(m => m.NameOld)
+                                        .FieldLabel("Tên công việc")
+                                        .ReadOnly(true),
+                                     Html.X().ComboBoxFor(m => m.CategoryOldID)
+                                        .ReadOnly(true)
+                                        .FieldLabel("Nhóm công việc")
+                                        .EmptyText("Chọn nhóm công việc")
+                                        .AllowBlank(false)
+                                        .Editable(false)
+                                        .BlankText("Nhóm công việc không được bỏ trống!")
+                                        .DisplayField("Name")
+                                        .ValueField("ID")
+                                        .Store(
+                                            Html.X().Store()
+                                                .AutoLoad(true)
+                                                .Proxy(Html.X().AjaxProxy()
+                                                        .Url(Url.Action("GetData", "TaskCategory", new { area = "Task" }))
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                                )
+                                                .Model(Html.X().Model()
+                                                    .Fields(
+                                                        new ModelField("ID"),
+                                                        new ModelField("Name")
+                                                    )
+                                                )
+                                        ),
+                                Html.X().DepartmentFieldFor(m => m.DepartmentOld).FieldLabel("Phòng ban").ReadOnly(true).Multiple(false).AllowBlank(false).Height(25).ID("xxx"),
+                                Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 0 0").Items(
+                                Html.X().DateTimeFieldFor(m => m.StartTimeOld)
+                                        .ReadOnly(true)
+                                        .FieldLabel("Bắt đầu")
+                                        .ColumnWidth(0.5)
+                                        .MarginSpec("0 5 5 0"),
+                                Html.X().DateTimeFieldFor(m => m.EndTimeOld)
+                                        .ReadOnly(true)
+                                        .FieldLabel("Kết thúc")
+                                        .ColumnWidth(0.5)
+                                        .MarginSpec("0 0 5 0")
+                                        ),
+                                Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 0 0").Items(
+                                Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 5 0 0").ColumnWidth(0.5).Items(
+                                Html.X().NumberFieldFor(m => m.CostOld)
+                                        .MinValue(0)
+                                        .ID("txtCostOld")
+                                        .AllowDecimals(true)
+                                        .ReadOnly(true)
+                                        .Icon(Icon.Coins)
+                                        .FieldLabel("Chi phí dự tính")
+                                        .MarginSpec("0 5 0 0")
+                                        .ColumnWidth(0.7),
+                                Html.X().TextField().Text("VNĐ")
+                                        .Icon(Icon.MoneyDollar)
+                                        .ColumnWidth(0.3)
+                                        .ReadOnly(true)
+                                    ),
+                            Html.X().ComboBoxFor(m => m.LevelOldID).ReadOnly(true)
+                            .ID("cbLevelOldID")
+                                .MarginSpec("0 0 5 0")
+                            .FieldLabel("Mức độ công việc")
+                            .ReadOnly(true)
+                            .EmptyText("Chọn mức độ công việc")
+                            .BlankText("Mức độ ưu tiên chưa được chọn!")
+                            .DisplayField("Name")
+                            .Editable(false)
+                            .ColumnWidth(0.5)
+                            .ValueField("ID")
+                            .Tpl(
+                            @<text>
+                                <tpl for=".">
+                                    <div class="x-boundlist-item">
+                                        <div style="text-align: center; width: 100%; background-color: {Color}; border: #cecece 1px solid;">{Name}</div>
+                                    </div>
+                                </tpl>
+                            </text>
+                            )
+                            .Store(
+                                Html.X().Store()
+                                    .ID("stTaskLevelOld")
+                                    .AutoLoad(true)
+                                    .Model(
+                                        Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                new ModelField("ID", ModelFieldType.Int),
+                                                new ModelField("Name", ModelFieldType.String),
+                                                new ModelField("Color", ModelFieldType.String)
+                                            )
+                                    )
+                                    .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("LoadStore", "TaskLevel", new { area = "Task" }))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    )
+                                    .Listeners(ls => ls.Change.Handler = "getColor(App.cbLevelOldID, App.stTaskLevelOld);")
+                                    ),
+                                Html.X().FileUploadFieldFor(m => m.AttachmentFileOlds)
+                                            .ReadOnly(true).ID("flOld"),
+                                Html.X().TextAreaFor(m => m.ContentOld)
+                                        .ID("txtContentOld")
+                                        .FieldLabel("Nội dung công việc")
+                                        .Flex(1)
+                                        .ReadOnly(true),
+                                Html.X().EmployeeFieldFor(m => m.PerformOld).ReadOnly(true).Title("Người thực hiện").ID("tfPerformOld").MarginSpec("0 0 0 115")
+                              ),
+            Html.X().Panel()
+                .Title("Thông tin nội dung công việc yêu cầu điều chỉnh")
+                .StyleSpec("border: none;")
+                .Border(false)
+                .BodyPadding(6)
+                .Icon(Icon.NewRed)
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                    .Items(
+                    Html.X().HiddenFor(m => m.TaskID),
+                            Html.X().HiddenFor(m => m.CreateAt),
+                            Html.X().HiddenFor(m => m.CreateBy),
+                            Html.X().HiddenFor(m => m.UpdateAt),
+                            Html.X().HiddenFor(m => m.UpdateBy),
+                            Html.X().HiddenFor(m => m.IsSendApproval),
+                            Html.X().HiddenFor(m => m.CompleteTime),
+                            Html.X().HiddenFor(m => m.IsAccept),
+                            Html.X().HiddenFor(m => m.IsApproval),
+                            Html.X().HiddenFor(m => m.IsComplete),
+                            Html.X().HiddenFor(m => m.IsPass),
+                            Html.X().HiddenFor(m => m.IsPause),
+                            Html.X().HiddenFor(m => m.IsResult),
+                            Html.X().HiddenFor(m => m.ID).ReadOnly(true),
+                            Html.X().ComboBoxFor(m => m.ParentID)
+                            .FieldLabel("Phát sinh từ công việc")
+                            .EmptyText("Chọn công việc cha ...")
+                            .ID("cbParentID")
+                            .AllowBlank(true)
+                            .FieldCls(Model.ParentID!=Model.ParentOldID?"x-form-text-change":"")
+                            .ReadOnly(true)
+                            .QueryMode(DataLoadMode.Local).Editable(false)
+                            .ForceSelection(true)
+                            .HideBaseTrigger(true)
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .Store(Html.X().Store()
+                                        .AutoLoad(true)
+                                        .Model(Html.X().Model()
+                                                .IDProperty("ID")
+                                                .Fields(new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }))
+                                        .Proxy(Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadComboTask", "Task", new { area = "Task" }))
+                                                .Reader(Html.X().JsonReader().Root("data"))))
+                            .Triggers(Html.X().FieldTrigger().Icon(TriggerIcon.SimpleEdit)),
+                        Html.X().TextFieldFor(m => m.Name).ReadOnly(true)
+                        .ID("txtName")
+                        .FieldLabel("Tên công việc")
+                        .FieldCls(Model.Name != Model.NameOld ? "x-form-text-change" : "")
+                        .EmptyText("Nhập tên công việc")
+                        .MaxLength(100)
+                        .AllowBlank(false)
+                        .BlankText("Tên công việc không được bỏ trống!"),
+                        Html.X().ComboBoxFor(m => m.CategoryID).ReadOnly(true)
+                        .FieldLabel("Nhóm công việc")
+                        .EmptyText("Chọn nhóm công việc")
+                        .AllowBlank(false)
+                        .FieldCls(Model.CategoryID != Model.CategoryOldID ? "x-form-text-change" : "")
+                        .Editable(false)
+                        .BlankText("Nhóm công việc không được bỏ trống!")
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Store(
+                            Html.X().Store()
+                                .AutoLoad(true)
+                                .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetData", "TaskCategory", new { area = "Task" }))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Model(Html.X().Model()
+                                    .Fields(
+                                        new ModelField("ID"),
+                                        new ModelField("Name")
+                                    )
+                                )
+                        ),
+                            Html.X().DepartmentFieldFor(m => m.Department, cls: Model.DepartmentID != Model.DepartmentOldID ? "x-form-text-change" : "").FieldLabel("Phòng ban").ReadOnly(true).Multiple(false).AllowBlank(false).Height(25),
+                    Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 0 0").Items(
+                        Html.X().DateTimeFieldFor(m => m.StartTime, cls: Model.StartTime != Model.StartTimeOld ? "x-form-text-change" : "")
+                                .ReadOnly(true)
+                                .FieldLabel("Bắt đầu")
+                                    .ColumnWidth(0.5).MarginSpec("0 5 5 0"),
+                                    Html.X().DateTimeFieldFor(m => m.EndTime, cls: Model.EndTime != Model.EndTimeOld ? "x-form-text-change" : "")
+                                    .ReadOnly(true)                                  
+                                    .FieldLabel("Kết thúc")
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("0 0 5 0")
+                                    ),
+                        Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 0 0").Items(
+                        Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 5 0 0").ColumnWidth(0.5).Items(
+                        Html.X().NumberFieldFor(m => m.Cost)
+                                .MinValue(0)
+                                .AllowDecimals(true)
+                                .Icon(Icon.Coins)
+                                .ReadOnly(true)
+                                .FieldLabel("Chi phí dự tính")
+                                     .FieldCls(Model.Cost != Model.CostOld ? "x-form-text-change" : "")
+                                .MarginSpec("0 5 0 0")
+                                .ColumnWidth(0.7),
+                            Html.X().TextField().Text("VNĐ")
+                                .Icon(Icon.MoneyDollar)
+                                .ReadOnly(true)
+                                .ColumnWidth(0.3)
+
+                        ),
+                            Html.X().ComboBoxFor(m => m.LevelID).ReadOnly(true)
+                            .ID("cbLevelID")
+                            .MarginSpec("0 0 5 0")
+                            .FieldLabel("Mức độ công việc")
+                            .EmptyText("Chọn mức độ công việc")
+                            .BlankText("Mức độ ưu tiên chưa được chọn!")
+                            .DisplayField("Name")
+                            .Editable(false)
+                            .ColumnWidth(0.5)
+                            .ValueField("ID")
+                            .Tpl(
+                            @<text>
+                                <tpl for=".">
+                                    <div class="x-boundlist-item">
+                                        <div style="text-align: center; width: 100%; background-color: {Color}; border: #cecece 1px solid;">{Name}</div>
+                                    </div>
+                                </tpl>
+                            </text>
+                            )
+                            .Store(
+                                Html.X().Store()
+                                    .ID("stTaskLevel")
+                                    .AutoLoad(true)
+                                    .Model(
+                                        Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                new ModelField("ID", ModelFieldType.Int),
+                                                new ModelField("Name", ModelFieldType.String),
+                                                new ModelField("Color", ModelFieldType.String)
+                                            )
+                                    )
+                                    .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("LoadStore", "TaskLevel", new { area = "Task" }))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                            )
+                            .Listeners(ls => ls.Change.Handler = "getColor(App.cbLevelID, App.stTaskLevel);")
+                    ),
+                        Html.X().FileUploadFieldFor(m => m.AttachmentFiles).ReadOnly(true),
+                        Html.X().TextAreaFor(m => m.Content).ReadOnly(true)
+                            .ID("txtContent")
+                            .FieldCls(Model.Content != Model.ContentOld ? "x-form-text-change" : "")
+                            .FieldLabel("Nội dung công việc")
+                            .EmptyText("Nhập nội dung chi tiết cho công việc")
+                            .Flex(1),
+                        Html.X().EmployeeFieldFor(m => m.Perform).ReadOnly(true).Title("Người thực hiện").MarginSpec("0 0 0 115"),
+                        Html.X().HiddenFor(m => m.IsEdit).ID("IsEditd").Value(true).ReadOnly(true)
+
+                )
+    ),
+        Html.X().Panel()
+                        .Title("Lý do điều chỉnh công việc")
+                        .StyleSpec("-webkit-border-radius:0")
+                        .Region(Region.East)
+                        .Width(400)
+                        .Icon(Icon.ResultsetFirst)
+                        .Margin(1)
+                        .Border(true)
+                        .Split(true)
+                        .Collapsible(true)
+                        .Frame(true)
+                        .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                        .Items(
+                        Html.X().FieldSet().Title("Lý do điều chỉnh công việc" + Html.Required()).Padding(4).Layout(LayoutType.Form).Items(
+                             Html.X().TextAreaFor(m => m.Reason)
+                                    .ID("txtReason")
+                                    .AllowBlank(false)
+                                    .BlankText("Bạn phải nhập lý do điều chỉnh công việc")
+                                    .FieldLabel("Lý do điều chỉnh" + Html.Required()).HideLabel(true)
+                                    .Height(200)
+                                   
+                                ),
+                                    Html.X().ComboBoxFor(m => m.IsChange).AllowBlank(false).LabelWidth(70).FieldLabel("Xác nhận" + Html.Required()).Items(
+                                new ListItem("Đồng ý", true),
+                                new ListItem("Không đồng ý", false)
+                                ),
+                                Html.X().TextAreaFor(m => m.ChangeNote).Flex(1).FieldLabel("Nhận xét").LabelWidth(70)
+                        )
+                   )
+                )
+                
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSave")
+                .TabIndex(17)
+                .Icon(Icon.Tick)
+                .Text("Xác nhận điều chỉnh")
+                .DirectEvents(de =>
+                {
+                    de.Click.Url = Url.Action("SaveApprove");
+                    de.Click.FormID = "frmApprove";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+                    de.Click.Success = "if(result.result){App.btnAddChangeVote.setDisabled(false);App.btnApproveChange.setDisabled(true); App.btnEditChangeVote.setDisabled(true);}else{App.btnAddChangeVote.setDisabled(true);App.btnApproveChange.setDisabled(false); App.btnEditChangeVote.setDisabled(false);} this.up('window').close();";
+                }),
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var getEmployessPerform = function () {
+        var records = App.GrdUserPerform.selModel.getSelection();
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        return strId;
+    };
+    var getEmployessAssess = function () {
+        var records = App.GrdUserAssess.selModel.getSelection();
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        return strId;
+    };
+    var reloadGrid = function () {
+        var records = App.GrdUserPerform.getStore();
+        for (var i = 0; i < records.getCount() ; i++) {
+            var record = records.data.items[i].data;
+            if (record.ID == App.IsPerform.value) {
+                record.IsPerform = true;
+            }
+            if (record.ID == App.IsCheck.value) {
+                record.IsCheck = true;
+            }
+            if (record.ID == App.IsAudit.value) {
+                record.IsAudit = true;
+            }
+            if (record.ID == App.IsApproval.value) {
+                record.IsApproval = true;
+            }
+
+        };
+        App.GrdUserPerform.getView().refresh();
+    };
+    var setCheck = function () {
+        var records = App.GrdUserPerform.getStore();
+        for (var i = 0; i < records.getCount() ; i++) {
+            var record = records.data.items[i].data;
+            if (App.IsCheck.value != record.ID) {
+                record.IsCheck = false;
+            }
+            if (App.IsAudit.value != record.ID) {
+                record.IsAudit = false;
+            }
+            if (App.IsPerform.value != record.ID) {
+                record.IsPerform = false;
+            }
+            if (App.IsApproval.value != record.ID) {
+                record.IsApproval = false;
+            }
+
+        };
+        App.GrdUserPerform.getView().refresh();
+    };
+
+</script>
+
+
+

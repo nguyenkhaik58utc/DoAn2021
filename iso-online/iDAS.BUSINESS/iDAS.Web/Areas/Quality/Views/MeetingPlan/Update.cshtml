@@ -1,0 +1,78 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.QualityMeetingItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới cuộc họp";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật cuộc họp";
+    }
+}
+@(Html.X().Window()
+.ID("winMeetingUpdate")
+.Title(title)
+.Maximizable(true)
+.Icon(IconView)
+          .Width(700)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().FormPanel()
+                .ID("frUpdate")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 110; })
+                .Items(
+                            Html.X().HiddenFor(m => m.ID),
+                            Html.X().TextFieldFor(m => m.Name)
+                                    .FieldLabel("Tên cuộc họp" + Html.Required())
+                                    .MaxLength(100)
+                                    .BlankText("Tên cuộc họp không được trống!")
+                                    .AllowOnlyWhitespace(false),
+                            Html.X().Container()
+                                    .Layout(LayoutType.Column)
+                                    .Items(
+                                            X.DepartmentFieldFor(m => m.Department).FieldLabel("Phòng ban" + Html.Required()).Multiple(false).AllowBlank(false).ColumnWidth(0.52),
+                                            X.NumberFieldFor(m => m.Cost).FieldLabel("Chi phí" + Html.Required()).LabelWidth(70)
+                                                          .MinValue(0).PaddingSpec("0 0 0 20").AllowBlank(false).ColumnWidth(0.48)
+                                            ),
+                            Html.X().Container()
+                                    .Layout(LayoutType.Column)
+                                    .MarginSpec("0 0 5 0")
+                                    .Items(
+                                            X.DateTimeFieldFor(m => m.StartTime).AllowBlank(false).FieldLabel("Bắt đầu" + Html.Required()).ColumnWidth(0.52).MarginSpec("0 -1 0 0"),
+                                            X.DateTimeFieldFor(m => m.EndTime).AllowBlank(false).LabelWidth(70).FieldLabel("Kết thúc" + Html.Required()).ColumnWidth(0.48).MarginSpec("0 -1 0 0").PaddingSpec("0 0 0 20")
+                                        ),
+                                Html.X().TextFieldFor(m => m.Address).FieldLabel("Địa chỉ").MaxLength(200),
+                            Html.X().TextAreaFor(m => m.TaskPrepare).FieldLabel("Công việc chuẩn bị").Height(100),
+                            Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung").Height(150).Flex(1),
+                            Html.X().FileUploadFieldFor(m => m.AttachmentFile)
+                     )
+            )
+            .Buttons(
+                        Html.X().ButtonSave()
+                                    .DirectEvents(de =>
+                                    {
+                                        de.Click.Before = @"if (!App.frUpdate.getForm().isValid()) { return false; } ";
+                                        de.Click.Action = "Update";
+                                        de.Click.FormID = "frUpdate";
+                                        de.Click.Success = "this.up('window').close();";
+                                    }),
+                        Html.X().ButtonExit()
+            )
+)

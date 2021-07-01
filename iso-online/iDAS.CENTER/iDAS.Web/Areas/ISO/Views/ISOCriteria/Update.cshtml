@@ -1,0 +1,57 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@model iDAS.Items.ISOIndexCriteriaItem
+@(
+ Html.X().Window()
+    .ID("winEditISOCriteria")
+    .Title("Cập nhật tiêu chí điều khoản")
+    .Icon(Icon.Pencil)
+    .Width(550)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmEditISOCriteria")
+        .Layout(LayoutType.Form)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => df.LabelWidth = 120)
+        .DefaultAnchor("100%")
+        .Items(
+        Html.X().HiddenFor(m => m.ID),
+           Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                .FieldLabel("Tiêu chí *")
+                .AllowBlank(false).BlankText("Tiêu chí bắt buộc nhập!"),
+            Html.X().HiddenFor(m=>m.ISOIndexID),
+            Html.X().CheckboxFor(m => m.IsUse).ID("ckActive")
+                .FieldLabel("Sử dụng"),
+            Html.X().TextAreaFor(m => m.Content).ID("txtNote")
+                .FieldLabel("Nội dung")
+                .Height(150))
+                )
+        .Buttons(
+                Html.X().Button()
+                .ID("btnSaveSingle")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(6)
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frmEditISOCriteria";                        
+                        de.Click.Url = Url.Action("Update");
+                        de.Click.Before = @"if (!#{frmEditISOCriteria}.getForm().isValid()) { return false; }";
+                        de.Click.EventMask.ShowMask = true;
+                        de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                        de.Click.Success = "App.winEditISOCriteria.close();";
+                    }),
+                Html.X().Button()
+                    .ID("btnCancel")
+                    .Icon(Icon.Cancel)
+                    .Text("Đóng")
+                    .TabIndex(7)
+                    .Handler("App.frmEditISOCriteria.reset(); App.winEditISOCriteria.close();")
+        )
+)

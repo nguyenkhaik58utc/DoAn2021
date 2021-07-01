@@ -1,0 +1,51 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCategoryItem
+@(Html.X().Window()
+    .ID("winNewCate")
+    .Title("Thêm mới sổ theo dõi mượn hồ sơ")
+    .Icon(Icon.Add)
+    .Width(500)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+            .ID("frmNewCate")
+            .Items(
+                Html.X().TextFieldFor(m => m.Name)
+                    .FieldLabel("Tên Sổ theo dõi" + Html.Required())
+                    .AllowBlank(false).BlankText("Tên sổ theo dõi bắt buộc nhập!")
+                    .AllowOnlyWhitespace(false)
+                    .MaxLength(200).MaxLengthText("Tên sổ theo dõi không được dài quá 200 ký tự!"),
+                Html.X().DepartmentFieldFor(m => m.Department).FieldLabel("Phòng ban" + Html.Required()).Multiple(false).AllowBlank(false).Height(25),
+                Html.X().TextAreaFor(m => m.Note)
+                    .ID("txtContent")
+                    .FieldLabel("Ghi chú")
+                    .TabIndex(3).Height(100)
+                    .MaxLength(1000)
+                 )
+        )
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(6)
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewCate";
+                    de.Click.Url = Url.Action("InsertCate");
+                    de.Click.Before = @"if (!#{frmNewCate}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                }),
+            Html.X().ButtonExit()
+        )
+)

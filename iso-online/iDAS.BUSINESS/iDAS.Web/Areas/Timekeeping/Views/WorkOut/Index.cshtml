@@ -1,0 +1,177 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var SatrusCombobox = new List<ListItem>();
+    SatrusCombobox.Add(new ListItem() { Text = "Tất cả", Value = "-1" });
+    SatrusCombobox.Add(new ListItem() { Text = "Chờ duyệt", Value = "0" });
+    SatrusCombobox.Add(new ListItem() { Text = "Đã duyệt", Value = "1" });
+    SatrusCombobox.Add(new ListItem() { Text = "Từ chối", Value = "2" });
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+
+                Html.X().GridPanel()
+                .ID("grWorkOut")
+                .Header(false)
+               .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                  Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                    Html.X().DateField().Type(DatePickerType.Month).Width(120).ID("MonthPickerTimeKeeping")
+                    .Format("MM/yyyy").EmptyText("Chọn tháng").Value(DateTime.Now).FieldLabel("Tháng").LabelWidth(40)
+                        .Listeners(l =>
+                            {
+                                l.Select.Handler = "App.stLikelihood1.reload();";
+                            }),
+                    Html.X().ComboBox().ID("ccbWorkOutSearch").FieldLabel("Trạng thái").LabelWidth(60).Width(200)
+                    .Items(SatrusCombobox).EmptyText("Chọn trạng thái").Listeners(ls => ls.Select.Handler = "App.stLikelihood1.reload();").SelectedItems(new ListItem("Tất cả", "-1")).Editable(false).Margins("0 0 0 5"),
+                    Html.X().Button()
+                        .Text("Thêm mới")
+                        .Icon(Icon.Add)
+                        .DirectClickAction("Form"),
+                    Html.X().Button()
+                        .Text("Sửa")
+                        .ID("btnUpdateWorkOut")
+                        .Disabled(true)
+                       .Icon(Icon.Pencil)
+                        .DirectEvents(de =>
+                        {
+                            de.Click.ExtraParams.Add(new { id = new JRawValue("this.up('grid').selModel.getSelection()[0].data.Id") });
+                            de.Click.Url = Url.Action("Form");
+                        }),
+                    Html.X().Button()
+                        .ID("btnDeleteWorkOut")
+                        .Text("Xóa")
+                        .Icon(Icon.Delete)
+                        .Disabled(true)
+                        .DirectEvents(de =>
+                        {
+                            de.Click.Method = HttpMethod.POST;
+                            de.Click.Confirmation.ConfirmRequest = true;
+                            de.Click.Confirmation.Message = "Bạn có chắc chắn muốn xóa dữ liệu này không?";
+                            de.Click.Confirmation.Title = "Xác nhận";
+                            de.Click.ExtraParams.Add(new { id = new JRawValue("this.up('grid').selModel.getSelection()[0].data.Id") });
+                            de.Click.Confirmation.BeforeConfirm = "Ext.Msg.buttonText.yes='Đồng ý'; Ext.Msg.buttonText.no='Không';";
+                            de.Click.Url = Html.X().XController().UrlHelper.Action("Delete");
+                            de.Click.Success = "App.stLikelihood1.reload();";
+                        }),
+                      Html.X().Button()
+                        .Text("Chi tiết")
+                        .ID("btnDetailWorkOut")
+                        .Icon(Icon.Zoom)
+                          .Disabled(true)
+                          .DirectEvents(de =>
+                        {
+                            de.Click.ExtraParams.Add(new { id = new JRawValue("this.up('grid').selModel.getSelection()[0].data.Id") });
+                            de.Click.Url = Url.Action("Detail");
+                        })
+                //.SuccessHandle("App.stLikelihood1.reload();App.stLikelihood1ApproveWorkOut.reload();")
+                ))
+                .Border(false)
+                .ColumnLines(true)
+                .IconCls("x-fa fa-table")
+                .Store(Html.X().Store()
+                .ID("stLikelihood1")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "WorkOut"))
+                .Reader(Html.X().JsonReader().Root("data")))
+                .Parameters(pr =>
+                {
+                    pr.Add(new StoreParameter("curMonth", "App.MonthPickerTimeKeeping.rawValue", ParameterMode.Raw));
+                    pr.Add(new StoreParameter("Status", "App.ccbWorkOutSearch.value", ParameterMode.Raw));
+                })
+                .AutoLoad(true)
+                .PageSize(20)
+                .Model(
+                    Html.X().Model()
+                    .Fields(
+                        Html.X().ModelField().Name("Id").Type(ModelFieldType.Auto),
+                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("DepartmentTitleForView").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("StartTime").Type(ModelFieldType.Date),
+                        Html.X().ModelField().Name("EndTime").Type(ModelFieldType.Date),
+                        Html.X().ModelField().Name("Reason").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("ApprovedName").Type(ModelFieldType.String),
+                        Html.X().ModelField().Name("StatusForView").Type(ModelFieldType.String)
+                    )
+                )
+            )
+            .EmptyText("Không có dữ liệu")
+            .ColumnModel(
+                Html.X().RowNumbererColumnFormat(),
+                Html.X().ColumnEncodeFormat().Text("Họ tên").DataIndex("Name").Width(140).Align(Alignment.Left),
+                Html.X().Column().Text("Chức danh").DataIndex("DepartmentTitleForView").Width(400).Align(Alignment.Left),
+                Html.X().DateColumn().Text("Bắt đầu").Format("dd/MM/yyyy HH:mm").DataIndex("StartTime").Width(150).Align(Alignment.Left),
+                Html.X().DateColumn().Text("Đến").Format("dd/MM/yyyy HH:mm").DataIndex("EndTime").Width(150).Align(Alignment.Left),
+                Html.X().ColumnEncodeFormat().Text("Lý do làm ngoài").DataIndex("Reason").Flex(1).Align(Alignment.Left),
+                Html.X().ColumnEncodeFormat().Text("Người xét duyệt").DataIndex("ApprovedName").Width(150).Align(Alignment.Left),
+                Html.X().ColumnEncodeFormat().Text("Trạng thái").DataIndex("StatusForView").Width(100).Align(Alignment.Left)
+            )
+            .SelectionModel(
+                Html.X().RowSelectionModel()
+                    .Mode(SelectionMode.Single)
+                    .Listeners(ls => ls.SelectionChange.Handler = "refreshMenuLikelihood();")
+                )
+                .Listeners(
+                    ls =>
+                    {
+                        ls.CellDblClick.Handler = "Ext.getBody().mask('Đang thực hiện....');App.btnUpdateWorkOut.click()";
+                    }
+                )
+            .BottomBar(Html.X().CustomPagingToolbar())
+
+    )
+)
+
+<script>
+    var refreshMenuLikelihood = function () {
+        var records = App.grWorkOut.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnUpdateWorkOut.setDisabled(true);
+                App.btnDetailWorkOut.setDisabled(true);
+                App.btnDeleteWorkOut.setDisabled(true);
+                break;
+            case 1:
+                App.btnUpdateWorkOut.setDisabled(false);
+                App.btnDetailWorkOut.setDisabled(false);
+                if (records[0].data.Status != 1 && records[0].data.Status != 2)
+                    App.btnDeleteWorkOut.setDisabled(false);
+                else
+                    App.btnDeleteWorkOut.setDisabled(true);
+                break;
+            default:
+                App.btnUpdateWorkOut.setDisabled(true);
+                App.btnDetailWorkOut.setDisabled(true);
+                App.btnDeleteWorkOut.setDisabled(true);
+                break;
+        }
+    };
+    var refreshMenuLikelihoodApproveWorkOut = function () {
+        var records = App.grApproveWorkOut.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnUpdateApproveWorkOut.setDisabled(true);
+                App.btnAppriveWorkOut.setDisabled(true);
+                App.btnRejectWorkOut.setDisabled(true);
+                break;
+            case 1:
+                App.btnUpdateApproveWorkOut.setDisabled(false);
+                App.btnAppriveWorkOut.setDisabled(false);
+                App.btnRejectWorkOut.setDisabled(false);
+                break;
+            default:
+                App.btnUpdateApproveWorkOut.setDisabled(true);
+                App.btnAppriveWorkOut.setDisabled(true);
+                App.btnRejectWorkOut.setDisabled(true);
+                break;
+        }
+    };
+</script>

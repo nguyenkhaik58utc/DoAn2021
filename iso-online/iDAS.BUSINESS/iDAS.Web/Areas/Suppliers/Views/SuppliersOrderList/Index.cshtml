@@ -1,0 +1,147 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+
+@model iDAS.Items.SuppliersOrderItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrOrder")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+
+                                    Html.X().ButtonView().ID("btnDetailOrder").Handler("ViewDetail();"), Html.X().ToolbarSeparator(),
+                                   Html.X().Button().Text("Cập nhật giao hàng").Icon(Icon.CommentRecord).ID("btnAudit").Handler("UpdateRecive();").Disabled(true),
+                                        Html.X().ToolbarSeparator(),
+                                                        Html.X().ButtonOpenWindowExpExcel().GridID("GrOrder").ID("btnGetFile"),  
+                                    Html.X().ToolbarFill(), Html.X().ButtonTutorial()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreOrder")
+                            .RemotePaging(true)
+                            .PageSize(20).GroupField("SupplierName")                            
+                            .Sorters(Html.X().DataSorter().Property("SupplierName").Direction(Ext.Net.SortDirection.ASC))
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadOrder")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Model(
+                                Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("CODE"),
+                                                    Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("StatusDisp"),
+                                                Html.X().ModelField().Name("Status"),
+                                                Html.X().ModelField().Name("OrderDate"),
+                                                Html.X().ModelField().Name("ShipDate"),
+                                                Html.X().ModelField().Name("ReciepDate"),
+                                                    Html.X().ModelField().Name("SupplierName"),
+                                                        Html.X().ModelField().Name("ReciepDateDisp")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("CODE").Text("Mã ĐH").Width(100),
+                                    Html.X().Column().DataIndex("Name").Text("Tên đơn hàng").Flex(1),
+                                        Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                                             .Columns(
+                                                        Html.X().DateColumnExtend().DataIndex("OrderDate").Text("Ngày tạo").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                            Html.X().DateColumnExtend().DataIndex("ShipDate").Text("Ngày nhận").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                                    Html.X().Column().DataIndex("ReciepDateDisp").Text("Thực tế").Width(80).Align(Alignment.Center),
+                                                                        Html.X().Column().DataIndex("ReciepDate").Text("Thực tế").Hidden(true)
+                                                ),
+                                        Html.X().Column().DataIndex("StatusDisp").Text("Trạng thái").Width(120).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("Status").Text("Trạng thái").Hidden(true)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .Features(
+                                Html.X().GroupingSummary()
+                                .ID("GroupingSummarySupplier")
+                                .GroupHeaderTplString("{name}")
+                                .HideGroupedHeader(true)
+                                .EnableGroupingMenu(false)
+                        )            
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+
+            )
+)
+<script>
+    
+    function CheckStatus() {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailOrder.setDisabled(false);            
+            if (records[0].get('Status') == 8)
+                App.btnAudit.setDisabled(false);
+            else
+                App.btnAudit.setDisabled(true);
+        }
+        else {
+            App.btnDetailOrder.setDisabled(true);
+            App.btnAudit.setDisabled(true);
+        }
+        
+    };
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.GrOrder.columns.length; i++) {
+            if (App.GrOrder.columns[i].dataIndex == 'ID')
+                arr.push({ dataIndex: App.GrOrder.columns[i].dataIndex, text: 'ID', hidden: App.GrOrder.columns[i].hidden, position: i + 1 });
+            else
+                arr.push({ dataIndex: App.GrOrder.columns[i].dataIndex, text: App.GrOrder.columns[i].text, hidden: App.GrOrder.columns[i].hidden, position: i + 1 });
+        }
+        return arr;
+    };
+    var ShowFrmExport = function () {
+        var url = '@(Url.Action("ShowFrmExport", "SuppliersOrderList", new { Area = "Suppliers" }, null))';
+        var params = {
+            currentPage: App.StoreOrder.currentPage,
+            pageSize: App.StoreOrder.pageSize,
+            arrObject: JSON.stringify(getObjectPartial())
+        };
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: params
+        });
+    };
+    var ViewDetail = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url ='@(Url.Action("ShowDetail", "SuppliersOrderList", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    }; 
+    var UpdateRecive = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateRecive", "SuppliersOrderList", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

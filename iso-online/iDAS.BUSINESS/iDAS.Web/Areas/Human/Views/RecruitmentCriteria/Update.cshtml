@@ -1,0 +1,108 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanRecruitmentCriteriaItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+
+        IconView = Icon.Add;
+        title = "Thêm mới tiêu chí";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật tiêu chí";
+    }
+}
+@(Html.X().Window()
+.ID("winCriteria")
+.Title(title)
+.Icon(IconView)
+.Width(800)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .Border(false)
+    .MarginSpec("0 -4 -3 -4")
+    .PaddingSpec("2 8 2 8")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 120; })
+    .Items(
+            X.HiddenFor(m => m.ID),
+            X.TextFieldFor(m => m.Name)
+                .FieldLabel("Tiêu chí" + Html.Required())
+                .EmptyText("Nhập tên tiêu chí...")
+                .BlankText("Tên tiêu chí không được bỏ trống!")
+                .AllowBlank(false)
+                .ColumnWidth(1)
+                .MarginSpec("2 0 2 0"),
+            X.NumberFieldFor(m => m.MinPoint)
+                .FieldLabel("Điểm tối thiểu" + Html.Required())
+                .MinValue(0)
+                .AllowBlank(false)
+                .EmptyText("Nhập điểm tối thiểu...")
+                .BlankText("Điểm tối thiểu không được bỏ trống!")
+                .ColumnWidth(0.5)
+                .MarginSpec("2 0 2 0"),
+            X.NumberFieldFor(m => m.MaxPoint)
+                .MinValue(0)
+                .FieldLabel("Điểm tối đa" + Html.Required())
+                .EmptyText("Nhập điểm tối đa...")
+                .BlankText("Điểm tối đa không được bỏ trống!")
+                .AllowBlank(false)
+                .ColumnWidth(0.5).MarginSpec("2 0 2 8"),
+            X.NumberFieldFor(m => m.Factor)
+                .MinValue(0)
+                .FieldLabel("Hệ số" + Html.Required())
+                .EmptyText("Nhập hệ số nhân của tiêu chí")
+                .BlankText("Hệ số không được bỏ trống!")
+                .AllowBlank(false)
+                .ColumnWidth(0.5).MarginSpec("2 0 2 0"),
+            X.CheckboxFor(m => m.IsActive)
+                .FieldLabel("Kích hoạt")
+                .EmptyValue(false).ColumnWidth(0.5).MarginSpec("2 0 2 8"),
+            X.RoleFieldFor(m => m.Role).FieldLabel("Chức danh <span style='color:red'> (*)</span>").AllowBlank(false).ColumnWidth(1).MarginSpec("2 0 2 0"),
+            X.TextAreaFor(m => m.Content).FieldLabel("Nội dung" + Html.Required()).ColumnWidth(1).MarginSpec("3 0 0 0").Height(150)
+            .AllowBlank(false).BlankText("Nội dung không được bỏ trống")
+            .EmptyText("Nhập nội dung tiêu chí..")
+
+                   )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                de.Click.Url = Url.Action("Update");
+                                de.Click.FormID = "frmUpdate";
+                            })
+        , Html.X().ButtonExit())
+)
+
+<script>
+    function onSelectRole(records) {
+        if (records.length == 1) {
+            App.hdfRoleID.setValue(records[0].get('ID'));
+            App.txtRoleName.setValue(records[0].get('Name'));
+            App.txtDepartmentName.setValue(records[0].get('DepartmentName'));
+        }
+        else {
+            Ext.Msg.alert("", "Lựa chọn duy nhất một bản ghi!");
+        };
+    };
+</script>

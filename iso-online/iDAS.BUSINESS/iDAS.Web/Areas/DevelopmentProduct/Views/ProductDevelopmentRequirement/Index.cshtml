@@ -1,0 +1,231 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+@(Html.X().Viewport()
+ .Layout(LayoutType.Border)
+        .Items
+        (
+             Html.X().Menu()
+                    .ID("cmMenu")
+                    .Items(
+                            new MenuItem { Text = "Xem chi tiết", ID = "cmDetail", Icon = Icon.Zoom, Handler = "showFormDetail();" },
+                            Html.X().MenuSeparator(),
+                            new MenuItem { Text = "Thêm", ID = "cmAdd", Icon = Icon.Add, DirectClickAction = "ShowFrmAdd" },
+                            new MenuItem { Text = "Sửa", ID = "cmEdit", Disabled = true, Icon = Icon.Pencil, Handler = "updateForm();" },
+                            new MenuItem { Text = "Xóa", ID = "cmDelete", Disabled = true, Icon = Icon.Delete, Handler = "deleteRecord();" }
+                        ),
+
+        Html.X().GridPanel()
+                .ID("grMnCommand")
+                .Border(false)
+                .Region(Region.Center)
+                .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                .TopBar(
+                Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonCreate()
+                                    .ID("btnInsertNews")
+                                    .DirectClickAction("ShowFrmAdd"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate()
+                                    .ID("btnEdit")
+                                    .Handler("updateForm();")
+                                    .Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                    .ID("btnDelete")
+                                    .Handler("deleteRecord();")
+                                    .Disabled(true),
+                           Html.X().ToolbarSeparator(),
+                           Html.X().ButtonView()
+                                    .ID("btnDetail")
+                                    .Handler("showFormDetail();")
+                        )
+                     )
+            .Store(Html.X().Store()
+                    .ID("stMnCommand")
+                    .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("GetData"))
+                    .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Model(
+                    Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("DevelopmentFromProductName").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StockProductName").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StockProductID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Reason").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Contents").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("IsWork").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsWorkDisp").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StockProductDisp").Type(ModelFieldType.String)
+                            )
+                          )
+                      )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                            .Text("STT")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .Width(33),
+                    Html.X().Column()
+                            .Text("ID")
+                            .DataIndex("ID")
+                            .Hidden(true),
+                    Html.X().Column()
+                            .Text("Sản phẩm yêu cầu phát triển")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("StockProductName")
+                            .Flex(1)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Phát triển từ sản phẩm")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("DevelopmentFromProductName")
+                            .Width(150)
+                            .Wrap(true),
+                    Html.X().Column()
+                            .Text("Lý do phát triển")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("Reason")
+                            .Width(300)
+                            .Wrap(true),
+        Html.X().CheckColumn()
+                .Width(100)
+                .Text("Đã thực hiện")
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Align(Alignment.Center)
+                .DataIndex("IsWork")
+                 )
+            .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                            l.Select.Handler = "checkStatus()";
+                        })
+                        )
+                          .View(
+                        Html.X().GridView().MarkDirty(false)
+                        )
+                        .Plugins(Html.X().CellEditing())
+                        .BottomBar
+                        (
+                    Html.X().CustomPagingToolbar())
+
+     )
+)
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var showFormDetail = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "ProductDevelopmentRequirement", new { Area = "DevelopmentProduct" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var checkStatus = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length > 0) {
+            if (records[0].get('IsWork')) {
+                App.cmDelete.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+            }
+            else {
+                App.cmDelete.setDisabled(false);
+                App.btnDelete.setDisabled(false);
+                App.btnEdit.setDisabled(false);
+                App.cmEdit.setDisabled(false);
+            }
+            App.btnDetail.setDisabled(false);
+        }
+        else {
+            App.cmDelete.setDisabled(true);
+            App.cmDetail.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnEdit.setDisabled(false);
+            App.cmEdit.setDisabled(false);
+        }
+    };
+    function updateForm() {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "ProductDevelopmentRequirement", new { Area = "DevelopmentProduct" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteRecord = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnEdit.setDisabled(true);
+                        App.btnDelete.setDisabled(true);
+                        App.btnDetail.setDisabled(true);
+                        App.cmEdit.setDisabled(true);
+                        App.cmDelete.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var strId = records[0].get('ID');
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "ProductDevelopmentRequirement", new { Area = "DevelopmentProduct" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+</script>

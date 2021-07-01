@@ -1,0 +1,337 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Border).Padding(1)
+    .Items(
+        Html.X().Hidden().ID("hdfLsCateId"),
+        Html.X().TreePanel()
+                .Header(false)
+                .Title("Bộ tiêu chí đánh giá")
+                .Region(Region.West)
+                .ID("trCriteriaCategory")
+                .Width(350)
+                .TitleAlign(TitleAlign.Center)
+                .Collapsible(true)
+                .Split(true)
+                .Border(true)
+                .RowLines(true)
+                .ColumnLines(true)
+                .ForceFit(true)
+                //.RootVisible(true)
+                .Root(Html.X().Node().NodeID("0").Expanded(true)
+                                .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "Name", Value = "Bộ tiêu chí đánh giá", Mode = ParameterMode.Value }))
+                                .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "ParentID", Value = "0", Mode = ParameterMode.Value }))
+                                      .CustomAttributes(ca => ca.Add(new ConfigItem { Name = "IsUse", Value = "1", Mode = ParameterMode.Value }))
+                      )
+                .SingleExpand(false)
+                .TopBar(
+                    Html.X().Toolbar()
+                            .Items(
+                                Html.X().Button().ID("btnInsertNews").Icon(Icon.Add).ToolTip("Thêm mới nhóm tiêu chí")
+                                        .Handler("AddCriteriaCategory();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().ID("btnEdit").Icon(Icon.Pencil).ToolTip("Sửa nhóm tiêu chí").Disabled(true)
+                                        .Handler("updateCriteriaCategory();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().ID("btnDelete").Icon(Icon.Delete).ToolTip("Xóa nhóm tiêu chí")
+                                        .Handler("deleteRecord();")
+                                        .Disabled(true),
+                               Html.X().ToolbarSeparator(),
+                                    Html.X().Button().ID("btnDetail").Disabled(true).ToolTip("Xem chi tiết").Icon(Icon.Zoom)
+                                            .Handler("showFormDetail();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().Icon(Icon.ArrowRefresh).Handler("App.trCriteriaCategory.store.reload();").Disabled(false),
+                                Html.X().ToolbarFill(),
+                                            Html.X().DisplayField().Text("<b>Sử dụng&nbsp;&nbsp;&nbsp;&nbsp;</b>")
+
+
+                            )
+                         )
+                .Store(Html.X().TreeStore()
+                        .ID("stCriteriaCategory")
+                        .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetData", "CriteriaCategory", new { area = "Quality" })))
+                        .Model(
+                        Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean)
+                                )
+                              )
+                          )
+                    .HideHeaders(true)
+                    .ColumnModel(
+                        Html.X().TreeColumn()
+                            .Align(Alignment.Left)
+                            .DataIndex("Name")
+                            .Flex(1),
+                            Html.X().CheckColumn().DataIndex("IsUse").Text("Sử dụng").Width(70)
+                )
+            .Listeners(ls => { ls.SelectionChange.Handler = "categoryCriteriaSelect();"; })
+                ,
+            Html.X().GridPanel()
+            .Region(Region.Center)
+            .ID("grCriteria")
+            .Border(true)
+            .RowLines(true)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .TopBar(
+                        Html.X().Toolbar()
+                                .Items(
+                                        Html.X().ButtonCreate()
+                                                .Handler("showFormAddCerial(true);"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonUpdate()
+                                                .ID("btnEditCriteria")
+                                                .Handler("updateFormCriteria();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonDelete()
+                                                .ID("btnDeleteCriteria")
+                                                .Handler("deleteCriteria();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonView()
+                                                .ID("btnDetailCriteria")
+                                                    .Handler("showDetailCriteria();"),
+                                        Html.X().ToolbarFill(),
+                                        Html.X().ButtonTutorial()
+                                      )
+                                  )
+                .Store(Html.X().Store().ID("StoreTreeCriteria")
+                        .AutoLoad(false)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetCriteria", "Criteria", new { area = "Quality" }))
+                                       .Reader(Html.X().JsonReader()
+                                       .Root("data")
+                                       )
+                        )
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("cateId", "App.hdfLsCateId.value", ParameterMode.Raw));
+                            })
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("MinPoint").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("MaxPoint").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("IsCategory").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("Factory").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean)
+                             )
+                         )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column()
+                        .Text("Tiêu chí đánh giá")
+                        .Align(Alignment.Left)
+                        .DataIndex("Name")
+                        .Flex(1),
+                Html.X().ComponentColumn()
+                .Text("Điểm")
+                .Columns(
+                        Html.X().Column()
+                        .Text("Thấp nhất")
+                        .DataIndex("MinPoint")
+
+                        .Align(Alignment.Right)
+                        .Width(100),
+                Html.X().Column().Text("Cao nhất")
+                        .DataIndex("MaxPoint")
+
+                        .Width(100)
+                        .Align(Alignment.Right)
+                        ),
+                Html.X().Column()
+                        .Text("Hệ số")
+
+                        .DataIndex("Factory")
+                        .Width(100)
+                        .Align(Alignment.Right),
+                Html.X().CheckColumn()
+                        .Text("Sử dụng")
+                        .DataIndex("IsUse")
+                        .Width(100)
+                        .Align(Alignment.Center)
+                    )
+                .Listeners(lS => lS.SelectionChange.Handler = "checkStatusCriteria()")
+                .Plugins(
+                    Html.X().CellEditing()
+                        .ClicksToEdit(1)
+                        .Listeners(ls =>
+                        {
+                        })
+                    )
+                .BottomBar(Html.X().CustomPagingToolbar())
+         )
+)
+<script type="text/javascript">
+    var categoryCriteriaSelect = function () {
+        var records = App.trCriteriaCategory.selModel.getSelection();
+        if (records.length == 1) {
+            var nodeSelect = App.stCriteriaCategory.getNodeById(records[0].get('ID'));
+            if (nodeSelect.isLeaf() == false) {
+                nodeSelect.reload();
+            }
+            App.hdfLsCateId.setValue(records[0].get('ID'));
+            App.grCriteria.store.reload();
+            if (records[0].get('ID') == 0) {
+                App.btnEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.btnDetail.setDisabled(true);
+            }
+            else {
+                App.btnEdit.setDisabled(false);
+                App.btnDelete.setDisabled(false);
+                App.btnDetail.setDisabled(false);
+            };
+        }
+        else {
+            App.btnEdit.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+        };
+    };
+    var AddCriteriaCategory = function () {
+        var url = '@(Url.Action("FormAdd", "CriteriaCategory", new { Area = "Quality" }, null))';
+            var records = App.trCriteriaCategory.selModel.getSelection();
+            if (records.length == 1) {
+                var parentId = records[0].get('ID');
+                var params = {
+                    parentId: parentId
+                };
+                onDirectMethod(url, params);
+            }
+            else {
+                var params = {
+                    parentId: 0
+                };
+                onDirectMethod(url, params);
+            };
+    };
+    function updateCriteriaCategory() {
+        var records = App.trCriteriaCategory.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowUpdate", "CriteriaCategory", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteRecord = function () {
+        var records = App.trCriteriaCategory.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+                    mask.show();
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "CriteriaCategory", new { Area = "Quality" }, null))',
+                        params: {
+                            id: records[0].get('ID'),
+                        },
+                        success: function (result) {
+                            mask.hide();
+                            if (handle) handle(result);
+                        },
+                    });
+                };
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showFormDetail = function () {
+        var records = App.trCriteriaCategory.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetail", "CriteriaCategory", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var checkStatusCriteria = function () {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnEditCriteria.setDisabled(false);
+            App.btnDeleteCriteria.setDisabled(false);
+            App.btnDetailCriteria.setDisabled(false);
+        }
+        else {
+            App.btnEditCriteria.setDisabled(true);
+            App.btnDeleteCriteria.setDisabled(true);
+            App.btnDetailCriteria.setDisabled(true);
+        };
+    };
+    var showFormAddCerial = function () {
+        var records = App.trCriteriaCategory.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("FormAdd", "Criteria", new { Area = "Quality" }, null))';
+            var params = {
+                cateId: records[0].get('ID'),
+                cateName: records[0].get('Name')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function updateFormCriteria() {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowUpdate", "Criteria", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteUrl = '@(Url.Action("Delete", "Criteria", new { Area = "Quality" }, null))';
+    var deleteCriteria = function () {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            onDelete(records[0].get('ID'));
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showDetailCriteria = function () {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetail", "Criteria", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

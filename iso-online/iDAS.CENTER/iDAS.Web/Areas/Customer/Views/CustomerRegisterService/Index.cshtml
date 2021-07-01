@@ -1,0 +1,124 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerRegisterServiceItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("CustomerRegisterServicePanel")
+        .Border(false).ColumnLines(true)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateCustomerRegisterService").Icon(Icon.Add).Handler("showCreateCustomerRegisterService();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateCustomerRegisterService").Icon(Icon.Pencil).Handler("showUpdateCustomerRegisterService();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteCustomerRegisterService").Icon(Icon.Delete).Handler("showDeleteCustomerRegisterService();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailCustomerRegisterService").Icon(Icon.Zoom).Handler("showDetailCustomerRegisterService();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("CustomerFileId").Type(ModelFieldType.Object),
+                    Html.X().ModelField().Name("CustomerName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("ServiceItemName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsNew").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsContact").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsAccept").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("RegisterAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectCustomerRegisterService()")
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeCustomerRegisterService();")
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex(Model, m => m.ID).Hidden(true),
+            Html.X().ImageColumn().DataIndex(Model, m => m.CustomerFileId),
+            Html.X().Column().Text("Khách hàng").DataIndex(Model, m => m.CustomerName).StyleSpec("font-weight: bold;text-align: center").Flex(1).Align(Alignment.Left),
+            Html.X().Column().Text("Chương trình").DataIndex(Model, m => m.ServiceItemName).StyleSpec("font-weight: bold;text-align: center").Width(240).Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Mới").DataIndex(Model, m => m.IsNew).Width(80).StyleSpec("font-weight: bold; text-align: center").Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Liên hệ").DataIndex(Model, m => m.IsContact).Width(80).StyleSpec("font-weight: bold; text-align: center").Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Xác nhận").DataIndex(Model, m => m.IsAccept).Width(80).StyleSpec("font-weight: bold; text-align: center").Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).Width(80).StyleSpec("font-weight: bold; text-align: center").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày đăng ký").DataIndex(Model, m => m.RegisterAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script type="text/javascript">
+    var urlCreateCustomerRegisterService = '@Url.Action("Create", "CustomerRegisterService", new { area = "Customer" })';
+    var urlUpdateCustomerRegisterService = '@Url.Action("Update", "CustomerRegisterService", new { area = "Customer" })';
+    var urlDeleteCustomerRegisterService = '@Url.Action("Delete", "CustomerRegisterService", new { area = "Customer" })';
+    var urlDetailCustomerRegisterService = '@Url.Action("Detail", "CustomerRegisterService", new { area = "Customer" })';
+
+    var getCustomerRegisterServiceSelection = function () {
+        return App.CustomerRegisterServicePanel.getSelectionModel().getLastSelected();
+    };
+    var reloadCustomerRegisterService = function () {
+        App.CustomerRegisterServicePanel.getStore().reload();
+        deSelectCustomerRegisterService();
+    }
+    var deSelectCustomerRegisterService = function () {
+        App.CustomerRegisterServicePanel.selModel.lastSelected = null;
+        selectionChangeCustomerRegisterService();
+    }
+    var showCreateCustomerRegisterService = function () {
+        var url = urlCreateCustomerRegisterService;
+        onDirectMethod(url, null, 'get');
+    };
+    var showUpdateCustomerRegisterService = function () {
+        var url = urlUpdateCustomerRegisterService;
+        var record = getCustomerRegisterServiceSelection();
+        var CustomerRegisterServiceId = record == null ? 0 : record.data.ID;
+        var params = { CustomerRegisterServiceId: CustomerRegisterServiceId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteCustomerRegisterService = function () {
+        var url = urlDeleteCustomerRegisterService;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getCustomerRegisterServiceSelection();
+                            var CustomerRegisterServiceId = record == null ? 0 : record.data.ID;
+                            var params = { CustomerRegisterServiceId: CustomerRegisterServiceId };
+                            onDirectMethod(url, params, 'post', reloadCustomerRegisterService);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailCustomerRegisterService = function () {
+        var url = urlDetailCustomerRegisterService;
+        var record = getCustomerRegisterServiceSelection();
+        var CustomerRegisterServiceId = record == null ? 0 : record.data.ID;
+        var params = { CustomerRegisterServiceId: CustomerRegisterServiceId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeCustomerRegisterService = function () {
+        var record = getCustomerRegisterServiceSelection();
+        App.btnUpdateCustomerRegisterService.setDisabled(record == null);
+        App.btnDeleteCustomerRegisterService.setDisabled(record == null);
+        App.btnDetailCustomerRegisterService.setDisabled(record == null);
+    };
+</script>

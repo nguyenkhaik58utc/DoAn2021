@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateDistrict = '@(Url.Action("Create", "V3_District", new { area = "Human" }))';
+    var urlUpdateDistrict = '@(Url.Action("Update", "V3_District", new { area = "Human" }))';
+    var urlDeleteDistrict = '@(Url.Action("Delete", "V3_District", new { Area = "Human" }))';
+    var urlDetailDistrict = '@(Url.Action("ShowFrmDetail", "V3_District", new { Area = "Human" }))';
+    var sortDistrictIndex = null;
+    var showCreateDistrict = function () {
+        var url = urlCreateDistrict;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateDistrict = function () {
+        var url = urlUpdateDistrict;
+        var record = getDistrictSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getDistrictSelection = function () {
+        var records = App.DistrictPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setDistrictSelection = function () {
+        if (sortDistrictIndex != null) {
+            App.DistrictPanel.selModel.select(sortDistrictIndex);
+        }
+    };
+
+    var showDeleteDistrict = function () {
+        var url = urlDeleteDistrict;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ Quận/Huyện này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getDistrictSelection();
+                            var DistrictId = record == null ? 0 : record.data.ID;
+                            var params = { ID: DistrictId };
+                            onDirectMethod(url, params, 'post', reloadDistrict);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailDistrict = function () {
+        var url = urlDetailDistrict;
+        var record = getDistrictSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadDistrict = function () {
+        App.DistrictPanel.store.reload();
+    };
+
+    var selectionChangeDistrict = function () {
+        var record = getDistrictSelection();
+        var isDisabled = record == null;
+        App.btnUpdateDistrict.setDisabled(isDisabled);
+        App.btnDeleteDistrict.setDisabled(isDisabled);
+        App.btnDetailDistrict.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý Quận/Huyện").Header(false)
+                    .ID("DistrictPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateDistrict").ID("btnCreateDistrict()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateDistrict").Handler("showUpdateDistrict();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteDistrict").Handler("showDeleteDistrict()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailDistrict").Handler("showDetailDistrict();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreDistrict")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setDistrictSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên Quận/Huyện").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeDistrict();")
+    )
+    )

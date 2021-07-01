@@ -1,0 +1,108 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@(Html.X().Window()
+    .Title("Cơ cấu tổ chức")
+    .Icon(Icon.House)
+    .Width(600)
+    .ID("winChoiceDepartment")
+    .Height(450)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .BodyPadding(0)
+    .Border(true)
+    .Items(
+        Html.X().TreePanel()
+            .ID("DepartmentPanelWindow")
+            .Header(false)
+            .TitleAlign(TitleAlign.Center)
+            .Layout(LayoutType.Fit)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)
+            .RowLines(true)
+            .SingleExpand(false)
+            .Border(false)
+            .Region(Region.West)
+            .HideHeaders(true)
+            .MultiSelect(false)
+            .Listeners(ls =>
+            {
+                ls.Load.Handler = "expandDepartmentWindow(records);";
+            })
+            .BottomBarItem(
+                Html.X().Button().Text("Mở rộng").Icon(Icon.ControlAddBlue).Handler("this.up('treepanel').expandAll();"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Text("Thu gọn").Icon(Icon.ControlRemoveBlue).Handler("this.up('treepanel').collapseAll();")
+            )
+            .Store(
+                Html.X().TreeStore()
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Department", new { Area = "Department" })).Reader(Html.X().JsonReader().Root("data")))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("id"),
+                            Html.X().ModelField().Name("text"),
+                            Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                        )
+                    )
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("departmentIds", ViewData["DepartmentIDs"].ToString(), ParameterMode.Value));
+                    })
+            )
+            .ColumnModel(
+                Html.X().TreeColumn().Text("SƠ ĐỒ TỔ CHỨC").Align(Alignment.Left).DataIndex("text").Flex(1),
+                Html.X().CheckColumn().DataIndex("IsSelected").Width(40).Editable(true)
+                    .Listeners(ls => ls.CheckChange.Handler = "setChoiceDepartmentWindow(record)")
+            )
+    )
+    .Buttons(
+        Html.X().ButtonChoice().Handler("selectDepartmentWindow(" + ViewData["Fn"] + ");this.up('window').close();").ID("btnChoiceDepartment").Disabled(true),
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var multiDepartment = '@ViewData["Multi"]';
+    var expandDepartmentWindow = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                var node = records[i];
+                if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+                    node.expand();
+                }
+            }
+        }
+    };
+    var selectDepartmentWindow = function (fn) {
+        var records = getListDepartmentWindow();
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                fillDepartent(records[i].get('id'), records[i].get('text'));
+            }
+        }
+        App.winChoiceDepartment.close();
+    };
+    var setChoiceDepartmentWindow = function (record) {
+        var data = getListDepartmentWindow(record);
+        App.btnChoiceDepartment.setDisabled(!(data.length > 0));
+    };
+    var getListDepartmentWindow = function (record) {
+        var data = [];
+        var records = App.DepartmentPanelWindow.view.store.getRange();
+        records.forEach(function (obj) {
+            if (multiDepartment == 'False' && record != null) {
+                if (!obj.data.IsSelected || obj.data.id != record.data.id) {
+                    obj.data.IsSelected = false;
+                }
+            };
+            if (obj.data.IsSelected) {
+                data.push(obj);
+            }
+        });
+        App.DepartmentPanelWindow.view.refresh();
+        return data;
+    };
+</script>

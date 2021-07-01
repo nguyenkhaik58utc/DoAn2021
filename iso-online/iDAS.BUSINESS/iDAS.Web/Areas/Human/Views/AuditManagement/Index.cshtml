@@ -1,0 +1,162 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+        .Layout(LayoutType.Border).Padding(2)
+        .Items(
+                Html.X().Hidden().ID("hdfGradationID"),
+                Html.X().GridPanel().Region(Region.West)
+                     .ID("grGradation").Width(300).Header(false)
+                     .ColumnLines(true).Title("Đợt đánh giá").Collapsible(true).Split(true)
+                        .ColumnLines(true)
+                        .TopBar(Html.X().Toolbar().Items(Html.X().ButtonView().ID("btnDetail").Handler("showFormDetail();")))
+                        .Store(
+                                Html.X().Store()
+                                        .ID("StGradations")
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetGradation")).Reader(Html.X().JsonReader().Root("data")))
+                                        .RemoteSort(true)
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .Model(
+                                                Html.X().Model().IDProperty("ID")
+                                                        .Fields(
+                                                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                                                Html.X().ModelField().Name("IsPerform").Type(ModelFieldType.Boolean)
+                                                            )
+                                              )
+                            )
+                        .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(33),
+                                        Html.X().Column().Text("Đợt đánh giá").DataIndex("Name").Flex(1).Wrap(true)
+
+                                    )
+                        .SelectionModel(
+                            Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Single)
+                                 .Listeners(l =>
+                                    {
+                                        l.Select.Handler = "onSelectGradation()";
+                                    })
+                            )
+                    .BottomBar(Html.X().CustomPagingToolbar())
+                     ,
+                Html.X().GridPanel().Region(Region.Center)
+                    .ID("grAuditTick")
+                    .ColumnLines(true)
+                    .Store(
+                            Html.X().Store().AutoLoad(false)
+                                    .ID("stManagmentAudit")
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData")).Reader(Html.X().JsonReader().Root("data")))
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("gradationId", "App.hdfGradationID.getValue()", ParameterMode.Raw));
+                                        })
+                                    .RemoteSort(true)
+                                    .RemotePaging(true)
+                                    .PageSize(20)
+                                    .Model(
+                                            Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                            Html.X().ModelField().Name("HumanAuditGradationRole").Type(ModelFieldType.String),
+                                                            Html.X().ModelField().Name("HumanAuditGradationRoleID").Type(ModelFieldType.Int),
+                                                            Html.X().ModelField().Name("IsManagementAuditted").Type(ModelFieldType.Boolean),
+                                                            Html.X().ModelField().Name("HumanAuditCriteriaCategoryID").Type(ModelFieldType.Int)
+                                                        )
+                                          )
+                        )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(33),
+                                    Html.X().Column().Text("Nhân sự đánh giá").DataIndex("HumanAuditGradationRole").Flex(1).Wrap(true),
+                                    Html.X().BooleanColumn().Text("Trạng thái").DataIndex("IsManagementAuditted")
+                                                .TrueText("Đã thực hiện")
+                                                .FalseText("<div style='color: red;'>Chưa thực hiện</div>"),
+                                    Html.X().CommandColumn()
+                                                .Width(70)
+                                                .Text("Thực hiện")
+                                                .Commands(
+                                                            Html.X().GridCommand()
+                                                                .Text("Đánh giá")
+                                                                .Icon(Icon.UserKey)
+                                                                .CommandName("Answer"),
+                                                            Html.X().GridCommand()
+                                                                .Icon(Icon.ZoomIn)
+                                                                .CommandName("Detail")
+                                                                .Text("Xem")
+                                                        ).PrepareToolbar("prepare")
+                                                .Listeners(ls => ls.Command.Handler = "Audit(command,record);")
+                                                            
+                                )
+                    .SelectionModel(
+                        Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                        )
+                .BottomBar(Html.X().CustomPagingToolbar())
+            )
+)
+<script type="text/javascript">
+    var prepare = function (grid, toolbar, rowIndex, record) {
+        if (record.data.IsManagementAuditted == true) {
+            toolbar.items.getAt(0).hide();
+        }
+        else {
+            toolbar.items.getAt(1).hide();
+        }
+    };
+    var Audit = function (command, record) {
+        if (command == "Answer") {
+            AnswerAudit(record.data.ID);
+        };
+        if (command == "Detail") {
+            Detail(record.data.ID);
+        };
+    };
+    var showFormDetail = function () {
+        var records = App.grGradation.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "AuditGradation", new { Area = "Human" }, null))',
+                params: { id: id }
+            });
+        };
+    };
+    var onSelectGradation = function () {
+        var records = App.grGradation.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDetail.setDisabled(false);
+            App.hdfGradationID.setValue(records[0].data.ID);
+            App.stManagmentAudit.reload();
+        }
+        else {
+            App.btnDetail.setDisabled(true);
+        }
+    };
+    var AnswerAudit = function (id) {
+        var params = {
+            id: id
+        };
+        onDirectMethod('@(Url.Action("Answer"))', params);
+    };
+    var Detail = function (id) {
+        var params = {
+            id: id
+        };
+        onDirectMethod('@(Url.Action("Detail", "AuditEmployee"))', params);
+    };
+</script>

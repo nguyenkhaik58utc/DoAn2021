@@ -1,0 +1,174 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitTask = Url.Action("Insert", "CAPATask", new { area = "Quality" });
+    var urlStoreTask = Url.Action("LoadTasks", "CAPATask", new { area = "Quality" });
+    var paramStoreTask = Html.X().StoreParameter().Name("CAPAId").Value("getCAPAId()").Mode(ParameterMode.Raw);
+}
+<script>
+    function onDepartmentReady(records) {
+        App.hdfDepartmentId.setValue(records[0].get('id'));
+        App.grCAPARequire.getStore().reload();
+    };
+    var getCAPAId = function () {
+        var CAPAId = 0;
+        var records = App.grCAPARequire.selModel.getSelection();
+        if (records.length > 0) {
+            CAPAId = records[0].get('ID');
+        }
+        return CAPAId;
+    };
+    function CheckStatusListCAPA(grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length == 1) {
+            grid.queryById('btnDetailCAPA').setDisabled(false);
+            grid.queryById('btnTaskCAPA').setDisabled(false);
+            grid.queryById('btnCAPAAction').setDisabled(false);
+            if (records[0].get('IsEdit') == false) {
+                grid.queryById('btnApprove').setDisabled(false);
+            }
+            else {
+                grid.queryById('btnApprove').setDisabled(true);
+            };
+            if (records[0].get('IsEdit') == false && records[0].get('IsApproval') == true && records[0].get('IsAccept') == true) {
+                grid.queryById('btnTaskCAPA').setDisabled(false);
+            }
+            else {
+                grid.queryById('btnTaskCAPA').setDisabled(true);
+            };
+        }
+        else {
+            grid.queryById('btnDetailCAPA').setDisabled(true);
+            grid.queryById('btnTaskCAPA').setDisabled(true);
+            grid.queryById('btnCAPAAction').setDisabled(true);
+            grid.queryById('btnApprove').setDisabled(true);
+            grid.queryById('btnTaskCAPA').setDisabled(true);
+        };
+    };
+    var CAPARequireDetail = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DeltailCAPARequireForm", "NC", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('RequireID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var CAPAActionShow = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateView", "CAPA", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('RequireID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ApproveShow = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ApproveForm", "CAPA", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('RequireID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("RequireID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Border).Padding(2)
+    .Items(
+            Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+            Html.X().Hidden().ID("hdfDepartmentId"),
+            Html.X().DepartmentPanel().Handler("onDepartmentReady"),
+            Html.X().GridPanel()
+                .Region(Region.Center)
+                .Layout(LayoutType.Fit)
+                .ID("grCAPARequire")
+                .Header(false)
+                .Border(true)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                            Html.X().ButtonView().ItemID("btnDetailCAPA")
+                                    .Handler("CAPARequireDetail(this.up('gridpanel'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Icon(Icon.ImageEdit).Text("Hành động khắc phục phòng ngừa")
+                                    .ItemID("btnCAPAAction").Disabled(true)
+                                    .Handler("CAPAActionShow(this.up('gridpanel'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonApproval()
+                                    .ItemID("btnApprove")
+                                    .Handler("ApproveShow(this.up('gridpanel'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonTask()
+                                    .UrlSubmit(urlSubmitTask)
+                                    .UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask()
+                                    .Text("Giao việc")
+                                        .ItemID("btnTaskCAPA").Disabled(true),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                            )
+                        )
+            .Store(
+                Html.X().Store()
+                    .ID("StoreCAPA")
+                    .AutoLoad(false)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCAPARequire", "CAPARequire", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(
+                   ps => { 
+                       ps.Add(new StoreParameter("id", "App.hdfDepartmentId.getValue()", ParameterMode.Raw));
+                       ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                   }
+                    )
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("RequireID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("Code"),
+                            Html.X().ModelField().Name("CompleteTime"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("IsApproval"),
+                            Html.X().ModelField().Name("IsAccept"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("Result")
+                        )
+                        )
+            )
+            .ColumnModel(
+                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            Html.X().Column().DataIndex("Code").Text("Mã Yêu cầu").Width(80),
+                            Html.X().Column().DataIndex("Name").Text("Yêu cầu").Width(250).Flex(1),
+                            Html.X().DateColumnExtend().DataIndex("CompleteTime").Format("dd/MM/yyyy").Text("Ngày hoàn thành").Width(120).Align(Alignment.Center),
+                            Html.X().Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(160)
+            )
+            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusListCAPA(this)")
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single))
+            .BottomBar(Html.X().CustomPagingToolbar())
+            .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+
+    )
+)

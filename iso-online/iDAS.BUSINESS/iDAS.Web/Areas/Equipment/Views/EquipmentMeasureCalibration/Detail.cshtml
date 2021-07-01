@@ -1,0 +1,54 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.EquipmentMeasureCalibrationItem
+@(Html.X().Window()
+.Title("Thông tin chi tiết hiệu chỉnh thiết bị")
+.Icon(Icon.Zoom)
+.Width(500)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+        .Layout(LayoutType.Column)
+        .Frame(true)
+        .Border(false)
+        .MarginSpec("0 -4 -3 -4")
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => { df.LabelWidth = 120; })
+        .Items(
+                    Html.X().ComboBoxFor(m => m.EquipmentCalibrationID).ReadOnly(true)
+                                            .EmptyText("Nhập thiết bị hiệu chỉnh...")
+                                            .QueryMode(DataLoadMode.Local)
+                                            .DisplayField("Name")
+                                            .ValueField("ID")
+                                            .Store(
+                                                Html.X().Store()
+                                                .RemotePaging(true)
+                                                .AutoDataBind(true)
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCalibration", "EquipmentMeasureCalibration"))
+                                                .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                .Model(
+                                                    Html.X().Model().Fields(
+                                                        Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("Name")
+                                                        )
+                                                    )
+                                            )
+                                            .AllowBlank(false)
+                                            .FieldLabel("Thiết bị hiệu chỉnh").ColumnWidth(0.7).MarginSpec("5 8 0 8"),
+                   Html.X().EmployeeFieldFor(m => m.HumanEmployee).ReadOnly(true).Title("Người thực hiện")
+                        .ColumnWidth(1).MarginSpec("5 8 5 8"),
+                   Html.X().DateTimeFieldFor(m => m.Time).ReadOnly(true).FieldLabel("Thời gian").ColumnWidth(1).MarginSpec("5 8 5 8"),
+                   Html.X().CheckboxFor(m => m.IsPass).ReadOnly(true).FieldLabel("Kết quả").BoxLabel("Đạt").ColumnWidth(1).MarginSpec("5 8 5 8"),
+                   Html.X().TextAreaFor(m => m.Note).ReadOnly(true).FieldLabel("Ghi chú").LabelAlign(LabelAlign.Top)
+                        .ColumnWidth(1).MarginSpec("0 8 0 8").Height(200)      
+            )
+    )
+    .Buttons( Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)
+

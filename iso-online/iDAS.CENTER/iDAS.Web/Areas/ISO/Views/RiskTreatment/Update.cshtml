@@ -1,0 +1,105 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.RiskTreatmentItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == "Add")
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới hành động ứng phó rủi ro";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật hành động ứng phó rủi ro";
+    }
+}
+@(
+ Html.X().Window().ItemID("windowId")
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .ID("winRiskTreatmentUpdate")
+    .Title(title)
+    .Icon(IconView)
+    .Items(
+            X.CustomFormPanel().ID("frmUpdate").FieldDefaults(lf => lf.LabelWidth = 90)
+                .Items(
+                        X.HiddenFor(m => m.ID),
+                        X.HiddenFor(m => m.CenterRiskID),
+                        X.ComboBoxFor(i => i.CenterRiskMethodID).FieldLabel("Mức độ rủi ro *")
+                                                            .ID("cbRiskMethod").AllowBlank(false)
+                                                            .BlankText("Thiết lập khả năng xảy ra phù hợp với mức độ rủi ro qui định")
+                                                            .PaddingSpec("5 0 5 0")
+                                                            .EmptyText("Hệ thống tính toán mức độ rủi ro từ định lượng rủi ro")
+                                                            .ColumnWidth(1)
+                                                            .DisplayField("Level")
+                                                            .ValueField("ID")
+                                                            .Store(
+                                                                Html.X().Store()
+                                                                .ID("stRiskMethod")
+                                                                    .AutoLoad(true)
+                                                                    .Model(
+                                                                        Html.X().Model()
+                                                                            .IDProperty("ID")
+                                                                            .Fields(
+                                                                                new ModelField("ID", ModelFieldType.Int),
+                                                                                new ModelField("Level", ModelFieldType.String),
+                                                                                new ModelField("Method", ModelFieldType.String),
+                                                                                new ModelField("Color", ModelFieldType.String)
+                                                                            )
+                                                                    )
+                                                                    .Proxy(
+                                                                        Html.X().AjaxProxy()
+                                                                            .Url(Url.Action("LoadData", "RiskMethod"))
+                                                                            .Reader(Html.X().JsonReader().Root("data")
+                                                                            )
+                                                                    )
+                                                            )
+                                                            .Tpl(
+                                                            @<text>
+                                                                <tpl for=".">
+                                                                    <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                                                        <div style="width: 20px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px soli>;">&nbsp;</div><div style="width: auto; float: left; font-size: 0.9em;">&nbsp;{Level}</div>
+                                                                    </div>
+                                                                </tpl>
+                                                            </text>)
+                                                .Listeners(l => l.Change.Handler = "getColor(App.cbRiskMethod, App.stRiskMethod);"),
+                        X.TextFieldFor(m=>m.Method).ID("tfMethod").FieldLabel("Phương thức").ReadOnly(true),
+                        X.TextAreaFor(m => m.Action).AllowOnlyWhitespace(false).FieldLabel("Hành động *")
+                                .EmptyText("Nhập hành động kiểm soát rủi ro...").Height(150).Flex(1)
+                    )
+            )
+    .Buttons(
+               Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                de.Click.Url = Url.Action("Update");
+                                de.Click.FormID = "frmUpdate";
+                                de.Click.Success = "this.up('window').close();";
+                            }),
+               Html.X().ButtonExit()
+            )
+)
+<script>
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        if (id) {
+            var record = store.getById(id);
+            var color = record.get('Color');
+            obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+            var method = record.get('Method');
+            App.tfMethod.setValue(method);
+        }
+    };
+</script>

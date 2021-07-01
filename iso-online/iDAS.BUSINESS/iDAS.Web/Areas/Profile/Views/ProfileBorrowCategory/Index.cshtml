@@ -1,0 +1,225 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int add = (int)iDAS.Items.ProfileForm.Insert;
+    int edit = (int)iDAS.Items.ProfileForm.Edit;
+    int detail = (int)iDAS.Items.ProfileForm.Detail;
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(1)
+    .Items(
+        Html.X().Hidden().ID("hdfDepartmentID"),
+        Html.X().DepartmentPanel().Handler("onDepartmentReady"),
+        Html.X().GridPanel()
+            .Border(true)
+            .ID("GrProfileBorrowCate1")
+            .Title("Danh sách sổ theo dõi mượn hồ sơ")
+            .Header(false)
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+
+                        Html.X().ButtonCreate().ID("btnRequest")
+                            .Disabled(false)
+                               .Handler("ShowFrm(" + add + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate()
+                            .ID("btnDocumentBorrowEdit")
+                            .Handler("ShowFrm(" + edit + ");")
+                            .Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete()
+                            .Text("Xóa")
+                            .ID("btnDocumentBorrowDelete")
+                            .Handler("deleteRecord();")
+                            .Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView()
+                            .ID("btnDocumentBorrowDetail")
+                            .Handler("ShowFrm(" + detail + ");")
+                            .Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                            Html.X().Button().Text("Xem danh sách hồ sơ mượn").ToolTip("Xem danh sách hồ sơ mượn")
+                            .ID("btnDocumentDetail").Icon(Icon.TableCell).Handler("ShowDocument();")
+                            .Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Khôi phục").ToolTip("Khôi phục sổ mượn hồ sơ đã xóa")
+                            .ID("btnDocumentDelete")
+                            .Icon(Icon.PageBack)
+                            .Handler("ShowFrmProfileBorrowBackup();"),
+                                    Html.X().ToolbarFill(),
+                                 Html.X().ButtonTutorial()
+                        )
+               )
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(false)
+                    .ID("StProfileCate")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCate", "ProfileBorrowCategory")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("groupId", "App.hdfDepartmentID.getValue() > 0 ? App.hdfDepartmentID.getValue():0", ParameterMode.Raw));
+                    })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("CreateAt"),
+                            Html.X().ModelField().Name("CreateByName"),
+                            Html.X().ModelField().Name("DepartmentID"),
+                            Html.X().ModelField().Name("Note"),
+                            Html.X().ModelField().Name("UpdateAt"),
+                             Html.X().ModelField().Name("IsDelete"),
+                            Html.X().ModelField().Name("UpdateByName")
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Width(30).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Name").Text("Tên Sổ theo dõi").Flex(1).StyleSpec("font-weight: bold;text-align: center"),
+                Html.X().Column().DataIndex("Note").Text("Ghi chú").Flex(2).StyleSpec("font-weight: bold;text-align: center"),
+                Html.X().Column().DataIndex("CreateByName").Text("Người tạo")
+                    .Width(120)
+                    .StyleSpec("font-weight: bold;text-align: center"),
+                Html.X().Column().DataIndex("UpdateByName").Text("Người sửa")
+                    .Width(120)
+                    .StyleSpec("font-weight: bold;text-align: center")
+                         )
+                .SelectionModel(
+                Html.X().CheckboxSelectionModel()
+                .ShowHeaderCheckbox(false)
+                .Mode(SelectionMode.Single)
+              .Listeners(l => l.SelectionChange.Handler = "checkStatusProfileBorrow();")
+
+                            )
+                        .Plugins(
+                                Html.X().FilterHeader().Remote(true)
+                                    )
+                   .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script>
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var ShowFrm = function (cmd) {
+        if (cmd == 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAdd", "ProfileBorrowCategory", new { Area = "Profile" }, null))'
+            });
+        } else {
+            var record = App.GrProfileBorrowCate1.selModel.getSelection();
+            if (record.length > 0) {
+                var id = record[0].get('ID');
+                if (cmd == 1) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmUpdate", "ProfileBorrowCategory", new { Area = "Profile" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 6) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmDetail", "ProfileBorrowCategory", new { Area = "Profile" }, null))', params: { id: id, type: cmd }
+                    });
+                }
+            }
+        }
+    };
+    var ShowFrmProfileBorrowBackup = function () {
+        var id = App.hdfDepartmentID.getValue();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowProfileBorrowBackup", "ProfileBorrowCategory", new { Area = "Profile" }, null))', params: { id: id }
+        });
+    };
+    var ShowDocument = function () {
+        var gr = Ext.getCmp('GrProfileBorrowCate1').selModel.getSelection();
+        if (gr.length > 0) {
+            var id = gr[0].get('ID');
+            var depId = gr[0].get('DepartmentID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmProfileBorrow", "ProfileBorrowCategory", new { Area = "Profile" }, null))', params: { id: id, depId: depId }
+            });
+        }
+    };
+    function onDepartmentReady(records) {
+        App.hdfDepartmentID.setValue(records[0].get('id'));
+        App.GrProfileBorrowCate1.getStore().reload();
+    };
+    var deleteRecord = function () {
+        var record = App.GrProfileBorrowCate1.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa Sổ theo dõi Mượn Hồ sơ đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "ProfileBorrowCategory", new { Area = "Profile" }, null))',
+                            params: { id: id },
+                            success: function () {
+
+                            }
+                        });
+                    }
+                }
+            });
+
+        }
+    };
+    var checkStatusProfileBorrow = function () {
+        var record = App.GrProfileBorrowCate1.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnDocumentDetail.setDisabled(false);
+            App.btnDocumentBorrowEdit.setDisabled(false);
+            App.btnDocumentBorrowDelete.setDisabled(false);
+            App.btnDocumentBorrowDetail.setDisabled(false);
+
+        } else {
+            App.btnDocumentDetail.setDisabled(true);
+            App.btnDocumentBorrowEdit.setDisabled(true);
+            App.btnDocumentBorrowDelete.setDisabled(true);
+            App.btnDocumentBorrowDetail.setDisabled(true);
+
+        }
+    };
+   
+    var showProfileBorrow = function () {
+        var records = App.GrProfileBorrowCate1.selModel.getSelection();
+        var id = records[0].get('ID');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowProfileBorrow", "ProfileBorrowCategory", new { Area = "Profile" }, null))', params: { id: id }
+        });
+    };
+    var fillProfileBorrow = function (id) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            App.cbProfile.setValue(parseInt(id));
+            App.winChooseProfileBorrow.close();
+        }
+    };
+</script>

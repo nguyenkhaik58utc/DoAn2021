@@ -1,0 +1,82 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DocumentDistributionItem
+@(
+ Html.X().Window()
+    .ID("winUpdateDis")
+    .Title("Phân phối tài liệu")
+    .Icon(Icon.PageCode)
+    .Layout(LayoutType.Border)
+    .Height(520)
+    .Width(890)
+    .BodyPadding(0).Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("frIssueDocument")
+            .Layout(LayoutType.Fit)
+            .Header(false)
+            .Region(Region.Center)
+            .Frame(true)
+            .Items(
+                 Html.X().FieldSet()
+                    .Title("Thông tin phân phối tài liệu cho từng phòng ban")
+                    .Padding(6)
+                    .MarginSpec("0 0 0 0")
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .Defaults(d =>
+                    {
+                        d.Add(new Parameter("LabelWidth", "120"));
+                    })
+                    .Items(
+                        Html.X().HiddenFor(m => m.DocumentDistributionID).ID("hrID"),
+                        Html.X().HiddenFor(m => m.DocumentID).ID("hrDocID"),
+                        Html.X().HiddenFor(m => m.IssuedDate).ID("hrEffectiveDate"),
+        //Html.X().HiddenFor(m => m.DepartmentID).ID("hrDepartment"),
+                        Html.X().NumberFieldFor(m => m.Number)
+                            .ID("txtNumber").FieldLabel("Số lượng" + Html.Required())
+                            .AllowBlank(false).BlankText("Số lượng phân phối bắt buộc nhập!")
+                            .MinValue(1).MinText("Số lượng phân phối phải lớn hơn 0!")
+                            .AllowDecimals(false),
+                        Html.X().TextFieldFor(m=>m.DepartmentID).FieldLabel("Phòng ban").ReadOnly(true),
+                        Html.X().DateFieldFor(m => m.DistributionDate)
+                            .ID("EffectiveDate")
+                            .FieldLabel("Ngày phân phối" + Html.Required())
+                            .Format("dd/MM/yyyy")
+                            .AllowBlank(false).BlankText("Ngày phân phối bắt buộc nhập!")
+                            ,
+                         Html.X().Container().Layout(LayoutType.Column).Items(
+                            Html.X().CheckboxFor(m => m.FormH).FieldLabel("Hình thức phân phối" + Html.Required()).BoxLabel("Bản cứng").ColumnWidth(0.5).ID("ckHard").LabelWidth(120),
+                         Html.X().CheckboxFor(m => m.FormS).FieldLabel("").BoxLabel("Bản mềm").ColumnWidth(0.5).MarginSpec("0 0 0 5").ID("ckSoft")
+                         ),
+                             Html.X().TextAreaFor(m => m.NoteObs).ID("Note").Flex(1).FieldLabel("Ghi chú").MinHeight(100),
+                            Html.X().EmployeeFieldFor(m => m.EmployeeInfo).AllowBlank(false).Title("Người phân phối" + Html.Required()).MarginSpec("0 0 0 125").ID("fsEmployee")
+                )
+            )
+        //        ),
+        //Html.X().DepartmentPanel().Handler("onDepartmentReady")
+        )
+        .Buttons(Html.X().Button()
+                        .ID("btnSaves")
+                        .Icon(Icon.Disk)
+                               .MarginSpec("0 4 0 0")
+                        .Text("Phân phối")
+                        .TabIndex(20)
+                            .DirectEvents(de =>
+                            {
+                                de.Click.FormID = "frIssueDocument";
+                                de.Click.ExtraParams.Add(new { isExit = false });
+                                de.Click.Url = Url.Action("UpdateIssue");
+                                de.Click.Before = @"if (!#{frIssueDocument}.getForm().isValid()) { return false; }";
+                                de.Click.EventMask.ShowMask = true;
+                                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                                de.Click.Success = "this.up('window').close();";
+                            }),
+            Html.X().ButtonExit()
+        )
+)

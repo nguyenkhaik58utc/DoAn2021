@@ -1,0 +1,229 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanPhaseAuditItem
+@( Html.X().Window()
+    .Title("Phê duyệt lệnh cung cấp dịch vụ")
+    .Icon(Icon.Tick)
+    .ID("wdApprove")
+             .Height(1)
+            .Maximized(true)
+            .Constrain(true)
+            .Layout(LayoutType.Fit)
+            .Modal(true)
+            .Resizable(false)
+            .BodyPadding(0)
+            .Border(false)
+            .Center()
+            .Items(
+            Html.X().FormPanel()
+                .Layout(LayoutType.Border)
+                .StyleSpec("border: none;")
+                .ID("frmAudit")
+                .Border(false)
+                .Items(
+                Html.X().TabPanel()
+                .Region(Region.Center)
+                    .ActiveTabIndex(0)
+                    .Border(true)
+                    .Items(
+                    Html.X().Panel()
+                    .BodyPadding(6)
+                    .Icon(Icon.ApplicationViewDetail)
+                         .Layout(LayoutType.VBox)
+                                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .StyleSpec("border: none;")
+                    .Title("Thông tin chi tiết")
+                    .Frame(true)
+                    .Items(
+        Html.X().FormPanel()
+                .ID("frmPhaseAudit")
+                        .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                        .Frame(true)
+                        .StyleSpec("border: none;")
+                        .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                                        Html.X().HiddenFor(m => m.ID),
+                                        Html.X().HiddenFor(m => m.UpdateByEmployeeID),
+                                        Html.X().HiddenFor(m => m.CreateByEmployeeID),
+                                        Html.X().TextFieldFor(m => m.Name)
+                                        .ID("txtNamePhaseAudit")
+                                        .FieldLabel("Tên đợt")
+                                        .AllowOnlyWhitespace(false)
+                                        .ReadOnly(true)
+                                        .TabIndex(2)
+                                        .AllowBlank(false)
+                                            .BlankText("Tên đợt đánh giá không được để trống!"),
+                                              Html.X().ComboBoxFor(m => m.HumanCategoryQuestionID)
+                                                .FieldLabel("Nhóm câu hỏi")
+                                                .Editable(false)
+                                                    .MarginSpec("0 0 5 0").ReadOnly(true)
+                                                .AllowBlank(false)
+                                                       .DisplayField("Name")
+                                                    .ValueField("ID")
+                                                    .Store(
+                                                    Html.X().Store()
+                                                        .ID("StoreQuestion")
+                                                        .AutoLoad(true)
+                                                             .Proxy(Html.X().AjaxProxy()
+                                                                    .Url(Url.Action("GetDataQuestion", "PhaseAudit", new { area = "Human" }))
+                                                                .Reader(Html.X().JsonReader().Root("data")
+                                                                )
+                                                                )
+                                                        .Model(Html.X().Model()
+                                                            .Fields(
+                                                                new ModelField("Name"),
+                                                                new ModelField("ID")
+                                                            )
+                                                        )
+                                                ),
+                                              Html.X().NumberFieldFor(m => m.NumberSendInDay).ID("txtNumber").FieldLabel("Số câu hỏi/ngày").MinValue(1).ReadOnly(true),
+                                              Html.X().Container()
+                                                    .Layout(LayoutType.Column)
+                                                    .ColSpan(2)
+                                                    .MarginSpec("0 0 5 0")
+                                                    .Items(
+                                                Html.X().DateTimeFieldFor(m => m.StartDate)
+                                                        .AllowBlank(false).ReadOnly(true)
+                                                    .FieldLabel("Bắt đầu")
+                                                    .ColumnWidth(0.5).MarginSpec("0 5 0 0"),
+                                                    Html.X().DateTimeFieldFor(m => m.EndDate).ReadOnly(true)
+                                                    .FieldLabel("Kết thúc")
+                                                    .AllowBlank(false)
+                                                    .ColumnWidth(0.5)),
+                                                    Html.X().TextAreaFor(m => m.Contents).ReadOnly(true)
+                                                    .TabIndex(3)
+                                                    .AllowOnlyWhitespace(false)
+                                                    .AllowBlank(false)
+                                                    .FieldLabel("Yêu cầu")
+                                                    .BlankText("Yêu cầu không được bỏ trống!")
+                                                    .Height(170)
+                                                    .Flex(1)
+                                                          )
+                                                        ),
+                                                Html.X().Panel()
+                                                    .Icon(Icon.UserTick)
+                                                    .Border(false)
+                                                    .BodyPadding(0)
+                                                    .Margin(0)
+                                                    .Padding(0)
+                                                    .AutoScroll(true)
+                                                    .Title("Thành phần tham gia")
+                                                    .Layout(LayoutType.Fit)
+                                                   .Items(
+                                                       Html.X().GridPanel()
+                        .ID("grMnObject")
+                        .Border(false)                       
+                    .Store(Html.X().Store()
+                            .ID("stMnObject")
+                            .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetDataEmployeeAudit", "PhaseAudit"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Parameters(ps => ps.Add(new StoreParameter("phaseAuditId", Model.ID.ToString(), ParameterMode.Value)))
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                            Html.X().Model()
+                                    .Fields(
+
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("AuditID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("EmployeeName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("FileID").Type(ModelFieldType.Auto),
+                                        Html.X().ModelField().Name("FileName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Email").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("EmployeeID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Phone").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Role").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("ObjectType").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Type").Type(ModelFieldType.Boolean)
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Center)
+                                    .Width(33),
+                            Html.X().Column()
+                                    .Text("ID")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                                         Html.X().TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+                              Html.X().XTemplate().Html(@<text>
+                                            <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                                 style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                            </text>)
+                            ),
+                                Html.X().Column()
+                                        .Text("Họ tên")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                                .DataIndex("EmployeeName")
+                                       .Width(130)
+                                        .Wrap(true),
+                                   Html.X().Column()
+                                            .Text("Chức vụ")
+                                            .StyleSpec("font-weight: bold;text-align: center")
+                                                .DataIndex("Role")
+                                                .Flex(1)
+                                           .Width(100)
+                                            .Wrap(true),
+                                                 Html.X().Column()
+                                                .Text("Số điện thoại")
+                                                .StyleSpec("font-weight: bold;text-align: center")
+                                                    .DataIndex("Phone")
+                                               .Width(100)
+                                                .Wrap(true),
+                                                     Html.X().Column()
+                                                .Text("Email")
+                                                .StyleSpec("font-weight: bold;text-align: center")
+                                                    .DataIndex("Email")
+                                               .Width(130)
+                                                .Wrap(true)
+                                                ).SelectionModel(
+                                                    Html.X().RowSelectionModel()
+                                                            .Mode(SelectionMode.Multi)
+                                                            .Listeners(l =>
+                                                            {
+                                                                l.Select.Handler = "checkStatus()";
+                                                            })
+                                                            )
+
+                                                              .View(
+                                                            Html.X().GridView().MarkDirty(false)
+                                                            )
+                                                            .Plugins(Html.X().CellEditing())
+                                                            .BottomBar
+                                                            (
+                                                                         Html.X().CustomPagingToolbar()
+                                                     )
+                                               )
+                                              ),
+                                            Html.X().ApprovalPanelFor(m => m)
+                                             )
+                                             )
+            .Buttons(
+                 Html.X().Button()
+                            .ID("btnAccept")
+                            .TabIndex(17)
+                            .Icon(Icon.Accept)
+                            .Text("Lưu phê duyệt")
+                            .DirectEvents(de =>
+                                {
+                                    de.Click.FormID = "frmAudit";
+                                    de.Click.Url = Url.Action("ApprovePhaseAudit");
+                                    de.Click.Before = @"if (!#{frmAudit}.getForm().isValid()) {Ext.MessageBox.show({ title: 'Thông báo', msg: 'Kiểm tra các thông tin cần nhập!', buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation' }); return false; }";
+                                    de.Click.EventMask.ShowMask = true;
+                                    de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+                                    de.Click.Success = "this.up('window').close();";
+                                }),   
+                Html.X().ButtonExit()
+            )
+
+)

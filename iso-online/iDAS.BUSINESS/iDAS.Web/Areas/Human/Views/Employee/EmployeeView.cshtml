@@ -1,0 +1,74 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    var multi = (bool)ViewData["ModeMulti"] ? SelectionMode.Multi : SelectionMode.Single;
+}
+@(
+ X.Panel()
+.Border(false)
+.Layout(LayoutType.Border)
+.Items(
+         X.Hidden().ID("hdfEmployeeViewDeparmentSelect"),
+         X.DepartmentPanel().Handler("onDepartmentSelectedForEmployeeView"),
+         X.GridPanel()
+        .ID("GridPanelEmployeeView")
+        .Layout(LayoutType.Fit)
+        .Header(false)
+        .TopBarItem(Html.X().TextField().ID("txtSearchEmployee").RightButtons(X.Button().Icon(Icon.Zoom).Text("Tìm kiếm"))
+                                .Listeners(ls => ls.Change.Handler = "this.up('gridpanel').getStore().reload();").EmptyText("Nhập tên nhân viên")
+                    )
+        .Split(true)
+        .Region(Region.Center)
+        .ColumnLines(true)
+        .ForceFit(true)
+        .Store(
+            Html.X().Store()
+            .AutoLoad(false)
+            .RemotePaging(true)
+            .PageSize(20)
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadUsers", "Employee", new { Area = "Human" }, null))
+            .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+            .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("departmentID", "App.hdfEmployeeViewDeparmentSelect.value", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("querySearch", "App.txtSearchEmployee.value", ParameterMode.Raw));
+                        })
+            .Model(
+                X.Model().Fields(
+                    X.ModelField().Name("ID"),
+                    X.ModelField().Name("Name"),
+                    X.ModelField().Name("FileName"),
+                    X.ModelField().Name("FileID"),
+                    X.ModelField().Name("Role"),
+                    X.ModelField().Name("ChucDanh"),
+                    X.ModelField().Name("Email"),
+                    X.ModelField().Name("Phone"),
+                    X.ModelField().Name("DepartmentName")
+                )
+            )
+        )
+        .ColumnModel(
+            X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+            X.TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+            X.XTemplate().Html(@<text>
+                <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                     style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+            </text>)
+                            ),
+            X.Column().DataIndex("Name").Width(150).Text("Họ tên"),
+            X.Column().DataIndex("ChucDanh").Wrap(true).Flex(1).MinWidth(120).Text("Chức vụ")
+        )
+        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox((bool)ViewData["ModeMulti"]).Mode(multi))
+        .BottomBar(X.CustomPagingToolbar().DisplayInfo(false))
+    )
+)
+<script>
+    function onDepartmentSelectedForEmployeeView(records) {
+        if (records.length > 0) {
+            App.hdfEmployeeViewDeparmentSelect.setValue(records[0].get('id'));
+            App.GridPanelEmployeeView.getStore().reload();
+        };
+    };
+</script>

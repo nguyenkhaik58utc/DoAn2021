@@ -1,0 +1,64 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerCareItem
+@{
+    var X = Html.X();
+}
+<script>
+    var onEditGroupCustomer = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            var url= '@(Url.Action("UpdateCustomerCareObject", "CustomerCare"))';
+            var params= {
+                data: e.record.data
+            };
+            onDirectMethod(url,params);
+        }
+    };
+</script>
+@(Html.X().Window()
+.Title("Thiết lập nhóm khách hàng chăm sóc")
+.Icon(Icon.Group)
+.Width(800).Height(400)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+        X.HiddenFor(m=> m.ID).ID("hdfCareId"),
+        X.GridPanel().Layout(LayoutType.Fit)
+            .Header(false)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Icon(Icon.TextListBullets)
+            .Store(
+                    Html.X().Store().ID("storeCustomerCareObject")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerCareObject", "CustomerCare", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")))
+                        .Parameters(ps => ps.Add(new StoreParameter("careID", "App.hdfCareId.getValue()", ParameterMode.Raw)))
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("CareID"),
+                                Html.X().ModelField().Name("CategoryID"),
+                                Html.X().ModelField().Name("IsSelect")
+                            )
+                        )
+                    )
+                    .ColumnModel(
+                            X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            X.Column().DataIndex("Name").Text("Nhóm khách hàng").Flex(1),
+                            X.CheckColumn().DataIndex("IsSelect").Text("Chọn").Width(80).Editable(true)
+                        )
+                    .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditGroupCustomer"))
+                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single))
+                    .BottomBar(Html.X().CustomPagingToolbar())
+      )
+.Buttons(Html.X().ButtonExit())
+)

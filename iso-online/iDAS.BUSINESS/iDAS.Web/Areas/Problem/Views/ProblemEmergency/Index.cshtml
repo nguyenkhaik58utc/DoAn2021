@@ -1,0 +1,165 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateProblemEmergency = '@(Url.Action("Create", "ProblemEmergency", new { area = "Problem" }))';
+    var urlUpdateProblemEmergency = '@(Url.Action("Update", "ProblemEmergency", new { area = "Problem" }))';
+    var urlDeleteProblemEmergency = '@(Url.Action("Delete", "ProblemEmergency", new { Area = "Problem" }))';
+    var urlDetailProblemEmergency = '@(Url.Action("ShowFrmDetail", "ProblemEmergency", new { Area = "Problem" }))';
+    var urlDefaultProblemEmergency = '@(Url.Action("Default", "ProblemEmergency", new { Area = "Problem" }))';
+    var sortProblemEmergencyIndex = null;
+    var showCreateProblemEmergency = function () {
+        var url = urlCreateProblemEmergency;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateProblemEmergency = function () {
+        var url = urlUpdateProblemEmergency;
+        var record = getProblemEmergencySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getProblemEmergencySelection = function () {
+        var records = App.ProblemEmergencyPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setProblemEmergencySelection = function () {
+        if (sortProblemEmergencyIndex != null) {
+            App.ProblemEmergencyPanel.selModel.select(sortProblemEmergencyIndex);
+        }
+    };
+
+    var setDefaultProblemEmergency = function () {
+        var url = urlDefaultProblemEmergency;
+        var defaultSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn đặt mức độ khẩn cấp này làm mặc định hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemEmergencySelection();
+                            var ProblemEmergencyId = record == null ? 0 : record.data.ID;
+                            var params = { ProblemEmergencyId: ProblemEmergencyId };
+                            onDirectMethod(url, params, 'post', reloadProblemEmergency);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', defaultSuccess);
+    };
+
+    var showDeleteProblemEmergency = function () {
+        var url = urlDeleteProblemEmergency;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ mức độ khẩn cấp sự cố này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemEmergencySelection();
+                            var ID = record == null ? 0 : record.data.ID;
+                            var params = { ID: ID };
+                            onDirectMethod(url, params, 'post', reloadProblemEmergency);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProblemEmergency = function () {
+        var url = urlDetailProblemEmergency;
+        var record = getProblemEmergencySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadProblemEmergency = function () {
+        App.ProblemEmergencyPanel.store.reload();
+    };
+
+    var selectionChangeProblemEmergency = function () {
+        var record = getProblemEmergencySelection();
+        var isDisabled = record == null;
+        App.btnUpdateProblemEmergency.setDisabled(isDisabled);
+        App.btnDeleteProblemEmergency.setDisabled(isDisabled);
+        App.btnDetailProblemEmergency.setDisabled(isDisabled);
+        App.btnDefaultProblemEmergency.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý mức độ khẩn cấp sự cố").Header(false)
+                    .ID("ProblemEmergencyPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateProblemEmergency").ID("btnCreateProblemEmergency()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateProblemEmergency").Handler("showUpdateProblemEmergency();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteProblemEmergency").Handler("showDeleteProblemEmergency()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailProblemEmergency").Handler("showDetailProblemEmergency();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.Button().ID("btnDefaultProblemEmergency").Handler("setDefaultProblemEmergency();").Icon(Icon.TextFontDefault).Text("Mặc định").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreProblemEmergency")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("ProblemEmergencyName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Color").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("textDefault").Type(ModelFieldType.String)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setProblemEmergencySelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Code").Text("Mã mức độ khẩn cấp sự cố").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("ProblemEmergencyName").Text("Tên mức độ khẩn cấp sự cố").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("Description").Text("Mô tả mức độ khẩn cấp sự cố").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("Color").Text("Màu sắc").Width(100).MenuDisabled(true).Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" }),
+                Html.X().Column().DataIndex("textDefault").Text("Mặc định").MenuDisabled(true)
+
+             )
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProblemEmergency();")
+    )
+    )

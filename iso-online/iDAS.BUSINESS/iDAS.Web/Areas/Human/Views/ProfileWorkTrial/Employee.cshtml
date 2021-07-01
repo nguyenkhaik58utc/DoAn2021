@@ -1,0 +1,157 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+        .Layout(LayoutType.Fit)
+        .Items(
+                Html.X().Hidden().Value(ViewBag.EmpID).ID("hdfEmpID"),
+                Html.X().GridPanel()
+                    .ID("grAuditTick")
+                    .Border(false)
+                    .ColumnLines(true)
+                    .TopBar(Html.X().Toolbar().Items(
+                            Html.X().ButtonView().ID("btnView").Handler("ViewItem();")
+                    ))
+                    .Store(
+                            Html.X().Store()
+                                    .ID("stMnPhaseAudit")
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataEmployee")).Reader(Html.X().JsonReader().Root("data")))
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("empID", "App.hdfEmpID.getValue()", ParameterMode.Raw));
+                                        })
+                                    .RemoteSort(true)
+                                    .AutoLoad(true)
+                                    .RemotePaging(true)
+                                    .PageSize(20)
+                                    .Model(
+                                            Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                    Html.X().ModelField().Name("ID"),
+                                                    Html.X().ModelField().Name("HumanEmployee.Name"),
+                                                        Html.X().ModelField().Name("Role.Name"),
+                                                            Html.X().ModelField().Name("FromDate"),
+                                                Html.X().ModelField().Name("ToDate"),
+                                                Html.X().ModelField().Name("StatusApproval"),
+                                                                Html.X().ModelField().Name("Status").Type(ModelFieldType.Boolean)
+                                                        )
+                                          )
+                        )
+                    .ColumnModel(
+                                       Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Align(Alignment.Center).Width(33),
+                                        Html.X().Column().Text("Tên nhân viên").DataIndex("HumanEmployee.Name").Flex(1).Wrap(true),
+                                            Html.X().Column().DataIndex("Role.Name").Text("Chức danh").Width(200),
+                                            Html.X().ComponentColumn().Text("Thời gian thử việc").Columns(
+                                        Html.X().DateColumnExtend().DataIndex("FromDate").Text("Bắt đầu").Align(Alignment.Right).Format("dd/MM/yyyy").Width(80),
+                                        Html.X().DateColumnExtend().DataIndex("ToDate").Text("Kết thúc").Align(Alignment.Center).Format("dd/MM/yyyy")),
+                                            Html.X().Column().Text("Trạng thái").DataIndex("StatusApproval")
+
+                                )
+                    .Plugins(Html.X().FilterHeader())
+                    .SelectionModel(
+                        Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                             .Listeners(l =>
+                                {
+                                    l.Select.Handler = "checkStatus()";
+                                })
+                        )
+                .BottomBar(Html.X().CustomPagingToolbar())
+            )
+)
+<script type="text/javascript">
+    var prepare = function (grid, toolbar, rowIndex, record) {
+        if (record.data.Status == true) {
+            toolbar.items.getAt(0).hide();
+        }
+        else {
+            toolbar.items.getAt(1).hide();
+        }
+    };
+    var Audit = function (command, record) {
+        if (command == "Answer") {
+            AnswerAudit(record.data.ID);
+        };
+        if (command == "Detail") {
+            Detail(record.data.ID);
+        };
+    };
+    var showFormDetail = function () {
+        var records = App.grAuditTick.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('HumanAuditGradationID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "AuditGradation", new { Area = "Human" }, null))',
+                params: { id: id }
+            });
+        };
+    };
+    
+    var ViewItem = function () {
+        var records = App.grAuditTick.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnView.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            if (records.length > 0) {
+                var url = '@(Url.Action("Detail", "ProfileWorkTrialAuditManager", new { Area = "Human" }, null))';
+                var params = {
+                    ID: records[0].get('ID')
+                };
+                onDirectMethod(url, params);
+            }
+            else {
+                MessageBox();
+            };
+        };
+    };
+    var checkStatus = function () {
+        var records = App.grAuditTick.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnView.setDisabled(false);
+        }
+        else {
+            App.btnView.setDisabled(true);
+        }
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+    var AnswerAudit = function (id) {
+        var params = {
+            id: id
+        };
+        onDirectMethod('@(Url.Action("AuditForm"))', params);
+    };
+    var Detail = function (id) {
+        var params = {
+            id: id
+        };
+        onDirectMethod('@(Url.Action("EditAuditForm"))', params);
+    };
+</script>

@@ -1,0 +1,49 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityPlanItem
+@(
+ Html.X().Window()
+.ID("winPlanEnd")
+.Title("Kết thúc kế hoạch")
+.Icon(Icon.FlagBlack)
+.Width(450)
+.Height(140)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+         Html.X().FormPanel()
+                    .AutoScroll(true)
+                    .ID("frmPlanEnd")
+                    .Layout(LayoutType.Column)
+                    .Frame(true)
+                    .FieldDefaults(df => { df.LabelWidth = 120;  })
+                    .StyleSpec("border: none;")
+                    .Items(
+                                Html.X().HiddenFor(m => m.ID),
+                                Html.X().CheckboxFor(m=>m.IsEnd).FieldLabel("Kết thúc").BoxLabel("Đồng ý").ColumnWidth(1).MarginSpec("0 0 8 5"),
+                                Html.X().DateTimeFieldFor(m => m.EndAt).FieldLabel("Thời gian kết thúc").ColumnWidth(1).Height(25).MarginSpec("0 0 8 5")
+                            )
+    )
+            .Buttons(
+                        Html.X().Button()
+                                        .Text("Lưu lại")
+                                        .Icon(Icon.DatabaseSave)
+                                        .DirectEvents(de =>
+                                                    {
+                                                        de.Click.Before = @"if (!App.frmPlanEnd.getForm().isValid()) { return false; }; ";
+                                                        de.Click.ExtraParams.Add(new { exit = true });
+                                                        de.Click.Url = Url.Action("PlanEnd");
+                                                        de.Click.EventMask.ShowMask = true;
+                                                        de.Click.FormID = "frmPlanEnd";
+                                                        de.Click.Success = "this.up('window').close();";
+                                                    })
+                        , Html.X().ButtonExit()
+                    )
+)

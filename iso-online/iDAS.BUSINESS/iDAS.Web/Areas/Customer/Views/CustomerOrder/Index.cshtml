@@ -1,0 +1,119 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerOrderItem
+@{
+    var X = Html.X();
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatus() {
+        var records = App.GrCustomerOrder.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateOrder, App.btnDeleteOrder, App.btnDetailOrder);
+        }
+        else {
+            SetDisabled(App.btnUpdateOrder, App.btnDeleteOrder, App.btnDetailOrder);
+        };
+    };
+    var ShowAdd = function () {
+        var url = '@(Url.Action("UpdateForm", "CustomerOrder", new { Area = "Customer" }, null))';
+        var params = {
+            customerID: App.hdfCustomerID.getValue()
+        };
+        onDirectMethod(url, params);
+    };
+    var ShowUpdate = function () {
+        var records = App.GrCustomerOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "CustomerOrder", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowDetail = function () {
+        var records = App.GrCustomerOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerOrder", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Window()
+.ID("winCustomerOrder")
+.Title("Đơn hàng của khách hàng")
+.Icon(Icon.PageWhiteText)
+.Maximized(true)
+.Height(400)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+                X.HiddenFor(i => i.CustomerID).ID("hdfCustomerID"),
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerOrder")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().ToolTip("Thêm mới đơn hàng").Handler("ShowAdd();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateOrder").ToolTip("Cập nhật đơn hàng")
+                                        .Handler("ShowUpdate();").Icon(Icon.Pencil),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ToolTip("Xóa đơn hàng")
+                                          .ID("btnDeleteOrder").Handler("onDelete(App.GrCustomerOrder.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ToolTip("Xem chi tiết").ID("btnDetailOrder").Handler("ShowDetail();")
+                            ))
+                            .Store(
+                            Html.X().Store().ID("StoreCustomerOrder")
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerOrder", "CustomerOrder", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("customerID", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                            })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("ProductName"),
+                                        Html.X().ModelField().Name("Quantity"),
+                                        Html.X().ModelField().Name("Time"),
+                                        Html.X().ModelField().Name("CustomerID"),
+                                        Html.X().ModelField().Name("Status")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                X.Column().DataIndex("ProductName").Text("Sản phẩm").Flex(1),
+                                X.NumberColumn().DataIndex("Quantity").Text("Số lượng").Width(80).Align(Alignment.Right),
+                                X.DateColumnExtend().DataIndex("Time").Format("dd/MM/yyyy").Text("Thời gian").Width(100).Align(Alignment.Center)
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+.Buttons(Html.X().ButtonExit())
+)
+

@@ -1,0 +1,76 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.QualityPlanItem
+<script>
+    function onDepartmentReady(records) {
+        App.GrPlanPartialView.getStore().reload({ params: { departmentID: records[0].get('id') } });
+    };
+</script>
+@(Html.X().Window().ID("WinPlan")
+.Title("Danh sách kế hoạch")
+.Icon(Icon.ApplicationSideList)
+.Layout(LayoutType.Border)
+.Width(950)
+.Height(470)
+.Constrain(true)
+.Modal(true)
+.Resizable(false)
+.BodyPadding(0)
+.Center()
+.Border(true)
+.BodyPadding(2)
+.Items(
+        Html.X().DepartmentPanel().Handler("onDepartmentReady"),
+        Html.X().GridPanel()
+                .Region(Region.Center)
+                .Layout(LayoutType.Fit)
+                .Header(false)
+                .ID("GrPlanPartialView")
+                .ColumnLines(true)
+                .ForceFit(true)
+            .Store(
+                Html.X().Store().ID("StorePlanPartialView")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlan", "Plan", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("StartTime"),
+                            Html.X().ModelField().Name("EndTime"),
+                            Html.X().ModelField().Name("Cost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("Status")
+                        )
+                     )
+            )
+            .ColumnModel(
+                       Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                       Html.X().Column().DataIndex("Name").Text("Tên kế hoạch").Width(300).Flex(1),
+                       Html.X().ComponentColumn().Text("Thời gian thực hiện").Columns(
+                       Html.X().DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                       Html.X().DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(120).Align(Alignment.Center)),
+                       Html.X().ComponentColumn().Text("Chi phí").Columns(
+                       Html.X().NumberColumn().DataIndex("Cost").Text("Giá trị").Width(100).Align(Alignment.Right),
+                       Html.X().Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                       Html.X().Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(80)
+                )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        )
+            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+     .Buttons(
+                Html.X().Button()
+                        .TabIndex(17)
+                        .Icon(Icon.Accept)
+                        .Text("Chọn")
+                        .Handler("onSelectPlan(App.GrPlanPartialView.selModel.getSelection().length>0? App.GrPlanPartialView.selModel.getSelection()[0].get('ID'):0);"),
+                Html.X().Button()
+                        .TabIndex(18)
+                        .Icon(Icon.Cancel)
+                        .Text("Thoát")
+                        .Handler("this.up('window').close();")
+            )
+)

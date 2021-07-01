@@ -1,0 +1,224 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.CustomerContractItem
+@{
+    if (Model.SignCompanyAt == null) { Model.SignCompanyAt = DateTime.Now; }
+    var X = Html.X();
+}
+@(
+ Html.X().Window()
+    .Title("Ký xác nhận")
+    .Icon(Icon.UserGo)
+    .Maximized(true)
+    .Width(800)
+    .Height(500)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+            Html.X().FormPanel().ID("frmApprove").Border(false)
+                    .Layout(LayoutType.Border)
+                    .Items(
+                 Html.X().TabPanel()
+                        .ID("TabPanelSendAccounting")
+                        .Region(Region.Center)
+                        .ActiveTabIndex(0)
+                        .Border(true)
+                        .Items(
+                                X.FormPanel()
+                                        .Title("Thông tin hợp đồng")
+                                            .Layout(LayoutType.VBox)
+                                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                                            .AutoScroll(true)
+                                            .Frame(true)
+                                            .StyleSpec("border: none;")
+                                            .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 120; })
+                                            .Items(
+                                                X.HiddenFor(m => m.ID).ID("hdfContractID"), X.HiddenFor(m => m.CustomerID).ID("hdfCustomerID"),
+                                                X.TextFieldFor(m => m.CustomerName).FieldLabel("Khách hàng").ReadOnly(true).MarginSpec("5 8 0 8"),
+                                                X.Container().Layout(LayoutType.Column).MarginSpec("5 8 0 8")
+                                                    .Items(
+                                                            X.TextFieldFor(m => m.Code)
+                                                                    .FieldLabel("Mã hợp đồng" + Html.Required()).ReadOnly(true)
+                                                                    .EmptyText("Nhập mã hợp đồng...")
+                                                                    .BlankText("Mã hợp đồng không được bỏ trống!")
+                                                                    .AllowOnlyWhitespace(false).MarginSpec("0 8 0 0")
+                                                                    .ColumnWidth(0.35),
+                                                            X.TextFieldFor(m => m.Name).ReadOnly(true)
+                                                                    .FieldLabel("Hợp đồng" + Html.Required())
+                                                                    .EmptyText("Nhập hợp đồng...")
+                                                                    .BlankText("Hợp đồng không được bỏ trống!")
+                                                                    .AllowOnlyWhitespace(false)
+                                                                    .MarginSpec("0 0 0 15")
+                                                                    .ColumnWidth(0.65)
+                                                            ),
+                                                X.Container().Layout(LayoutType.Column).MarginSpec("5 8 0 8")
+                                                        .Items(X.DateTimeFieldFor(m => m.StatTime).FieldLabel("Bắt đầu").ReadOnly(true)
+                                                                        .ColumnWidth(0.5).MarginSpec("0 8 0 0"),
+                                                                X.DateTimeFieldFor(m => m.EndTime).FieldLabel("Kết thúc").ReadOnly(true)
+                                                                        .ColumnWidth(0.5)
+                                                        ),
+                                                X.Container().Layout(LayoutType.Column).MarginSpec("5 8 0 8")
+                                                    .Items(
+                                                            X.NumberFieldFor(m => m.Total).FieldLabel("Giá trị hợp đồng")
+                                                                .ColumnWidth(0.5).MarginSpec("0 8 0 0")
+                                                                    .Icon(Icon.Money).MinValue(0).ReadOnly(true),
+                                                            X.NumberFieldFor(m => m.TotalOrder).FieldLabel("Giá trị đơn hàng")
+                                                                .ColumnWidth(0.5)
+                                                                .Icon(Icon.Money).MinValue(0).ReadOnly(true)
+                                                    ),
+                                                X.FieldSet().Layout(LayoutType.Column).MarginSpec("5 8 0 8").Title("Khách hàng")
+                                                        .Items(
+                                                                X.CheckboxFor(m => m.IsSignCustomer).BoxLabel("Xác nhận").ReadOnly(true)
+                                                                    .FieldLabel("Ký hợp đồng").ColumnWidth(0.5),
+                                                                X.DateFieldFor(m => m.SignCustomerAt).FieldLabel("Thời gian ký").ReadOnly(true)
+                                                                    .ID("tffSignCustomerAt").ColumnWidth(0.5).MarginSpec("0 0 8 0")
+                                                                //    ,
+                                                                //X.CheckboxFor(m => m.IsCancel).ColumnWidth(0.5).HideLabel(true).BoxLabel("Hủy hợp đồng")
+                                                                //    .ReadOnly(true)
+                                                                //    .MarginSpec("0 0 0 125"),
+                                                                //X.TextAreaFor(m => m.CancelNote)
+                                                                //    .ReadOnly(true)
+                                                                //    .FieldLabel("Lý do hủy hợp đồng")
+                                                                //    .LabelAlign(LabelAlign.Top)
+                                                                //    .EmptyText("Nhập lý do hủy hợp đồng...")
+                                                                //    .MinHeight(80)
+                                                                //    .ColumnWidth(0.5)
+                                                                //    .MarginSpec("0 0 5 0")
+                                                        ),
+                                                X.TextAreaFor(m => m.Content).Flex(1)
+                                                                    .ReadOnly(true)
+                                                                    .LabelAlign(LabelAlign.Top)
+                                                                    .LabelStyle("font-weight: bold;")
+                                                                    .FieldLabel("Nội dung")
+                                                                    .EmptyText("Nhập nội dung...")
+                                                                    .MinHeight(100)
+                                                                    .ColumnWidth(0.5).MarginSpec("5 8 5 8")
+                                    ),
+                                Html.X().GridPanel().Layout(LayoutType.Fit)
+                                            .Title("Thông tin đơn hàng")
+                                            .ID("GrCustomerOrder")
+                                            .Height(200)
+                                            .Header(false)
+                                            .ColumnLines(true)
+                                            .ForceFit(true)
+                                            .Border(false)
+                                            .Store(
+                                                Html.X().Store().ID("StoreCustomerOrder")
+                                                    .RemotePaging(true)
+                                                    .PageSize(20)
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadOrder", "CustomerManagementContract", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                    .Parameters(ps =>
+                                                                {
+                                                                    ps.Add(new StoreParameter("customerId", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                                                    ps.Add(new StoreParameter("contractId", "App.hdfContractID.getValue()", ParameterMode.Raw));
+                                                                })
+                                                    .Model(
+                                                        Html.X().Model().Fields(
+                                                            Html.X().ModelField().Name("ID"),
+                                                            Html.X().ModelField().Name("ProductName"),
+                                                            Html.X().ModelField().Name("Quantity"),
+                                                            Html.X().ModelField().Name("Time")
+                                                        )
+                                                    )
+                                                    )
+                                            .ColumnModel(
+                                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                    Html.X().Column().DataIndex("ProductName").Text("Sản phẩm").Flex(1),
+                                                    Html.X().NumberColumn().DataIndex("Quantity").Text("Số lượng").Width(80).Align(Alignment.Right),
+                                                    Html.X().DateColumnExtend().DataIndex("Time").Text("Thời gian").Width(100).Align(Alignment.Center)
+                                                )
+                                            .BottomBar(Html.X().CustomPagingToolbar()),
+                             Html.X().GridPanel().Layout(LayoutType.Fit)
+                                    .Title("Đề xuất thanh toán")
+                                    .ID("GrAccountingPayment")
+                                    .Header(false)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Border(false)
+                                    .Icon(Icon.TextListBullets)
+                                    .Store(
+                                    Html.X().Store().ID("StoreAccountingPayment")
+                                        .RemotePaging(true)
+                                        .GroupField("TypeName")
+                                        .PageSize(100)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadAccountingPayment", "CustomerManagementContract", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("id", "App.hdfContractID.value", ParameterMode.Raw));
+
+                                            })
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Content"),
+                                                Html.X().ModelField().Name("TypeName"),
+                                                Html.X().ModelField().Name("Rate"),
+                                                Html.X().ModelField().Name("Value"),
+                                                Html.X().ModelField().Name("Note")
+                                            )
+                                        )
+                                    )
+                                    .ColumnModel(
+                                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                Html.X().Column().DataIndex("Content").Text("Nội dung").Flex(1),
+                                                Html.X().Column().DataIndex("Value").Text("Số tiền").Width(100).Align(Alignment.Right),
+                                                Html.X().Column().DataIndex("Rate").Text("Tỉ lệ thu hồi(%)").Width(100).Align(Alignment.Right),
+                                                Html.X().Column().DataIndex("Note").Text("Ghi chú").Width(300).Wrap(true)
+                                        )
+                                    .Features(
+                                                Html.X().GroupingSummary()
+                                                .ID("GroupingSummaryAccounting")
+                                                .GroupHeaderTplString("{name}")
+                                                .HideGroupedHeader(true)
+                                                .EnableGroupingMenu(false)
+                                        )
+                    ),
+              Html.X().FormPanel().Title("Thông tin phê duyệt").TitleAlign(Ext.Net.TitleAlign.Center)
+                    .Region(Ext.Net.Region.East)
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .AutoScroll(true)
+                    .Collapsible(true)
+                    .Split(true)
+                    .Frame(true)
+                    .StyleSpec("-webkit-border-radius: 0; border-radius: 0;")
+                    .Width(350)
+                    .FieldDefaults(fs => fs.LabelWidth = 80)
+                    .Margin(0).Items(
+                                    Html.X().EmployeeFieldFor(m => m.Approval).ReadOnly(true).Title("Người phê duyệt"),
+                                    Html.X().DateTimeFieldFor(m => m.ApprovalAt).FieldLabel("Thời gian").ReadOnly(true).Height(26),
+                                    Html.X().ComboBoxFor(m => m.IsResult)
+                                        .EmptyText("Kết quả phê duyệt")
+                                        .FieldLabel("Kết quả").ReadOnly(true)
+                                        .Items(new ListItem("Đồng ý", true), new ListItem("Không đồng ý", false)),
+                                    Html.X().TextAreaFor(m => m.ApprovalNote).ReadOnly(true).Flex(1).LabelAlign(LabelAlign.Top).FieldLabel("Nhận xét"),
+                                    Html.X().ComboBoxFor(m => m.IsSignCompany).FieldLabel("Ký nhận")
+                                            .Items(
+                                                    new ListItem("Đồng ý", true),
+                                                    new ListItem("Không đồng ý", false)
+                                                   ),
+                                    Html.X().DateTimeFieldFor(m => m.SignCompanyAt).FieldLabel("Thời gian")
+                    )
+        )
+     )
+    .Buttons(
+        Html.X().Button()
+                        .Text("Ký nhận")
+                        .Icon(Icon.Accept)
+                        .DirectEvents(de =>
+                                    {
+                                        de.Click.Before = @"if (!App.frmApprove.getForm().isValid()) { return false; }; ";
+                                        de.Click.ExtraParams.Add(new { exit = true });
+                                        de.Click.Url = Url.Action("SignCompany");
+                                        de.Click.EventMask.ShowMask = true;
+                                        de.Click.FormID = "frmApprove";
+                                        de.Click.Success = "this.up('window').close();App.StoreCustomerContract.reload();";
+                                    })
+        , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

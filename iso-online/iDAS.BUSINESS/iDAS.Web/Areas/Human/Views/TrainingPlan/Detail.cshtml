@@ -1,0 +1,223 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanTrainingPlanItem
+@(Html.X().ApprovalDetailWindow()
+.ItemsExtend(
+        Html.X().TabPanel()
+            .ActiveTabIndex(0)
+            .Region(Region.Center)
+            .Border(true)
+            .Padding(1)
+            .Items(
+                    Html.X().FormPanel()
+                        .Title("Nội dung kế hoạch")
+                        .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                        .Frame(true)
+                        .FieldDefaults(df => { df.LabelWidth = 120; df.LabelStyle = "padding-left: 5px;"; })
+                        .StyleSpec("border: none; padding-right: 10px;")
+                        .Items(
+                                Html.X().HiddenFor(m => m.ID).ID("hdfPlanID"),
+                                Html.X().TextFieldFor(m => m.Name).EmptyText("Nhập tên kế hoạch ...").FieldLabel("Tên kế hoạch").ReadOnly(true),
+                                Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 -2 2 0")
+                                    .Items(
+                                        Html.X().DateTimeFieldFor(m=>m.StartTime).FieldLabel("Bắt đầu").ReadOnly(true).ColumnWidth(0.55),
+                                        Html.X().DateTimeFieldFor(m => m.EndTime).FieldLabel("Kết thúc").LabelWidth(70).ReadOnly(true).ColumnWidth(0.45)
+                                            ),
+                                Html.X().Container().Layout(LayoutType.Column).MarginSpec("2 -1 4 0")
+                                    .Items(
+                                        Html.X().ComboBoxFor(m => m.Type).FieldLabel("Loại kế hoạch" )
+                                                .EmptyText("Chọn loại kế hoạch")
+                                                .Items( new ListItem("Tổ chức", false),
+                                                        new ListItem("Cá nhân", true))
+                                                .ReadOnly(true).ColumnWidth(0.55),
+                                        Html.X().NumberFieldFor(m => m.Cost)
+                                                .LabelWidth(70).ColumnWidth(0.45)
+                                                .ReadOnly(true)
+                                                .FieldLabel("Chi phí" )),
+                                Html.X().TextFieldFor(m => m.Department.Name).FieldLabel("Phòng ban").ReadOnly(true),
+                                Html.X().TextFieldFor(m => m.TargetName).FieldLabel("Thuộc mục tiêu").ReadOnly(true),
+                                Html.X().TextFieldFor(m => m.ParentName).FieldLabel("Thuộc kế hoạch").ReadOnly(true),
+                                Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung").ReadOnly(true).EmptyText("Nhập nội dung kế hoạch").Flex(1).Margin(1)
+                                ),
+                     Html.X().GridPanel()
+                            .Header(false)
+                            .ID("GrRequirement")
+                            .Title("Yêu cầu đào tạo")
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .Store(
+                                Html.X().Store()
+                                    .ID("StoreRequirement")
+                                    .RemotePaging(true)
+                                    .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRequirementByPlanId")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("id", "App.hdfPlanID.value", ParameterMode.Raw));
+                                        })
+                                    .Model(
+                                            Html.X().Model()
+                                                .Fields(
+                                                            Html.X().ModelField().Name("ID"),
+                                                            Html.X().ModelField().Name("RequireBy.Name"),
+                                                            Html.X().ModelField().Name("Content"),
+                                                            Html.X().ModelField().Name("IsSelected")
+                                                )
+                                    )
+                            )
+                            .ColumnModel(
+                                            Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("RequireBy.Name").Text("Người yêu cầu").Width(200),
+                                            Html.X().Column().DataIndex("Content").Text("Nội dung").Flex(1)
+                                )
+                            .BottomBar(
+                                Html.X().CustomPagingToolbar()
+                       ),
+                            Html.X().GridPanel()
+                    .ID("grMnPlanTrainingDetail")
+                    .Border(false)
+                    .ColumnLines(true)
+                         .Title("Đợt đào tạo")
+                    .RowLines(true)
+                    .TopBar(
+                    Html.X().Toolbar()
+                            .Items(                             
+                                    Html.X().Button()
+                                            .Text("Xem chi tiết")
+                                                .ID("btnViewDetail")
+                                                .Disabled(true)
+                                            .Icon(Icon.Zoom)
+                                                    .Handler("showDetail();"),
+
+                                                Html.X().ToolbarFill()
+                            )
+                            )
+                        .Store(Html.X().Store()
+                                .ID("stMnPlanTrainingDetail")
+                                .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetData", "PlanDetail"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Parameters(ps => ps.Add(new StoreParameter("planId", "App.hdfPlanID.getValue()", ParameterMode.Raw)))
+                                .RemoteSort(true)
+                                .AutoLoad(true)
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Model(
+                                Html.X().Model()
+                                        .Fields(
+                                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("PlanID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("Content").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("Number").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("Reason").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("TrainingTypeID").Type(ModelFieldType.Int),
+                                                Html.X().ModelField().Name("ExpectedCost").Type(ModelFieldType.Float),
+                                                Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                                Html.X().ModelField().Name("FromDate").Type(ModelFieldType.Date),
+                                                Html.X().ModelField().Name("ToDate").Type(ModelFieldType.Date),
+                                                Html.X().ModelField().Name("IsCommit").Type(ModelFieldType.Boolean),
+                                                Html.X().ModelField().Name("CommitContent").Type(ModelFieldType.String)
+
+                                        )
+                                      )
+                                  )
+                            .ColumnModel(
+                                Html.X().RowNumbererColumn()
+                                        .Text("STT")
+                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                        .Align(Alignment.Center)
+                                        .Width(33),
+                                Html.X().Column()
+                                        .Text("ID")
+                                        .DataIndex("ID")
+                                        .Hidden(true),
+                                               Html.X().Column()
+                                            .Text("Nội dung")
+                                            .StyleSpec("font-weight: bold;text-align: center")
+                                                    .DataIndex("Content")
+                                            .Flex(1)
+                                            .Wrap(true),
+                                Html.X().Column()
+                                        .Text("Số lượng")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                                .DataIndex("Number")
+                                                .Align(Alignment.Right)
+                                             .Width(70)
+                                        .Wrap(true),
+                                             Html.X().Column()
+                                            .Text("Lý do")
+                                            .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("Reason")
+                                                 .Width(170)
+                                            .Wrap(true),
+                                                 Html.X().Column()
+                                            .Text("Kinh phí dự kiến")
+                                                 .Align(Alignment.Right)
+                                            .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("ExpectedCost")
+                                                 .Width(100)
+                                            .Wrap(true),
+                                              Html.X().DateColumnExtend()
+                                                .Text("Bắt đầu")
+                                                .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("FromDate")
+                                                    .Format("dd/MM/yyyy HH:mm")
+                                               .Width(100)
+                                                .Wrap(true),
+                                                         Html.X().DateColumnExtend()
+                                                    .Text("Kết thúc")
+                                                         .Format("dd/MM/yyyy HH:mm")
+                                                    .StyleSpec("font-weight: bold;text-align: center")
+                                                        .DataIndex("ToDate")
+                                                   .Width(100)
+                                                    .Wrap(true)
+
+                        ).SelectionModel(
+                            Html.X().RowSelectionModel()
+                                    .Mode(SelectionMode.Multi)
+                                    .Listeners(l =>
+                                    {
+                                        l.Select.Handler = "checkStatusPlanDetail()";
+                                    })
+                                    )
+
+                                      .View(
+                                    Html.X().GridView().MarkDirty(false)
+                                    )
+                                    .Plugins(Html.X().CellEditing())
+                                    .BottomBar
+                                    (Html.X().CustomPagingToolbar()
+                    )       
+                 )        
+        )
+)
+<script type="text/javascript">
+    var checkStatusPlanDetail = function () {
+        var records = App.grMnPlanTrainingDetail.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnViewDetail.setDisabled(true);
+                break;
+            case 1:
+                App.btnViewDetail.setDisabled(false);
+                break;
+            default:
+                App.btnViewDetail.setDisabled(true);
+        }
+    };
+    var showDetail = function () {
+        var record = App.grMnPlanTrainingDetail.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetail", "PlanDetail", new { Area = "Human" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+</script>

@@ -1,0 +1,166 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Department.Controllers;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateProblemCriticalLevel = '@(Url.Action("Create", "ProblemCriticalLevel", new { area = "Problem" }))';
+    var urlUpdateProblemCriticalLevel = '@(Url.Action("Update", "ProblemCriticalLevel", new { area = "Problem" }))';
+    var urlDeleteProblemCriticalLevel = '@(Url.Action("Delete", "ProblemCriticalLevel", new { Area = "Problem" }))';
+    var urlDetailProblemCriticalLevel = '@(Url.Action("Detail", "ProblemCriticalLevel", new { Area = "Problem" }))';
+    var urlDefaultProblemCriticalLevel = '@(Url.Action("Default", "ProblemCriticalLevel", new { Area = "Problem" }))';
+    var sortProblemCriticalLevelIndex = null;
+    var showCreateProblemCriticalLevel = function () {
+        var url = urlCreateProblemCriticalLevel;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateProblemCriticalLevel = function () {
+        var url = urlUpdateProblemCriticalLevel;
+        var record = getProblemCriticalLevelSelection();
+        var ProblemCriticalLevelId = record == null ? 0 : record.data.ID;
+        var params = { ProblemCriticalLevelId: ProblemCriticalLevelId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getProblemCriticalLevelSelection = function () {
+        var records = App.ProblemCriticalLevelPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setProblemCriticalLevelSelection = function () {
+        if (sortProblemCriticalLevelIndex != null) {
+            App.ProblemCriticalLevelPanel.selModel.select(sortProblemCriticalLevelIndex);
+        }
+    };
+
+    var setDefaultProblemCriticalLevel = function () {
+        var url = urlDefaultProblemCriticalLevel;
+        var defaultSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn đặt mức độ nghiêm trọng này làm mặc định hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemCriticalLevelSelection();
+                            var ProblemCriticalLevelId = record == null ? 0 : record.data.ID;
+                            var params = { ProblemCriticalLevelId: ProblemCriticalLevelId };
+                            onDirectMethod(url, params, 'post', reloadProblemCriticalLevel);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', defaultSuccess);
+    };
+
+    var showDeleteProblemCriticalLevel = function () {
+        var url = urlDeleteProblemCriticalLevel;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ mức độ nghiêm trọng sự cố này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemCriticalLevelSelection();
+                            var ProblemCriticalLevelId = record == null ? 0 : record.data.ID;
+                            var params = { ProblemCriticalLevelId: ProblemCriticalLevelId };
+                            onDirectMethod(url, params, 'post', reloadProblemCriticalLevel);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProblemCriticalLevel = function () {
+        var url = urlDetailProblemCriticalLevel;
+        var record = getProblemCriticalLevelSelection();
+        var ProblemCriticalLevelId = record == null ? 0 : record.data.ID;
+        var params = { ProblemCriticalLevelId: ProblemCriticalLevelId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadProblemCriticalLevel = function () {
+        App.ProblemCriticalLevelPanel.store.reload();
+    };
+
+    var selectionChangeProblemCriticalLevel = function () {
+        var record = getProblemCriticalLevelSelection();
+        var isDisabled = record == null;
+        App.btnUpdateProblemCriticalLevel.setDisabled(isDisabled);
+        App.btnDeleteProblemCriticalLevel.setDisabled(isDisabled);
+        App.btnDetailProblemCriticalLevel.setDisabled(isDisabled);
+        App.btnDefaultProblemCriticalLevel.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý mức độ nghiêm trọng sự cố").Header(false)
+                    .ID("ProblemCriticalLevelPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateProblemCriticalLevel").ID("btnCreateProblemCriticalLevel()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateProblemCriticalLevel").Handler("showUpdateProblemCriticalLevel();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteProblemCriticalLevel").Handler("showDeleteProblemCriticalLevel()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailProblemCriticalLevel").Handler("showDetailProblemCriticalLevel();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.Button().ID("btnDefaultProblemCriticalLevel").Handler("setDefaultProblemCriticalLevel();").Icon(Icon.TextFontDefault).Text("Mặc định").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreProblemCriticalLevel")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CriticalLevelName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Color").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("textDefault").Type(ModelFieldType.String)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setProblemCriticalLevelSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Code").Text("Mã mức độ sự cố").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("CriticalLevelName").Text("Tên mức độ sự cố").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("Description").Text("Mô tả mức độ sự cố").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("Color").Text("Màu sắc").Width(100).MenuDisabled(true).Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" }),
+                Html.X().Column().DataIndex("textDefault").Text("Mặc  định").MenuDisabled(true)
+
+             )
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProblemCriticalLevel();")
+    )
+    )

@@ -1,0 +1,103 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerContactItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm =Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới người liên hệ";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật người liên hệ";
+    }
+}
+@(Html.X().CustomWindow()
+.ID("winCustomerContact")
+.Title(title)
+.Icon(IconView)
+.Width(800)
+.Items(
+         X.CustomFormPanel().ID("frmUpdateContact")
+            .Items(
+                    X.FormPanel()
+                        .Layout(LayoutType.HBox)
+                        .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Top, Pack = BoxPack.Start })
+                        .StyleSpec("border: none;")
+                        .Margin(0).BodyPadding(0).Frame(true)
+                        .Items(
+                                 X.Panel().Frame(true)
+                                    .Layout(LayoutType.Column)
+                                    .Padding(0).Margin(0)
+                                    .Border(false)
+                                    .StyleSpec("border: none;").Flex(1)
+                                    .Items(
+                                            X.HiddenFor(m=>m.ID).ID("hdfCustomerContactInfo"),
+                                            X.HiddenFor(m => m.CustomerID),
+                                            X.TextFieldFor(m => m.Name).AllowOnlyWhitespace(false)
+                                                .FieldLabel("Người liên hệ"+Html.Required())
+                                                .EmptyText("Nhập tên người liên hệ ...")
+                                                .ColumnWidth(1)
+                                                .MarginSpec("0 8 0 8"),
+                                            X.DateFieldFor(m => m.Birthday).FieldLabel("Ngày sinh")
+                                                        .ColumnWidth(0.5)
+                                                        .MarginSpec("5 8 0 8"),
+                                            X.TextFieldFor(m => m.Phone).AllowOnlyWhitespace(false).FieldLabel("Điện thoại" + Html.Required())
+                                                .ColumnWidth(1)
+                                                .MarginSpec("5 8 0 8"),
+                                            X.TextFieldFor(m => m.Email).AllowOnlyWhitespace(false).FieldLabel("Email" + Html.Required())
+                                                .ColumnWidth(1)
+                                                .MarginSpec("5 8 0 8"),
+                                            X.TextFieldFor(m => m.Role).FieldLabel("Chức danh").ColumnWidth(1)
+                                                .MarginSpec("5 8 0 8"),
+                                            X.TextAreaFor(m => m.Department).FieldLabel("Phòng ban").ColumnWidth(1)
+                                                    .MarginSpec("5 8 0 8").Height(68)
+                                            ),
+                                        X.FieldSet().Layout(LayoutType.Form)
+                                            .Width(140).Height(200)
+                                            .PaddingSpec("5 5 5 5")
+                                            .Items(
+                                                    X.ImageButton().ID("imgAvatar").Height(160).Text("Ảnh đại diện")
+                                                            .ImageUrl(Url.Action("LoadImage", "File", new { area = "Generic", fileId = Model.AttachmentFileID, fileName = Model.FileName }))
+                                                            .ToolTip("Ảnh đại diện").StyleSpec("border: 0.5px solid #b5b8c8; width:100%;"),
+                                                    X.FileUploadField().ID("FileUploadRepresentId").ButtonText("").Icon(Icon.ImageAdd)
+                                                            .Listeners(ls => ls.AfterRender.Fn = "function(cmp){cmp.fileInputEl.set({ accept:'image/*' });}")
+                                                            .Listeners(ls => ls.Change.Handler = "ImageChange(this,App.ImageAvatar);")
+                                                  )
+                             ),
+                   X.CustomFormPanel().Flex(1).Padding(0).MarginSpec("-3 0 0 2")
+                                .Items(                           
+                                        X.TextAreaFor(m => m.Address).FieldLabel("Địa chỉ").Height(94)
+                                                ,
+                                        X.TextAreaFor(m=>m.Note)
+                                            .FieldLabel("Ghi chú")
+                                            .MinHeight(100).Flex(1)
+                                    )
+           )
+)
+.Buttons(
+    Html.X().ButtonSave()
+            .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmUpdateContact.getForm().isValid()) { return false; }; ";
+                            de.Click.Url = Url.Action("UpdateContact");
+                            de.Click.FormID = "frmUpdateContact";
+                            de.Click.Success = "this.up('window').close(); App.GrCustomerContact.store.reload(); ";
+                        })
+    , Html.X().ButtonExit())
+)
+<script>
+    var ImageChange = function (obj,setObj) {
+        var file = obj.fileInputEl.dom.files[0];
+        var url = URL.createObjectURL(file);
+        setObj.setImageUrl(url);
+    };
+</script>

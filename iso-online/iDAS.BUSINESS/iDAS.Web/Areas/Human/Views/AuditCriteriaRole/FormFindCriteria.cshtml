@@ -1,0 +1,204 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditCriteriaFactoryItem
+@(Html.X().Window()
+            .ID("frmCri")
+            .Title("Chọn tiêu chí cho chức danh")
+            .Width(850)
+            .Height(500)
+            .Constrain(true)
+            .Modal(true)
+            .Closable(true)
+            .Icon(Icon.Add)
+            .Resizable(true)
+            .Layout(LayoutType.Border)
+            .Items(
+            Html.X().Hidden().ID("hdflstID"),Html.X().HiddenFor(m=>m.HumanRoleID).ID("hdfroleID"),
+            Html.X().Panel()
+                    .Region(Region.West)
+                        .Title("Bộ tiêu chí đánh giá KPIs")
+                    .Header(true)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .TitleAlign(TitleAlign.Center)
+                    .Width(250)
+                    .Collapsible(false)
+                    .MinWidth(250)
+                    .MaxWidth(300)
+                    .MarginSpec("5 0 5 5")
+                    .Layout(LayoutType.Fit).Items(
+                    Html.X().GridPanel()
+                            .ID("gpProductGroup")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .ResizableConfig(new Resizer { Handles = ResizeHandle.East })
+                            .Store(Html.X().Store().ID("stCategoryCriteria")
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy()
+                                                    .Url(Url.Action("GetData", "AuditCriteriaCategoryKPI", new { area = "Human" }))
+                                           .Reader(Html.X().JsonReader()
+                                           .Root("data")
+                                           )
+                            )
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean)
+                                 )
+                             )
+                )
+                        .ColumnModel(
+                            Html.X().Column()
+                                    .Text("Mã")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                            Html.X().Column()
+                                    .Text("Tên nhóm")
+                                    .DataIndex("Name")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Flex(1)
+                        )
+                        .SelectionModel(
+                        Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi).Listeners(ls =>
+                                ls.Select.Handler = "showdataProducts();"
+                        )
+                )
+
+            ),
+    Html.X().Panel()
+            .Region(Region.Center)
+            .Title("Danh sách tiêu chí")
+            .Header(false)
+            .StyleSpec("border:none;")
+            .Layout(LayoutType.Fit)
+            .Icon(Icon.BookOpenMark)
+            .Width(250)
+            .MarginSpec("5 5 5 5")
+            .Items(
+            Html.X().GridPanel()
+                    .ID("gpProducts")
+                    .Title("Danh mục tiêu chí")
+                    .ContextMenuID("cmMenuEvaluationCriteria")
+                    .ColumnLines(true)
+                    .Header(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .ResizableConfig(new Resizer { Handles = ResizeHandle.East })
+                        .Store(Html.X().Store().ID("stCriteria")
+                            .AutoLoad(false)
+                            .RemotePaging(true)
+                            .PageSize(50)
+                            .GroupField("CategoryName")
+                            .Sorters(Html.X().DataSorter().Property("CategoryName").Direction(Ext.Net.SortDirection.ASC))
+                            .Proxy(Html.X().AjaxProxy()
+                                                        .Url(Url.Action("GetCriteriaByListID", "AuditCriteriaCategoryKPI", new { area = "Human" }))
+                                           .Reader(Html.X().JsonReader()
+                                           .Root("data")
+                                           )
+                            )
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("stringId", "App.hdflstID.value", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                            Html.X().ModelField().Name("CategoryName")
+                                 )
+                             )
+                )
+                .Plugins(Html.X().CellEditing().ClicksToEdit(1))
+                .ColumnModel(
+        Html.X().RowNumbererColumn()
+                .Text("STT")
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Width(33),
+        Html.X().Column()
+                .Text("Tên tiêu chí")
+                .DataIndex("Name")
+                .Flex(1)
+                .Wrap(true)
+                .StyleSpec("font-weight: bold; text-align: center;"),        
+        Html.X().Column()
+                .Text("ID")
+                .DataIndex("ID")
+                .Hidden(true)
+                )
+        .SelectionModel(
+        Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi).Listeners(ls =>
+        ls.Select.Handler = ""
+        )
+        )
+        .View(
+        Html.X().GridView().MarkDirty(false)
+        )
+        .Features(
+        Html.X().GroupingSummary()
+        .ID("GroupingSummary1")
+        .GroupHeaderTplString("{name}")
+        .HideGroupedHeader(true)
+        .EnableGroupingMenu(false)
+        )
+      )
+   )
+.Buttons(
+Html.X().ButtonChoice()
+        .ID("btnAccept")
+        .TabIndex(5).Handler("insertProductsToStempInward();"),
+Html.X().ButtonExit()
+    )
+)
+
+<script type="text/javascript">
+    var showdataProducts = function () {
+        var records = App.gpProductGroup.selModel.getSelection();
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        App.hdflstID.setValue(strId);
+        App.stCriteria.reload({ page: 1 });
+    };
+    var insertProductsToStempInward = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Chờ trong giây lát ...." });
+        var records = App.gpProducts.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có tiêu chí nào được chọn!',
+                    iconCls: '#Exclamation',
+                    buttons: { yes: 'Đồng ý' }
+                });
+                break;
+            default:
+                mask.show();
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                var roleID = App.hdfroleID.value;
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("AddCri", "AuditCriteriaRole", new { Area = "Human" }, null))',
+                    params: { stringId: strId,roleID: roleID },
+                    success: function (result) {
+                        App.StoreOrder.reload();
+                        App.frmCri.close();
+                        mask.hide();
+                    }
+                });
+                break;
+        }
+    };
+</script>

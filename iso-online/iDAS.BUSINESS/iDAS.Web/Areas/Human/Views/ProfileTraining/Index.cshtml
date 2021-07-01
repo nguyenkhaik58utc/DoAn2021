@@ -1,0 +1,126 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanEmployeeItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("DeleteProfileTraining"))';
+    function CheckStatus() {
+        var records = App.GrProfileTraining.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetail, App.btnDelete, App.btnUpdate);
+        }
+        else {
+            SetDisabled(App.btnDetail, App.btnDelete, App.btnUpdate);
+        };
+    };
+    var AddNew = function () {
+        var url = '@(Url.Action("UpdateForm", "ProfileTraining", new { Area = "Human" }, null))';
+        var params = {
+            EmployeeID: App.hdfEmployeeID.value
+        };
+        onDirectMethod(url, params);
+    };
+    var UpdateItem = function () {
+        var records = App.GrProfileTraining.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "ProfileTraining", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                EmployeeID: App.hdfEmployeeID.value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ViewDetail = function () {
+        var records = App.GrProfileTraining.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "ProfileTraining", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                EmployeeID: App.hdfEmployeeID.value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        }
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false)
+.Items(
+    Html.X().FormPanel()
+    .Layout(LayoutType.Fit)
+    .Frame(true)
+    .Border(false)
+    .StyleSpec("border: none;").Padding(0)
+    .DefaultAnchor("100%")
+    .Items(
+          
+           Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrProfileTraining")
+                    .ColumnLines(true)
+                    .Border(false)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                        Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                             X.HiddenFor(m => m.ID).ID("hdfEmployeeID"),
+                            Html.X().ButtonCreate().Handler("AddNew();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrProfileTraining.selModel.getSelection()[0].get('ID'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreProfileTraining")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProfileTraining")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                             .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("EmployeeID", "App.hdfEmployeeID.value", ParameterMode.Raw));
+                                        })
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("StartDate"),
+                                Html.X().ModelField().Name("EndDate"),
+                                Html.X().ModelField().Name("Form"),
+                                Html.X().ModelField().Name("Content"),
+                                Html.X().ModelField().Name("Certificate"),
+                                Html.X().ModelField().Name("Result"),
+                                Html.X().ModelField().Name("Reviews")
+                            )
+                          )
+                )
+                .ColumnModel(
+                                Html.X().RowNumbererColumn().DataIndex("ID").Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                Html.X().Column().DataIndex("Name").Text("Tên khóa học").Width(350).StyleSpec("font-weight: bold;text-align: center"),
+                                Html.X().Column().DataIndex("Form").Text("Hình thức đào tạo").Width(350).StyleSpec("font-weight: bold;text-align: center"),
+                                Html.X().Column().DataIndex("Content").Text("Nội dung đào tạo").Width(350).StyleSpec("font-weight: bold;text-align: center"),
+                                Html.X().Column().DataIndex("Certificate").Text("Chứng chỉ đào tạo").Width(350).StyleSpec("font-weight: bold;text-align: center"),
+                                Html.X().Column().DataIndex("Result").Text("Kết quả đào tạo").Width(350).StyleSpec("font-weight: bold;text-align: center")
+                    )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                .BottomBar( Html.X().CustomPagingToolbar())
+        )
+    )
+)

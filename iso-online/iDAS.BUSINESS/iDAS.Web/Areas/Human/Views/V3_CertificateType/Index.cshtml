@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateCertificateType = '@(Url.Action("Create", "v3_CertificateType", new { area = "Human" }))';
+    var urlUpdateCertificateType = '@(Url.Action("Update", "v3_CertificateType", new { area = "Human" }))';
+    var urlDeleteCertificateType = '@(Url.Action("Delete", "v3_CertificateType", new { Area = "Human" }))';
+    var urlDetailCertificateType = '@(Url.Action("ShowFrmDetail", "v3_CertificateType", new { Area = "Human" }))';
+    var sortCertificateTypeIndex = null;
+    var showCreateCertificateType = function () {
+        var url = urlCreateCertificateType;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateCertificateType = function () {
+        var url = urlUpdateCertificateType;
+        var record = getCertificateTypeSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getCertificateTypeSelection = function () {
+        var records = App.CertificateTypePanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setCertificateTypeSelection = function () {
+        if (sortCertificateTypeIndex != null) {
+            App.CertificateTypePanel.selModel.select(sortCertificateTypeIndex);
+        }
+    };
+
+    var showDeleteCertificateType = function () {
+        var url = urlDeleteCertificateType;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ loại chứng chỉ này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getCertificateTypeSelection();
+                            var CertificateTypeId = record == null ? 0 : record.data.ID;
+                            var params = { ID: CertificateTypeId };
+                            onDirectMethod(url, params, 'post', reloadCertificateType);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailCertificateType = function () {
+        var url = urlDetailCertificateType;
+        var record = getCertificateTypeSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadCertificateType = function () {
+        App.CertificateTypePanel.store.reload();
+    };
+
+    var selectionChangeCertificateType = function () {
+        var record = getCertificateTypeSelection();
+        var isDisabled = record == null;
+        App.btnUpdateCertificateType.setDisabled(isDisabled);
+        App.btnDeleteCertificateType.setDisabled(isDisabled);
+        App.btnDetailCertificateType.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý loại chứng chỉ").Header(false)
+                    .ID("CertificateTypePanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateCertificateType").ID("btnCreateCertificateType()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateCertificateType").Handler("showUpdateCertificateType();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteCertificateType").Handler("showDeleteCertificateType()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailCertificateType").Handler("showDetailCertificateType();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreCertificateType")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setCertificateTypeSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên loại chứng chỉ").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeCertificateType();")
+    )
+    )

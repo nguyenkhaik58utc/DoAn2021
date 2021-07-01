@@ -1,0 +1,244 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DocumentItem
+@(
+ Html.X().Window()
+    .ID("winAddDocument")
+    .Title("Thêm mới tài liệu sửa đổix")
+    .Icon(Icon.Add)
+    .Height(1)
+    .Maximized(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .ID("frAddDocument")
+            .Items(
+                Html.X().HiddenFor(m => m.ID).ID("hdID"),
+                Html.X().HiddenFor(m => m.ParentID).Value(Model.ID),
+                Html.X().TabPanel()
+                    .ID("TabPanel1")
+                    .Margin(1)
+                    .Region(Region.Center)
+                    .Items(   
+                        Html.X().Panel()
+                            .ID("Tab1")
+                            .Title("Thông tin nội dung Tài liệu")
+                            .StyleSpec("-webkit-border-radius:0")
+                            .Margin(1)
+                            .Border(true)
+                            .BodyPadding(6)
+                            .Icon(Icon.ApplicationViewDetail)
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Frame(true)
+                            .Items(
+                                Html.X().TextFieldFor(m => m.DocumentParent).Value(Model.Name)
+                                    .ID("DocParrent").FieldLabel("Tài liệu cũ")
+                                    .TabIndex(1).ReadOnly(true),
+                                Html.X().Container()
+                                    .Layout(LayoutType.Column).Height(24)
+                                    .Items(
+                                        Html.X().TextFieldFor(m => m.Code)
+                                                    .ID("Code").FieldLabel("Mã Tài liệu" + Html.Required())
+                                                    .TabIndex(2)
+                                                    .MaxLength(50)
+                                                    .ReadOnly(true)    
+                                                    .ColumnWidth(0.7),
+                                        Html.X().TextFieldFor(m => m.Version)
+                                                    .ID("txtVersion")
+                                                    .FieldLabel("Phiên bản" + Html.Required())
+                                                    .MarginSpec("0 0 0 5")
+                                                    .TabIndex(3).LabelWidth(80)
+                                                    .EmptyText("1.0")
+                                                    .MaxLength(50).MaxLengthText("Phiên bản tài liệu không được dài quá 50 ký tự!")
+                                                    .AllowBlank(false)
+                                                    .AllowOnlyWhitespace(false)
+                                                    .BlankText("Phiên bản Tài liệu bắt buộc nhập!")
+                                                    .ColumnWidth(0.3)
+                                                ),
+                                    Html.X().TextFieldFor(m => m.Name)
+                                        .ID("txtName")
+                                        .FieldLabel("Tên Tài liệu" + Html.Required())
+                                        .TabIndex(4)
+                                        .ReadOnly(true),
+                                Html.X().Container().Layout(LayoutType.Column).Height(24).Items(
+                                        Html.X().ComboBoxFor(m => m.TypeID)
+                                            .ID("cbType")
+                                            .ColumnWidth(0.5)
+                                            .FieldLabel("Loại Tài liệu" + Html.Required())
+                                            .TabIndex(5)
+                                            .EmptyText("Chọn loại tài liệu...")
+                                            .AllowBlank(false)
+                                            .BlankText("Loại tài liệu bắt buộc chọn!")
+                                            .QueryMode(DataLoadMode.Local)
+                                            .ForceSelection(true)
+                                            .TriggerAction(TriggerAction.All)
+                                            .DisplayField("Name")
+                                            .ValueField("ID")
+                                              .Store(
+                                                Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                            )
+                                                            )
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataCboType"))
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                                    )
+                                                    .Listeners(ls =>
+                                                            ls.Load.Handler = @"var combo = App.cbType;
+                                                                    combo.setValue(records[0].get(combo.valueField));"
+                                                    )
+                                                ),
+                                  Html.X().ComboBoxFor(m => m.SecurityID)
+                                    .ID("cbSecurity")
+                                    .ColumnWidth(0.5).MarginSpec("0 0 0 5")
+                                    .FieldLabel("Mức độ bảo mật" + Html.Required())
+                                    .TabIndex(5)
+                                    .EmptyText("Chọn mức độ mật của tài liệu...")
+                                    .AllowBlank(false)
+                                    .BlankText("Mức độ mật bắt buộc chọn!")
+                                    .QueryMode(DataLoadMode.Local)
+                                    .ForceSelection(true)
+                                    .TriggerAction(TriggerAction.All)
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+                                     .Tpl(
+                                    @<text>
+                                        <tpl for=".">
+                                            <div class="x-boundlist-item"><div style="text-align: center; width: 100%; background-color: {Color}; border: #cecece 1px solid;">{Name}</div></div>
+                                        </tpl>
+                                    </text>)
+                                        .Store(
+                                            Html.X().Store()
+                                                .ID("stDocSecurity")
+                                                .AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                                .Fields(
+                                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                                          new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                                        )
+                                                        )
+                                                .Proxy(
+                                                    Html.X().AjaxProxy()
+                                                        .Url(Url.Action("GetDataCboSecurity"))
+                                                .Reader(Html.X().JsonReader().Root("data"))
+                                                )
+                                            ).Listeners(l => l.Change.Handler = "getColor(App.cbSecurity, App.stDocSecurity);")
+                                          ),
+                                          Html.X().Container().Layout(LayoutType.Column).Items(
+                                          Html.X().ComboBoxFor(m => m.CategoryID)
+                                            .FieldLabel("Danh mục tài liệu" + Html.Required())
+                                            .HideBaseTrigger(true)
+                                            .ID("cbCategory")
+                                            .AllowBlank(false).BlankText("Danh mục Tài liệu bắt buộc chọn!")
+                                            .TabIndex(8)
+                                            .QueryMode(DataLoadMode.Local)
+                                            .ForceSelection(true)
+                                            .DisplayField("Name")
+                                            .ValueField("ID")
+                                            .ColumnWidth(0.5)
+                                            .Store(Html.X().Store()
+                                            .AutoLoad(true)
+                                            .Model(
+                                                Html.X().Model()
+                                                .IDProperty("ID")
+                                                .Fields(
+
+                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                )
+                                                )
+                                                .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("GetDataCate", "Document", new { area = "Document" }))
+                                                .Reader(Html.X().JsonReader().Root("data")
+                                                )
+                                                )
+                                              )
+                                            .Triggers(
+                                            Html.X().FieldTrigger().Icon(TriggerIcon.SimpleEdit)
+
+                                            )
+                                            .Listeners(ls =>
+                                            {
+                                                ls.BeforeSelect.Handler = "return false;";
+                                                ls.TriggerClick.Fn = "ShowFrmDocCate";
+                                            }),
+                                        Html.X().TextFieldFor(m => m.DepartmentOfCategory).FieldLabel("Thuộc phòng")
+                                            .ReadOnly(true)
+                                            .ID("txtCategoryDept")
+                                             .ColumnWidth(0.5)
+                                             .MarginSpec("0 0 0 5")
+                                   ),
+                                    Html.X().CheckboxGroupFor(m => m.StorageFormID, new List<Checkbox.Config> {
+                                        new Checkbox.Config{BoxLabel = "Bản mềm", InputValue =iDAS.Items.StorageForm.SoftCopy.ToString() , TabIndex=8, Checked=true},
+                                        new Checkbox.Config{BoxLabel = "Bản cứng", InputValue =iDAS.Items.StorageForm.HardCopy.ToString(), TabIndex=9}
+                                            }).FieldLabel("Hình thức lưu trữ"+Html.Required())
+                                            .ID("rabgrStore")
+                                            .ColumnWidth(0.5)
+                                            .AllowBlank(false)
+                                            .BlankText("Hình thức lưu trữ bắt buộc chọn!"),
+                                    Html.X().DepartmentFieldFor(m => m.Department).Multiple(false)
+                                        .FieldLabel("Phòng/ban lưu trữ"),
+                                     Html.X().Container()
+                                            .Layout(LayoutType.Column)
+                                            .Items(
+                                                Html.X().NumberFieldFor("IssuedTime")
+                                                    .ID("IssuedTime")
+                                                    .FieldLabel("Lần ban hành")
+                                                    .TabIndex(11)
+                                                    .ReadOnly(true)
+                                                    .ColumnWidth(0.3)
+                                            ),
+                                    Html.X().FileUploadFieldFor(m => m.AttachmentFile)
+                                            .MarginSpec("5 0 0 0"),
+                                    Html.X().TextAreaFor(m => m.Content)
+                                            .ID("txtDescription")
+                                            .MarginSpec("0 0 5 0")
+                                            .FieldLabel("Nội dung chính")
+                                            .TabIndex(13).Height(120)
+                                            .MaxLength(1000),      
+                                Html.X().TextAreaFor(m => m.Note).FieldLabel("Ghi chú").MinHeight(40).Flex(1)
+                         )
+                    ),
+                Html.X().ApprovalPanelFor(m => m)
+                )
+               )
+        .Buttons(
+            Html.X().ButtonSendWindow()
+                .Text("Gửi duyệt")
+                .TabIndex(19)
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frAddDocument";
+                        de.Click.ExtraParams.Add(new { IsSendApproval = true });
+                        de.Click.Url = Url.Action("InsertDocument");
+                        de.Click.Before = @"if (!#{frAddDocument}.getForm().isValid()) { return false; }";
+                    }),
+              Html.X().ButtonSave()
+                .ID("btnSave")
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frAddDocument";
+                        de.Click.ExtraParams.Add(new { IsSendApproval = false });
+                        de.Click.Url = Url.Action("InsertDocument");
+                        de.Click.Before = @"if (!#{frAddDocument}.getForm().isValid()) { return false; }";
+                        de.Click.Failure = @"Ext.Msg.show({
+                                        title   : 'Thông báo',
+                                        msg     : 'Lỗi khi cập nhật dữ liệu.',
+                                        minWidth: 200,
+                                        modal   : true,
+                                        icon    : Ext.Msg.ERROR,
+                                        buttons : Ext.Msg.OK
+                                    });";
+                    }),
+            Html.X().ButtonExit()
+        )
+)

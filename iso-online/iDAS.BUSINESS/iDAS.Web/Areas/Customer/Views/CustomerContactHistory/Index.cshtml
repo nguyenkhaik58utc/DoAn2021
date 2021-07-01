@@ -1,0 +1,126 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerContactHistoryItem
+@{
+    var X = Html.X();
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatusContactHistory() {
+        var records = App.GrCustomerContactHistory.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateContactHistory, App.btnDeleteContactHistory, App.btnDetailOrder);
+        }
+        else {
+            SetDisabled(App.btnUpdateContactHistory, App.btnDeleteContactHistory, App.btnDetailOrder);
+        };
+    };
+    var ShowAddContactHistory = function () {
+        var url = '@(Url.Action("UpdateForm", "CustomerContactHistory", new { Area = "Customer" }, null))';
+        var params = {
+            customerID: App.hdfCustomerID.getValue(),
+            isPotential : '@Model.IsPotential', 
+            isOfficial: '@Model.IsOfficial'
+        };
+        onDirectMethod(url, params);
+    };
+    var ShowUpdateContactHistory = function () {
+        var records = App.GrCustomerContactHistory.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "CustomerContactHistory", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                isPotential: '@Model.IsPotential',
+                isOfficial: '@Model.IsOfficial'
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowDetailContactHistory = function () {
+        var records = App.GrCustomerContactHistory.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerContactHistory", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                isPotential: '@Model.IsPotential',
+                isOfficial: '@Model.IsOfficial'
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Window()
+.ID("winCustomerContactHistory")
+.Title("Quản lý liên hệ")
+.Icon(Icon.Calendar)
+.Maximized(true)
+.Height(400)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+            Html.X().HiddenFor(i => i.CustomerID).ID("hdfCustomerID"),
+            Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerContactHistory")
+                    .Header(false)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                        Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                            Html.X().ButtonCreate().ToolTip("Thêm mới liên hệ").Handler("ShowAddContactHistory();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnUpdateContactHistory").ToolTip("Cập nhật liên hệ")
+                                .Handler("ShowUpdateContactHistory();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ToolTip("Xóa liên hệ")
+                                .ID("btnDeleteContactHistory").Handler("onDelete(App.GrCustomerContactHistory.selModel.getSelection()[0].get('ID'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ToolTip("Xem chi tiết")
+                                .ID("btnDetailOrder").Handler("ShowDetailContactHistory();")
+                    ))
+                    .Store(
+                        Html.X().Store().ID("StoreCustomerContactHistory")
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerContactHistory", "CustomerContactHistory", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("customerID", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                            })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Employee.Name"),
+                                        Html.X().ModelField().Name("Time"),
+                                            Html.X().ModelField().Name("FormName"),
+                                        Html.X().ModelField().Name("SuccessStatus")
+                                    )
+                        )
+                )
+                .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.Column().DataIndex("Employee.Name").Text("Người liên hệ").Flex(1),
+                        X.DateColumnExtend().DataIndex("Time").Text("Thời gian").Width(100).Align(Alignment.Center),
+                        X.Column().DataIndex("FormName").Text("Hình thức").Width(120).Align(Alignment.Center),
+                        X.Column().DataIndex("SuccessStatus").Text("Kết quả").Width(120).Align(Alignment.Center)
+                    )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusContactHistory"))
+                .BottomBar(Html.X().CustomPagingToolbar())
+    )
+.Buttons(Html.X().ButtonExit())
+)
+

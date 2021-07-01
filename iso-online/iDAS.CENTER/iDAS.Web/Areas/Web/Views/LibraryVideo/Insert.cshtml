@@ -1,0 +1,76 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.LibraryItem
+@{
+    var required = "<span style='color: red;'>(*)</span>";
+}
+@(Html.X().Window()
+        .ID("winAddLibrary")
+        .Title("Thêm mới video")
+        .Icon(Icon.Add)
+        .Frame(true)
+        .Constrain(true)
+        .Width(600)
+        .BodyPadding(5)
+        .Center()
+        .Resizable(false)
+        .Modal(true)
+        .Items(
+            Html.X().FormPanel().DefaultAnchor("100%")
+            .ID("frmAddLibrary")
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 120)
+            .Items(
+                    Html.X().ComboBoxFor(m => m.WebLibraryCategoryID)
+                        .QueryMode(DataLoadMode.Local)
+                        .TriggerAction(TriggerAction.All)
+                        .SelectOnFocus(true)
+                        .EmptyText("Chọn danh mục")
+                        .DisplayField("Title")
+                        .ValueField("ID")
+                        .AllowBlank(false)
+                        .FieldLabel("Danh mục" + required)
+                        .Store(
+                            Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                    new ModelField("Title", ModelFieldType.String) { Mapping = "Title" }
+                                    )
+                                        )
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadVideoCategory", "LibraryCategory"))//ham load dl cho combobox
+                            .Reader(Html.X().JsonReader().Root("data"))
+                               )
+                            ),
+                   Html.X().TextFieldFor(m => m.Name).AllowOnlyWhitespace(false).BlankText("Tên video bắt buộc nhập !").FieldLabel("Tên video" + required),
+                   Html.X().TextFieldFor(m => m.Link).FieldLabel("Đường dẫn" + required),
+                   Html.X().TextAreaFor(m=>m.Description).FieldLabel("Mô tả").Height(100),
+                   Html.X().CheckboxFor(m => m.IsShow).FieldLabel("Hiển thị")
+                )
+
+    )
+    .Buttons(
+            Html.X().ButtonSave()
+                .DirectEvents(de =>
+                {
+                    de.Click.Before = @"if (!App.frmAddLibrary.getForm().isValid()) { return false; } ";
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.FormID = "frmAddLibrary";
+                    de.Click.Success = "App.StoreLibraryVideo.reload();";
+
+                }),
+            Html.X().ButtonSaveAndExit()
+                .DirectEvents(de =>
+                {
+                    de.Click.Before = @"if (!App.frmAddLibrary.getForm().isValid()) { return false; } ";
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.FormID = "frmAddLibrary";
+                    de.Click.Success = "this.up('window').close(); App.StoreLibraryVideo.reload();";
+                }),
+            Html.X().ButtonReset()
+                    .OnClientClick("App.frmAddLibrary.reset();"),
+            Html.X().ButtonExit()
+    )
+)

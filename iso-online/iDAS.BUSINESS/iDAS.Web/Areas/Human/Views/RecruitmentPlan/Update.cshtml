@@ -1,0 +1,115 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.HumanRecruitmentPlanItem
+@(Html.X().Window()
+    .ID("winPlanUpdate")
+    .Title("Cập nhật kế hoạch tuyển dụng")
+    .Icon(Icon.Pencil)
+    .Width(840)
+    .Height(400)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(0)
+    .Center()
+    .Border(false)
+    .Items(
+         Html.X().FormPanel()
+        .ID("frmUpdate")
+        .Layout(LayoutType.Fit)
+        .Border(false) 
+        .Items(
+                Html.X().TabPanel()
+                .ID("TabPanel1")
+                .ActiveTabIndex(0)               
+                .Border(true)      
+                .Items(
+                        Html.X().FormPanel().Title("Kế hoạch tuyển dụng")
+                            .AutoScroll(true)
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Frame(true)
+                            .FieldDefaults(df => { df.LabelWidth = 110; df.LabelStyle = "padding-left: 5px;"; })
+                            .PaddingSpec("5 10 0 0")
+                            .StyleSpec("border: none;")
+                            .Items(
+                                Html.X().HiddenFor(m => m.ID).ID("hdfPlanID"), Html.X().HiddenFor(m => m.IsEdit).ID("hdfIsEdit"),
+                                Html.X().TextFieldFor(m => m.Name)
+                                            .AllowOnlyWhitespace(false)
+                                            .BlankText("Tên kế hoạch là bắt buộc nhập")
+                                            .FieldLabel("Kế hoạch" + Html.Required()),
+                                Html.X().Container().Layout(LayoutType.Column).Height(52)
+                                        .Items(
+                                                    Html.X().DateFieldFor(m => m.StartDate).FieldLabel("Ngày bắt đầu").ColumnWidth(0.55),
+                                                    Html.X().DateFieldFor(m => m.EndDate).FieldLabel("Ngày kết thúc").LabelWidth(80).ColumnWidth(0.45),
+                                                    Html.X().NumberFieldFor(m => m.TotalCost).FieldLabel("Tổng chi phí").MinValue(0).ColumnWidth(0.55).PaddingSpec("4 0 0 0")
+                                        ),
+                                Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung").MinHeight(150).Flex(1)
+                               ),
+                        Html.X().FormPanel().Title("Danh sách yêu cầu tuyển dụng").Margin(0)
+                                .Layout(LayoutType.Fit)
+                                .Items(
+                                    Html.X().GridPanel()
+                                        .ID("grRequirement")
+                                        .Header(false)
+                                        .ForceFit(true)
+                                        .Border(false)
+                                        .Store(
+                                                Html.X().Store()
+                                                    .AutoLoad(true)
+                                                        .ID("StoreRequirement")
+                                                    .RemotePaging(true)
+                                                    .PageSize(5)
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRequirementUpdate")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                    .Parameters(ps =>
+                                                                    {
+                                                                        ps.Add(new StoreParameter("ID", "App.hdfPlanID.value", ParameterMode.Raw));
+                                                                    })
+                                                    .Model(
+                                                            Html.X().Model().Fields(
+                                                            Html.X().ModelField().Name("ID"),
+                                                            Html.X().ModelField().Name("RequiredID"),
+                                                            Html.X().ModelField().Name("PlanID"),
+                                                            Html.X().ModelField().Name("Name"),
+                                                            Html.X().ModelField().Name("Reason"),
+                                                            Html.X().ModelField().Name("IsSelect").Type(ModelFieldType.Boolean)
+                                                        )
+                                                    )
+                                            )
+                                            .ColumnModel(
+                                                        Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                                        Html.X().Column().DataIndex("Name").Flex(1).Text("Yêu cầu tuyển dụng").Flex(1),
+                                                        Html.X().Column().DataIndex("Reason").Flex(1).Text("Lý do tuyển dụng"),
+                                                        Html.X().CheckColumn().DataIndex("IsSelect").Text("Chọn").Width(100).Editable(true)
+                                                    ).Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditRequirement"))
+                                            .BottomBar(Html.X().CustomPagingToolbar("5", "10", "20", "50", "100"))
+                                    )
+                            )
+                      ) 
+                  )
+    .Buttons(
+        Html.X().ButtonSave()
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+                                de.Click.Url = Url.Action("Update");
+                                de.Click.FormID = "frmUpdate";
+                            }), 
+        Html.X().ButtonExit())
+)
+<script>
+    var onEditRequirement = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateRequirement"))',
+                params: {
+                    data: e.record.data
+                }
+            });
+        }
+
+    };
+</script>

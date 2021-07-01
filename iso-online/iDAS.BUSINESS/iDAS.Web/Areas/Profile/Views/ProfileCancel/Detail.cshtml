@@ -1,0 +1,256 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@{ var X = Html.X();}
+@model iDAS.Items.ProfileCancelItem
+@(
+ Html.X().Window()
+    .ID("winDetailCancel")
+    .Title("Xem chi tiết biên bản hủy hồ sơ")
+    .Icon(Icon.Zoom)
+    .Width(950)
+       .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(false)
+        .Center()
+        .Items(Html.X().FormPanel()
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .ID("frmAudit")
+            .Border(false)
+            .Items(Html.X().TabPanel()
+                .ActiveTabIndex(0)
+                .Border(true)
+                .Items(Html.X().Panel()
+                    .BodyPadding(0)
+                    .Icon(Icon.ApplicationViewDetail)
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .StyleSpec("border: none;")
+                    .Title("Thông tin biên bản hủy hồ sơ")
+                    .Frame(true)
+                    .Items(
+                                Html.X().GridPanel()
+                                    .ID("GridEmployeeID")
+                                    .Layout(LayoutType.Fit)
+                                    .Header(true)
+                                    .Split(true)
+                                    .Title("Thành phần tham gia")
+                                    .Icon(Icon.User)
+                                    .Height(230)
+                                    .Region(Region.Center)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Store(
+                                        Html.X().Store().ID("stEmployee")
+                                        .AutoLoad(true)
+                                        .PageSize(5)
+                                        .Model(
+                                            X.Model().Fields(
+                                                X.ModelField().Name("ID"),
+                                                X.ModelField().Name("Name"),
+                                                              X.ModelField().Name("FileName"),
+                                            X.ModelField().Name("FileID"),
+                                                X.ModelField().Name("Role"),
+                                                 X.ModelField().Name("DepartmentName")
+                                            )
+                                        )
+                                        .Proxy(
+                                            Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadEmployeesByCancelID"))
+                                                .Reader(Html.X().JsonReader().Root("data"))
+                                            )
+                                            .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("cancelId", Model.ID.ToString(), ParameterMode.Raw));
+                                                }
+                                                )
+                                            )
+                                    .ColumnModel(
+                                        X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                    X.TemplateColumn().DataIndex("FileID").Width(31).Tpl(
+                                  X.XTemplate().Html(@<text>
+                                        <img id="{FileID}" src="@Url.Action("LoadImage", "File", new { area = "Generic" })?fileId={FileID}&fileName={FileName}"
+                                             style='width:30px;height:40px;margin: -3px -6px -5.5px -6px;' />
+                                </text>)
+                                ),
+                                        X.Column().DataIndex("Name").Flex(1).Text("Họ tên"),
+                                        X.Column().DataIndex("Role").Flex(1).Text("Chức vụ"),
+                                        X.Column().DataIndex("DepartmentName").Flex(1).Text("Phòng ban")
+                                    )
+                                        .BottomBar(Html.X().CustomPagingToolbar())
+                                        ,
+                                Html.X().FieldSet().Title("Thông tin Chi tiết").Layout(LayoutType.Form).Items
+                                (
+                                  Html.X().Container().Layout(LayoutType.Column).Items(
+                                    Html.X().TextFieldFor(m => m.Name)
+                                            .FieldLabel("Tên biên bản")
+                                            .ReadOnly(true)
+                                            .ColumnWidth(0.6)
+                                            .TabIndex(1),
+                                     Html.X().TextFieldFor(m => m.Status)
+                                            .FieldLabel("Trạng thái")
+                                            .TabIndex(1)
+                                            .ReadOnly(true)
+                                            .LabelWidth(70)
+                                            .MarginSpec("0 0 0 5")
+                                            .ColumnWidth(0.4)
+                                            ),
+                                    Html.X().Container().Layout(LayoutType.Column).Items(
+                                        Html.X().TextFieldFor(m => m.CancelMethod)
+                                            .FieldLabel("Phương thức hủy")
+                                            .ColumnWidth(0.6)
+                                            .ReadOnly(true)
+                                            .ID("CancelMethod"),
+                                        Html.X().DateFieldFor(m => m.CancelAt)
+                                            .FieldLabel("Ngày hủy")
+                                            .ReadOnly(true)
+                                            .ID("txtFinishDateExpected")
+                                            .ColumnWidth(0.4)
+                                            .LabelWidth(70)
+                                            .Format("dd/MM/yyyy")
+                                            .MarginSpec("0 0 0 5")
+                                            ),
+                                        Html.X().Container().Layout(LayoutType.Column).Items(
+                                            Html.X().TextFieldFor(m => m.CreateByName)
+                                                .ColumnWidth(0.6)
+                                                .FieldLabel("Người tạo")
+                                                .ReadOnly(true)
+                                                .ID("CreateByName"),
+                                            Html.X().DateFieldFor(m => m.CreateAt)
+                                                .FieldLabel("Ngày tạo")
+                                                .ID("CreateAt")
+                                                .ColumnWidth(0.4)
+                                                .ReadOnly(true)
+                                                .LabelWidth(70)
+                                                .Format("dd/MM/yyyy")
+                                                .MarginSpec("0 0 0 5")
+                                                ),
+                                        Html.X().Container().Layout(LayoutType.Column).Items(
+                                            Html.X().TextFieldFor(m => m.UpdateByName)
+                                                .ColumnWidth(0.6)
+                                                .FieldLabel("Người sửa")
+                                                .ReadOnly(true)
+                                                .ID("UpdateByName"),
+                                            Html.X().DateFieldFor(m => m.UpdateAt)
+                                                .FieldLabel("Ngày sửa")
+                                                .ID("UpdateAt")
+                                                .ReadOnly(true)
+                                                .ColumnWidth(0.4)
+                                                .Format("dd/MM/yyyy")
+                                                .LabelWidth(70)
+                                                .MarginSpec("0 0 0 5")
+                                                ),
+                                        Html.X().TextAreaFor(m => m.Note).ID("txtReasonRequest")
+                                                .FieldLabel("Ghi chú")
+                                                .ReadOnly(true)
+                                                .Height(50)
+                                                .TabIndex(5)
+                                            )
+                                    ),
+            Html.X().Panel()
+                .ID("fsProfile")
+                .Icon(Icon.TableColumnAdd)
+                .Border(false)
+                    .BodyPadding(0)
+                .Padding(0)
+                .Margin(0)
+            .StyleSpec("border:none")
+            .Frame(true)
+            .AutoScroll(true)
+                .Title("Danh sách hồ sơ hủy")
+                .Layout(LayoutType.Fit)
+                .Items(
+                    Html.X().GridPanel()
+                        .ID("grProfileCancels")
+                        .Layout(LayoutType.Fit)
+                        .MinHeight(400)
+                        .MarginSpec("0 0 0 0")
+                        .ColumnLines(true)
+                        .Header(false)
+                        .Border(false)
+                        .Store(
+                            Html.X().Store()
+                                .RemotePaging(true)
+                                .AutoLoad(true)
+                                .ID("stProfileCancels")
+                                .PageSize(20)
+                                .Model(
+                                    Html.X().Model().IDProperty("ID")
+                                        .Fields(
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("ProfileID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("CancelID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("TotalPage").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("Reason").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date),
+                                            Html.X().ModelField().Name("UpdateByName").Type(ModelFieldType.String)
+                                            )
+                                            )
+                                .Proxy(
+                                    Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetDataProfileCancelByCancelID"))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("id", Model.ID.ToString(), ParameterMode.Raw));
+                                    }
+                                )
+                            )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .Align(Alignment.Center)
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(33),
+                            Html.X().Column()
+                                .DataIndex("Code")
+                                .Text("Mã hồ sơ")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(80)
+                                .Align(Alignment.Center),
+                            Html.X().Column()
+                                .DataIndex("Name")
+                                .Text("Tên hồ sơ")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Flex(1),
+                            Html.X().Column()
+                                .Text("Tổng số trang")
+                                .DataIndex("TotalPage")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(90)
+                                .Align(Alignment.Right),
+                            Html.X().Column()
+                                .Text("Lý do hủy")
+                                .DataIndex("Reason")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Flex(1),
+                            Html.X().DateColumnExtend()
+                                .Text("Ngày cập nhật")
+                                .DataIndex("UpdateAt")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Format("dd/MM/yyyy")
+                                .Align(Alignment.Center)
+                                .Width(90),
+                            Html.X().Column()
+                                .Text("Người cập nhật")
+                                .DataIndex("UpdateByName")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(100)
+                        )
+                .BottomBar(Html.X().CustomPagingToolbar())
+                )
+              )
+            )
+          )
+        .Buttons(
+            Html.X().ButtonExit()
+        )
+)

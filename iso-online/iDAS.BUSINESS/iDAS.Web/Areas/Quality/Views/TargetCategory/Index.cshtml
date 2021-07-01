@@ -1,0 +1,196 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Human.Controllers;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(1)
+    .Items(
+         Html.X().GridPanel()
+                .ID("grTargetCategory")
+                .Border(true)
+                .Header(true)
+                .MarginSpec("0 1 0 0")
+                .Title("NHÓM MỤC TIÊU")
+                .TitleAlign(TitleAlign.Center)
+                .Region(Region.Center)
+                .TopBar(
+        Html.X().Toolbar()
+                .Items(
+                        Html.X().ButtonCreate()
+                            .ID("btnAddDetail")
+                            .DirectEvents(de =>
+                            {
+                                de.Click.Url = Url.Action("ShowFrmAdd", "TargetCategory");
+                            }),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate()
+                                .ID("btnUpdateDetail")
+                                .Disabled(true)
+                                .Handler("updateRecordDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView()
+                                .ID("btnViewDetail")
+                                .Disabled(true)
+                                .Icon(Icon.Zoom)
+                                .Handler("detailRecord();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete()
+                                .ID("btnDeleteDetail")
+                                .Disabled(true)
+                                .Handler("deleteRecordDetail();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                                )
+                             )
+                    .Store(Html.X().Store()
+                                .ID("stTargetCategory")
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetData"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean)
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Center)
+                                    .Width(33),
+                            Html.X().Column()
+                                    .Text("ID")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                            Html.X().Column()
+                                    .Text("Tên nhóm mục tiêu")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Name")
+                                    .Flex(1)
+                                    .Wrap(true),
+                                            Html.X().Column()
+                                            .Text("Mô tả")
+                                        .Width(300)
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                            .DataIndex("Description")
+                                        .Wrap(true),
+                                             Html.X().CheckColumn()
+                                        .Text("Sử dụng")
+                                        .StyleSpec("font-weight: bold;text-align: center")
+                                                .DataIndex("IsActive")
+                                        .Width(100)
+                                        .Wrap(true)
+
+                    ).SelectionModel(
+                        Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                .Listeners(l =>
+                                {
+                                    l.Select.Handler = "checkStatus();";
+                                })
+                                )
+                                .View(
+                                Html.X().GridView().MarkDirty(false)
+                                )
+                                .Plugins(Html.X().CellEditing())
+                                     .BottomBar(
+                            Html.X().CustomPagingToolbar()
+                    )
+     )
+)
+<script type="text/javascript">
+    var checkStatus = function () {
+        var records = App.grTargetCategory.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                break;
+            case 1:
+                App.btnUpdateDetail.setDisabled(false);
+                App.btnDeleteDetail.setDisabled(false);
+                App.btnViewDetail.setDisabled(false);
+                break;
+            default:
+
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+        }
+    };
+
+    var deleteRecordDetail = function () {
+        var record = App.grTargetCategory.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa nhóm mục tiêu đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "TargetCategory", new { Area = "Quality" }, null))',
+                            params: { id: id },
+                            success: function () {
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    };
+
+    var detailRecord = function () {
+        var record = App.grTargetCategory.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetail", "TargetCategory", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var updateRecordDetail = function () {
+        var record = App.grTargetCategory.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmUpdate", "TargetCategory", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+
+    var showFormAddRecordDetailType = function () {
+        var records = App.grTargetCategory.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowFrmAdd", "QualityTargetType", new { Area = "Quality" }, null))';
+            var params = {
+                cateId: records[0].get('ID'),
+                cateName: records[0].get('Name')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

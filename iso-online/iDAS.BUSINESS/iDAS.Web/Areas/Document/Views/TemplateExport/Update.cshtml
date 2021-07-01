@@ -1,0 +1,115 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@using iDAS.Utilities
+@model iDAS.Items.TemplateExportItem
+@{
+    string _tit = "Thêm mới biểu mẫu";
+    Icon _ic = Icon.Add;
+    if (Model.ID > 0)
+    {
+        _tit = "Cập nhật biểu mẫu";
+        _ic = Icon.Pencil;
+    }
+
+}
+@(
+ Html.X().CustomWindow()
+    .ID("winEditCate")
+    .Title(_tit)
+    .Icon(_ic)
+    .Items(
+        Html.X().CustomFormPanel()
+            .ID("frmUpdate")
+            .Items(
+                        Html.X().HiddenFor(m => m.ID),
+                        Html.X().TextFieldFor(m => m.Name)
+                            .FieldLabel("Tên biểu mẫu" + Html.Required())
+                            .AllowBlank(false).BlankText("Tên biểu mẫu bắt buộc nhập!")
+                            .TabIndex(1)
+                            .MaxLength(200).MaxLengthText("Tên biểu mẫu không được dài quá 200 ký tự!")
+                            .AllowOnlyWhitespace(false),
+                                Html.X().TextFieldFor(m => m.Font)
+                                    .FieldLabel("Mã biểu mẫu" + Html.Required())
+                                    .AllowBlank(false).BlankText("Mã bắt buộc nhập!")
+                                    .TabIndex(1)
+                                    .MaxLength(50).MaxLengthText("Mã không được dài quá 50 ký tự!")
+                                    .AllowOnlyWhitespace(false),
+                            Html.X().ComboBoxFor(m => m.Type)
+                            .FieldLabel("Kiểu file" + Html.Required())
+                            .Editable(false)
+                            .ID("cbType")
+                            .Items(
+                                        new ListItem("Excel", 1),
+                                        new ListItem("Word", 2)
+                            ),
+                              Html.X().ComboBoxFor(m => m.ModuleCode)
+    .FieldLabel("Module" + Html.Required()).AllowOnlyWhitespace(false).BlankText("Bắt buộc chọn").Editable(false)
+.ColumnWidth(0.5)
+.ID("cbCountry")
+.AllowBlank(false)
+.QueryMode(DataLoadMode.Local)
+.ForceSelection(true)
+.DisplayField("Name")
+.ValueField("Code")
+.Store(Html.X().Store()
+            .AutoLoad(true)
+.Model(Html.X().Model()
+.IDProperty("Code")
+.Fields(
+    new ModelField("Code", ModelFieldType.String) { Mapping = "Code" },
+new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+)
+)
+.Proxy(Html.X().AjaxProxy()
+    .Url(Url.Action("LoadModules"))
+.Reader(Html.X().JsonReader().Root("data")
+)
+    )
+    ).Listeners(ls =>
+            ls.Change.Handler = "App.cbProvince.clearValue(); App.cbProvince.getStore().load()"
+
+            ),
+            Html.X().ComboBoxFor(m => m.FunctionCode)
+            .ID("cbProvince")
+                        .FieldLabel("Chức năng" + Html.Required()).Editable(false)
+            .AllowBlank(false)
+            .ColumnWidth(0.5)
+            .TypeAhead(true)
+            .QueryMode(DataLoadMode.Local)
+            .ForceSelection(true)
+            .TriggerAction(TriggerAction.All)
+            .DisplayField("Name")
+            .ValueField("Code")
+            .Store(Html.X().Store().ID("stLoadProvi")
+            .AutoLoad(false)
+            .Model(Html.X().Model()
+                .IDProperty("ID")
+                .Fields(
+                    new ModelField("Code", ModelFieldType.String) { Mapping = "Code" },
+                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                )
+            )
+            .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("LoadFunctions"))
+                .Reader(Html.X().JsonReader().Root("data"))
+            )
+            .Parameters(ps =>
+                        ps.Add(new StoreParameter("moduleCode", "App.cbCountry.getValue()", ParameterMode.Raw))
+            )
+            ),
+                                Html.X().FileUploadField().Text(Model.FileName).ButtonText("Chọn file").ID("FileImportField").FieldLabel("File mẫu")
+                )
+        )
+        .Buttons(
+                    Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!#{frmUpdate}.getForm().isValid()) { return false; }";
+                            de.Click.FormID = "frmUpdate";
+                            de.Click.Url = Url.Action("UpdateTemplate");
+                        }),
+                    Html.X().ButtonExit()
+        )
+)
+

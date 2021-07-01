@@ -1,0 +1,77 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.HumanTrainingRequirementItem
+@(
+Html.X().ApprovalSendWindow()
+.UrlSubmit(Url.Action("SendAppproved"))
+.ItemsExtend(
+        Html.X().FormPanel()
+            .AutoScroll(true)
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .Frame(true)
+            .FieldDefaults(df => { df.LabelWidth = 120; })
+            .StyleSpec("-webkit-border-radius: 0; border-radius: 0;")
+            .Items(
+               Html.X().HiddenFor(m => m.ID).ID("hdfRequirementID"),
+                    Html.X().EmployeeFieldFor(m => m.RequireBy)
+                        .ReadOnly(true)
+                        .Title("Người đề nghị").Margin(0),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().DateTimeFieldFor(m => m.StartTime).ReadOnly(true).FieldLabel("Bắt đầu").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                    Html.X().DateTimeFieldFor(m => m.EndTime).ReadOnly(true).FieldLabel("Kết thúc").LabelWidth(60).ColumnWidth(0.5).MarginSpec("5 4 0 8")),            
+                    Html.X().TextAreaFor(m => m.Content)
+                        .ReadOnly(true)
+                        .LabelAlign(LabelAlign.Top)
+                        .FieldLabel("Nội dung đề nghị")
+                        .LabelStyle("font-weight: bold;color: #34519f;font-size: 11px;padding-left: 5px;padding-bottom: 3px;")
+                        .EmptyText("Nhập nội dung đề nghị ...")
+                        .Height(100),
+                    Html.X().FieldSet()
+                        .Title("Danh sách nhân sự tham gia").MinHeight(100).Flex(1)
+                        .Border(false)
+                        .Margin(0)
+                        .Padding(0)
+                        .Layout(LayoutType.Fit)
+                        .Items(
+                            Html.X().GridPanel()
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .Border(true)
+                                .Store(
+                                        Html.X().Store()
+                                            .ID("StoreRequirementList")
+                                            .RemotePaging(true)
+                                            .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRequirementList", "TrainingRequirementList", new { Area = "Human" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                            .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("id", "App.hdfRequirementID.value", ParameterMode.Raw));
+                                                    })
+                                            .Model(
+                                                Html.X().Model().Fields(
+                                                                Html.X().ModelField().Name("ID"),
+                                                                Html.X().ModelField().Name("Employee.Name"),
+                                                                Html.X().ModelField().Name("Content"),
+                                                                Html.X().ModelField().Name("StartTime"),
+                                                                Html.X().ModelField().Name("EndTime")
+                                                )
+                                            )
+                                )
+                                .ColumnModel(
+                                                Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                                Html.X().Column().DataIndex("Employee.Name").Text("Người yêu cầu").Width(200),
+                                                Html.X().Column().DataIndex("Content").Text("Nội dung").Wrap(true).Width(400),
+                                                Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                                                        .Columns(
+                                                        Html.X().DateColumnExtend().DataIndex("StartTime").Text("bắt đầu").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                        Html.X().DateColumnExtend().DataIndex("EndTime").Text("kết thúc").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center)
+                                                        )
+                                    )
+                            .BottomBar(Html.X().CustomPagingToolbar())
+                  )
+           )
+     )
+)

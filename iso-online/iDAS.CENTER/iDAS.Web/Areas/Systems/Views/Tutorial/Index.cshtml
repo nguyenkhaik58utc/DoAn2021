@@ -1,0 +1,212 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Base;
+@model iDAS.Items.TutorialItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@section headtag
+{
+    <script>
+        function AddForm() {
+            var postUrl = '@(Url.Action("FormInsert", "Tutorial"))';
+            var systemCode = App.cboSystem.value;
+            Ext.net.DirectMethod.request({
+                url: postUrl,
+                params:{
+                            systemCode: systemCode
+                       }
+            });
+        };
+        function UpdateFormConfor() {
+            var records = App.gridTutorial.selModel.getSelection();
+            if (records.length > 0) {
+                var postUrl = '@(Url.Action("FormUpdate","Tutorial"))';
+                var id = records[0].get('ID');
+                var systemCode = App.cboSystem.value;
+                Ext.net.DirectMethod.request({
+                    url: postUrl,
+                    params:
+                        {
+                            id: id,
+                            systemCode: systemCode
+                        }
+                });
+            } else {
+                  MessageBox();
+            }
+        };
+        function DetailForm() {
+            var records = App.gridTutorial.selModel.getSelection();
+            if (records.length > 0) {
+                var postUrl = '@(Url.Action("FormDetail", "Tutorial"))';
+                var id = records[0].get('ID');
+                Ext.net.DirectMethod.request({
+                    url: postUrl,
+                    params:
+                        {
+                            id: id
+                        }
+                });
+            } else {
+                  MessageBox();
+            };
+        };
+        var DeleteRecord = function () {
+            var records = App.gridTutorial.selModel.getSelection();
+            switch (records.length) {
+                case 0:
+                    Ext.MessageBox.show({
+                        title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                        buttons: { yes: 'Đồng ý' },
+                        iconCls: '#Cancel',
+                        fn: function (btn) {
+                            return false;
+                        }
+                    });
+                    break;
+                default:
+                    var label = '';
+                    if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                    Ext.MessageBox.show({
+                        title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                        buttons: { yes: 'Đồng ý', no: 'Không' },
+                        iconCls: '#Information',
+                        fn: function (btn) {
+                            if (btn == 'yes') {
+                                var aId = new Array();
+                                var strId = '';
+                                for (var i = 0, r; r = records[i]; i++) {
+                                    aId[i] = records[i].get('ID');
+                                }
+                                strId = aId.join();
+                                Ext.net.DirectMethod.request({
+                                    url: '@(Url.Action("FormDelete", "Tutorial"))',
+                                    params: { stringId: strId }
+                                });
+                            }
+                        }
+                    });
+                    break;
+            }
+        };
+        var checkStatus = function () {
+            var records = App.gridTutorial.selModel.getSelection();
+            if (records.length == 1) {
+                App.btnEdit.setDisabled(false);
+                App.btnDetail.setDisabled(false);
+            }
+            else {
+                App.btnEdit.setDisabled(true);
+                App.btnDetail.setDisabled(true);
+            };
+            if (records.length > 0) {
+                App.btnDelete.setDisabled(false);
+            }
+            else {
+                App.btnDelete.setDisabled(true);
+            };
+        };
+    </script>
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+            .ID("gridTutorial")
+            .Header(false)
+            .Border(false)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                        .Items(
+                            Html.X().Button().Text("Thêm mới").ID("btnInsertCategory").Icon(Icon.Add).Handler("AddForm();"),
+                            Html.X().Button().Text("Sửa").ID("btnEdit").Icon(Icon.Pencil).Handler("UpdateFormConfor();").Disabled(true),
+                            Html.X().Button().Text("Xóa").ID("btnDelete").Icon(Icon.Delete).Handler("DeleteRecord();").Disabled(true),
+                            Html.X().Button().Text("Chi tiết").ID("btnDetail").Icon(Icon.Zoom).Handler("DetailForm();").Disabled(true),
+                            Html.X().ToolbarFill(),
+                            Html.X().ComboBox().ID("cboSystem")
+                                    .QueryMode(DataLoadMode.Local)
+                                    .TriggerAction(TriggerAction.All)
+                                    .SelectOnFocus(true)
+                                    .Width(400)
+                                    .EmptyText("Chọn hệ thống ...")
+                                    .DisplayField("Name")
+                                    .ValueField("Code")
+                                    .FieldLabel("<b>Hệ thống</b>")
+                                    .StyleSpec("0 0 0 10")
+                                    .LabelWidth(70)
+                                    .Store(
+                                    Html.X().Store()
+                                            .AutoLoad(true)
+                                            .Model(
+                                            Html.X().Model()
+                                            .IDProperty("Code")
+                                                .Fields(
+                                                    new ModelField("Code", ModelFieldType.String) { Mapping = "Code" },
+                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                        )
+                                                    )
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataSystem"))
+                                                .Reader(Html.X().JsonReader().Root("data"))
+                                             )
+                                                .Listeners(ls => ls.Load.Handler = "App.cboSystem.select(App.cboSystem.store.getAt(0))")
+                                        )
+                                    .Listeners(ls => ls.Change.Handler = "App.gridTutorial.getStore().load()")
+                        )
+            )
+            .Store(
+            Html.X().StoreForModel()
+                        .ID("stTutorial")
+                        .PageSize(10)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadTutorialBySystemCode")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("systemCode", "App.cboSystem.getValue()", ParameterMode.Raw));
+                            }
+                        )
+            )
+            .ColumnModel(
+                       Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                       Html.X().Column().DataIndex(Model, m => m.ModuleName).Text("Module").Width(200).StyleSpec("font-weight: bold; text-align: center;"),
+                       Html.X().Column().DataIndex(Model, m => m.FunctionName).Text("Chức năng").Width(200).StyleSpec("font-weight: bold; text-align: center;"),
+                       Html.X().Column().DataIndex(Model, m => m.FileName).Text("Tên File hướng dẫn").Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+                       Html.X().CheckColumn().DataIndex(Model, m => m.IsActive).Text("Sử dụng").Width(80).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;")
+                )
+            .View(Html.X().GridView().TrackOver(false))
+            .BottomBar(
+                Html.X().PagingToolbar()
+                    .EmptyMsg("Hiện không có dữ liệu")
+                    .NextText("Trang kế tiếp")
+                    .PrevText("Trang trước")
+                    .LastText("Trang cuối cùng")
+                    .FirstText("Trang đầu tiên")
+                    .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                    .BeforePageText("Trang")
+                    .AfterPageText("của {0}")
+                    .RefreshText("Tải lại Dữ liệu")
+                    .Items(
+                        Html.X().Label("Số bản ghi trên 1 trang"),
+                        Html.X().ToolbarSpacer(10),
+                        Html.X().ComboBox()
+                            .Width(50)
+                            .Items("10", "20", "30", "50", "100")
+                            .SelectedItems("10")
+                            .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                    )
+                    .Plugins(Html.X().ProgressBarPager())
+            )
+             .SelectionModel(
+                         Html.X().CheckboxSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                            l.Select.Handler = "checkStatus()";
+                        })
+                        )
+    )
+)
+
+

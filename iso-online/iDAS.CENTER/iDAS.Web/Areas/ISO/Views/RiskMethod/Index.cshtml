@@ -1,0 +1,98 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatusRiskMethod() {
+        var records = App.GrRiskMethod.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateRiskMethod, App.btnDeleteRiskMethod, App.btnDetailOrder);
+        }
+        else {
+            SetDisabled(App.btnUpdateRiskMethod, App.btnDeleteRiskMethod, App.btnDetailOrder);
+        };
+    };
+    var ShowInsert = function () {
+        onDirectMethod('@(Url.Action("Update"))', null,'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.GrRiskMethod.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var  params= {ID: records[0].get('ID')};
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ShowViewDetail = function () {
+        var records = App.GrRiskMethod.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrRiskMethod")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowInsert();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateRiskMethod").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteRiskMethod").Handler("onDelete(App.GrRiskMethod.selModel.getSelection()[0].get('ID'));"),
+                                         Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailOrder").Handler("ShowViewDetail();")
+                                )
+                            )
+                            .Store(
+                            Html.X().Store().ID("StoreRiskMethod")
+                                .RemotePaging(true)
+                                .PageSize(10)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Level"),
+                                        Html.X().ModelField().Name("Method"),
+                                        Html.X().ModelField().Name("Color"),
+                                        Html.X().ModelField().Name("Description")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                        X.RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Width(30).Align(Alignment.Center),
+                                        X.Column().Text("Màu sắc").DataIndex("Color").StyleSpec("font-weight: bold; text-align: center;")
+                                            .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                                            .Align(Alignment.Center).Width(80),
+                                        X.Column().DataIndex("Level").StyleSpec("font-weight: bold; text-align: center;")
+                                            .Text("Mức độ rủi ro").Width(150),
+                                        X.Column().DataIndex("Method").StyleSpec("font-weight: bold; text-align: center;")
+                                                .Text("Phương thức ứng phó").Width(200),
+                                        X.Column().DataIndex("Description").StyleSpec("font-weight: bold; text-align: center;").Text("Mô tả").Flex(1)
+                                    )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusRiskMethod"))
+                        .BottomBar(Html.X().CustomPagingToolbar("10", "20", "30", "50", "100"))
+                )
+)
+

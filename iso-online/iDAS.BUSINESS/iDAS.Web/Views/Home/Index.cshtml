@@ -1,0 +1,222 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@section headtag
+{
+    <style type="text/css">
+        #Copyright a {
+            text-decoration: none !important;
+            margin-left: 5px !important;
+            color: #15428B !important;
+            font-family: verdana !important;
+            font-size: 10px !important;
+        }
+        .x-box-scroller-bottom {
+            position: relative;
+            top: 2px;
+            padding-top: 2px;
+        }
+        .x-box-scroller-top {
+            padding-top: 1px;
+        }
+    </style>
+    <script src="~/Scripts/jquery-1.8.2.js">
+        /*Reference the SignalR library.*/
+    </script>
+    <script src="~/Scripts/jquery.signalR-1.1.4.js">
+        /*Reference the autognerated SignalR hub script. -->*/
+    </script>
+    <script src="signalr/hubs">
+        /*SignalR script to update the chat page and send messages.*/
+    </script>
+    <script>
+        $(function () {
+            var hub = $.connection.serverHub;
+            hub.client.notify = function () {
+                notify();
+            };
+            hub.client.chat = function (id) {
+                chat(id);
+            };
+            hub.client.chatOnline = function () {
+                chatOnline();
+            };
+            hub.client.chatOffline = function () {
+                chatOffline();
+            };
+            $.connection.hub.start();
+        });
+    </script>
+    <script>
+        var addTab = function (tabPanel, record) {
+            var tab = tabPanel.getComponent(record.getId());
+            if (!tab) {
+                var panel = new Ext.Panel({
+                    id: record.getId(),
+                    title: record.data.text,
+                    iconCls: record.data.iconCls,
+                    closable: true,
+                    loader: {
+                        url: record.data.hrefTarget,
+                        renderer: 'frame',
+                        loadMask: {
+                            showMask: true,
+                            msg: 'Đang tải dữ liệu ...'
+                        },
+                        scripts: true,
+                    },
+                    onIFrameLoad: function () {
+                        var html = this.getBody().document.body.innerText;
+                        if (html.indexOf("showAccessDenied()") >= 0) {
+                            tabPanel.remove(this);
+                            showAccessDenied();
+                        }
+                    }
+                });
+                tab = tabPanel.add(panel);
+            }
+            tabPanel.setActiveTab(tab);
+        };
+        var customTab = function (tabId, tabIcon, tabTitle, tabLink, params) {
+            var tab = App.ContentMain.getComponent(tabId);
+            if (!tab) {
+                tab = App.ContentMain.add({
+                    id: tabId,
+                    title: tabTitle,
+                    iconCls: tabIcon,
+                    closable: true,
+                    loader: {
+                        url: tabLink,
+                        params: params,
+                        renderer: 'frame',
+                        loadMask: {
+                            showMask: true,
+                            msg: 'Đang tải Dữ liệu...'
+                        }
+                    }
+                });
+            }
+            else {
+                if (params) {
+                    tab.loader.params = params;
+                    tab.load();
+                };
+            };
+            App.ContentMain.setActiveTab(tab);
+        };
+    </script>
+    <script>
+        var FullScreell = function (obj) {
+            if (App.HeaderMain.hidden == false) {
+                App.MenuMain.hide();
+                App.HeaderMain.hide();
+                obj.setIcon("icons/arrow_in_longer-png/ext.axd");
+                obj.setTooltip("Thu nhỏ");
+            }
+            else {
+                App.MenuMain.show();
+                App.HeaderMain.show();
+                obj.setIcon("icons/arrow_inout-png/ext.axd");
+                obj.setTooltip("Phóng to");
+            };
+        };
+        var CollapseMenu = function () {
+            UnpinMenu();
+            App.MenuEmpty.show();
+            App.MenuEmpty.hide();
+        };
+    </script>
+}
+@(Html.X().Button().Icon(Icon.ArrowInout).Draggable(true)
+    .Frame(true).Handler("FullScreell(this)").ToolTip("Phóng to")
+    .Width(22).Height(22).StyleSpec("position: absolute;z-index: 19010;right: 5px;top: 46px;")
+)
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        //Header
+        Html.X().Panel()
+            .ID("HeaderMain")
+            .Region(Region.North)
+            .Height(40)
+            .MarginSpec("0.5 0 0 0")
+            .Header(false)
+            .Border(false)
+            .Layout(LayoutType.Fit)
+            .ItemsFromAction("LoadHeaderSystem"),
+        //Menu
+        Html.X().Panel()
+            .ID("MenuMain")
+            .Title("MENU CHỨC NĂNG")
+            .Tools(Html.X().Tool().Type(ToolType.Collapse).ToolTip("Thu gọn").Handler("CollapseMenu();"))
+            .Icon(Icon.Table)
+            .Region(Region.West)
+            .Collapsible(true)
+            .Split(true)
+            .Width(245)
+            .Layout(LayoutType.Fit)
+            .MarginSpec("5 0 5 5")
+            .ItemsFromAction("LoadMenuSystemV3"),       /*.ItemsFromAction("LoadMenuSystem"),*/
+        //Content
+        Html.X().TabPanel()
+            .ID("ContentMain")
+            .MarginSpec("5 5 5 0")
+            .Layout(LayoutType.Auto)
+            .Region(Region.Center)
+            .AutoScroll(false)
+            .Plugins(plugins =>
+                plugins.Add(new TabCloseMenu()
+                {
+                    CloseTabText = "Đóng tab này",
+                    CloseAllTabsIcon = Icon.ApplicationCascade,
+                    CloseOtherTabsIcon = Icon.ApplicationOsxDouble,
+                    CloseTabIcon = Icon.ApplicationPut,
+                    CloseOthersTabsText = "Đóng các tab khác",
+                    CloseAllTabsText = "Đóng tất cả các tab"
+                })
+            )
+            .ItemsFromAction("Dashboard", "Home"),
+        //Chat
+        Html.X().Panel()
+            .ID("ChatMain")
+            .Region(Region.East)
+            .Frame(true)
+            .TitleAlign(TitleAlign.Center)
+            .Icon(Icon.UserComment)
+            .Title("CHAT NỘI BỘ")
+            .Header(true)
+            .StyleSpec("border-radius:0")
+            .Collapsible(true)
+            .Hidden(true)
+            .Closable(false)
+            .Collapsed(true)
+            .HideCollapseTool(false)
+            .Width(600)
+            .Layout(LayoutType.Border)
+            .Border(false)
+            .MinWidth(175)
+            .MaxWidth(600)
+            .Padding(1)
+            .MarginSpec("5 5 5 0")
+            .ItemsFromAction("Index", "Chat")
+            .Listeners(ls =>
+            {
+                ls.Float.Handler = "if (App.ChatEmployeeStores.getCount()==0) App.ChatEmployeeStores.load();";
+                ls.Expand.Handler = "if (App.ChatEmployeeStores.getCount()==0) App.ChatEmployeeStores.load();";
+            }),
+        //Footer
+        Html.X().Panel()
+            .ID("FooterMain")
+            .Region(Region.South)
+            .Height(28)
+            .Header(false)
+            .Layout(LayoutType.Column)
+            .BodyStyle("background-color:#dfe8f6;")
+            .Items(
+                Html.X().HyperLink().ID("Copyright").MarginSpec("5 0 0 0").Text("Copyright © 2020-2021 Quality Consultancy & Technology Development Ltd. All rights reserved.")
+                    .ColumnWidth(0.93).NavigateUrl("http://www.idasonline.com").Target("_blank"),
+                Html.X().ImageButton().Href("http://www.idasonline.com").HrefTarget("_blank").ImageUrl("../../Content/images/iDAS-logo.png").MarginSpec("0 0 0 5").Width(62).Height(25).ColumnWidth(0.06)
+            )
+    )
+)
+
+

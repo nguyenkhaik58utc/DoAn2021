@@ -1,0 +1,65 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@model iDAS.Items.PriceDataSizeItem
+@{
+    var required = "<span style='color: red;'>(*)</span>";
+}
+@(
+ Html.X().Window()
+        .ID("winNewPriceDataSize")
+    .Title("Thêm mới thông tin gói dung lượng")
+    .Icon(Icon.Add)
+    .Width(550)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmNewPriceDataSize")
+        .Layout(LayoutType.Form)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => df.LabelWidth = 120)
+        .DefaultAnchor("100%")
+        .Items(
+                Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                        .FieldLabel("Tên gói"+required)
+                        .AllowBlank(false).BlankText("Tên gói dung lượng bắt buộc nhập!"),      
+                          Html.X().NumberFieldFor(m => m.Value).AllowDecimals(true).MinValue(0.3)
+                                        .ID("Value")  
+                                    .AllowBlank(false)                                 
+                        .FieldLabel("Giá trị(GB)*"),
+                    Html.X().NumberFieldFor(m => m.Price).AllowDecimals(true).MinValue(0)
+                        .FieldLabel("Giá(VNĐ)"),
+                       Html.X().TextAreaFor(m => m.Description)
+                        .FieldLabel("Ghi chú")
+                
+        ))
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewPriceDataSize";
+                    de.Click.Url = Url.Action("InsertPriceDataSize");
+                    de.Click.Before = @"if (!#{frmNewPriceDataSize}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                })
+                ,
+            Html.X().Button()
+                .Text("Nhập lại")
+                .Icon(Icon.ArrowRefresh)
+                .OnClientClick("App.frmNewPriceDataSize.reset();")  ,
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Hủy")
+                .Handler("App.frmNewPriceDataSize.reset(); App.winNewPriceDataSize.close();")
+        )
+)

@@ -1,0 +1,84 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.EquipmentProductionCategoryItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+
+        IconView = Icon.Add;
+        title = "Thêm mới nhóm thiết bị sản xuất";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật nhóm thiết bị sản xuất";
+    }
+}
+@(Html.X().Window()
+.ID("winEquipmentCategory")
+.Title(title)
+.Icon(IconView)
+.Width(500)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmEquipmentCategoryUpdate")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .Border(false)
+    .MarginSpec("0 -4 -3 -4")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 120; })
+    .Items(
+            X.HiddenFor(m => m.ID).ID("hdfEquipmentCategory"),
+            X.HiddenFor(m => m.ParentID).ID("hdfCustomeParentID"),
+            X.TextFieldFor(m => m.Name)
+                .FieldLabel("Nhóm thiết bị" + Html.Required())
+                .EmptyText("Nhập tên nhóm thiết bị...")
+                .BlankText("Tên nhóm thiết bị không được bỏ trống!")
+                .AllowOnlyWhitespace(false)
+                .ColumnWidth(1)
+                .MarginSpec("5 8 5 8")
+            )
+    )
+    .Buttons(
+        Html.X().Button()
+                        .Text("Lưu lại")
+                        .Icon(Icon.DatabaseSave)
+                        .DirectEvents(de =>
+                                    {
+                                        de.Click.Before = @"if (!App.frmEquipmentCategoryUpdate.getForm().isValid()) { return false; }; ";
+                                        de.Click.ExtraParams.Add(new { exit = true });
+                                        de.Click.Url = Url.Action("Update");
+                                        de.Click.EventMask.ShowMask = true;
+                                        de.Click.Success = "this.up('window').close(); ReLoadNode(result);";
+                                        de.Click.FormID = "frmEquipmentCategoryUpdate";
+                                    })
+        , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)
+<script>
+    var ReLoadNode = function (id) {
+        var nodeSelected = App.TreePanelEquipmentCategory.selModel.getSelection()[0];
+        var oldId = App.hdfEquipmentCategory.value;
+        if (oldId == "0") {
+            nodeSelected.data.leaf = false;
+            nodeSelected.data.expanded = true;
+            nodeSelected.reload();
+        }
+        else {
+            nodeSelected.parentNode.reload();
+        };
+    };
+</script>

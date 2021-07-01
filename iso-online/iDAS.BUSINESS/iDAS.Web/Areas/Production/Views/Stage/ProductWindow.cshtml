@@ -1,0 +1,56 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductionStageProductItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    bool isUpdate = (bool)ViewData["Update"];
+    if (isUpdate)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật bán thành phẩm";
+    }
+    else
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới nguyên vật liệu sản xuất";
+    }
+}
+@(Html.X().Window()
+    .Title(title)
+    .Icon(IconView)
+    .BodyPadding(0)
+    .Width(350)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+            Html.X().CustomFormPanel().ID("frmProductUpdate")
+                        .Items(
+                                Html.X().HiddenFor(m => m.StockProductID),
+                                Html.X().HiddenFor(m => m.ProductName),
+                                Html.X().ProductFieldFor(m => m.ProductView).AllowBlank(false)
+                                            .FieldLabel("Nguyên vật liệu" + Html.Required()).Height(24),
+                                Html.X().NumberFieldFor(m => m.Quantity).MinValue(1).FieldLabel("Số lượng" + Html.Required())
+                                            .EmptyText("Nhập số lượng cần")
+                                            .AllowBlank(false).BlankText("Bắt buộc nhập số lượng nguyên vật liệu")
+                        )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                .Handler("onSelectProductResult(this.up('window'))"),
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var onSelectProductResult = function (window) {
+        var form = window.down("form").getForm();
+        if (!form.isValid()) { return false; };
+        App.StockProductID.setValue(App.ProductView_ID.value);
+        App.ProductName.setValue(App.ProductView_ID.next().value);
+        SaveHaftProductResult(form.getValues(), '@isUpdate');
+        window.close();
+    };
+</script>

@@ -1,0 +1,164 @@
+﻿@model System.Collections.IEnumerable
+@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Xác nhận', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    }
+    var tipRenderer = function (storeItem, item) {
+        this.setTitle(storeItem.get('Name'));
+    }
+</script>
+@(Html.X().Viewport()
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().Panel()
+            .Header(false)
+            .Border(false)
+            .Layout(LayoutType.Column)
+            .TopBar(Html.X().Toolbar()
+            .Items(
+        Html.X().SearchByDate("App.ChartTaskDepartment.getStore().reload();App.Chart1.getStore().reload();")
+            .FromDateID("dfFromDate")
+            .ToDateID("dfToDate"),  
+        Html.X().Button()
+            .Text("Lưu biểu đồ")
+            .Icon(Icon.Disk)
+            .Handler("saveChart")
+            )
+        )
+        .Items(
+            Html.X().Panel()
+                .Layout(LayoutType.Fit)
+                .ColumnWidth(0.5)
+                .Height(400)
+                .MarginSpec("1 1 1 1")
+                .Items(
+            Html.X().Chart()
+                .ID("ChartTaskDepartment")
+                .Shadow(true)
+                .Width(400)
+                .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right))
+                .StyleSpec("background:#fff;")
+                .Animate(true)
+                .Store(Html.X().Store()
+                .Data(Model)
+                .Model(Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("Name"),
+                    Html.X().ModelField().Name("Data1"),
+                    Html.X().ModelField().Name("Data2"),
+                    Html.X().ModelField().Name("Data3")
+                    )
+                )
+                .Parameters(ps =>
+                {
+                    ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                    ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                })
+                .Proxy(Html.X().AjaxProxy()
+                .Url(Url.Action("GetDataColumn"))
+                .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                )
+                .Axes(
+            Html.X().NumericAxis()
+                .Fields("Data1")
+                .Grid(true)
+                .Title("Đơn vị: Yêu cầu")
+                .Minimum(0)
+                .Label(Html.X().AxisLabel()
+                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                ),
+            Html.X().CategoryAxis()
+                .Position(Position.Bottom)
+                .Fields("Name")
+                .Title("Biểu đồ thống kê yêu cầu phát triển sản phẩm")
+                )
+                .Series(Html.X().ColumnSeries()
+                .Axis(Position.Left)
+                .Highlight(true)
+                .YField(new string[] { "Data1", "Data2", "Data3" })
+                .Titles(new string[] { "Tổng số yêu cầu", "Yêu cầu chưa thực hiện", "Yêu cầu đã thực hiện" })
+                .Tips(Html.X().ChartTip()
+                .TrackMouse(true)
+                .Width(240)
+                .Height(68)
+                .Renderer(r => r.Handler = "this.setTitle('Tổng yêu cầu: ' + storeItem.get('Data1') + '<br/> Yêu cầu chưa thực hiện : '+storeItem.get('Data2')+'<br/>Yêu cầu đã thực hiện: '+storeItem.get('Data3'));")
+                )
+                .Label(
+                Html.X().SeriesLabel()
+                .Display(SeriesLabelDisplay.InsideEnd)
+                .Field(new[] { "Data1","Data2","Data3" })
+                .Orientation(Orientation.Horizontal)
+                .Color("#333")
+                .TextAnchor("middle")
+                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0');")
+                )
+                )
+                ),
+            Html.X().Panel()
+                    .Layout(LayoutType.Fit).ColumnWidth(0.5)
+                    .Height(400)
+                    .MarginSpec("1 1 1 1")
+                    .Items(
+            Html.X().Chart()
+                    .ID("Chart1")
+                    .Animate(true)
+                    .Shadow(true)
+                    .InsetPadding(20)
+                    .Theme("Base:gradients")
+                    .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Bottom))
+                    .StyleSpec("background:#fff;")
+                    .Store(Html.X().Store()
+                    .Data(Model)
+                    .Model(Html.X().Model()
+                    .Fields(
+                        Html.X().ModelField().Name("Name"),
+                        Html.X().ModelField().Name("Data1")
+                        )
+                        )
+                        .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                            ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                        })
+                        .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetDataPie"))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                    )
+                    .Series(Html.X().PieSeries()
+                    .AngleField("Data1")
+                    .ShowInLegend(true)
+                    .Donut(0)
+                    .Highlight(true)
+                    .HighlightSegmentMargin(20)
+                    .Label(Html.X().SeriesLabel()
+                    .Display(SeriesLabelDisplay.Rotate)
+                    .Field(new[] { "Name" })
+                    .Contrast(true)
+                    .Font("9px Arial")
+                    .Orientation(Orientation.Horizontal)
+                     )
+                    .Tips(Html.X().ChartTip()
+                    .TrackMouse(true)
+                    .Width(240)
+                    .Height(28)
+                    .Renderer(r => r.Fn = "tipRenderer")
+                )
+              )
+           )
+         )
+      )
+    )

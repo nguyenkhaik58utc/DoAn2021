@@ -1,0 +1,110 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.CustomerItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var StatusCustomer = Model.IsPotential==true ? "Khách hàng tiềm năng" : (Model.IsOfficial == true ? "Khách hàng thực tế" : "Khách hàng tiếp cận");
+}
+@(Html.X().Viewport()
+.Layout(LayoutType.Fit)
+.Border(false)
+.Items(
+            X.FormPanel().ID("frmCustomer")
+            .Layout(LayoutType.Column)
+            .Frame(true)
+            .StyleSpec("border: none;")
+            .Header(false)
+            .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 120; })
+            .Items(
+
+                    X.Panel().Frame(true)
+                        .Layout(LayoutType.Column)
+                        .Padding(0).Margin(0)
+                        .Border(false)
+                        .StyleSpec("border: none;")
+                        .ColumnWidth(0.8)
+                        .Items(
+                            X.HiddenFor(m => m.ID).ID("hdfCustomerID"),
+                            X.TextFieldFor(m => m.Name).ID("txtCustomerName")
+                                    .FieldLabel("Khách hàng")
+                                    .ReadOnly(true).ColumnWidth(1)
+                                    .MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.RepresentName).ReadOnly(true).ColumnWidth(0.5).FieldLabel("Người đại điện")
+                                        .MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.RepresentRole).ReadOnly(true).ColumnWidth(0.5).FieldLabel("Chức danh")
+                                        .MarginSpec("5 8 0 8"),        
+                            X.ComboBoxFor(m => m.CustomerTypeID).ID("cbxType").ReadOnly(true)
+                                                .QueryMode(DataLoadMode.Local)
+                                                .DisplayField("Name")
+                                                .ValueField("ID")
+                                                .Store(
+                                                    Html.X().Store()
+                                                    .RemotePaging(true)
+                                                    .PageSize(20)
+                                                    .AutoDataBind(true)
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDataActived", "CustomerType", new { Area = "Customer" }, null))
+                                                    .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                    .Model(
+                                                        Html.X().Model().Fields(
+                                                            Html.X().ModelField().Name("ID"),
+                                                            Html.X().ModelField().Name("Name")
+                                                            )
+                                                        )
+                                                )
+                                                .AllowBlank(false)
+                                                .FieldLabel("Loại khách hàng" + Html.Required()).ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                        X.TextField().Value(StatusCustomer).ReadOnly(true).ColumnWidth(0.5).FieldLabel("Phân loại KH")
+                                            .MarginSpec("5 8 0 8"),
+                        X.CustomerCategoryFieldFor(m => m.CustomerCategory).ReadOnly(true)
+                            .ColumnWidth(1)
+                            .MarginSpec("5 8 0 8"),
+                            X.DateFieldFor(m => m.EstablishDate).FieldLabel("Ngày thành lập")
+                                        .ReadOnly(true).ColumnWidth(0.5)
+                                        .MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.Phone).FieldLabel("Điện thoại")
+                                .ReadOnly(true).ColumnWidth(0.5)
+                                .MarginSpec("5 8 0 8"),
+                            X.TextFieldFor(m => m.Email).FieldLabel("Email")
+                                .ReadOnly(true).ColumnWidth(1)
+                                .MarginSpec("5 8 0 8"),
+                            X.TextAreaFor(m => m.Address).FieldLabel("Địa chỉ").Height(42)
+                                    .ReadOnly(true).ColumnWidth(1)
+                                    .MarginSpec("5 8 0 8")),
+                            X.FieldSet().Title("Ảnh đại diện")
+                                            .Layout(LayoutType.Form)
+                                            .ColumnWidth(0.186).Margin(0)
+                                            .PaddingSpec("3 5 5 5")
+                                            .Items(
+                                                    X.ImageButton().Height(150).Text("Ảnh đại diện")
+                                                    .ImageUrl(Url.Action("LoadImage", "File", new { area = "Generic", fileId = Model.AttachmentFileID, fileName = Model.FileName }))
+                                                    .ToolTip("Ảnh đại diện").StyleSpec("border: 0.5px solid #b5b8c8; width:98%;")
+                                                ),
+                                X.DateFieldFor(m => m.RequireTime)
+                                .FieldLabel("Thời gian nhu cầu")
+                                .ReadOnly(true)
+                                .ColumnWidth(1)
+                                .MarginSpec("4 8 0 8"),
+                            X.TextAreaFor(m => m.RequireContent)
+                                .FieldLabel("Yêu cầu")
+                                    .ReadOnly(true)
+                                .ColumnWidth(1)
+                                .MarginSpec("4 8 0 8")
+                                .Height(60),
+                            X.TextFieldFor(m => m.Scope)
+                                    .FieldLabel("Lĩnh vực")
+                                        .ReadOnly(true)
+                                    .ColumnWidth(1)
+                                    .MarginSpec("4 8 0 8"),
+                            X.TextAreaFor(m => m.Note)
+                                    .FieldLabel("Ghi chú")
+                                    .ColumnWidth(1)
+                                    .ReadOnly(true)
+                                    .MarginSpec("4 8 0 8")
+                                    .Height(66)
+                                    .EmptyText("Nhập ghi chú...")
+                )
+           )
+    )

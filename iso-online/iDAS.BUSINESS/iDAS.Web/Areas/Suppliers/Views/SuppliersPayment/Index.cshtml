@@ -1,0 +1,159 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SuppliersOrderItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrOrder")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().ButtonView().ID("btnDetailOrder").Handler("ViewDetail();"),
+                                    Html.X().ToolbarSeparator(),
+                                Html.X().Button().Text("Thanh toán").Icon(Icon.RubyAdd).ID("btnPayOrder").Handler("Pay();"),
+                                    Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonExportExcelFile().GridIDGetFile("GrOrder").ID("btnGetFile"),
+                                    Html.X().ToolbarFill(), Html.X().ButtonTutorial()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreOrder")
+                            .RemotePaging(true)
+                            .PageSize(20).GroupField("SupplierName")
+                            .Sorters(Html.X().DataSorter().Property("SupplierName").Direction(Ext.Net.SortDirection.ASC))
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadOrder")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Model(
+                                Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("CODE"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("StatusDisp"),
+                                                Html.X().ModelField().Name("Status"),
+                                                Html.X().ModelField().Name("OrderDate"),
+                                                Html.X().ModelField().Name("ShipDate"),
+                                                Html.X().ModelField().Name("Amount"),
+                                                Html.X().ModelField().Name("AmountRecive"),
+                                                Html.X().ModelField().Name("ReciepDate"),
+                                                Html.X().ModelField().Name("SupplierName"),
+                                                Html.X().ModelField().Name("PaymentDisp"),
+                                                Html.X().ModelField().Name("Payed"),
+                                                Html.X().ModelField().Name("Owe")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                        Html.X().SummaryColumn().SummaryType(SummaryType.Count).DataIndex("CODE").Text("Mã ĐH").Width(100)
+                                        .SummaryRenderer("return ((value != 0 || value > 1) ? '(' + value +' ĐH)' : '(1 ĐH)');"),
+                                        Html.X().Column().DataIndex("Name").Text("Tên đơn hàng").Flex(1),
+                                        Html.X().DateColumnExtend().DataIndex("OrderDate").Text("Ngày tạo").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("PaymentDisp").Text("HTTT").Width(100),
+                                        Html.X().SummaryColumn().SummaryType(SummaryType.Sum).DataIndex("Amount").Text("Tổng tiền HĐ").Width(100).Renderer("RenderVND").SummaryRenderer("RenderVND"),
+                                        Html.X().SummaryColumn().SummaryType(SummaryType.Sum).DataIndex("AmountRecive").Text("Đã nhận hàng").Width(100).Renderer("RenderVND").SummaryRenderer("RenderVND"),
+                                        Html.X().SummaryColumn().SummaryType(SummaryType.Sum).DataIndex("Payed").Text("Đã TT").Width(100).Renderer("RenderVND").SummaryRenderer("RenderVND"),
+                                        Html.X().SummaryColumn().SummaryType(SummaryType.Sum).DataIndex("Owe").Text("Còn Nợ").Width(100).Renderer("RenderVND").SummaryRenderer("RenderVND"),           
+                                        Html.X().Column().DataIndex("StatusDisp").Text("Trạng thái").Width(120).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("Status").Text("Trạng thái").Hidden(true)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .Features(
+                                Html.X().GroupingSummary()
+                                .ID("GroupingSummarySupplier")
+                                .GroupHeaderTplString("{name}")
+                                .HideGroupedHeader(true)
+                                .EnableGroupingMenu(false)
+                        )
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+
+            )
+)
+
+<style>
+    .x-grid-row-summary{
+        font-weight:bold;
+    }
+    .x-grid-row-summary .x-grid-cell-inner {
+            background-color: #f1f2f4;
+            font-size: 11px;
+            font-weight: bold;
+        }
+</style>
+<script>
+    var ExportExcel = function () {
+        var url = '@(Url.Action("ExportExcel", "SuppliersPayment", new { Area = "Suppliers" }, null))';
+        //var arrObject = JSON.stringify(getObjectPartial());
+        var params = {
+            //arrObject: arrObject
+            currentPage: App.StoreOrder.currentPage,
+            pageSize: App.StoreOrder.pageSize
+        };
+        Ext.net.DirectMethod.request({
+            url: url,
+            isUpload: true,
+            params: params
+        });
+
+        //onDirectMethod(url, params);
+    };
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.StoreOrder.data.length; i++) {
+            arr.push(App.StoreOrder.data.items[i].data);
+        }
+        return arr;
+    };
+    function CheckStatus() {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailOrder.setDisabled(false); 
+            App.btnPayOrder.setDisabled(false);
+        }
+        else {
+            App.btnDetailOrder.setDisabled(true);
+            App.btnPayOrder.setDisabled(true);
+        }
+
+    };
+
+    var ViewDetail = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url ='@(Url.Action("ShowDetail", "SuppliersOrderList", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var Pay = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowFrmPay", "SuppliersPayment", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

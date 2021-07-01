@@ -1,0 +1,69 @@
+﻿@using Ext.Net.MVC
+@using iDAS.Utilities
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    var X = Html.X();
+    int employee = (int)iDAS.Items.DispatchObjectType.Employee;
+}
+@model iDAS.Items.DispatchGoObjectItem
+@(Html.X().Window()
+    .ID("winVerifyOutDetailEmployee")
+    .Title("Xác nhận thông tin chuyển công văn đi")
+    .Icon(Icon.Add)
+    .BodyPadding(0).Border(false)
+    .Modal(true)
+    .Resizable(false)
+     .Width(600)
+    .Center()
+    .Items(
+        Html.X().FormPanel()
+            .ID("frVerifyOutDetail")
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .Items(
+                Html.X().HiddenFor(m => m.ID),
+                X.DateFieldFor(m => m.Date)
+                    .ID("dtMoveAt")
+                    .FieldLabel("Ngày chuyển")
+                    .Format("dd/MM/yyyy"),
+                X.TextFieldFor(m => m.Name)
+                    .ID("txtName")
+                    .FieldLabel("Người nhận"),
+                X.TextFieldFor(m => m.Position)
+                    .ID("txtPosition")
+                    .FieldLabel("Chức vụ"),
+                X.TextFieldFor(m => m.Company)
+                    .ID("txtCompany")
+                    .FieldLabel("Tổ chức"),
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                X.TextFieldFor(m => m.EmailPerson)
+                    .ID("txtEmailPerson")
+                    .FieldLabel("Email")
+                    .ColumnWidth(0.5),
+                X.TextFieldFor(m => m.TelPerson)
+                    .ID("txtTelPerson")
+                    .FieldLabel("Di động")
+                    .ColumnWidth(0.5).MarginSpec("0 0 0 10")
+                ),
+                Html.X().TextAreaFor(m => m.Address).Height(50).FieldLabel("Địa chỉ" + Html.Required()).AllowBlank(false).BlankText("Địa chỉ nhận công văn bắt buộc nhập!"),
+                Html.X().TextAreaFor(m => m.NoteMove).Height(100).FieldLabel("Nội dung gửi")
+                    )).Buttons(
+                         Html.X().Button()
+                            .ID("btnSaveInsert")
+                                .Text("Lưu lại")
+                                        .Icon(Icon.Disk)
+                                        .DirectEvents(de =>
+                                        {
+                                            de.Click.Before = @"if (!App.frVerifyOutDetail.getForm().isValid()) { return false; } ";
+                                            de.Click.ExtraParams.Add(new { type = employee, fName = "winVerifyOutDetailEmployee" });
+                                            de.Click.Url = Url.Action("UpdateVerifyOutDetail");
+                                            de.Click.EventMask.ShowMask = true;
+                                            de.Click.FormID = "frOutDetail2";
+                                        }),
+                            Html.X().ButtonExit()
+    )
+)

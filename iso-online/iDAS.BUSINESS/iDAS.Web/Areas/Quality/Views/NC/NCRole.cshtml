@@ -1,0 +1,60 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@(Html.X().Window().ID("windowNCRole").Layout(LayoutType.Border)
+                    .Title("Danh sách vị trí")
+                    .Constrain(true)
+                    .Modal(true)
+                    .Resizable(false)
+                    .Border(false)
+                    .BodyPadding(0)
+                    .Center()
+                    .Icon(Icon.ApplicationSideList)
+                    .Border(false)
+                    .Height(450)
+                    .Width(800)
+                    .Center()
+                    .Items(
+                            Html.X().DepartmentPanel().Handler("DepartmentSelect").ID("DepartmentRole"),
+                            Html.X().GridPanel()
+                                .ID("GridPanelRoleView")
+                                .Layout(LayoutType.Fit)
+                                .Header(false)
+                                .Region(Region.Center)
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .Icon(Icon.TextListBullets)
+                                .Store(
+                                    Html.X().Store()
+                                        .AutoLoad(false)
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadOrganizations", "Role", new { Area = "Department" }, null)).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("DepartmentName")
+                                            )
+                                        )
+                                )
+                                .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                    Html.X().Column().DataIndex("Name").Text("Tên chức danh").Width(350).StyleSpec("font-weight: bold;text-align: center")
+                                )
+                                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Multi)
+                            )
+                    )
+.Buttons(
+        Html.X().Button().Icon(Icon.Accept).Listeners(ls => ls.Click.Handler = "SelectRole();").ToolTip("Chọn vị trí liên quan").Text("Chọn"),
+        Html.X().ButtonExit()
+        )
+)
+<script>
+    var DepartmentSelect = function (records) {
+        if (records.length > 0) {
+            App.GridPanelRoleView.getStore().reload({ params: { departmentID: records[0].get('id') } });
+        };
+    };
+</script>

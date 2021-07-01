@@ -1,0 +1,116 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@(
+Html.X().CustomWindow().Height(350).Title("Danh sách sản phẩm")
+            .Items(
+                    Html.X().Container().Layout(LayoutType.Border).Border(false).Padding(2)
+                        .Items(
+                                Html.X().Hidden().ID("hdfGroupProduct"),
+                                Html.X().GridPanel()
+                                        .Header(false)
+                                        .Title("Nhóm sản phẩm")
+                                        .Region(Region.West)
+                                        .ID("GrGroupProduct")
+                                        .Width(200)
+                                        .TitleAlign(TitleAlign.Left)
+                                        .Collapsible(true)
+                                        .Split(true)
+                                        .Border(true)
+                                        .ForceFit(true)
+                                        .Store(Html.X().Store()
+                                                    .RemotePaging(true)
+                                                    .PageSize(20)
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProductGroup")).Reader(Html.X().JsonReader().Root("data"))
+                                                )
+                                        .Model(
+                                                Html.X().Model().IDProperty("ID")
+                                                        .Fields(
+                                                            Html.X().ModelField().Name("ID"),
+                                                            Html.X().ModelField().Name("Name")
+                                                        )
+                                                    )
+                                                )
+                                        .ColumnModel(
+                                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().Text("Tên nhóm").DataIndex("Name").Flex(1)
+                                                )       
+                                        .Listeners(ls =>
+                                            {
+                                                ls.SelectionChange.Handler = "onSelectGroup();";
+                                            })
+                                        .Features(
+                                                    Html.X().GridFilters()
+                                                        .MenuFilterText("Tìm kiếm")
+                                                        .Filters(
+                                                            Html.X().StringFilter().DataIndex("Name")
+                                                        )
+                                                )
+                                    .BottomBar(Html.X().CustomPagingToolbar()),
+                                Html.X().GridPanel()
+                                    .Region(Region.Center)
+                                    .ID("grProduct")
+                                    .Border(true)
+                                    .RowLines(true)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Store(Html.X().Store().ID("StoreTreeCriteria")
+                                            .AutoLoad(false)
+                                            .RemotePaging(true)
+                                            .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy()
+                                                            .Url(Url.Action("LoadProduct"))
+                                                           .Reader(Html.X().JsonReader()
+                                                           .Root("data")
+                                                           )
+                                            )
+                                            .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("groupId", "App.hdfGroupProduct.value", ParameterMode.Raw));
+                                                })
+                                            .Model(
+                                                Html.X().Model().IDProperty("ID")
+                                                .Fields(
+                                                       Html.X().ModelField().Name("ID"),
+                                                      Html.X().ModelField().Name("Name"),
+                                                        Html.X().ModelField().Name("Description")
+                                                 )
+                                             )
+                                )
+                                .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                        Html.X().Column().Text("Sản phẩm").DataIndex("Name").Flex(1),
+                                        Html.X().Column().Text("Mô tả").DataIndex("Description").Wrap(true).Width(100)
+                                        )
+                                    .Features(
+                                                Html.X().GridFilters()
+                                                    .MenuFilterText("Tìm kiếm")
+                                                    .Filters(
+                                                        Html.X().StringFilter().DataIndex("Name")
+                                                    )
+                                                )
+                                    .BottomBar(Html.X().CustomPagingToolbar())
+                             )
+                    )
+                        .Buttons(Html.X().Button().Text("Chọn").Icon(Icon.Accept).Handler("onSelectProduct(this.up('window'))"), Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var onSelectProduct = function (window) {
+        var records = App.grProduct.selModel.getSelection();
+        if (records.length > 0) {
+            selectProduct(records);
+            window.close();
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var onSelectGroup = function () {
+        var records = App.GrGroupProduct.selModel.getSelection();
+        if (records.length == 1) {
+            App.hdfGroupProduct.setValue(records[0].data.ID);
+            App.grProduct.store.reload();
+        }
+    };
+</script>

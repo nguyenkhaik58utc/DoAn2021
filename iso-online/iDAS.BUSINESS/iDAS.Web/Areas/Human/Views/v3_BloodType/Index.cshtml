@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateBloodType = '@(Url.Action("Create", "v3_BloodType", new { area = "Human" }))';
+    var urlUpdateBloodType = '@(Url.Action("Update", "v3_BloodType", new { area = "Human" }))';
+    var urlDeleteBloodType = '@(Url.Action("Delete", "v3_BloodType", new { Area = "Human" }))';
+    var urlDetailBloodType = '@(Url.Action("ShowFrmDetail", "v3_BloodType", new { Area = "Human" }))';
+    var sortBloodTypeIndex = null;
+    var showCreateBloodType = function () {
+        var url = urlCreateBloodType;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateBloodType = function () {
+        var url = urlUpdateBloodType;
+        var record = getBloodTypeSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getBloodTypeSelection = function () {
+        var records = App.BloodTypePanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setBloodTypeSelection = function () {
+        if (sortBloodTypeIndex != null) {
+            App.BloodTypePanel.selModel.select(sortBloodTypeIndex);
+        }
+    };
+
+    var showDeleteBloodType = function () {
+        var url = urlDeleteBloodType;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ nhóm máu này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getBloodTypeSelection();
+                            var BloodTypeId = record == null ? 0 : record.data.ID;
+                            var params = { ID: BloodTypeId };
+                            onDirectMethod(url, params, 'post', reloadBloodType);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailBloodType = function () {
+        var url = urlDetailBloodType;
+        var record = getBloodTypeSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadBloodType = function () {
+        App.BloodTypePanel.store.reload();
+    };
+
+    var selectionChangeBloodType = function () {
+        var record = getBloodTypeSelection();
+        var isDisabled = record == null;
+        App.btnUpdateBloodType.setDisabled(isDisabled);
+        App.btnDeleteBloodType.setDisabled(isDisabled);
+        App.btnDetailBloodType.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý nhóm máu").Header(false)
+                    .ID("BloodTypePanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateBloodType").ID("btnCreateBloodType()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateBloodType").Handler("showUpdateBloodType();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteBloodType").Handler("showDeleteBloodType()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailBloodType").Handler("showDetailBloodType();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreBloodType")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setBloodTypeSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên nhóm máu").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeBloodType();")
+    )
+    )

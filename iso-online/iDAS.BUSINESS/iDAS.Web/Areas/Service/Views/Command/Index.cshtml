@@ -1,0 +1,529 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+ .Layout(LayoutType.Border)
+        .Items
+        (
+             Html.X().Menu()
+                    .ID("cmMenu")
+                    .Items(
+                        new MenuItem { Text = "Xem chi tiết", ID = "cmDetail", Icon = Icon.Zoom, Handler = "showFormDetail();" },
+                    Html.X().MenuSeparator(),
+                        new MenuItem { Text = "Thêm mới không cần phê duyệt", ID = "cmAddApprove", Icon = Icon.PageKey, DirectClickAction = "ShowFrmAddApprove" },
+                        new MenuItem { Text = "Thêm mới", ID = "cmAdd", Icon = Icon.Add, DirectClickAction = "ShowFrmAdd" },
+                        new MenuItem { Text = "Sửa", ID = "cmEdit",Disabled=true, Icon = Icon.Pencil, Handler = "updateForm();" },
+                        new MenuItem { Text = "Xóa", ID = "cmDelete", Disabled = true, Icon = Icon.Delete, Handler = "deleteRecord();" },
+                        new MenuItem { Text = "Phê duyệt", ID = "cmApproval", Disabled = true, Icon = Icon.Tick, Handler = "showApprove();" }
+                        ),
+                             Html.X().GridPanel()
+                                   .ID("gpService")
+                                   .Title("DANH MỤC DỊCH VỤ")
+                                   .Header(true)
+                                   .TitleAlign(TitleAlign.Center)
+                                   .Region(Region.West)
+                                   .Width(355)
+                                   .MarginSpec("1 5 1 1")
+                                   .ColumnLines(true)
+                                   .Border(true)
+                                   .Icon(Icon.TextListBullets)
+                                   .ResizableConfig(new Resizer { Handles = ResizeHandle.East })
+                                   .Store(
+                                     Html.X().Store()
+                                            .ID("stService")
+                                            .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetDataStage", "Service"))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                        )
+                                        .RemoteSort(true)
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .GroupField("CategoryName")
+                                        .Sorters(Html.X().DataSorter().Property("CategoryName").Direction(Ext.Net.SortDirection.ASC))
+                                        .Model(
+                                            Html.X().Model()
+                                                .IDProperty("ID")
+                                                .Fields(
+                                                    new ModelField("ID", ModelFieldType.Int),
+                                                    new ModelField("Code", ModelFieldType.String),
+                                                    new ModelField("Cost", ModelFieldType.Float),
+                                                    new ModelField("Name", ModelFieldType.String),
+                                                    new ModelField("CategoryID", ModelFieldType.Int),
+                                                    new ModelField("CategoryName", ModelFieldType.String),
+                                                    new ModelField("Note", ModelFieldType.String),
+                                                    new ModelField("IsUse", ModelFieldType.Boolean)
+                                                 )
+                                        )
+
+                                )
+                                .ColumnModel(
+                                            Html.X().RowNumbererColumn()
+                                                    .Text("STT")
+                                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                                    .Width(30)
+                                                    .Align(Alignment.Center),
+                                             Html.X().Column()
+                                                     .DataIndex("Code")
+                                                     .Text("Mã dịch vụ")
+                                                     .StyleSpec("font-weight: bold; text-align: center;")
+                                                     .Width(80)
+                                                     .Wrap(true),
+                                                Html.X().Column()
+                                                        .DataIndex("Name")
+                                                        .Text("Tên dịch vụ")
+                                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                                        .Flex(1)
+                                                        .Wrap(true)
+                                               )
+                                .SelectionModel(
+                                            Html.X().RowSelectionModel()
+                                                    .Mode(SelectionMode.Multi)
+                                                    .Listeners(ls =>
+                                                                    ls.Select.Handler = "App.grMnCommand.getStore().reload();"
+                                                     )
+                                )
+                              .View(
+        Html.X().GridView().MarkDirty(false)
+        )
+        .Features(
+        Html.X().GroupingSummary()
+                .ID("GroupingSummaryProduct")
+                .GroupHeaderTplString("{name}")
+                .HideGroupedHeader(true)
+                .EnableGroupingMenu(false)
+        )
+       .BottomBar(Html.X().CustomPagingToolbar()),
+        Html.X().GridPanel()
+                .ID("grMnCommand")
+                .Region(Region.Center)
+                .MarginSpec("1 1 1 1")   
+                .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                .TopBar(
+                Html.X().Toolbar()
+                        .Items(
+                             Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+                            Html.X().Button()
+                                .Icon(Icon.PageKey)
+                                .ID("btnInsertApproveNews")
+                                .Text("Thêm lệnh đã phê duyệt")
+                                .DirectClickAction("ShowFrmAddApprove"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonCreate()
+                                    .ID("btnInsertNews")
+                                        .DirectClickAction("ShowFrmAdd"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate()
+                                    .ID("btnEdit")
+                                    .Handler("updateForm();")
+                                    .Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                    .ID("btnDelete")
+                                    .Handler("deleteRecord();")
+                                    .Disabled(true),
+                           Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView()
+                                        .ID("btnDetail")
+                                            .Handler("showFormDetail();"),
+                                    Html.X().ButtonApproval()
+                                            .ID("btnApprove")
+                                            .Handler("showApprove();")
+                                            .Disabled(true),
+                                                   Html.X().ToolbarFill(),
+                                                             Html.X().ButtonTutorial()
+
+                        )
+                     )
+            .Store(Html.X().Store()
+                    .ID("stMnCommand")
+                    .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("GetData"))
+                    .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("serviceId", "App.gpService.selModel.getSelection().length>0?App.gpService.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                    })
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Model(
+                    Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StartTime").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("EndTime").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("IsNew").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsEdit").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsApproval").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("IsAccept").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("ApporvalBy").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Note").Type(ModelFieldType.String),                                                   
+                                Html.X().ModelField().Name("Status").Type(ModelFieldType.String)
+                            )
+                          )
+                      )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                            .Text("STT")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .Width(33),
+                    Html.X().Column()
+                            .Text("ID")
+                            .DataIndex("ID")
+                            .Hidden(true),                           
+                    Html.X().Column()
+                            .Text("Tên lệnh")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("Name")
+                           .Flex(1)
+                            .Wrap(true),                               
+                   Html.X().ComponentColumn().Text("Thời gian thực hiện")
+            .Columns(
+                Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                    .Width(120)
+                    .Text("Bắt đầu")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Align(Alignment.Center)
+                    .DataIndex("StartTime")
+                    .Format("dd/MM/yyyy HH:mm"),
+                Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                    .Width(120)
+                    .Text("Kết thúc")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Align(Alignment.Center)
+                    .DataIndex("EndTime")
+                    .Format("dd/MM/yyyy HH:mm")
+            ),
+        Html.X().Column()
+                .Width(100)
+                .Text("Trạng thái")
+                .StyleSpec("font-weight: bold; text-align: center;")
+                .Align(Alignment.Center)
+                .Filterable(false)
+                .DataIndex("Status")
+
+            )
+            .Plugins(
+            Html.X().FilterHeader()
+                    .Remote(true)
+            )
+            .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+            .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                            l.Select.Handler = "checkStatus()";
+                        })
+                        )
+                        .Plugins(Html.X().CellEditing())
+                        .BottomBar
+                        (
+                    Html.X().CustomPagingToolbar())
+
+     )
+)
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var showApprove = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowApprove", "Command", new { Area = "Service" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showListContract = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowListContract", "Command", new { Area = "Service" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showListService = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowListService", "Command", new { Area = "Service" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showFormSendApproval = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowSendApproval", "Command", new { Area = "Service" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showFormDetail = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "Command", new { Area = "Service" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var checkStatus = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length > 0) {
+            if (records[0].get('IsEdit')) {
+                App.btnEdit.setDisabled(false);
+                App.cmEdit.setDisabled(false);
+            }
+            else {
+                App.btnEdit.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+            }           
+            if (!records[0].get('IsEdit') && !records[0].get('IsApproval')) {
+                App.btnApprove.setDisabled(false);
+                App.cmApproval.setDisabled(false);
+            } else {
+                App.btnApprove.setDisabled(true);
+                App.cmApproval.setDisabled(true);
+            }
+            if (records[0].get('IsNew')) {
+                App.btnEdit.setDisabled(false);
+                App.cmEdit.setDisabled(false);
+            }
+            App.btnDelete.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+            App.cmDelete.setDisabled(false);
+            App.cmDetail.setDisabled(false);
+        }
+        else {
+            App.cmDelete.setDisabled(true);
+            App.cmDetail.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnApprove.setDisabled(true);
+            App.cmApproval.setDisabled(true);
+        }
+    };
+    var showListIso = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var auditId = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("Index", "AuditISO", new { Area = "Quality" }, null))',
+                params: { auditId: auditId }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bộ tiêu chí nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+    var showListDepartment = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var auditId = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("Index", "AuditDepartment", new { Area = "Quality" }, null))',
+                params: { auditId: auditId }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bộ tiêu chí nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+    var showListObject = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var auditId = records[0].get('ID');
+            var type = records[0].get('Type');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("FormListObject", "Audit", new { Area = "Quality" }, null))',
+                params: { auditId: auditId, type: type }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bộ tiêu chí nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+    };
+    function updateForm() {
+        var records = App.grMnCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var postUrl = '/Service/Command/ShowUpdate/';
+            if (records.length > 0) {
+                postUrl += records[0].get('ID');
+            }
+            Ext.net.DirectMethod.request({
+                url: postUrl
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.btnDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        };
+    var deleteRecord = function () {
+        var records = App.grMnCommand.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnEdit.setDisabled(true);
+                        App.btnDelete.setDisabled(true);
+                        App.btnDetail.setDisabled(true);
+                        App.cmEdit.setDisabled(true);
+                        App.cmDelete.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "Command", new { Area = "Service" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+</script>

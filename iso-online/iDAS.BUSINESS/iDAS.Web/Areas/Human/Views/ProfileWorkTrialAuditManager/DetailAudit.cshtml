@@ -1,0 +1,89 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.HumanProfileWorkTrialItem
+@{
+    var X = Html.X();
+}
+
+@(Html.X().Window()
+                .ID("frResult")
+            .Title("Chi tiết đánh giá nhân viên thử việc")
+                    .Layout(LayoutType.Border).Maximized(true)
+        .Icon(Icon.Zoom)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+
+            Html.X().HiddenFor(m => m.ID).ID("txtID"),
+        Html.X().GridPanel()
+                       .Region(Region.Center)
+                        .Margin(1)
+                        .Header(false)
+                        .ID("grAuditResult")
+
+                        .ColumnLines(true)
+                        .ForceFit(true)
+
+                    .Store(
+                        Html.X().Store()
+                                .ID("StoreAditResult")
+                                .RemotePaging(true)
+                                .AutoLoad(true)
+                                                            .GroupField("QualityCriteriaCateName")
+                                                        .Sorters(Html.X().DataSorter().Property("QualityCriteriaCateName").Direction(Ext.Net.SortDirection.ASC))
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetAuditResult"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                .IDParam("ID"))
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("humanProfileWorkTrialID", "App.txtID.getValue()", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                            Html.X().ModelField().Name("QualityCriteriaName"),
+                                            Html.X().ModelField().Name("EmployeePoint"),
+                                            Html.X().ModelField().Name("ManagerPoint"),
+                                            Html.X().ModelField().Name("QualityCriteriaCateName"),
+                                    Html.X().ModelField().Name("Note")
+
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                        Html.X().Column().DataIndex("ID").Hidden(true),
+                                                        Html.X().Column().DataIndex("QualityCriteriaName").Text("Tiêu chí").Width(300).StyleSpec("font-weight: bold;text-align: center"),
+                                                            Html.X().Column().Text("Điểm tự đánh giá").Width(150).Align(Alignment.Right).DataIndex("EmployeePoint"),
+                                                                Html.X().Column().Text("Điểm quản lý đánh giá").Width(160).Align(Alignment.Right).DataIndex("ManagerPoint"),
+                                                    Html.X().Column().DataIndex("Note").Text("Ghi chú").Width(300).Flex(1).StyleSpec("font-weight: bold;text-align: center")
+                            )
+
+                     .Features(
+                                        Html.X().GroupingSummary()
+                                        .ID("GroupingSummarySupplier")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                )
+     
+                    .BottomBar(
+                           Html.X().CustomPagingToolbar()
+                )
+                 )
+.Buttons(
+        
+X.ButtonExit()
+    )
+)
+
+
+
+<script type="text/javascript">
+    
+</script>

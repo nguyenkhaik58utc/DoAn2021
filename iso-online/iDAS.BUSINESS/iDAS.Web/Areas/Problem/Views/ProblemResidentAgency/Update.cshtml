@@ -1,0 +1,88 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Problem.Models.ProblemResidentAgencyDTO
+@(Html.X().Window()
+    .ID("UpdateResidentAgencyWindow")
+    .Title("Sửa thông tin cơ quan thường trú")
+    .Icon(Icon.Pencil)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("UpdateResidentAgencyForm")
+            .Url(Url.Action("Update"))
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Items(
+                Html.X().TabPanel().ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin cơ quan thường trú")
+                            .BodyPadding(5)
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().TextAreaFor(m => m.ID).Hidden(true),
+                                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên cơ quan thường trú" + Html.Required())
+                                    .EmptyText("Nhập tên cơ quan thường trú")
+                                    .BlankText("Bạn phải nhập tên cơ quan thường trú!")
+                                    .AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().ComboBoxFor(m => m.ResidentAgencyGroupID)
+                                    .ID("cboResidentAgencyGroup")
+                                .MarginSpec("0 0 5 0")
+                                .FieldLabel("Nhóm cơ quan thường trú")
+                                .EmptyText("Chọn nhóm cơ quan thường trú")
+                                .DisplayField("Name")
+                                .ValueField("ID")
+                                .Editable(false)
+                                .ColumnWidth(0.5)
+                                .Store(
+                                    Html.X().Store()
+                                        .ID("stResidentAgencyGroup")
+                                        .AutoLoad(true)
+                                        .Model(
+                                        Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                new ModelField("ID"),
+                                                new ModelField("Name")
+                                            )
+                                    )
+                                    .Proxy(Html.X().AjaxProxy()
+                                             .Url(Url.Action("LoadData", "ProblemResidentAgencyGroup", new { area = "Problem" }))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    )
+                                )
+                            )
+                            )
+                    .Buttons(
+                        Html.X().ButtonSave().Handler("updateResidentAgencySubmit"),
+                        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+            )
+    )
+)
+<script>
+    var updateResidentAgencySubmit = function () {
+        App.UpdateResidentAgencyForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadProblemResidentAgency();
+                    App.UpdateResidentAgencyWindow.close();
+                }
+            }
+        });
+    };
+</script>

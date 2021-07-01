@@ -1,0 +1,408 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityNCItem
+@{
+    var content = Model.Content;
+}
+@( Html.X().Window()
+    .Title("Cập nhật điểm không phù hợp")
+    .ID("WindowNCUpdate")
+    .Icon(Icon.Pencil)
+    .Layout(LayoutType.Fit)
+    .Width(800)
+    .Height(500)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Border(false)
+    .BodyPadding(0)
+    .Center()
+    .Items(
+          Html.X().TabPanel()
+            .Layout(LayoutType.Fit)
+            .Border(true)
+            .Items(
+                    Html.X().FormPanel().Header(false)
+                        .Url(Url.Action("Update", "NC", new { area = "Quality" }))
+                        .AutoScroll(true)
+                        .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                        .Frame(true)
+                        .FieldDefaults(df => { df.LabelWidth = 120; })
+                        .PaddingSpec("5 10 0 10")
+                        .Title("Thông tin điểm không phù hợp")
+                        .StyleSpec("border: none;")
+                        .Items(
+                                Html.X().HiddenFor(m => m.ID),
+                                Html.X().TextAreaFor(m => m.Content)
+                                        .ID("txtName")
+                                        .FieldLabel("Mô tả" + Html.Required())
+                                        .EmptyText("nhập mô tả sự không phù hợp")
+                                        .AllowBlank(false)
+                                        .MinHeight(70).Flex(1)
+                                        .BlankText("Mô tả không được bỏ trống!"),
+                                    Html.X().TextAreaFor(m => m.Source)
+                                        .AllowBlank(false)
+                                        .FieldLabel("Từ vấn đề" + Html.Required())
+                                        .EmptyText("Vấn đề phát sinh của điểm không phù hợp")
+                                        .Height(150),
+                                Html.X().Container().Height(25)
+                                    .Layout(LayoutType.Column)
+                                    .Items(
+                                                Html.X().RadioGroupForEnum(m => m.Enums.Type)
+                                                        .FieldLabel("Phân loại" + Html.Required()).ColumnWidth(0.55)
+                                        ),
+                                Html.X().Container().Height(25)
+                                    .Layout(LayoutType.Column)
+                                    .Items(
+                                        Html.X().DateTimeFieldFor(m => m.Time).AllowBlank(false).FieldLabel("Ngày phát hiện" + Html.Required()).ColumnWidth(0.55).Height(25)
+                                    ),
+                                //Html.X().CriteriaFieldFor(m => m.Criteria).FieldLabel("Tiêu chí" + Html.Required()).AllowBlank(false),    
+                                //Html.X().ComboBoxFor(m => m.CategoryID)
+                                //            .FieldLabel("Nhóm KPH" + Html.Required())
+                                //            .AllowBlank(false).BlankText("Nhóm sự không phù hợp bắt buộc chọn!")
+                                //            .QueryMode(DataLoadMode.Local)
+                                //            .ForceSelection(true)
+                                //            .DisplayField("Name")
+                                //            .ValueField("ID")
+                                //            .Store(Html.X().Store()
+                                //                            .AutoLoad(true)
+                                //                            .Model(
+                                //                                    Html.X().Model()
+                                //                                            .IDProperty("ID")
+                                //                                            .Fields(
+                                //                                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                //                                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                //                                                    )
+                                //                                            )
+                                //                            .Proxy(
+                                //                                    Html.X().AjaxProxy().Url(Url.Action("LoadNCCategory", "NCCategory", new { area = "Quality" }))
+                                //                                            .Reader(Html.X().JsonReader().Root("data"))
+                                //                                    )
+                                //                    ),
+                                Html.X().DepartmentFieldFor(m => m.Department).FieldLabel("Phòng ban" + Html.Required()).Multiple(false)
+                                        .AllowBlank(false).PaddingSpec("0 1 0 0").Height(25) ,
+                                Html.X().HiddenFor(m => m.LisEmployeeID).ID("hdfLsEmployeeID"),
+                                Html.X().HiddenFor(m => m.LisRoleID).ID("hdfLsRoleID")         
+                                        //,
+                                // Html.X().CriteriaFieldFor(m => m.Criteria).FieldLabel("Tiêu chí"),
+                                //Html.X().RoleFieldFor(m => m.Role).FieldLabel("Vị trí liên quan"),
+                                //Html.X().EmployeeBoxFor(m => m.Employee).FieldLabel("Người liên quan").LabelWidth(120)
+                        ),
+                  
+               Html.X().Panel().Title(@"Người/ vị trí liên quan").Layout(LayoutType.Border)
+                        .Items(
+                                Html.X().FieldSet()
+                                        .Title("Vị trí liên quan")
+                                        .Margin(0).Padding(0)
+                                        .StyleSpec("border-bottom: none;border-left: none;border-right: none;")
+                                        .Region(Region.North)
+                                        .Height(200).Layout(LayoutType.Fit)
+                                        .Items(
+                                                    Html.X().GridPanel()
+                                                            .ID("grNCRole")
+                                                            .Border(false)
+                                                            .StyleSpec("border-top: solid 1px #99bce8; border-bottom: solid 1px #99bce8;")
+                                                            .TopBarItem(
+                                                                            Html.X().ButtonCreate().Handler("App.windowNCRole.show();"),
+                                                                            Html.X().ToolbarSeparator(),
+                                                                            Html.X().ButtonDelete().ID("btnDeleteRole").Handler("onDeleteRole();")
+                                                                        )
+                                                            .Store(
+                                                                    Html.X().Store()
+                                                                    .ID("storeNCRole")
+                                                                    .RemotePaging(true)
+                                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRole", "NC", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                                                                    .Parameters(ps => ps.Add(new StoreParameter("lsRoleId", "App.hdfLsRoleID.getValue()", ParameterMode.Raw)))
+                                                                    .Model(
+                                                                        Html.X().Model().Fields(
+                                                                                    Html.X().ModelField().Name("ID"),
+                                                                                    Html.X().ModelField().Name("Name"),
+                                                                                        Html.X().ModelField().Name("Department")
+                                                                        )
+                                                                    )
+                                                                )
+                                                            .ColumnModel(
+                                                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                        Html.X().Column().DataIndex("Name").Flex(1).Text("Chức danh"),
+                                                                        Html.X().Column().DataIndex("Department").Flex(1).Text("Đơn vị")
+
+                                                                        )
+                                                            .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi)
+                                                                                .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusRole();"))
+                                    ),
+                                Html.X().FieldSet()
+                                    .Title("Người liên quan")
+                                    .Margin(0).Padding(0)
+                                    .StyleSpec("border-bottom: none;border-left: none;border-right: none;")
+                                    .Region(Region.Center)
+                                    .MinHeight(100).Layout(LayoutType.Fit)
+                                    .Items(
+                                                  Html.X().GridPanel()
+                                                            .ID("grNCEmployee")
+                                                            .Border(false)
+                                                            .StyleSpec("border-top: solid 1px #99bce8; border-bottom: solid 1px #99bce8;")
+                                                            .TopBarItem(
+                                                                            Html.X().ButtonCreate().Handler("App.windowNCEmployee.show();"),
+                                                                            Html.X().ToolbarSeparator(),
+                                                                            Html.X().ButtonDelete().ID("btnDeleteEmployee").Handler("onDeleteEmployee();"),
+                                                                            Html.X().ToolbarSeparator(),
+                                                                            Html.X().ButtonView().ID("btnDetailEmployee").Handler("ViewDetailEmployee();")
+                                                                        )
+                                                            .Store(
+                                                                    Html.X().Store()
+                                                                    .ID("storeNCEmployee")
+                                                                    .RemotePaging(true)
+                                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadEmployee", "NC", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                                                                    .Parameters(ps => ps.Add(new StoreParameter("lsEmployeeId", "App.hdfLsEmployeeID.getValue()", ParameterMode.Raw)))
+                                                                    .Model(
+                                                                        Html.X().Model().Fields(
+                                                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                                                    Html.X().ModelField().Name("Name"),
+                                                                                    Html.X().ModelField().Name("Avatar")
+                                                                        )
+                                                                    )
+                                                                )
+                                                            .ColumnModel(
+                                                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                        Html.X().Column().DataIndex("Avatar").Width(31).Text("").Renderer("AvatarRenderer"),
+                                                                        Html.X().Column().DataIndex("Name").Flex(1).Text("Họ Tên")
+                                                                        )
+                                                            .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi)
+                                                                             .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusEmployee();"))
+                                          )
+                        )
+                    )
+            )
+    .Buttons(
+        Html.X().ButtonSave()
+            .Handler("onUpdateNC(this.up('window'))"),
+        Html.X().ButtonExit()
+    )
+)
+@(
+ Html.X().Window().ID("windowNCEmployee").Layout(LayoutType.Fit).Hidden(true)
+                    .Title("Danh sách nhân sự")
+                    .Icon(Icon.ApplicationSideList)
+                    .Border(false)
+                    .Height(450)
+                    .Width(800)
+                    .ItemsFromAction("EmployeeViewMulti", "Employee", new { Area = "Human", gridEmployeeId = "grEmployee" })
+.Buttons(
+        Html.X().Button().Icon(Icon.Accept).Listeners(ls => ls.Click.Handler = "SelectEmployee();").ToolTip("Chọn người tham gia").Text("Chọn"),
+        Html.X().ButtonExit()
+)
+)
+@(
+ Html.X().Window().ID("windowNCRole").Layout(LayoutType.Border).Hidden(true)
+                    .Title("Danh sách vị trí")
+                    .Icon(Icon.ApplicationSideList)
+                    .Border(false)
+                    .Height(450)
+                    .Width(800)
+                    .Center()
+                    .Items(
+                            Html.X().DepartmentPanel().Handler("DepartmentSelect").ID("DepartmentRole"),
+                            Html.X().GridPanel()
+                                .ID("GridPanelRoleView")
+                                .Layout(LayoutType.Fit)
+                                .Header(false)
+                                .Region(Region.Center)
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .Icon(Icon.TextListBullets)
+                                .Store(
+                                    Html.X().Store()
+                                        .AutoLoad(false)
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadOrganizations", "Role", new { Area = "Department" }, null)).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("DepartmentName")
+                                            )
+                                        )
+                                )
+                                .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+                                    Html.X().Column().DataIndex("Name").Text("Tên chức danh").Width(350).StyleSpec("font-weight: bold;text-align: center")
+                                )
+                                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Multi)
+                            )
+                    )
+.Buttons(
+        Html.X().Button().Icon(Icon.Accept).Listeners(ls => ls.Click.Handler = "SelectRole();").ToolTip("Chọn vị trí liên quan").Text("Chọn"),
+        Html.X().ButtonExit()
+        )
+)
+<script>
+    var onUpdateNC = function (window) {
+        var form = window.down('form');
+        form.submit({
+            success: function (form, action) {
+                window.close();
+                NCGridPanel.getStore().reload();
+            },
+        });
+    };
+    var AvatarRenderer = function (value) {
+        var tpl = "";
+        if (value == "") {
+            tpl = "<img src='/Content/images/underfind.jpg' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        }
+        else {
+            tpl = "<img src='" + value + "' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        };
+        return tpl;
+    };
+    var SelectEmployee = function () {
+        if (App.windowNCEmployee.hidden == true) {
+            App.windowNCEmployee.show();
+        }
+        else {
+            var records = App.grEmployee.selModel.getSelection();
+            if (records.length >= 1) {
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                if (App.hdfLsEmployeeID.value.length > 0) {
+                    strId = App.hdfLsEmployeeID.value + "," + strId;
+                }
+                App.hdfLsEmployeeID.setValue(strId);
+                App.storeNCEmployee.reload();
+                App.windowNCEmployee.hide();
+            }
+            else {
+                Ext.Msg.alert("", "Bạn chưa lựa chọn bản ghi nào!");
+            };
+
+        };
+    };
+    var CheckStatusEmployee = function () {
+        var records = App.grNCEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDeleteEmployee.setDisabled(false);
+            if (records.length == 1) {
+                App.btnDetailEmployee.setDisabled(false);
+            }
+            else {
+                App.btnDetailEmployee.setDisabled(true);
+            };
+        }
+        else {
+            App.btnDeleteEmployee.setDisabled(true);
+            App.btnDetailEmployee.setDisabled(true);
+        };
+    };
+    var ViewDetailEmployee = function () {
+        var records = App.grNCEmployee.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "Employee", new { Area = "Human" }, null))',
+                params: { ID: records[0].get('ID') }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var onDeleteEmployee = function () {
+        var records = App.grNCEmployee.selModel.getSelection();
+        if (records.length > 0) {
+            var strOldID = App.hdfLsEmployeeID.value;
+            var oldArrayID = strOldID.split(",");
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = oldArrayID[i]; i++) {
+                var exits = false;
+                for (var j = 0, r; r = records[j]; j++) {
+                    if (oldArrayID[i] == records[j].get('ID')) {
+                        exits = true;
+                    };
+                };
+                if (exits == false) {
+                    aId.push(oldArrayID[i]);
+                };
+            };
+            strId = aId.join();
+            App.hdfLsEmployeeID.setValue(strId);
+            App.storeNCEmployee.reload();
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var DepartmentSelect = function (records) {
+        if (records.length > 0) {
+            App.GridPanelRoleView.getStore().reload({ params: { departmentID: records[0].get('id') } });
+        };
+    };
+    var SelectRole = function () {
+        if (App.windowNCRole.hidden == true) {
+            App.windowNCRole.show();
+        }
+        else {
+            var records = App.GridPanelRoleView.selModel.getSelection();
+            if (records.length >= 1) {
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                if (App.hdfLsRoleID.value.length > 0) {
+                    strId = App.hdfLsRoleID.value + "," + strId;
+                }
+                App.hdfLsRoleID.setValue(strId);
+                App.storeNCRole.reload();
+                App.windowNCRole.hide();
+            }
+            else {
+                Ext.Msg.alert("", "Bạn chưa lựa chọn bản ghi nào!");
+            };
+
+        };
+    };
+    var onDeleteRole = function () {
+        var records = App.grNCRole.selModel.getSelection();
+        if (records.length > 0) {
+            var strOldID = App.hdfLsRoleID.value;
+            var oldArrayID = strOldID.split(",");
+            var aId = new Array();
+            var strId = '';
+            for (var i = 0, r; r = oldArrayID[i]; i++) {
+                var exits = false;
+                for (var j = 0, r; r = records[j]; j++) {
+                    if (oldArrayID[i] == records[j].get('ID')) {
+                        exits = true;
+                    };
+                };
+                if (exits == false) {
+                    aId.push(oldArrayID[i]);
+                };
+            };
+            strId = aId.join();
+            App.hdfLsRoleID.setValue(strId);
+            App.storeNCRole.reload();
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var CheckStatusRole = function () {
+        var records = App.grNCRole.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDeleteRole.setDisabled(false);
+        }
+        else {
+            App.btnDeleteRole.setDisabled(true);
+        };
+    };
+</script>

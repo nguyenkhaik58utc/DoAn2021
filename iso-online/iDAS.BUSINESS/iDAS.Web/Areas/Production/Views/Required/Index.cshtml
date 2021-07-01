@@ -1,0 +1,195 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatusRequired() {
+        var records = App.GrRequired.selModel.getSelection();
+        if (records.length == 1) {
+            var isNew = records[0].data.IsNew;
+            var isPause = records[0].data.IsPause;
+            var isFinish = records[0].data.IsFinish;
+            App.btnDetailRequired.setDisabled(false);
+            if (isNew) {
+                SetEnabled(App.btnUpdateRequired, App.btnDeleteRequired);
+                SetDisabled(App.btnPause, App.btnPlay, App.btnFinish);
+            }
+            else {
+                SetEnabled(App.btnPause, App.btnPlay, App.btnFinish);
+                SetDisabled(App.btnUpdateRequired, App.btnDeleteRequired);
+                if (isPause == true) {
+                    App.btnPlay.show();
+                    App.btnPause.hide();
+                }
+                else {
+                    App.btnPause.show();
+                    App.btnPlay.hide();
+                };
+                if (isFinish) {
+                    SetDisabled(App.btnPause, App.btnPlay);
+                };
+            };
+        }
+        else {
+            SetDisabled(App.btnUpdateRequired, App.btnDeleteRequired, App.btnDetailRequired, App.btnPause, App.btnPlay, App.btnFinish);
+        };
+    };
+    var ShowAdd = function () {
+        var url = '@(Url.Action("Update", "Required", new { Area = "Production" }))';
+        onDirectMethod(url, null, 'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.GrRequired.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "Required", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowView = function () {
+        var records = App.GrRequired.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "Required", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var PauseRequired = function (val) {
+        var records = App.GrRequired.selModel.getSelection();
+        if (records.length > 0) {
+            if (val) {
+                Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn dừng yêu cầu này ?', function (btn) {
+                    if (btn == 'yes') {
+                        var url = '@(Url.Action("Pause"))';
+                        var params = {
+                            id: records[0].get('ID')
+                        };
+                        onDirectMethod(url, params);
+                    }
+                });
+            }
+            else {
+                Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn tiếp tục yêu cầu này ?', function (btn) {
+                    if (btn == 'yes') {
+                        var url = '@(Url.Action("Play"))';
+                        var params = {
+                            id: records[0].get('ID')
+                        };
+                        onDirectMethod(url, params);
+                    }
+                });
+            };
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var FinishRequired = function () {
+        var records = App.GrRequired.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Finish"))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrRequired")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowAdd();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateRequired").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteRequired").Handler("onDelete(App.GrRequired.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailRequired").Handler("ShowView();"),
+                                    Html.X().Button().ID("btnPause").ToolTip("Tạm dừng yêu cầu").Text("Tạm dừng").Hidden(false)
+                                                    .Handler("PauseRequired(true);").Icon(Icon.StopBlue).Disabled(true),
+                                    Html.X().Button().ID("btnPlay").ToolTip("Tiếp tục yêu cầu").Text("Tiếp tục").Hidden(true)
+                                                    .Handler("PauseRequired(false);").Icon(Icon.PlayGreen).Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().ID("btnFinish").ToolTip("Kết thúc yêu cầu").Text("Kết thúc")
+                                                        .Handler("FinishRequired();").Icon(Icon.FlagYellow).Disabled(true),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                            ))
+                            .Store(
+                                Html.X().Store().ID("StoreRequired")
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .GroupField("Product.Name")
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Required", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("HumanEmployee.Name"),
+                                                Html.X().ModelField().Name("Product.Name"),
+                                                Html.X().ModelField().Name("Quantity"),
+                                                Html.X().ModelField().Name("EndTime"),
+                                                Html.X().ModelField().Name("ProductionLevel.Name"),
+                                                Html.X().ModelField().Name("ProductionLevel.Color"),
+                                                Html.X().ModelField().Name("IsPause").Type(ModelFieldType.Boolean),
+                                                Html.X().ModelField().Name("IsNew").Type(ModelFieldType.Boolean),
+                                                Html.X().ModelField().Name("IsFinish").Type(ModelFieldType.Boolean),
+                                                Html.X().ModelField().Name("Status")
+                                            )
+                                      )
+                        )
+                        .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("HumanEmployee.Name").Text("Người yêu cầu").Flex(1),
+                                    Html.X().Column().DataIndex("Product.Name").Text("Sản phẩm").Align(Alignment.Center).Width(200),
+                                    Html.X().NumberColumn().DataIndex("Quantity").Text("Số lượng").Width(200).Align(Alignment.Right),
+                                    Html.X().DateColumnExtend().DataIndex("EndTime").Text("Thời hạn hoàn thành").Align(Alignment.Center).Width(200),
+                                    Html.X().Column().Width(100).Text("Mức độ").DataIndex("ProductionLevel.Name").Align(Alignment.Center)
+                                        .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('ProductionLevel.Color') + ';'; return value; }" }),
+                                    Html.X().Column().DataIndex("Status").Text("Trạng thái").Width(80).Align(Alignment.Center)
+                            )
+                        .Features(
+                                Html.X().GridFilters()
+                                    .MenuFilterText("Tìm kiếm")
+                                    .Filters(
+                                        Html.X().StringFilter().DataIndex("Employee.Name")
+                                    ),
+                                Html.X().GroupingSummary()
+                                    .ID("GroupingSummaryProduct")
+                                    .GroupHeaderTplString("{name}")
+                                    .HideGroupedHeader(true)
+                                    .EnableGroupingMenu(false)
+                                    .ShowSummaryRow(false)
+                            )
+                        .SelectionModel(
+                                        Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusRequired")
+                                        )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+

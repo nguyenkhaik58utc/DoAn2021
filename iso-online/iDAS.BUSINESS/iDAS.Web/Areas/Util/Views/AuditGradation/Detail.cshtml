@@ -1,0 +1,174 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditGradationItem
+@( Html.X().Window()
+        .Title("Xem chi tiết đợt đánh giá")
+        .Icon(Icon.Zoom)
+        .ID("winEditAuditGradation")
+        .Width(680)
+        .Height(400)
+        .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(false)
+        .Center()
+        .Items(
+            Html.X().FormPanel()
+                .Layout(LayoutType.Border)
+                .StyleSpec("border: none;")
+                .ID("frmAudit")
+                .Border(false)
+                .Items(
+            Html.X().TabPanel()
+                .Region(Region.Center)
+                .ActiveTabIndex(0)
+                .Border(true)
+                .Items(
+            Html.X().Panel()
+                .BodyPadding(0)
+                .Icon(Icon.ApplicationViewDetail)
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .StyleSpec("border: none;")
+                .Title("Thông tin chi tiết")
+                .Frame(true)
+                .Items(
+        Html.X().FormPanel()
+                .ID("frmAuditGradation")
+                        .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                        .Frame(true)
+                        .StyleSpec("border: none;")
+                        .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                        .Flex(1)
+                        .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().TextFieldFor(m => m.Name)
+                            .ID("txtNameAuditGradation")
+                            .FieldLabel("Tên đợt")
+                            .AllowOnlyWhitespace(false)
+                            .ReadOnly(true)
+                            .TabIndex(2)
+                            .AllowBlank(false)
+                            .BlankText("Tên đợt đánh giá không được để trống!"),
+                        Html.X().Container()
+                            .Layout(LayoutType.Column)
+                            .ColSpan(2)
+                            .MarginSpec("0 0 5 0")
+                            .Items(
+                                    Html.X().DateTimeFieldFor(m => m.StartTime)
+                                        .AllowBlank(false).ReadOnly(true)
+                                        .FieldLabel("Bắt đầu")
+                                        .ColumnWidth(0.5).MarginSpec("0 5 0 0"),
+                                    Html.X().DateTimeFieldFor(m => m.EndTime).ReadOnly(true)
+                                        .FieldLabel("Kết thúc")
+                                        .AllowBlank(false)
+                                        .ColumnWidth(0.5)
+                                   ),
+                        Html.X().TextAreaFor(m => m.Content).ReadOnly(true).TabIndex(3)
+                                .AllowOnlyWhitespace(false)
+                                .AllowBlank(false)
+                                .FieldLabel("Nội dung")
+                                .BlankText("Nội dung không được bỏ trống!")
+                                .Height(170)
+                                .Flex(1))
+                                    ),
+                        Html.X().Panel()
+                            .Icon(Icon.UserTick)
+                            .Border(false)
+                            .BodyPadding(0)
+                            .Margin(0)
+                            .Padding(0)
+                            .AutoScroll(true)
+                            .Title("Phòng ban đánh giá")
+                            .Layout(LayoutType.Fit)
+                            .Items(
+                        Html.X().GridPanel()
+                            .ID("grMnObject")
+                            .Border(false)                       
+                            .Store(Html.X().Store()
+                            .ID("stMnObject")
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataAuditDepartment", "AuditGradation"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Parameters(ps => ps.Add(new StoreParameter("AuditGradationId", Model.ID.ToString(), ParameterMode.Value)))
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                            Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("HumanDepartmentID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("HumanDepartmentName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("EmployeeAuditLeaderID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("EmployeeAuditLeaderName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("EmployeeAuditManagementID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("EmployeeAuditManagementName").Type(ModelFieldType.String)
+                                )
+                            )
+                        )
+                       .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Center)
+                                    .Width(33),
+                            Html.X().Column()
+                                    .Text("ID")
+                                    .DataIndex("ID")
+                                    .Hidden(true),
+                            Html.X().Column()
+                                    .Text("Phòng ban")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("HumanDepartmentName")
+                                    .Flex(1)
+                                    .Wrap(true),
+                            Html.X().Column()
+                                    .Text("Người quản lý")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("EmployeeAuditManagementName")
+                                         .Width(160)
+                                    .Wrap(true),
+                            Html.X().Column()
+                                    .Text("Lãnh đạo")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("EmployeeAuditLeaderName")
+                                         .Width(160)
+                                    .Wrap(true)
+                                )
+                                .SelectionModel(
+                                Html.X().RowSelectionModel()
+                                        .Mode(SelectionMode.Multi)
+                                        )
+                                        .View(
+                                        Html.X().GridView().MarkDirty(false)
+                                        )
+                                        .Plugins(Html.X().CellEditing())
+                                        .BottomBar
+                                        (
+                                                 Html.X().CustomPagingToolbar()
+                                        )
+                                    )
+                                  )
+                                )
+                            )
+                        .Buttons(
+                            Html.X().ButtonExit()
+                        )
+
+)
+<script type="text/javascript">
+    var getMinMax = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        App.txtMin.setValue(record.get('MinPointCate'));
+        App.txtMax.setValue(record.get('MaxPointCate'));
+    };
+</script>

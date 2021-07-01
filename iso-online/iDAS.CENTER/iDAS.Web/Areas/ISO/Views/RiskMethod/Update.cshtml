@@ -1,0 +1,105 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.RiskMethodItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == "Add")
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới ứng phó rủi ro";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật ứng phó rủi ro";
+    }
+}
+@(
+ Html.X().Window().ItemID("windowId")
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .ID("winRiskMethod")
+    .Title(title)
+    .Icon(IconView)
+    .Items(
+            X.CustomFormPanel().ID("frmUpdate")
+                .Items(
+                        Html.X().HiddenFor(m => m.ID),
+                        Html.X().TextFieldFor(m => m.Level).FieldLabel("Mức độ rủi ro *")
+                                .EmptyText("Mức độ rủi ro...")
+                                .BlankText("Mức độ rủi ro không được bỏ trống!")
+                                .AllowOnlyWhitespace(false),
+                        Html.X().ComboBoxFor(m=>m.Color).FieldLabel("Màu sắc")
+                                .ID("cbColor")
+                                .TabIndex(3)
+                                .QueryMode(DataLoadMode.Local)
+                                .ForceSelection(true)
+                                .AllowBlank(false)
+                                .TriggerAction(TriggerAction.All)
+                                .DisplayField("Name")
+                                .Editable(false)
+                                    .ValueField("Id")
+                                .Store(
+                                    Html.X().Store()
+                                    .ID("stColor")
+                                        .AutoLoad(true)
+                                        .Model(
+                                            Html.X().Model()
+                                                .IDProperty("Id")
+                                                .Fields(
+                                                    new ModelField("Id", ModelFieldType.String) { Mapping = "Id" },
+                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                )
+                                        )
+                                        .Proxy(
+                                            Html.X().AjaxProxy()
+                                                .Url(Url.Action("FillColor"))
+                                                .Reader(Html.X().JsonReader().Root("data")
+                                                )
+                                        )
+                                )
+                                .Tpl(
+                                @<text>
+                                    <tpl for=".">
+                                        <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                            <div style="width: 20px; height: 20px; float: left; background-color: {Id}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left; font-size: 0.9em;">&nbsp;{Name}</div>
+                                        </div>
+                                    </tpl>
+                                </text>)
+                            .Listeners(l => l.Change.Handler = "getColor(App.cbColor, App.stColor);"), 
+                        X.TextFieldFor(m => m.Method).FieldLabel("Phương thức")
+                                .EmptyText("Nhập phương thức..."),            
+                        X.TextAreaFor(m => m.Description).FieldLabel("Mô tả")
+                                .EmptyText("Nhập mô tả kiểm soát rủi ro...").Height(100).Flex(1)
+                    )
+            )  
+    .Buttons(
+               Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                de.Click.Url = Url.Action("Update");
+                                de.Click.FormID = "frmUpdate";
+                                de.Click.Success = "this.up('window').close();";
+                            }), 
+               Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Name');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+</script>

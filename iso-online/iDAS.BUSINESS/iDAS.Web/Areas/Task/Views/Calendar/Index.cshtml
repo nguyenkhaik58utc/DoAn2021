@@ -1,0 +1,619 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Items;
+@using iDAS.Web.ExtExtend
+@using iDAS.Services;
+@using iDAS.Web.Areas.Task.Controllers
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var style = ViewBag.Style;
+    var data = ViewBag.Calendar;
+}
+<style>
+    @style
+</style>
+<style>
+    .boldtext {
+        font-weight: bold;
+    }
+
+    .gnt-calendar-legend {
+        padding: 10px;
+        border: none;
+    }
+
+        .gnt-calendar-legend li {
+            margin-bottom: 10px;
+            list-style: none outside none;
+        }
+
+    .gnt-calendar-legend-itemstyle {
+        width: 25px;
+        height: 25px;
+        line-height: 21px;
+        text-align: center;
+        border: solid 1px black;
+        float: left;
+    }
+
+    .gnt-calendar-legend-itemname {
+        display: block;
+        float: left;
+        margin-left: 10px;
+        padding-top: 5px;
+        white-space: nowrap;
+    }
+
+    .x-datepicker-eventdate {
+        background-color: #E69390;
+    }
+
+    .bold-text {
+        font-weight: bold;
+    }
+</style>
+@(
+ Html.X().Menu()
+            .ID("TreeContextMenu")
+            .Items(
+                Html.X().Label()
+                    .Cls("bold-text"),
+                Html.X().MenuSeparator(),
+                Html.X().MenuItem()
+                    .Text("Sửa")
+                    .ID("cmEdit")
+                    .Icon(Icon.Pencil)
+                    .Handler("if(App.treeCalendarOverride.menuNode.getId()!='0'){ App.treeCalendarOverride.editingPlugin.startEdit(App.treeCalendarOverride.menuNode, 0);}else{return false;}"),
+                Html.X().MenuItem()
+                    .Text("Xóa")
+                          .ID("cmDelete")
+                    .Icon(Icon.Delete)
+                    .Handler("if(App.treeCalendarOverride.menuNode.getId()!='0'){App.treeCalendarOverride.removeNode(App.treeCalendarOverride.menuNode);}else{return false;}"),
+                Html.X().MenuItem()
+                    .Text("Thêm lịch con")
+                    .Icon(Icon.Add)
+                    .Handler("App.treeCalendarOverride.appendChild(App.treeCalendarOverride.menuNode, 'Lịch mới');"),
+                Html.X().MenuItem()
+                    .Text("Thêm lịch cùng cấp")
+                    .Icon(Icon.ArrowRight)
+                          .ID("cmAdd")
+                    .Handler("if(App.treeCalendarOverride.menuNode.getId()!='0'){App.treeCalendarOverride.insertBefore(App.treeCalendarOverride.menuNode, 'Lịch mới');}else{return false;}")
+            )
+            .Listeners(l =>
+            {
+                l.Show.Handler = "this.getComponent(0).setText(this.nodeName);";
+            })
+)
+@(Html.X().Hidden().ID("TaskDepartmentID").Value(0))
+@(Html.X().Hidden().ID("hdfCateCalendarOverrideID").Value(0))
+@(Html.X().Viewport()
+        .Layout("border")
+        .Layout(LayoutType.Border)
+        .Items(
+                Html.X().Panel()
+                        .ID("TaskPanel")
+                        .Region(Region.Center)
+                        .Split(true)
+                        .Border(true)
+                        .Margin(1)
+                        .TitleAlign(TitleAlign.Center)
+                        .Layout(LayoutType.Border)
+                        .Collapsible(true)
+                        .Header(false)
+                        .Items(
+                            Html.X().Panel()
+                                .ID("Panel1")
+                                .MarginSpec("1 1 1 1")
+                                .Title("NHÓM LỊCH")
+                                .TitleAlign(TitleAlign.Center)
+                                .Layout("border")
+                                .Width(200)
+                                .Layout(LayoutType.Fit)
+                                .Region(Region.West)
+                                .Cls("app-center")
+                                .Items(
+                            Html.X().TreePanel()
+                                    .ID("treeCalendarOverride")
+                                    .HideHeaders(true)
+                                    .Height(300)
+                                    .Width(250)
+                                    .Padding(1)
+                                    .UseArrows(true)
+                                    .AutoScroll(true)
+                                    .Mode(TreePanelMode.Remote)
+                                    .RemoteExtraParams(
+                                        ps =>
+                                        {
+                                            ps.Add(new StoreParameter("departmentId", "App.TaskDepartmentID.getValue()", ParameterMode.Raw));
+                                        }
+                                      )
+                                    .RootVisible(true)
+                                    .RemoteEditUrl(Url.Action("RemoteEdit", "CalendarCategory"))
+                                    .RemoteRemoveUrl(Url.Action("RemoteRemove", "CalendarCategory"))
+                                    .RemoteAppendUrl(Url.Action("RemoteAppend", "CalendarCategory"))
+                                    .RemoteInsertUrl(Url.Action("RemoteInsert", "CalendarCategory"))
+                                    .RemoteMoveUrl(Url.Action("RemoteMove", "CalendarCategory"))
+                                    .Editor(
+                                        Html.X().TextField()
+                                    )
+                                 .Store(
+                                Html.X().TreeStore()
+                                    .AutoLoad(true)
+                                    .Proxy(
+                                        Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetNodes", "CalendarCategory"))
+                                    )
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("dpId", "App.TaskDepartmentID.getValue()", ParameterMode.Raw));
+                                        })
+                                    .Root(
+                                            Html.X().Node().NodeID("0").Icon(Icon.FolderHome).Text("Danh sách nhóm lịch").Cls("boldtext")
+                                    )
+                            )
+                            .Listeners(l =>
+                            {
+                                l.ItemContextMenu.Fn = "showMenu";
+                                l.CellDblClick.Handler = "if(record.data.id==0){return false;}";
+                                l.ItemContextMenu.StopEvent = true;
+                                l.CellClick.Handler = "reloadTree(record.data.id, record.data.text);";
+                                l.RemoteActionRefusal.Handler = "Ext.MessageBox.show({ title: 'Thông báo', msg: 'Nhóm lịch đã thiết lập ngày thay đổi vui lòng xóa ngày thay đổi trước!', buttons: { yes: 'Đồng ý' },iconCls: '#Cancel', fn: function (btn) {return false; } });";
+                            })
+                            .View(
+                                Html.X().TreeView()
+                                    .Plugins(
+                                        Html.X().TreeViewDragDrop().AllowLeafDrop(true).ContainerScroll(true)
+                                    )
+                            )
+                            .Plugins(
+                                Html.X().CellEditing()
+                            )
+                         ),
+                    Html.X().Panel().Layout(LayoutType.VBox)
+                                    .MarginSpec("1 1 1 0")
+                                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch }).Region(Region.Center)
+                                    .Items(
+                    Html.X().TextField().FieldLabel("Tên nhóm lịch")
+                                    .ID("txtCalendarName")
+                                    .ReadOnly(true)
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("5 5 5 5"),
+                    Html.X().Container().Layout(LayoutType.Column)
+                                        .Items(
+                                            Html.X().Panel()
+                                                .ColumnWidth(0.3)
+                                                .Height(250)
+                                                .MarginSpec("1 1 0 1")
+                                                .Title("LOẠI LỊCH")
+                                                .TitleAlign(TitleAlign.Center)
+                                                .Html(@<text>
+                                                    <ul class="gnt-calendar-legend">
+                                                        @foreach (var x in data)
+                                                        {
+                                                            <li class="gnt-calendar-legend-item">
+                                                                <div class="gnt-calendar-legend-itemstyle box-@x.ID"></div>
+                                                                <span class="gnt-calendar-legend-itemname">@x.Name</span>
+                                                                <div style="clear:both"></div>
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                </text>),
+                                            Html.X().Panel()
+                                                .ColumnWidth(0.4)
+                                                .MarginSpec("1 1 0 0")
+                                                .Height(250)
+                                                .Title("NỘI DUNG LỊCH")
+                                                .TitleAlign(TitleAlign.Center)
+                                                .Layout(LayoutType.HBox)
+                                                .BodyPadding(5)
+                                                .Defaults(Html.X().Parameter().Name("margins").Value("0 0 0 0").Mode(ParameterMode.Value))
+                                                .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Middle, Pack = BoxPack.Center })
+                                                .Items(
+                                                Html.X().DatePicker().ID("datePicker").Flex(1)
+                                                .Listeners(ls => {
+                                                    ls.Move.Handler = "ReloadHighLight();";
+                                                    ls.Select.Handler = "getInfoSelectDate(this.value)";
+                                                })
+                                                ),
+                                            Html.X().Panel()
+                                                    .ColumnWidth(0.3)
+                                                    .MarginSpec("1 0 0 0")
+                                                    .Height(250)
+                                                    .BodyPadding(6)
+                                                    .Layout(LayoutType.VBox)
+                                                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                                                    .Title("THÔNG TIN CHI TIẾT")
+                                                    .TitleAlign(TitleAlign.Center)
+                                                    .Items(
+                                                      Html.X().DisplayField().ID("txtTitle"),
+                                                      Html.X().DisplayField().ID("txtTime")
+                                                    )
+                                                 ),
+                        Html.X().TabPanel()
+                            .ActiveTabIndex(0)
+                            .Flex(1)
+                            .MarginSpec("1 1 1 1")
+                            .Border(true)
+                            .Items(
+                    Html.X().Panel()
+                            .BodyPadding(0)
+                            .Icon(Icon.ApplicationViewDetail)
+                            .Layout(LayoutType.Fit)
+                            .Padding(0)
+                            .StyleSpec("border: none;")
+                            .Title("Ngày thay đổi")
+                            .Frame(true)
+                            .Items(
+                    Html.X().GridPanel()
+                            .ID("GridDateOverride")
+                            .Height(400)
+                            .Margin(0)
+                            .Border(false)
+                            .TopBar(
+                            Html.X().Toolbar()
+                                    .Items(
+                           Html.X().Button()
+                                    .Icon(Icon.CalendarSelectWeek)
+                                    .ID("btnAddWeekend")
+                                    .Disabled(true)
+                                    .Text("Thiết lập lịch cuối tuần")
+                                    .Handler("addWeekendCalendar();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonCreate()
+                                    .ID("btnAdd")
+                                    .Disabled(true)
+                                    .Handler("addRecord(this.up('grid'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate()
+                            .ID("btnUpdate")
+                            .Disabled(true)
+                            .Handler("updateRecord(this.up('grid'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                    .ID("butDelete")
+                                    .Handler("deleteRecord();"),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                        .ID("stDateOverride")
+                        .AutoLoad(false)
+                        .Proxy(
+                            Html.X().AjaxProxy()
+                                    .Url(Url.Action("LoadDataDateOverride", "CalendarOverride"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("cateId", "App.hdfCateCalendarOverrideID.getValue()", ParameterMode.Raw));
+                                    })
+                        .RemoteSort(false)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Title").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("TitleInfo").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("EventName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("StartDate").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("EndDate").Type(ModelFieldType.Date)
+                                )
+                        )
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(33)
+                        .Align(Alignment.Center),
+                    Html.X().Column()
+                        .Text("Tên ngày thay đổi")
+                        .DataIndex("Title")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(250)
+                        .Flex(1)
+                        .Wrap(true)
+                        .Editor(
+                        Html.X().TextField()
+                                .MaxLength(100)
+                                .AllowBlank(false)
+                                .Listeners(ls => ls.Change.Handler = "update(App.GridDateOverride.selModel.getSelection()[0],this.value)")
+                                .AllowOnlyWhitespace(false)
+                                .BlankText("Tên nhóm công việc không được để trống!")
+                        ),
+                        Html.X().DateColumn()
+                            .Text("Ngày")
+                            .DataIndex("StartDate")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(100)
+                            .Format("dd/MM/yyyy")
+                            .Wrap(true)
+                            .Editor(
+                                Html.X().DateField()
+                                .Listeners(ls => ls.Change.Handler = "updateDate(App.GridDateOverride.selModel.getSelection()[0],this.getValue());")
+                                .Format("dd/MM/yyyy")
+                            )
+                )
+                .SelectionModel(
+               Html.X().RowSelectionModel()
+                   .Mode(SelectionMode.Single)
+                   .Listeners(ls => ls.Select.Handler = "showInfo(record);")
+                )
+                .Plugins(Html.X().CellEditing())
+                .BottomBar(
+                      Html.X().CustomPagingToolbar())
+                    ),
+                Html.X().Panel()
+                    .BodyPadding(6)
+                    .Icon(Icon.ApplicationViewDetail)
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .StyleSpec("border: none;")
+                    .Title("Tuần thay đổi")
+                    .Hidden(true)
+                    .Frame(true)
+                    .Items(
+                    )
+                    )
+                    )
+                    ),
+                Html.X().DepartmentPanel().Handler("selectDepartmentTask")
+                .Margin(1)
+            )
+)
+<script type="text/javascript">
+    var showInfo = function (record) {
+        getTime(record);
+        App.butDelete.setDisabled(false);
+        App.btnUpdate.setDisabled(false);
+        App.txtTitle.setValue(record.data.TitleInfo + record.data.EventName);
+        App.datePicker.setValue(record.data.StartDate);
+    };
+    var reloadTree = function (id, text) {
+        App.hdfCateCalendarOverrideID.setValue(id);
+        if (id != 0) {
+            App.btnAdd.setDisabled(false);
+            App.btnAddWeekend.setDisabled(false);
+            App.txtCalendarName.setValue(text);
+            App.GridDateOverride.setDisabled(false);
+        }
+        else {
+            App.btnAdd.setDisabled(true);
+            App.btnAddWeekend.setDisabled(true);
+            App.txtCalendarName.setValue('');
+            App.GridDateOverride.setDisabled(true);
+        }
+        App.GridDateOverride.getStore().reload();
+        ReloadHighLight();
+    };
+    var selectDepartmentTask = function (records) {
+        App.TaskDepartmentID.setValue(records[0].get('id'));
+        App.treeCalendarOverride.getStore().load();
+        App.hdfCateCalendarOverrideID.setValue(0);
+        App.btnAdd.setDisabled(true);
+        App.btnAddWeekend.setDisabled(true);
+        App.btnUpdate.setDisabled(true);
+        App.butDelete.setDisabled(true);
+        App.GridDateOverride.getStore().reload();
+    };
+    var showMenu = function (view, node, item, index, e) {
+        var menu = App.TreeContextMenu;
+        this.menuNode = node;
+        menu.nodeName = node.get("text");
+        if (node.get("id") == 0) {
+            App.cmEdit.setDisabled(true);
+            App.cmDelete.setDisabled(true);
+            App.cmAdd.setDisabled(true);
+        }
+        else {
+            App.cmEdit.setDisabled(false);
+            App.cmDelete.setDisabled(false);
+            App.cmAdd.setDisabled(false);
+        }
+        view.getSelectionModel().select(node);
+        menu.showAt([e.getXY()[0], e.getXY()[1] + 10]);
+        e.stopEvent();
+    };
+    function addRecord(grid) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("CheckExitsDate", "Calendar", new { Area = "Task" }, null))',
+            params: { cateId: App.hdfCateCalendarOverrideID.getValue(), date: Ext.Date.format(App.datePicker.getValue(), 'd/m/Y g:i A') },
+            success: function (result) {
+                if (result == true) {
+                    Ext.MessageBox.show({
+                        title: 'Thông báo', msg: 'Ngày thay đổi đã tồn tại!',
+                        buttons: { yes: 'Đồng ý' },
+                        iconCls: '#Exclamation',
+                        fn: function (btn) {
+                            return false;
+                        }
+                    });
+                } else {
+                    grid.store.insert(0, { Title: '[Ngày thay đổi]', StartDate: App.datePicker.getValue() });
+                    grid.editingPlugin.startEditByPosition({ row: 0, column: 0 });
+                }
+            }
+        });
+    };
+    function updateRecord(grid) {
+        var records = grid.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Thông báo',
+                    msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("UpdateDayOverride", "Calendar", new { Area = "Task" }, null))',
+                    params: { id: records[0].get('ID') },
+                    success: function (result) {
+                    }
+                });
+                break;
+        }
+    };
+    function update(record, value) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Update", "Calendar", new { Area = "Task" }, null))',
+            params: { id: record.data.ID, cateId: App.hdfCateCalendarOverrideID.getValue(), title: value, date: Ext.Date.format(record.data.StartDate, 'd/m/Y g:i A') },
+            success: function (result) {
+            }
+        });
+    };
+    function addWeekendCalendar() {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("WeekendSetCalendar", "Calendar", new { Area = "Task" }, null))',
+            params: { cateId: App.hdfCateCalendarOverrideID.getValue() },
+            success: function (result) {
+            }
+        });
+    };
+    function updateDate(record, value) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Update", "Calendar", new { Area = "Task" }, null))',
+            params: { id: record.data.ID, cateId: App.hdfCateCalendarOverrideID.getValue(), title: record.data.Title, date: Ext.Date.format(value, 'd/m/Y g:i A') },
+            success: function (result) {
+            }
+        });
+    };
+    var deleteRecord = function () {
+        var records = App.GridDateOverride.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Thông báo',
+                    msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "Calendar", new { Area = "Task" }, null))', params: { stringId: strId },
+                                success: function (result) {
+                                    if (result == 'Error') {
+                                        Ext.MessageBox.show({
+                                            title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa Dữ liệu phát sinh lỗi do Dữ liệu này có thể đã được sử dụng. Đề nghị kiểm tra lại!',
+                                            buttons: { yes: 'Đồng ý' },
+                                            iconCls: '#Cancel',
+                                            fn: function (btn) {
+                                                records[0].reject();
+                                                return false;
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    Ext.override(Ext.DatePicker, {
+        highlightDates: function (result, cssClass) {
+            var css = cssClass || 'x-datepicker-eventdate';
+            var cells = this.getEl().select('a.x-datepicker-date');
+            for (var i = 0; i < result.length; i++) {
+                for (var c = 0; c < cells.elements.length; c++) {
+                    cell = Ext.fly(cells.elements[c]);
+                    if (cell.dom.dateValue == new Date(result[i].Date).getTime()) {
+                        cell.addCls(css + result[i].StyleID);
+                        cell.dom.title = result[i].Title;
+                        break;
+                    }
+                }
+            }
+        }
+    });
+    Ext.onReady(function () {
+        var dates = new Array();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("GetDateHighLight", "CalendarOverride", new { Area = "Task" }, null))',
+            params: { cateId: 0 },
+            success: function (result) {
+                for (var i = 0; i < result.length; i++) {
+                    dates.push(new Date(result[i]));
+                }
+                App.datePicker.highlightDates(dates);
+            }
+        });
+    });
+    var ReloadHighLight = function () {
+        $("a[class*=box]").removeClass(function (index, css) { return (css.match(/\bbox-\S+/g) || []).join(' '); });
+        var dates = new Array();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("GetDateHighLight", "CalendarOverride", new { Area = "Task" }, null))',
+            params: { cateId: App.hdfCateCalendarOverrideID.getValue() },
+            success: function (result) {
+                App.datePicker.highlightDates(result, 'box-');
+            }
+        });
+    };
+    var getTime = function (record) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("GetTime", "CalendarOverride", new { Area = "Task" }, null))',
+            params: { id: record.data.ID },
+            success: function (result) {
+                var s = "Thời gian: <br/><ul style='padding-left:13px'>";
+                for (var i = 0; i < result.length; i++) {
+                    s += "<li>" + result[i].Name + " từ " + Ext.Date.format(new Date(result[i].StartTime), 'g:i A') + " - " + Ext.Date.format(new Date(result[i].EndTime), 'g:i A') + "</li>";
+                }
+                s += "</ul>";
+                App.txtTime.setValue(s);
+            }
+        });
+    };
+    var getInfoSelectDate = function (value) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("GetInfoDate", "CalendarOverride", new { Area = "Task" }, null))',
+            params: { date: Ext.Date.format(new Date(value), 'd/m/Y'), cateId: App.hdfCateCalendarOverrideID.getValue() },
+            success: function (result) {
+                if (result != "default") {
+                    App.txtTitle.setValue(result.Title);
+                    var s = "Thời gian: <br/><ul style='padding-left:13px'>";
+                    for (var i = 0; i < result.Times.length; i++) {
+                        s += "<li>" + result.Times[i].Name + " từ " + Ext.Date.format(new Date(result.Times[i].StartTime), 'g:i A') + " - " + Ext.Date.format(new Date(result.Times[i].EndTime), 'g:i A') + "</li>";
+                    }
+                    s += "</ul>";
+                    App.txtTime.setValue(s);
+                }
+                else {
+                    App.txtTitle.setValue("Ngày làm việc bình thường");
+                    var s = "Thời gian: <br/><ul style='padding-left:13px'>";
+                    s += "<li>Ca 1 từ 08:00 AM - 12:00 PM</li>";
+                    s += "<li>Ca 2 từ 13:00 PM - 05:00 PM</li>";
+                    s += "</ul>";
+                    App.txtTime.setValue(s);
+                }
+            }
+        });
+    };
+</script>

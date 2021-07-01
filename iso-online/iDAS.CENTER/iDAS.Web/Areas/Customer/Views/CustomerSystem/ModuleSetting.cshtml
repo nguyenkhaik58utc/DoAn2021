@@ -1,0 +1,84 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@(
+ Html.X().Window()
+    .ID("winModules")
+    .Title("Danh sách Module cung cấp cho khách hàng")
+    .Icon(Icon.ApplicationSideList)
+    .Width(600). 
+    Layout(LayoutType.Fit)        
+    .Modal(true)
+    .Resizable(false)
+    .Items(   
+            Html.X().GridPanel()
+                    .ID("grModules")
+                    .MarginSpec("0 0 0 0")
+                    .ColumnLines(true)                                
+                    .Header(false)
+                    .Border(false) 
+                    .Height(400)                           
+                    .Store(
+                            Html.X().Store()
+                                .RemotePaging(true)
+                                .AutoLoad(true)
+                                .ID("StoreModuleSetting")
+                                .Model(
+                                        Html.X().Model()
+                                        .Fields(
+                                                new ModelField("ID"),
+                                                new ModelField("CenterModuleID"),
+                                                new ModelField("CenterModuleName"),
+                                                new ModelField("IsSelect")                                                   
+                                            ))
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadModule"))
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                                )
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("customerSystemId", Model.ID.ToString(), ParameterMode.Raw));
+                                                ps.Add(new StoreParameter("systemId", Model.SystemID.ToString(), ParameterMode.Raw));
+                                            }
+                                        )
+                            )                            
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                            .Text("STT")
+                            .Align(Alignment.Center)
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(33),
+                        Html.X().Column()
+                            .Text("Tên module")
+                            .DataIndex("CenterModuleName")
+                            .StyleSpec("font-weight: bold;text-align: center; ").Flex(1),
+                        Html.X().CheckColumn()
+                            .Text("Chọn")
+                            .DataIndex("IsSelect")
+                            .StyleSpec("font-weight: bold;text-align: center; ")
+                            .Width(100).Editable(true)
+                    )
+                    .Plugins(Html.X().CellEditing().ClicksToEdit(1).Listeners(ls => ls.Edit.Fn = "onEditModuleRegister"))
+        )
+        .Buttons(
+            Html.X().Button()
+                .Icon(Icon.Decline)
+                .Text("Thoát")
+                .Handler("App.winModules.close();")
+                
+        )
+)
+<script type="text/javascript">
+    var onEditModuleRegister = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            var url = '@(Url.Action("UpdateModule"))';
+            var params = {
+                data: e.record.data,
+                customerId: '@Model.ID'
+            };
+            onDirectMethod(url, params);
+        };
+    };
+</script>

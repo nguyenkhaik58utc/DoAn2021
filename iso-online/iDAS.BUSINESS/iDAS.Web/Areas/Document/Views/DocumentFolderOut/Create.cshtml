@@ -1,0 +1,82 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Document.Models.DocumentFolder
+@(Html.X().Window()
+    .ID("CreateDocumentFolderOutWindow")
+    .Title("Thêm mới thư mục tài liệu")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreateDocumentFolder1")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .MarginSpec("0 10 10 10")
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 100)
+            .DefaultAnchor("100%")
+            .Items(
+                  Html.X().TextAreaFor(m => m.Name).FieldLabel("Tên thư mục" + Html.Required())
+                      .EmptyText("Nhập tên thư mục")
+                      .BlankText("Bạn phải nhập tên thư mục!")
+                      .AllowBlank(false).AllowOnlyWhitespace(false),
+                  Html.X().ComboBoxFor(m => m.ParentID).ID("cboDocumentFolder")
+                    .FieldLabel("Thư mục cha")
+                    .EmptyText("Chọn thư mục cha")
+                    .BlankText("Bạn phải chọn thư mục cha!")
+                    .AllowBlank(true).AllowOnlyWhitespace(false)
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Editable(false)
+                    .ColumnWidth(0.5)
+                    .Items(
+                            new ListItem("Không", "0")
+                        )
+                    .Store(
+                        Html.X().Store()
+                            .ID("stDocumentFolderCbb")
+                            .AutoLoad(true)
+                            .Model(
+                            Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    new ModelField("ID"),
+                                    new ModelField("Name")
+                                )
+                        )
+                        .Proxy(Html.X().AjaxProxy()
+                                 .Url(Url.Action("LoadData", "DocumentFolderOut", new { area = "Document" }))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                    ),
+                  Html.X().TextAreaFor(m => m.Note).FieldLabel("Ghi chú")
+                      .AllowBlank(false).AllowOnlyWhitespace(false)
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createDocumentFolderSubmit1()"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var createDocumentFolderSubmit1 = function () {
+        App.CreateDocumentFolder1.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadDocumentFolderOut();
+                    App.CreateDocumentFolderOutWindow.close();
+                }
+            }
+        });
+    };
+</script>

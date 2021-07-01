@@ -1,0 +1,125 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script type="text/javascript">
+    var CheckStatusEquipmentMeasureCategoryItem = function () {
+        var component = App.TreePanelEquipmentCategory;
+        var records = component.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnAddEquipementCategory, App.btnUpdateEquipmentCategory, App.btnDetailEquipementCategory);
+            if (records[0].get('ParentID') == 0)
+            {
+                App.btnDeleteEquipementCategory.setDisabled(true);
+            }
+            else {
+                App.btnDeleteEquipementCategory.setDisabled(false);
+            }
+        }
+        else {
+            SetDisabled(App.btnAddEquipementCategory,App.btnUpdateEquipmentCategory,App.btnDeleteEquipementCategory,App.btnDetailEquipementCategory);
+        };
+    };
+    var AddNewEquipmentMeasureCategory = function () {
+        var component = App.TreePanelEquipmentCategory;
+        var records = component.selModel.getSelection();
+        var url = '@(Url.Action("UpdateForm", "EquipmentMeasureCategory", new { Area = "Equipment"}))';
+        var params ={ parentId: records[0].get('id'), categoryId: 0 };
+        onDirectMethod(url, params);
+    };
+    var UpdateEquipmentMeasureCategory = function () {
+        var component = App.TreePanelEquipmentCategory;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "EquipmentMeasureCategory", new { Area = "Equipment"}))';
+            var params = { parentId: records[0].get('id'), categoryId: records[0].get('id') };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteUrl = '@(Url.Action("Delete", "EquipmentMeasureCategory", new { Area = "Equipment" }))';
+    var DeleteEquipmentMeasureCategory = function () {
+        var component = App.TreePanelEquipmentCategory;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+            onDelete(records[0].get('id'),ReloadTree);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function ReloadTree(result) {
+        if (result == true) {
+            var tree = App.TreePanelEquipmentCategory.selModel.getSelection()[0];
+            if (tree != null) {
+                tree.parentNode.reload();
+            };
+        };
+    };
+    var ViewDetailEquipmentMeasureCategory = function () {
+        var component = App.TreePanelEquipmentCategory;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "EquipmentMeasureCategory", new { Area = "Equipment" }))';
+            var  params= { id: records[0].get('id') } ;
+            onDirectMethod(url,params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(
+ Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+.Items(
+    Html.X().TreePanel()
+                .Layout(LayoutType.Fit)
+                .Split(true)
+                .Region(Region.West).Width(300)
+                .Header(false)
+                .ID("TreePanelEquipmentCategory")
+                .TitleAlign(TitleAlign.Center)
+                .Border(false)
+                .AutoScroll(true)
+                .Expand(false)
+                .RootVisible(false)
+                .TopBar(Html.X().Toolbar().ID("toolbarID")
+                                    .Layout(LayoutType.HBox)
+                                    .Items(
+                                        Html.X().ButtonCreate().ToolTip("Thêm mới nhóm thiết bị sản xuất").ID("btnAddEquipementCategory").Icon(Icon.Add).Disabled(true).Handler("AddNewEquipmentMeasureCategory();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonUpdate().ID("btnUpdateEquipmentCategory").ToolTip("Cập nhật nhóm thiết bị sản xuất").Icon(Icon.Pencil).Disabled(true).Handler("UpdateEquipmentMeasureCategory();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonDelete().ID("btnDeleteEquipementCategory").ToolTip("Xóa nhóm thiết bị sản xuất").Icon(Icon.Delete).Disabled(true)
+                                            .Handler("DeleteEquipmentMeasureCategory()"),
+                                        Html.X().ToolbarSeparator().Hidden(true),
+                                        Html.X().ButtonView().ID("btnDetailEquipementCategory").ToolTip("Xem chi tiết nhóm thiết bị sản xuất").Icon(Icon.Zoom).Disabled(true).Handler("ViewDetailEquipmentMeasureCategory();").Hidden(true),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button().Icon(Icon.ArrowRefresh).Handler("App.TreePanelEquipmentCategory.store.reload();").Disabled(false),
+                                        Html.X().ToolbarFill(),
+                                        Html.X().ButtonTutorial()
+                                        )
+                            )
+                    .Store(
+                            Html.X().TreeStore().ID("StoreEquipementCategory")
+                                .AutoDataBind(true)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "EquipmentMeasureCategory", new { Area = "Equipment" }))
+                                .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                .Model(
+                                            Html.X().Model().Fields(Html.X().ModelField().Name("id"),
+                                            Html.X().ModelField().Name("text"),
+                                            Html.X().ModelField().Name("ParentID")
+                                ))
+                        )
+                            .ColumnModel(
+                                    Html.X().TreeColumn()
+                                            .Flex(1)
+                                            .DataIndex("text")
+                            ).HideHeaders(true)
+                        .Listeners(ls => { ls.ItemClick.Handler = "CheckStatusEquipmentMeasureCategoryItem();"; })
+       )
+)

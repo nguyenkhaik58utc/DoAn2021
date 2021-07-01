@@ -1,0 +1,56 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerImportItem
+@{
+    var X = Html.X();
+    var excelColumn = new List<ListItem>()
+    {
+        new ListItem(){Text ="A",Value="0"},
+        new ListItem(){Text ="B",Value="1"},
+        new ListItem(){Text ="C",Value="2"},
+        new ListItem(){Text ="D",Value="3"},
+        new ListItem(){Text ="E",Value="4"},
+        new ListItem(){Text ="F",Value="5"},
+        new ListItem(){Text ="G",Value="6"}
+    };
+    var groupId = ViewData["GroupCustomerID"];
+    var groupName = ViewData["GroupName"] as string;
+    var direction = ViewData["Direction"] as string;
+}
+@(Html.X().Window()
+            .BodyPadding(0)
+            .Width(400)
+            .Constrain(true)
+            .Modal(true)
+            .Layout(LayoutType.Fit)
+            .Icon(Icon.PageExcel)
+            .Title("Tham chiếu các cột excel tương ứng")
+            .Items(
+            Html.X().CustomFormPanel().ID("frmSettingImport")
+                        .Items(
+                                X.TextField().FieldLabel("Nhóm khách hàng").Text(groupName).ReadOnly(true),
+                                X.ComboBoxFor(m => m.Name).BlankText("Bắt buộc nhập giá trị").FieldLabel("Tên khách hàng").Items(excelColumn),
+                                X.ComboBoxFor(m => m.TaxCode).BlankText("Bắt buộc nhập giá trị").FieldLabel("Mã số thuế").Items(excelColumn),
+                                X.ComboBoxFor(m => m.Scope).BlankText("Bắt buộc nhập giá trị").FieldLabel("Lĩnh vực hoạt động").Items(excelColumn),
+                                X.ComboBoxFor(m => m.Phone).BlankText("Bắt buộc nhập giá trị").FieldLabel("Số điện thoại").Items(excelColumn),
+                                X.ComboBoxFor(m => m.Email).BlankText("Bắt buộc nhập giá trị").FieldLabel("Hòm thư điện tử").Items(excelColumn),
+                                X.ComboBoxFor(m => m.Address).BlankText("Bắt buộc nhập giá trị").FieldLabel("Địa chỉ").Items(excelColumn),
+                                X.ComboBoxFor(m => m.Note).BlankText("Bắt buộc nhập giá trị").FieldLabel("Ghi chú").Items(excelColumn)
+                        )
+            )
+            .Buttons(
+            Html.X().Button().Icon(Icon.ArrowDown).Text("Lưu lại")
+                            .DirectEvents(de =>
+                            {
+                            de.Click.EventMask.ShowMask = true;
+                            de.Click.EventMask.Msg = "Đang tải dữ liệu";
+                            de.Click.Before = @"if (!App.frmSettingImport.getForm().isValid()) { return false; }; ";
+                            de.Click.ExtraParams.Add(new { groupId = groupId, direction = direction });
+                            de.Click.Url = Url.Action("SettingImport");
+                            de.Click.FormID = "frmSettingImport";
+                            de.Click.Success = "this.up('window').close(); App.winCustomerImport.close();App.GrCustomer.store.reload();";
+                        }),
+            Html.X().ButtonExit()
+            )
+)

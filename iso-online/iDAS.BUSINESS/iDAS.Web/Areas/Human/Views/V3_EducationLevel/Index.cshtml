@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateEducationLevel = '@(Url.Action("Create", "v3_EducationLevel", new { area = "Human" }))';
+    var urlUpdateEducationLevel = '@(Url.Action("Update", "v3_EducationLevel", new { area = "Human" }))';
+    var urlDeleteEducationLevel = '@(Url.Action("Delete", "v3_EducationLevel", new { Area = "Human" }))';
+    var urlDetailEducationLevel = '@(Url.Action("ShowFrmDetail", "v3_EducationLevel", new { Area = "Human" }))';
+    var sortEducationLevelIndex = null;
+    var showCreateEducationLevel = function () {
+        var url = urlCreateEducationLevel;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateEducationLevel = function () {
+        var url = urlUpdateEducationLevel;
+        var record = getEducationLevelSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getEducationLevelSelection = function () {
+        var records = App.EducationLevelPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setEducationLevelSelection = function () {
+        if (sortEducationLevelIndex != null) {
+            App.EducationLevelPanel.selModel.select(sortEducationLevelIndex);
+        }
+    };
+
+    var showDeleteEducationLevel = function () {
+        var url = urlDeleteEducationLevel;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ trình độ đào tạo này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getEducationLevelSelection();
+                            var EducationLevelId = record == null ? 0 : record.data.ID;
+                            var params = { ID: EducationLevelId };
+                            onDirectMethod(url, params, 'post', reloadEducationLevel);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailEducationLevel = function () {
+        var url = urlDetailEducationLevel;
+        var record = getEducationLevelSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadEducationLevel = function () {
+        App.EducationLevelPanel.store.reload();
+    };
+
+    var selectionChangeEducationLevel = function () {
+        var record = getEducationLevelSelection();
+        var isDisabled = record == null;
+        App.btnUpdateEducationLevel.setDisabled(isDisabled);
+        App.btnDeleteEducationLevel.setDisabled(isDisabled);
+        App.btnDetailEducationLevel.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý trình độ đào tạo").Header(false)
+                    .ID("EducationLevelPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateEducationLevel").ID("btnCreateEducationLevel()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateEducationLevel").Handler("showUpdateEducationLevel();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteEducationLevel").Handler("showDeleteEducationLevel()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailEducationLevel").Handler("showDetailEducationLevel();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreEducationLevel")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setEducationLevelSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên trình độ đào tạo").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeEducationLevel();")
+    )
+    )

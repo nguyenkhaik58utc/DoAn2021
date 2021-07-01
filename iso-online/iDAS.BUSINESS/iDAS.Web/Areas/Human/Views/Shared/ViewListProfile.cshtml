@@ -1,0 +1,80 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    var windowID = "StatisticalProfile";
+    var StoreParamProfile = ViewData["StoreParamProfileStatiscal"] as StoreParameter;
+}
+@(Html.X().Window()
+            .ID(windowID)
+            .Title("Danh sách hồ sơ ứng tuyển")
+            .StyleSpec("-webkit-border-radius:0")
+            .Icon(Icon.ApplicationSideList)
+            .Height(1)
+            .Maximized(true)
+            .Constrain(true)
+            .Layout(LayoutType.Fit)
+            .Modal(true)
+            .Resizable(false)
+            .Margin(0)
+            .BodyPadding(0)
+            .Border(true)
+            .Items(
+               Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrProfile")
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)                    
+                .Store(
+                        Html.X().Store()
+                            .ID("StoreProfile")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(ViewData["StoreUrlProfile"].ToString()).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(a =>
+                                                {
+                                                    a.Add(StoreParamProfile);
+                                                    a.Add(new { fromDate = ViewData["FromDate"] });
+                                                    a.Add(new { toDate = ViewData["ToDate"] });
+                                                    a.Add(new { planID = ViewData["planId"] });
+                                                })
+                         .Model(
+                                Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Avatar"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Gender"),
+                                    Html.X().ModelField().Name("Birthday"),
+                                    Html.X().ModelField().Name("Email"),
+                                            Html.X().ModelField().Name("IsEmployee"),
+                                    Html.X().ModelField().Name("Phone")
+                                )
+                              )                           
+                )
+                   .ColumnModel(
+                                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                Html.X().ImageColumn().DataIndex("Avatar"),
+                                Html.X().Column().DataIndex("Name").Flex(1).Text("Họ Tên"),
+                                Html.X().Column().DataIndex("Gender").Renderer("SexRenderer").Width(100).Text("Giới tính").Align(Alignment.Center),
+                                Html.X().DateColumnExtend().DataIndex("Birthday").Text("Ngày sinh").Align(Alignment.Center).Format("dd/MM/yyyy").Width(150),
+                                Html.X().Column().DataIndex("Email").Text("Email").Width(150).Align(Alignment.Right),
+                                Html.X().Column().DataIndex("Phone").Text("Số điện thoại").Width(150).Align(Alignment.Right),
+                                Html.X().CheckColumn().DataIndex("IsEmployee").Text("Nhân sự").Width(100)
+                        )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single))
+                .BottomBar(Html.X().CustomPagingToolbar())
+           )
+
+)
+<script>
+    var renderRed = function (value) {
+        return "<span style=\"color:red\">" + value + "</span>";
+
+    };
+    var SexRenderer = function (value) {
+        return value == true ? "Nam" : "Nữ";
+    };
+</script>

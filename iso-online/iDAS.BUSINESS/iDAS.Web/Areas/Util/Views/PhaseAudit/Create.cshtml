@@ -1,0 +1,203 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanPhaseAuditItem
+@( Html.X().Window()
+    .Title("Thêm mới đợt đánh giá năng lực")
+    .Icon(Icon.Add)
+    .ID("winNewPhaseAudit")
+        .Height(1)
+        .Maximized(true)
+        .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(false)
+        .Center()
+        .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+            .ID("frmAudit")
+            .Border(false)
+            .Items (
+            Html.X().TabPanel()
+            .Region(Region.Center)
+                .ActiveTabIndex(0)
+                .Border(true)
+                .Items(
+                Html.X().Panel()
+                .BodyPadding(6)
+                .Icon(Icon.ApplicationViewDetail)
+                     .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .StyleSpec("border: none;")
+                .Title("Thông tin chi tiết")
+                .Frame(true)
+                .Items (
+    Html.X().FormPanel()
+            .ID("frmPhaseAudit")
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .Frame(true)
+                    .StyleSpec("border: none;")
+                    .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+            .Items (
+                                    Html.X().TextFieldFor(m => m.Name)
+                                    .ID("txtNamePhaseAudit")
+                                    .FieldLabel("Tên đợt" + Html.Required())
+                                    .AllowOnlyWhitespace(false)
+                                    .TabIndex(2)
+                                    .AllowBlank(false)
+                                        .BlankText("Tên đợt đánh giá không được để trống!"),
+                                          Html.X().ComboBoxFor(m => m.HumanCategoryQuestionID)
+                                            .FieldLabel("Nhóm câu hỏi" + Html.Required())
+                                            .Editable(false)
+                                            .MarginSpec("0 0 5 0")
+                                            .ID("cbCategoryQuestion")
+                                            .AllowBlank(false)
+                                            .DisplayField("Name")
+                                                .ValueField("ID")
+                                                .Store(
+                                                Html.X().Store()
+                                                    .ID("stQuestion")
+                                                    .AutoLoad(true)
+                                                         .Proxy(Html.X().AjaxProxy()
+                                                                .Url(Url.Action("GetDataQuestion", "PhaseAudit", new { area = "Human" }))
+                                                            .Reader(Html.X().JsonReader().Root("data")
+                                                            )
+                                                            )
+                                                    .Model(Html.X().Model()
+                                                        .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                                            new ModelField("NumberQuestion", ModelFieldType.Int) { Mapping = "NumberQuestion" }
+                                                        )
+                                                    )
+                                                        ),
+                                                        //.Listeners(l => l.Select.Handler = "getNumber(App.cbCategoryQuestion, App.stQuestion);"),
+                                            Html.X().NumberFieldFor(m=>m.NumberSendInDay).ID("txtNumber").FieldLabel("Số câu hỏi/ngày").MinValue(1).Value(1),
+                                          Html.X().Container()
+                                                .Layout(LayoutType.Column)
+                                                .ColSpan(2)
+                                                .MarginSpec("0 0 5 0")
+                                                .Items(
+                                            Html.X().DateTimeFieldFor(m => m.StartDate)
+                                                .AllowBlank(false)
+                                                .FieldLabel("Bắt đầu" + Html.Required())
+                                                .ColumnWidth(0.5).MarginSpec("0 5 0 0"),
+                                            Html.X().DateTimeFieldFor(m => m.EndDate)
+                                                .FieldLabel("Kết thúc" + Html.Required())
+                                                .AllowBlank(false)
+                                                .ColumnWidth(0.5)),
+                                            Html.X().TextAreaFor(m => m.Contents)
+                                                .TabIndex(3)
+                                                .AllowOnlyWhitespace(false)
+                                                .AllowBlank(false)
+                                                .FieldLabel("Yêu cầu" + Html.Required())
+                                                .BlankText("Yêu cầu không được bỏ trống!")
+                                                .Height(170)
+                                                .Flex(1)
+                                                      )
+                                                    ),
+                                            Html.X().Panel()
+                                                .Icon(Icon.UserTick)
+                                                .Border(false)
+                                                .BodyPadding(0)
+                                                .Margin(0)
+                                                .Padding(0)
+                                                .AutoScroll(true)
+                                                .Title("Thành phần tham gia")
+                                                .Layout(LayoutType.Fit)
+                                                .ItemsFromAction("FormListObject", "PhaseAudit")
+                                      ),
+                                    Html.X().ApprovalPanelFor(m => m)
+                                     )
+                                     )
+                                .Buttons(
+                                    Html.X().ButtonSendWindow()
+                                        .ID("btnSendApprove")
+                                        .DirectEvents(de =>
+                                            {
+                                                de.Click.ExtraParams.Add(new { val = true });
+                                                de.Click.Before = @"if (!App.frmAudit.getForm().isValid()) { return false; } ";
+                                                de.Click.ExtraParams.Add(new { arrObject = new JRawValue("getObjectPartial()") });
+                                                de.Click.Action = "Insert";
+                                                de.Click.ExtraParams.Add(new { IsEdit = false });
+                                                de.Click.FormID = "frmAudit";
+                                                de.Click.EventMask.ShowMask = true;
+                                                de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+                                            }),
+                                    Html.X().ButtonSave()
+                                        .ID("btnSaves")
+                                        .DirectEvents(de =>
+                                                {
+                                                    de.Click.ExtraParams.Add(new { val = false });
+                                                    de.Click.Before = @"if (!App.frmAudit.getForm().isValid()) { return false; } ";
+                                                    de.Click.ExtraParams.Add(new { arrObject = new JRawValue("getObjectPartial()") });
+                                                    de.Click.Action = "Insert";
+                                                    de.Click.ExtraParams.Add(new { IsEdit = true });
+                                                    de.Click.FormID = "frmAudit";
+
+                                                }),
+                                        Html.X().ButtonSaveAndExit()
+                                            .ID("btnSave")
+                                            .DirectEvents(de =>
+                                                        {
+                                                            de.Click.ExtraParams.Add(new { val = true });
+                                                            de.Click.Before = @"if (!App.frmAudit.getForm().isValid()) { return false; } ";
+                                                            de.Click.ExtraParams.Add(new { arrObject = new JRawValue("getObjectPartial()") });
+                                                            de.Click.Action = "Insert";
+                                                            de.Click.ExtraParams.Add(new { IsEdit = true });
+                                                            de.Click.FormID = "frmAudit";
+                                                        }),
+                                    Html.X().ButtonExit()
+                                )
+
+)
+<script type="text/javascript">
+   
+    var ViewDetailContractAdd = function () {
+        var records = App.grMnPhaseAuditContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.stM.data.length; i++) {
+            arr.push(App.stM.data.items[i].data);
+        }
+        return JSON.stringify(arr);
+    };
+    function onSelectEmployee(records) {
+        if (records.length == 1) {
+            App.nameApproval.setValue(records[0].get('Name'));
+            App.hdfEmployeeApproveId.setValue(records[0].get('ID'));
+            App.avatarApproval.setImageUrl(records[0].get('Avatar'));
+            var RoleName = records[0].get('Role');
+            if (RoleName == null) {
+                RoleName = "N/A";
+            };
+            var DepartmentName = records[0].get('DepartmentName');
+            if (DepartmentName == null) {
+                DepartmentName = "N/A";
+            };
+            App.displayApproval.setValue("Đơn vị: " + DepartmentName + "</br> Chức danh: " + RoleName);
+        }
+        else {
+            Ext.Msg.alert("", "Bạn chưa lựa chọn bản ghi nào!");
+        };
+
+    };
+</script>

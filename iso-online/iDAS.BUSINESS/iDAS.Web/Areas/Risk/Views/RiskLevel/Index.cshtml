@@ -1,0 +1,105 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatusRiskLevel() {
+        var records = App.GrRiskLevel.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateRiskLevel, App.btnDeleteRiskLevel, App.btnDetailOrder);
+        }
+        else {
+            SetDisabled(App.btnUpdateRiskLevel, App.btnDeleteRiskLevel, App.btnDetailOrder);
+        };
+    };
+    var ShowInsert = function () {
+        onDirectMethod('@(Url.Action("Update"))', null,'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.GrRiskLevel.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var  params= {ID: records[0].get('ID')};
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ShowViewDetail = function () {
+        var records = App.GrRiskLevel.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrRiskLevel")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowInsert();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateRiskLevel").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteRiskLevel").Handler("onDelete(App.GrRiskLevel.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailOrder").Handler("ShowViewDetail();")
+                                )
+                            )
+                            .Store(
+                                        Html.X().Store().ID("StoreRiskLevel")
+                                            .RemotePaging(true)
+                                            .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                            .Model(
+                                                Html.X().Model().Fields(
+                                                        Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("Level"),
+                                                        Html.X().ModelField().Name("MinPoint"),
+                                                        Html.X().ModelField().Name("MaxPoint"),
+                                                        Html.X().ModelField().Name("Color"),
+                                                        Html.X().ModelField().Name("Description")
+                                                )
+                                          )
+                                    )
+                            .ColumnModel(
+                                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                        X.Column().DataIndex("Level").Text("Mức độ").Width(200),
+                                        X.Column().Text("Điểm")
+                                                .Columns(
+                                                        X.Column().DataIndex("MinPoint").Text("Tối thiểu").Width(100).Align(Alignment.Center),
+                                                        X.Column().DataIndex("MaxPoint").Text("Tối đa").Width(100).Align(Alignment.Center)
+                                                ),
+                                        X.Column()
+                                            .Text("Màu sắc")
+                                            .DataIndex("Color")
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                                            .Align(Alignment.Center)
+                                                .Width(100),
+                                        X.Column().DataIndex("Description").Text("Mô tả").Flex(1)
+                                )
+                            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusRiskLevel"))
+                            .BottomBar(Html.X().CustomPagingToolbar())
+            )
+)
+

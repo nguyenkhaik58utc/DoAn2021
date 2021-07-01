@@ -1,0 +1,176 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+.Items(
+        Html.X().GridPanel()
+                .Header(false)
+                .ID("GrProfile")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .Border(false)
+                .Icon(Icon.TextListBullets)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().SearchByDate("App.StoreProfile.load();").FromDateID("dfFromDate").ToDateID("dfToDate"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonCreate().Handler("AddNew();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrProfile.selModel.getSelection()[0].get('ID'));"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnViewTask").Handler("ViewTaskEmployee();").Icon(Icon.PackageStart).Text("Công việc").Disable(true),
+                        Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnSendTick").Text("Gửi yêu cầu tự đánh giá").Icon(Icon.ArrowRight).Handler("SendTick").Disable(true),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                    Html.X().Store()
+                        .ID("StoreProfile")
+                    .RemotePaging(true)
+                            .PageSize(20).GroupField("Role.Department")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadList")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID")).Parameters(ps =>
+                                                            {
+                                                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                                            })
+                    .Model(
+                                        Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("HumanEmployeeID"),
+                                        Html.X().ModelField().Name("HumanEmployee.Name"),
+                                        Html.X().ModelField().Name("HumanEmployee.Birthday"),
+                                            Html.X().ModelField().Name("HumanEmployee.Gender"),
+                                            Html.X().ModelField().Name("Role.Name"),
+                                                Html.X().ModelField().Name("Role.Department"),
+                                            Html.X().ModelField().Name("FromDate"),
+                                                Html.X().ModelField().Name("ToDate"),
+                                                        Html.X().ModelField().Name("Status"),
+                                            Html.X().ModelField().Name("HumanEmployee.IsTrial")
+                                    )
+            ))
+                   .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("HumanEmployeeID").Text("Emp ID").Hidden(true).Width(100),
+                                    Html.X().Column().DataIndex("HumanEmployee.Name").Text("Họ và tên").Flex(1).MinWidth(250),
+                                    Html.X().DateColumnExtend().DataIndex("HumanEmployee.Birthday").Format("dd/MM/yyyy").Text("Ngày sinh").Width(100),
+                                    Html.X().Column().DataIndex("HumanEmployee.Gender").Text("Giới tính").Width(100).Renderer("SexRenderer"),
+                                    Html.X().Column().DataIndex("Role.Name").Text("Chức danh").Width(200),                                        
+                                    Html.X().ComponentColumn().Text("Thời gian thử việc").Columns(
+                                    Html.X().DateColumnExtend().DataIndex("FromDate").Text("Bắt đầu").Align(Alignment.Right).Format("dd/MM/yyyy").Width(80),
+                                    Html.X().DateColumnExtend().DataIndex("ToDate").Text("Kết thúc").Align(Alignment.Center).Format("dd/MM/yyyy")),
+                                        Html.X().Column().DataIndex("Status").Text("Yêu cầu tự đánh giá").Width(150).Align(Alignment.Center).Renderer("StatusRenderer")
+                            )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                            .Features(
+                                            Html.X().GroupingSummary()
+                                            .ID("GroupingSummarySupplier")
+                                            .GroupHeaderTplString("{name}")
+                                            .HideGroupedHeader(true)
+                                            .EnableGroupingMenu(false)
+                                    )
+            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script>
+    var SexRenderer = function (value) {
+        return value == true ? "Nam" : "Nữ";
+    };
+    var StatusRenderer = function (value) {
+        return value == true ? "<span style=\"color:green\">Đã gửi</span>" : "<span style=\"color:red\">Chưa gửi</span>";
+    };
+    function CheckStatus() {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdate, App.btnDelete, App.btnDetail, App.btnViewTask, App.btnSendTick);
+            if (records[0].get('Status'))
+                SetDisabled(App.btnSendTick, App.btnDelete, App.btnUpdate);
+        }
+        else {
+            SetDisabled(App.btnUpdate, App.btnDelete, App.btnDetail, App.btnViewTask, App.btnSendTick);
+        };
+    };
+    var AddNew = function () {
+        var records = App.GrProfile.selModel.getSelection();
+            var url = '@(Url.Action("UpdateForm"))';
+            var params = {
+                ID: 0,
+                action: "add"
+            };
+            onDirectMethod(url, params);
+    };
+    var UpdateItem = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm"))';
+            var params = {
+                ID: records[0].get('ID'),
+                action: "edit"
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ViewDetail = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm"))';
+            var params = {
+                ID: records[0].get('ID'),
+                action: "view"
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ViewTaskEmployee = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("TaskForm"))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SendTick = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("SendTickForm"))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteUrl = '@(Url.Action("DeleteProfile"))';
+    var reDelete = function (id) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("reDeleteProfile"))',
+            params: {
+                id: id,
+            }
+        });
+    };
+</script>

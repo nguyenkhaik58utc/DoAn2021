@@ -1,0 +1,148 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatusRiskCategory() {
+        var records = App.GrRiskCategory.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateRiskCategory, App.btnDeleteRiskCategory, App.btnDetailRiskCategory);
+        }
+        else {
+            SetDisabled(App.btnUpdateRiskCategory, App.btnDeleteRiskCategory, App.btnDetailRiskCategory);
+        };
+    };
+    var ShowInsert = function () {
+         var records = App.GrISOStandard.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = { isoStandardId: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowUpdate = function () {
+        var records = App.GrRiskCategory.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowViewDetail = function () {
+        var records = App.GrRiskCategory.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var onSelectISOStandard = function (obj) {
+        var records = obj.selModel.getSelection();
+        if (records.length > 0) {
+            App.hdfISOStandardID.setValue(records[0].data.ID);
+            App.StoreRiskCategory.reload();
+            App.btnInsertRiskCategory.setDisabled(false);
+        }
+        else {
+            App.btnInsertRiskCategory.setDisabled(true);
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(1).Frame(false).StyleSpec("border: none;")
+            .Items(
+                     Html.X().Hidden().ID("hdfISOStandardID"),
+                            Html.X().GridPanel().Region(Region.West).Width(300)
+                                .Title("Tiêu chuẩn ISO").TitleAlign(TitleAlign.Center)
+                                .ID("GrISOStandard")
+                                .ColumnLines(true)
+                                .ForceFit(true)
+                                .Collapsible(true).Split(true)
+                                .Store(
+                                        Html.X().Store()
+                                                .ID("StoreISOStandard")
+                                                .RemotePaging(true)
+                                                .AutoLoad(true)
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadISOHasAnnex", "ISOStandard")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                .Model(Html.X().Model()
+                                                            .Fields(
+                                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                                    Html.X().ModelField().Name("Code").Type(ModelFieldType.String)
+                                                                )
+                                                      )
+                                        )
+                                .ColumnModel(
+                                    Html.X().RowNumbererColumn()
+                                            .Text("STT")
+                                            .Width(33)
+                                            .Align(Alignment.Center)
+                                            .StyleSpec("font-weight: bold; text-align: center;"),
+                                    Html.X().Column()
+                                                .DataIndex("Code")
+                                            .Text("ISO")
+                                            .Width(120)
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                )
+                                .Listeners(ls => ls.SelectionChange.Handler = "onSelectISOStandard(this);"),
+                    Html.X().GridPanel().ID("GrRiskCategory").Region(Region.Center)
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().ID("btnInsertRiskCategory").Handler("ShowInsert();").Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateRiskCategory").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteRiskCategory").Handler("onDelete(App.GrRiskCategory.selModel.getSelection()[0].get('ID'));"),
+                                         Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailRiskCategory").Handler("ShowViewDetail();")
+                                )
+                            )
+                            .Store(
+                            Html.X().Store().ID("StoreRiskCategory")
+                                .RemotePaging(true)
+                                .PageSize(10)
+                                .AutoLoad(false)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("isoStandardId", "App.hdfISOStandardID.getValue()", ParameterMode.Raw));
+
+                                })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Description")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                                    X.Column().DataIndex("Name").Text("Tên nhóm rủi ro").Width(300).StyleSpec("font-weight: bold; text-align: center;"),
+                                    X.Column().DataIndex("Description").Text("Mô tả").Flex(1).StyleSpec("font-weight: bold; text-align: center;")
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusRiskCategory"))
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar("10", "20", "30", "50", "100")
+            )
+     )
+)
+

@@ -1,0 +1,58 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.FaqAnswerItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin câu trả lời")
+    .Icon(Icon.Add)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.FaqQuestionID).Value(ViewData["FaqQuestionID"]),
+                    //Html.X().TextAreaFor(m => m.Answer).AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Câu trả lời (*)").Height(120),
+                    Html.X().HtmlEditorFor(m => m.Answer).FieldLabel("Câu trả lời *"),
+                    Html.X().NumberFieldFor(m => m.Position).Value(0).FieldLabel("Thứ tự hiển thị"),
+                    Html.X().CheckboxFor(m => m.IsActive).Value(true).FieldLabel("Kích hoạt")
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if (result.result) {reloadFaqAnswer();this.up('window').close();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)

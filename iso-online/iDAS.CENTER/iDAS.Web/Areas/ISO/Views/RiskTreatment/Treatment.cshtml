@@ -1,0 +1,115 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.RiskTreatmentItem
+@{
+    var X = Html.X();
+}
+@(
+ Html.X().Window().ItemID("windowId")
+    .BodyPadding(0)
+    .Width(640)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .ID("winRiskTreatment")
+    .Title("Hành động ứng phó rủi ro")
+    .Icon(Icon.BugFix)
+    .Items(
+                        Html.X().HiddenFor(m => m.ID).ID("hdfRiskID"),
+                        Html.X().GridPanel().MinHeight(350).Border(false)
+                                    .ID("GrTreatment").ColumnLines(true)
+                                    .TopBar(
+                                            Html.X().Toolbar()
+                                            .Layout(LayoutType.HBox)
+                                            .Items(
+                                                    Html.X().ButtonCreate().ID("btnInsertTreatment").Handler("ShowTreatmentInsert();"),
+                                                    Html.X().ToolbarSeparator(),
+                                                    Html.X().ButtonUpdate().ID("btnUpdateTreatment").Handler("ShowTreatmentUpdate();"),
+                                                    Html.X().ToolbarSeparator(),
+                                                    Html.X().ButtonDelete().ID("btnDeleteTreatment").Handler("onDelete(App.GrTreatment.selModel.getSelection()[0].get('ID'));"),
+                                                    Html.X().ToolbarSeparator(),
+                                                    Html.X().ButtonView().ID("btnDetailTreatment").Handler("ShowTreatmentDetail();")
+                                                  )
+                                           )
+                                    .Store(
+                                            Html.X().Store().ID("StoreRiskTreatment")
+                                                .RemotePaging(true)
+                                                .AutoLoad(true)
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                .Parameters(ps => ps.Add(new StoreParameter("id", "App.hdfRiskID.value", ParameterMode.Raw)))
+                                                .Model(
+                                                        Html.X().Model()
+                                                            .Fields(
+                                                                        Html.X().ModelField().Name("ID"),
+                                                                        Html.X().ModelField().Name("Color"),
+                                                                        Html.X().ModelField().Name("Level"),
+                                                                        Html.X().ModelField().Name("Action")
+                                                                    )
+                                                      )
+                                           )
+                                    .ColumnModel(
+                                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                X.Column()
+                                                        .Text("Màu sắc")
+                                                        .DataIndex("Color")
+                                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                                        .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                                                        .Align(Alignment.Center)
+                                                        .Width(100),
+                                                X.Column().DataIndex("Level")
+                                                        .Text("Mức độ").Width(200),
+                                                X.Column().DataIndex("Action")
+                                                        .Text("Hành động").Flex(1)
+                                            )
+                                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusTreatment"))
+                                    .BottomBar(Html.X().CustomPagingToolbar("10", "20", "30", "50", "100"))           
+            )  
+    .Buttons(
+               Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    function CheckStatusTreatment() {
+        var records = App.GrTreatment.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateTreatment, App.btnDeleteTreatment, App.btnDetailTreatment);
+        }
+        else {
+            SetDisabled(App.btnUpdateTreatment, App.btnDeleteTreatment, App.btnDetailTreatment);
+        };
+    };
+    var ShowTreatmentInsert = function () {
+            var url = '@(Url.Action("Update"))';
+            var params = {
+                riskId: App.hdfRiskID.value
+            };
+            onDirectMethod(url, params, 'get');
+    };
+    var ShowTreatmentUpdate = function () {
+        var records = App.GrTreatment.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowTreatmentDetail = function () {
+        var records = App.GrTreatment.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

@@ -1,0 +1,39 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ProductionPerformItem
+@{
+    var X = Html.X();
+}
+@(Html.X().CustomWindow()
+    .Title("Chi tiết thông tin ca sản xuất")
+    .Icon(Icon.Zoom)
+    .Items(
+            X.CustomFormPanel()
+                .Items(
+                         Html.X().EmployeeFieldFor(m => m.HumanEmployee).ReadOnly(true).Title("Người giám sát" ),
+                            Html.X().DepartmentFieldFor(m => m.HumanDepartment).ReadOnly(true),
+                            Html.X().HiddenFor(m => m.ProductionCommandID),
+                            Html.X().TextFieldFor(m => m.CommandCode).ReadOnly(true).FieldLabel("Mã lệnh sản xuất").InputWidth(150),
+                            Html.X().DateFieldFor(m => m.Date).ReadOnly(true).FieldLabel("Ngày thực hiện").InputWidth(150),
+                            Html.X().ComboBoxFor(m => m.ProductionShiftID).FieldLabel("Ca sản xuất" ).ReadOnly(true)
+                                .Store(
+                                        Html.X().Store().ID("StoreProductionRequirement")
+                                                .AutoLoad(true)
+                                                .Proxy(Html.X().AjaxProxy()
+                                                            .Url(Url.Action("LoadDataActived", "Shift"))
+                                                            .ActionMethods(am => am.Read = HttpMethod.POST)
+                                                            .Reader(Html.X().JsonReader().Root("data")))
+                                                .Model(Html.X().Model()
+                                                            .IDProperty("ID")
+                                                            .Fields(
+                                                                    new ModelField("ID", ModelFieldType.Int),
+                                                                    new ModelField("Name", ModelFieldType.String))
+                                                                    )
+                                )
+                                .DisplayField("Name")
+                                .ValueField("ID")
+                    )
+)
+.Buttons( Html.X().ButtonExit())
+)

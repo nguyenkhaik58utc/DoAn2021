@@ -1,0 +1,59 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Human.Models.V3_Category.V3_PartyPositionResponse
+@(Html.X().Window()
+    .ID("CreatePositionPartyWindow")
+    .Title("Thêm mới chức vụ Đảng")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreatePositionPartyForm")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .MarginSpec("0 10 10 10")
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 100)
+            .DefaultAnchor("100%")
+            .Items(
+                                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên chức vụ" + Html.Required())
+                                    .EmptyText("Nhập tên chức vụ Đảng")
+                                    .BlankText("Bạn phải nhập tên chức vụ đảng!")
+                                    .AllowBlank(false).AllowOnlyWhitespace(false)
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createPositionPartySubmit(false)"),
+        Html.X().ButtonSaveAndExit().Handler("createPositionPartySubmit(true)"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var createPositionPartySubmit = function (exit) {
+        App.CreatePositionPartyForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadPositionParty();
+                    if (exit) {
+                        App.CreatePositionPartyWindow.close();
+                    }
+                    else {
+                        App.CreatePositionPartyForm.reset();
+                        App.TabMain.setActiveTab('tabPositionPartyCreate');
+                    }
+                }
+            }
+        });
+    };
+</script>

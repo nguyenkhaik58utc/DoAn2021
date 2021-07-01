@@ -1,0 +1,70 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ProductionRequirementItem
+@(Html.X().CustomWindow()
+    .Title("Chi tiết yêu cầu sản xuất")
+    .Icon(Icon.Zoom)
+    .Items(
+          Html.X().CustomFormPanel()
+                .Items(
+                         Html.X().HiddenFor(m => m.ID),
+                                        Html.X().EmployeeFieldFor(m => m.HumanEmployee).ReadOnly(true).Title("Người yêu cầu"),
+                                        Html.X().ProductFieldFor(m => m.Product).ReadOnly(true).AllowBlank(false).FieldLabel("Sản phẩm"),
+                                        Html.X().NumberFieldFor(m => m.Quantity).ReadOnly(true).InputWidth(200).AllowBlank(false).MinValue(1).FieldLabel("Số lượng"),
+                                        Html.X().ComboBoxFor(m => m.ProductionLevel.ID).InputWidth(200).AllowBlank(false).ReadOnly(true)
+                                                    .ID("cbLevelID")
+                                                    .MarginSpec("0 0 5 0")
+                                                    .FieldLabel("Mức độ")
+                                                    .EmptyText("Chọn mức độ")
+                                                    .BlankText("Mức độ ưu tiên chưa được chọn!")
+                                                    .DisplayField("Name")
+                                                    .Editable(false)
+                                                    .ColumnWidth(0.5)
+                                                    .ValueField("ID")
+                                                    .Tpl(
+                                                    @<text>
+                                                        <tpl for=".">
+                                                            <div class="x-boundlist-item">
+                                                                <div style="text-align: center; width: 100%; background-color: {Color}; border: #cecece 1px solid;">{Name}</div>
+                                                            </div>
+                                                        </tpl>
+                                                    </text>
+                                                    )
+                                                    .Store(
+                                                        Html.X().Store()
+                                                            .ID("StoreProductionLevel")
+                                                            .AutoLoad(true)
+                                                            .Model(
+                                                                Html.X().Model().IDProperty("ID")
+                                                                    .Fields(
+                                                                        new ModelField("ID", ModelFieldType.Int),
+                                                                        new ModelField("Name", ModelFieldType.String),
+                                                                        new ModelField("Color", ModelFieldType.String)
+                                                                    )
+                                                            )
+                                                            .Proxy(Html.X().AjaxProxy()
+                                                                .Url(Url.Action("LoadDataActived", "ProductionLevel", new { area = "Production" }))
+                                                                .Reader(Html.X().JsonReader().Root("data"))
+                                                            )
+                                                    )
+                                                    .Listeners(ls => ls.Change.Handler = "getColor(App.cbLevelID, App.StoreProductionLevel);"),
+                                        Html.X().DateFieldFor(m => m.EndTime).FieldLabel("Thời hạn").InputWidth(200).ReadOnly(true),
+                                        Html.X().TextAreaFor(m=>m.Note).FieldLabel("Ghi chú").Flex(1).MinHeight(100).ReadOnly(true)
+                    )
+)
+.Buttons( Html.X().ButtonExit())
+)
+<script>
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        if (record != null) {
+            var color = record.get('Color');
+            obj.setFieldStyle('text-align: center; background-image: none; background-color: ' + color + ';');
+        }
+        else {
+            return false;
+        }
+    };
+</script>

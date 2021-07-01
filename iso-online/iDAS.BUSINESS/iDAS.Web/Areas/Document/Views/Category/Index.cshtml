@@ -1,0 +1,128 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        Html.X().Hidden().ID("hdfDepartmentID").Value(0),
+        Html.X().DepartmentPanel().Handler("onRoleDepartmentReady"),
+        Html.X().GridPanel().ID("GrDocumentCate").Region(Region.Center)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                            Html.X().ButtonCreate().Handler("ShowInsert();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnEdit").Handler("ShowEdit()"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ID("btnDelete").Handler("deleteRecord();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().Handler("ShowView()").ID("btnDetail"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Text("Xem danh sách tài liệu").ToolTip("Xem danh sách tài liệu").ID("btnDocumentDetail").Icon(Icon.TableCell).Handler("ShowDocument();").Disabled(true),
+                                    Html.X().ToolbarFill(),
+                                 Html.X().ButtonTutorial()
+                        )
+               )
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(false)
+                    .ID("StDocumentCate")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Category")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("groupId", "App.hdfDepartmentID.getValue() > 0 ? App.hdfDepartmentID.getValue():0", ParameterMode.Raw));
+                    })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("CreateByName"),
+                            Html.X().ModelField().Name("UpdateByName"),
+                            Html.X().ModelField().Name("CreateAt"),
+                            Html.X().ModelField().Name("Note")
+                        )
+                    )
+            )
+            .ColumnModel(
+                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            Html.X().Column().DataIndex("Name").Text("Tên danh mục").Width(250).Locked(true),
+                            Html.X().Column().DataIndex("Note").Text("Ghi chú").MinWidth(250).Flex(1),
+                            Html.X().Column().DataIndex("CreateByName").Text("Người tạo").Width(150),
+                            Html.X().DateColumnExtend().DataIndex("CreateAt").Text("Ngày tạo").Width(100)
+                         )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(l => l.SelectionChange.Handler = "checkStatus();"))
+            .BottomBar(Html.X().CustomPagingToolbar()))
+)
+
+<script type="text/javascript">
+    function onRoleDepartmentReady(records) {
+        App.hdfDepartmentID.setValue(records[0].get('id'));
+        App.GrDocumentCate.getStore().reload();
+    };
+    var checkStatus = function () {
+        var record = App.GrDocumentCate.selModel.getSelection();
+        if (record.length > 0) {
+            SetEnabled(App.btnEdit, App.btnDelete, App.btnDetail, App.btnDocumentDetail);
+        } else {
+            SetDisabled(App.btnEdit, App.btnDelete, App.btnDetail, App.btnDocumentDetail);
+        }
+    };
+    function ShowInsert() {
+        var url = '@(Url.Action("Insert", "Category", new { Area = "Document" }, null))';
+        var params = { id: App.hdfDepartmentID.getValue() };
+        onDirectMethod(url, params, 'get');
+    };
+    function ShowEdit() {
+        var record = App.GrDocumentCate.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Update", "Category", new { Area = "Document" }, null))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessagBox();
+        }
+    };
+    function ShowView() {
+        var record = App.GrDocumentCate.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Detail", "Category", new { Area = "Document" }, null))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params,'get');
+        }
+        else {
+            MessagBox();
+        }
+    };
+    var ShowDocument = function () {
+        var record = App.GrDocumentCate.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DocumentView", "Category", new { Area = "Document" }, null))', params: { id: id }
+            });
+        }
+        else {
+            MessagBox();
+        }
+    };
+    var deleteUrl = '@(Url.Action("Delete", "Category", new { Area = "Document" }, null))'
+    var deleteRecord = function () {
+        var record = App.GrDocumentCate.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            onDelete(id);
+        }
+        else {
+            MessagBox();
+        }
+    };
+</script>

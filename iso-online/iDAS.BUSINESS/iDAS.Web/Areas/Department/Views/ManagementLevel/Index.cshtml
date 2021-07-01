@@ -1,0 +1,136 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Department.Controllers;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateManagementLevel = '@(Url.Action("Create", "ManagementLevel", new { area = "Department" }))';
+    var urlUpdateManagementLevel = '@(Url.Action("Update", "ManagementLevel", new { area = "Department" }))';
+    var urlDeleteManagementLevel = '@(Url.Action("Delete", "ManagementLevel", new { Area = "Department" }))';
+    var urlDetailManagementLevel = '@(Url.Action("Detail", "ManagementLevel", new { Area = "Department" }))';
+    var sortManagementLevelIndex = null;
+    var showCreateManagementLevel = function () {
+        var ManagementLevelId = 0 ;
+        var url = urlCreateManagementLevel;
+        var params = { ManagementLevelId: ManagementLevelId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateManagementLevel = function () {
+        var url = urlUpdateManagementLevel;
+        var record = getManagementLevelSelection();
+        var ManagementLevelId = record == null ? 0 : record.data.ID;
+        var params = { ManagementLevelId: ManagementLevelId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getManagementLevelSelection = function () {
+        var records = App.ManagementLevelPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setManagementLevelSelection = function () {
+        if (sortManagementLevelIndex != null) {
+            App.ManagementLevelPanel.selModel.select(sortManagementLevelIndex);
+        }
+    };
+
+    var showDeleteManagementLevel = function () {
+        var url = urlDeleteManagementLevel;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ cấp quản lý này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getManagementLevelSelection();
+                            var ManagementLevelId = record == null ? 0 : record.data.ID;
+                            var params = { ManagementLevelId: ManagementLevelId };
+                            onDirectMethod(url, params, 'post', reloadManagementLevel);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailManagementLevel = function () {
+        var url = urlDetailManagementLevel;
+        var record = getManagementLevelSelection();
+        var ManagementLevelId = record == null ? 0 : record.data.ID;
+        var params = { ManagementLevelId: ManagementLevelId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadManagementLevel = function () {
+        App.ManagementLevelPanel.store.reload();
+    };
+
+    var selectionChangeManagementLevel = function () {
+        var record = getManagementLevelSelection();
+        var isDisabled = record == null;
+        App.btnUpdateManagementLevel.setDisabled(isDisabled);
+        App.btnDeleteManagementLevel.setDisabled(isDisabled);
+        App.btnDetailManagementLevel.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý cấp quản lý").Header(false)
+                    .ID("ManagementLevelPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateManagementLevel").ID("btnCreateManagementLevel()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateManagementLevel").Handler("showUpdateManagementLevel();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteManagementLevel").Handler("showDeleteManagementLevel()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailManagementLevel").Handler("showDetailManagementLevel();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreManagementLevel")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("ManagementLevelCode").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("ManagementLevelName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Rank").Type(ModelFieldType.Int)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setManagementLevelSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("ManagementLevelCode").Text("Mã cấp quản lý").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("ManagementLevelName").Text("Tên cấp quản lý").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("Rank").Text("rank").Flex(1).MenuDisabled(true)
+             )
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeManagementLevel();")
+                )
+    )

@@ -1,0 +1,156 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.RiskItem
+@{
+    var X = Html.X();
+}
+@(
+ Html.X().Window().Icon(Icon.Lightning)
+            .Title("Phân tích rủi ro từ hợp đồng")
+            .BodyPadding(0)
+            .Width(650)
+            .Constrain(true)
+            .Modal(true)
+            .Layout(LayoutType.Fit).Border(false)
+            .Items(
+                    X.FormPanel().Frame(true).ID("frmAnalytic")
+                    .Layout(LayoutType.VBox).LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .Items(
+                            Html.X().HiddenFor(m => m.ID),
+                            Html.X().CheckboxFor(m => m.IsNew).LabelWidth(120).LabelStyle("color: #15428B; font-weight: bold;")
+                                        .BoxLabel("Xác nhận").FieldLabel("Phân tích rủi ro mới"),
+                            Html.X().FieldSet().Layout(LayoutType.Column).Title("Định lượng rủi ro").Padding(5)
+                                            .Items(
+                                                    Html.X().NumberFieldFor(m => m.LikeLiHood).ID("tfLikeLiHood").EmptyText("Khả năng xảy ra").ColumnWidth(0.3)
+                                                        .FieldLabel("Khả năng xảy ra" + Html.Required()).MinValue(0)
+                                                        .Listeners(ls => ls.Change.Handler = "onChangeLikeLiHood();"),
+                                                    Html.X().NumberFieldFor(m => m.Impact).ID("tfImpact").ColumnWidth(0.3).PaddingSpec("0 0 0 5")
+                                                        .FieldLabel("<span style='color:red;padding-right: 5px;'> x </span>Mức độ tác động")
+                                                         .MinValue(0)
+                                                        .Listeners(ls => ls.Change.Handler = "onChangeLikeLiHood();"),
+                                                    Html.X().NumberFieldFor(m => m.Consequence).ID("tfConsequence").ColumnWidth(0.3).PaddingSpec("0 0 0 5")
+                                                        .FieldLabel("<span style='color:red;padding-right: 5px;'> x </span>Hệ số").LabelWidth(50)
+                                                          .MinValue(0)
+                                                        .Listeners(ls => ls.Change.Handler = "onChangeLikeLiHood();"),
+                                                    Html.X().TextFieldFor(m => m.RiskValue).ID("tfRiskValue").ColumnWidth(0.6).PaddingSpec("5 0 5 0")
+                                                         .FieldLabel("<span style='color:red;padding-right: 5px;'> = </span>Định lượng rủi ro").ReadOnly(true),
+                                                     Html.X().ComboBoxFor(i => i.RiskLevelID).FieldLabel("Mức độ rủi ro").ReadOnly(true)
+                                                            .ID("cbRiskLevel").AllowBlank(false)
+                                                            .BlankText("Thiết lập khả năng xảy ra phù hợp với mức độ rủi ro qui định")
+                                                            .PaddingSpec("5 0 5 0")
+                                                            .EmptyText("Hệ thống tính toán mức độ rủi ro từ định lượng rủi ro")
+                                                            .ColumnWidth(1)
+                                                            .DisplayField("Level")
+                                                            .ValueField("ID")
+                                                            .Store(
+                                                                Html.X().Store()
+                                                                .ID("stRiskValue")
+                                                                    .AutoLoad(true)
+                                                                    .Model(
+                                                                        Html.X().Model()
+                                                                            .IDProperty("ID")
+                                                                            .Fields(
+                                                                                new ModelField("ID", ModelFieldType.Int),
+                                                                                new ModelField("CenterRiskMethodID", ModelFieldType.Int),
+                                                                                new ModelField("Level", ModelFieldType.String),
+                                                                                new ModelField("Method", ModelFieldType.String),
+                                                                                new ModelField("Description", ModelFieldType.String),
+                                                                                new ModelField("Color", ModelFieldType.String),
+                                                                                new ModelField("MaxPoint", ModelFieldType.Int),
+                                                                                new ModelField("MinPoint", ModelFieldType.Int)
+                                                                            )
+                                                                    )
+                                                                    .Proxy(
+                                                                        Html.X().AjaxProxy()
+                                                                            .Url(Url.Action("LoadData", "RiskLevel"))
+                                                                            .Reader(Html.X().JsonReader().Root("data")
+                                                                            )
+                                                                    )
+                                                            )
+                                                            .Tpl(
+                                                            @<text>
+                                                                <tpl for=".">
+                                                                    <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                                                        <div style="width: 20px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px soli>;">&nbsp;</div><div style="width: auto; float: left; font-size: 0.9em;">&nbsp;{Level}</div>
+                                                                    </div>
+                                                                </tpl>
+                                                            </text>)
+                                                            .Listeners(l => l.Change.Handler = "onChangeValue(App.cbRiskLevel, App.stRiskValue);"),
+                                Html.X().HiddenFor(m => m.ListRiskTreatmentID).ID("hdfListCategoryID"),
+                                Html.X().TextField().ID("tfMethod").ColumnWidth(1).LabelAlign(LabelAlign.Top).Height(23)
+                                                        .FieldLabel("Phương pháp ứng phó" + Html.Required())
+                                                        .LabelWidth(135).ReadOnly(true)
+                                                        .EmptyText("Chọn phương pháp ứng phó")
+                                                        .AllowBlank(false)
+                                                        .BlankText("Phương pháp ứng phó không được bỏ trống!")
+                                                        .RightButtons(
+                                                                        Html.X().Button().ID("btnMethodDetail").Hidden(true).Icon(Icon.ZoomIn).Text("Xem chi tiết")
+                                                                                    .Handler("App.winDetailMethod.show();")
+                                                                    )
+                                                )
+                            )
+                    )
+                    .Buttons(
+                                Html.X().ButtonSave()
+                                        .DirectEvents(de =>
+                                            {
+                                                de.Click.Before = @"if (!App.frmAnalytic.getForm().isValid()) { return false; }; ";
+                                                de.Click.Url = Url.Action("Analytic");
+                                                de.Click.FormID = "frmAnalytic";
+                                                de.Click.Success = "this.up('window').close();";
+                                            }),
+                                Html.X().ButtonExit()
+                            )
+)
+@(Html.X().Window().Hidden(true).Constrain(true).Modal(true)
+        .ID("winDetailMethod")
+        .Layout(LayoutType.Fit)
+        .Border(false)
+        .Height(350)
+        .Width(450)
+        .Items(
+                 Html.X().TextArea().ID("txtDescription").ReadOnly(true)
+        )
+        .Buttons(
+                Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var onChangeLikeLiHood = function () {
+        var riskValue = App.tfLikeLiHood.value * App.tfImpact.value * App.tfConsequence.value;
+        App.tfRiskValue.setValue(riskValue);
+        getRiskValue(riskValue);
+    };
+    onChangeValue = function (obj, store) {
+        var id = obj.getValue();
+        if (id) {
+            var record = store.getById(id);
+            var color = record.get('Color');
+            obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+            var method = record.get('Method');
+            App.tfMethod.setValue(method);
+            var description = record.get('Description');
+            App.txtDescription.setValue(description);
+            App.btnMethodDetail.show();
+        }
+        else {
+            App.tfMethod.setValue("");
+            App.btnMethodDetail.hide();
+        }
+    };
+    function getRiskValue(value) {
+        var riskStoreValue = App.stRiskValue.getAllRange();
+        for (var i = 0; i < riskStoreValue.length; i++) {
+            if (riskStoreValue[i].get("MinPoint") <= value && riskStoreValue[i].get("MaxPoint") >= value) {
+                App.cbRiskLevel.setValue(riskStoreValue[i].get("ID"));
+                return true;
+            };
+        };
+        App.cbRiskLevel.setFieldStyle('background-image: none; background-color: white;');
+        App.cbRiskLevel.clear();
+        return false;
+    };
+</script>

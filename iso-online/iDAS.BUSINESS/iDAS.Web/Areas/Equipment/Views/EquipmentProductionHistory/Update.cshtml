@@ -1,0 +1,105 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.EquipmentProductionHistoryItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới thông tin theo dõi quá trình sử dụng thiết bị";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật thông tin theo dõi quá trình sử dụng thiết bị";
+    }
+}
+@(Html.X().Window()
+.ID("WinEquipmentProductionHistory")
+.Title(title)
+.Icon(IconView)
+.Height(1).Maximized(true)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmEquipmentHistoryUpdate")
+    .Layout(LayoutType.VBox)
+    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+    .Frame(true)
+    .Border(false)
+    .MarginSpec("0 -4 -3 -4")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 120; })
+    .Items(
+           Html.X().HiddenFor(m => m.ID).ID("hdfEquipmentHistory"),
+           Html.X().HiddenFor(m => m.EquipmentProductionID).ID("hdfEquipmentProduction"),
+            Html.X().EmployeeFieldFor(m => m.HumanEmployee).AllowBlank(false).Title("Người thực hiện" + Html.Required())
+                .ColumnWidth(1).MarginSpec("5 8 5 8"),
+           Html.X().DepartmentFieldFor(m => m.HumanDepartment).AllowBlank(false)
+                .FieldLabel("Phòng ban" + Html.Required())
+                .ColumnWidth(1)
+                .MarginSpec("5 8 5 8"),
+                Html.X().DateTimeFieldFor(m => m.Time).FieldLabel("Thời gian" + Html.Required()).AllowBlank(false)
+                .ColumnWidth(0.5).MarginSpec("5 8 5 8"),
+            Html.X().FieldSet().ColumnWidth(1).Layout(LayoutType.HBox)
+                .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Stretch }) 
+                .Title("Tình trạng sản phẩm").MarginSpec("0 2 0 2").Flex(1)
+                .Items(
+                        Html.X().Container().Layout(LayoutType.Column).Width(300)
+                                    .Items(
+                                            Html.X().CheckboxFor(m => m.IsUsing).FieldLabel("Đang sử dụng").BoxLabel("Xác nhận")
+                                                .ColumnWidth(1).MarginSpec("5 8 5 8").Listeners(ls=>ls.Change.Handler="CheckValueChange(this);"),
+                                            Html.X().CheckboxFor(m => m.IsMaintain).FieldLabel("Bảo dưỡng định kỳ").BoxLabel("Xác nhận")
+                                                .ColumnWidth(1).MarginSpec("5 8 5 8").Listeners(ls => ls.Change.Handler = "CheckValueChange(this);"),
+                                            Html.X().CheckboxFor(m => m.IsFixed).FieldLabel("Xử lý sự cố").BoxLabel("Xác nhận")
+                                                .ColumnWidth(1).MarginSpec("5 8 5 8").Listeners(ls => ls.Change.Handler = "CheckValueChange(this);"),
+                                            Html.X().CheckboxFor(m => m.IsError).FieldLabel("Đang bị hỏng").BoxLabel("Xác nhận")
+                                                .ColumnWidth(1).MarginSpec("5 8 5 8").Listeners(ls=>ls.Change.Handler="CheckValueChange(this);")
+                                    ),
+                       Html.X().TextAreaFor(m => m.Note).AllowBlank(false).AllowOnlyWhitespace(false).FieldLabel("Ghi chú"+Html.Required()).LabelAlign(LabelAlign.Top)
+                            .ColumnWidth(0.5).MarginSpec("0 0 5 0").MinHeight(200).Flex(1)
+                )
+            )
+    )
+    .Buttons(
+        Html.X().Button()
+                        .Text("Lưu lại")
+                        .Icon(Icon.DatabaseSave)
+                        .DirectEvents(de =>
+                                    {
+                                        de.Click.Before = @"if (!App.frmEquipmentHistoryUpdate.getForm().isValid()) { return false; }; ";
+                                        de.Click.Url = Url.Action("Update", "EquipmentProductionHistory", new { Area = "Equipment" });
+                                        de.Click.FormID = "frmEquipmentHistoryUpdate";
+                                        de.Click.Success = "this.up('window').close(); App.StoreHistory.reload();";
+                                        
+                                    })
+        , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)
+<script>
+    function CheckValueChange(obj) {
+        if (obj.value == true) {
+            if (obj != App.IsUsing) {
+                App.IsUsing.setValue(false);
+            };
+            if (obj != App.IsMaintain) {
+                App.IsMaintain.setValue(false);
+            };
+            if (obj != App.IsFixed) {
+                App.IsFixed.setValue(false);
+            };
+            if (obj != App.IsError) {
+                App.IsError.setValue(false);
+            };
+        };
+    };
+</script>

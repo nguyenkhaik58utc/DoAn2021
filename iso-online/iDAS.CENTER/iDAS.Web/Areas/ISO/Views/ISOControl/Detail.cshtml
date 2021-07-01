@@ -1,0 +1,58 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ISOControlItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window().ItemID("windowId")
+.BodyPadding(0)
+.Width(550)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Maximizable(true)
+.Title("Chi tiết kiểm soát kỹ thuật")
+.ID("winCustomerType")
+.Icon(Icon.Zoom)
+.Items(
+        Html.X().CustomFormPanel()
+                .FieldDefaults(df => { df.LabelWidth = 100; df.ReadOnly = true; })
+                .Items(
+                               X.ComboBoxFor(m => m.ISOStandardID).ID("cboIso")
+                                        .QueryMode(DataLoadMode.Local)
+                                        .TriggerAction(TriggerAction.All)
+                                        .SelectOnFocus(true)
+                                        .TabIndex(1)
+                                        .EmptyText("Chọn Iso ...")
+                                        .DisplayField("Name")
+                                        .ValueField("ID")
+                                        .FieldLabel("Iso *")
+                                        .AllowBlank(false).BlankText("Iso bắt buộc phải chọn!")
+                                        .Store(
+                                                Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                        )//end Fields
+                                                    )
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "ISOStandard"))//ham load dl cho combobox
+                                                            .Reader(Html.X().JsonReader().Root("data"))
+                                                        )//end Store
+                                                )
+                                        .Listeners(ls => ls.Select.Handler = "if(this.value){App.hdfISOStandardID.setValue(this.value);App.storeISOIndex.reload();}"),
+                            X.HiddenFor(m => m.ISOStandardID).ID("hdfISOStandardID"),
+                            X.TextFieldFor(m => m.Clause).FieldLabel("Phụ lục *")
+                                        .EmptyText("Phụ lục rủi ro...")
+                                        .BlankText("Phụ lục rủi ro không được để trống!")
+                                        .AllowOnlyWhitespace(false),
+                            X.TextAreaFor(m => m.Target).FieldLabel("Mục tiêu *").Height(50)
+                                        .EmptyText("Mục tiêu kiểm soát rủi ro...")
+                                        .BlankText("Mục tiêu kiểm soát rủi ro không được bỏ trống!")
+                                        .AllowOnlyWhitespace(false),
+                            X.TextAreaFor(m => m.Control).FieldLabel("Kiểm soát")
+                                        .EmptyText("Nhập kiểm soát rủi ro...").MinHeight(200).Flex(1)
+                    )
+    )
+.Buttons( Html.X().ButtonExit())
+)

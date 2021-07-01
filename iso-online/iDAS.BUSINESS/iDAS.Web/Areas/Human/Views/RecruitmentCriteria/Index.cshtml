@@ -1,0 +1,156 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentCriteriaItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    function onDepartmentReady(records) {
+        if(records[0].data.ParentID == 0)
+        {
+            App.hdfDepRecruitmentCriteria.setValue(0);
+        }
+        else
+        {
+            App.hdfDepRecruitmentCriteria.setValue(records[0].get('id'));
+        }
+        App.GrCriteria.getStore().reload();
+    };
+    function CheckStatus() {
+        var records = App.GrCriteria.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetail, App.btnDelete, App.btnUpdate);
+        }
+        else {
+            SetDisabled(App.btnDetail, App.btnDelete, App.btnUpdate);
+        };
+    };
+    var AddNew = function () {
+        onDirectMethod('@(Url.Action("Update", "RecruitmentCriteria", new { Area = "Human" }, null))', null,'get');
+    };
+    var UpdateItem = function () {
+        var records = App.GrCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "RecruitmentCriteria", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "RecruitmentCriteria", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var onDelete = function (id) {
+        Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+            if (btn == 'yes')
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("DeleteCriteria"))',
+                    params: {
+                        id: id,
+                    }
+                });
+        })
+    };
+    var reDelete = function (id) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("reDeleteCriteria"))',
+            params: {
+                id: id,
+            }
+        });
+    };
+</script>
+@(X.Hidden().ID("hdfDepRecruitmentCriteria"))
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(2).Frame(false).StyleSpec("border: none;")
+    .Items(
+          X.DepartmentPanel().Handler("onDepartmentReady"),
+          X.Panel()
+            .Header(false)
+            .Region(Region.Center)
+            .Layout(LayoutType.Fit)
+            .Items(
+                Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrCriteria")
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                        Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                            Html.X().ButtonCreate().Handler("AddNew();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrCriteria.selModel.getSelection()[0].get('ID'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreCriteria")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .AutoLoad(false)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCriteria")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("departmentID", "App.hdfDepRecruitmentCriteria.value", ParameterMode.Raw));
+                            })
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("MinPoint"),
+                                Html.X().ModelField().Name("MaxPoint"),
+                                Html.X().ModelField().Name("Factor"),
+                                Html.X().ModelField().Name("IsActive"),
+                                 Html.X().ModelField().Name("Role.Name")
+                            )
+                      )
+                          .GroupField("Role.Name")
+                )
+                .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            X.Column().DataIndex("Name").Text("Tiêu chí").Width(250).Locked(true),
+                        X.Column().DataIndex("MinPoint").Text("Điểm tối thiểu").Width(100).Align(Alignment.Right),
+                            X.Column().DataIndex("MaxPoint").Text("Điểm tối đa").Width(100).Align(Alignment.Right),
+                            X.Column().DataIndex("Factor").Text("Hệ số").MinWidth(80).Flex(1).Align(Alignment.Right),
+                            X.CheckColumn().DataIndex("IsActive").Text("Sử dụng").Width(100)
+                    )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                                .Features(
+            Html.X().GroupingSummary()
+            .ID("GroupingSummary")
+            .GroupHeaderTplString("{name}")
+            .HideGroupedHeader(true)
+            .EnableGroupingMenu(false)
+            )
+                .BottomBar(
+                        Html.X().CustomPagingToolbar()
+        )
+    )
+)
+)

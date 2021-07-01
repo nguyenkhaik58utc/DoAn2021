@@ -1,0 +1,186 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerSurveyItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatus() {
+        var records = App.GrCustomerSurvey.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateSurvey, App.btnDeleteSurvey, App.btnSettingObject, App.btnQuestion, App.btnDetailOrder, App.btnSendMailSurvey);
+        }
+        else {
+            SetDisabled(App.btnUpdateSurvey,App.btnDeleteSurvey,App.btnSettingObject,App.btnQuestion,App.btnDetailOrder,App.btnSendMailSurvey);
+        };
+    };
+    var AddNewSurvey = function () {
+        var url = '@(Url.Action("UpdateForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+        onDirectMethod(url,null);
+    };
+    var UpdateSurveyItem = function () {
+        var records = App.GrCustomerSurvey.selModel.getSelection();
+        if (records.length > 0) {
+            var url= '@(Url.Action("UpdateForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+            var params= {
+                    ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ViewSurveyItem = function () {
+        var records = App.GrCustomerSurvey.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var SettingObject = function () {
+        var records = App.GrCustomerSurvey.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ObjectForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var SendMailSurvey = function () {
+        var records = App.GrCustomerSurvey.selModel.getSelection();
+        if (records.length == 1) {
+            var url = '@(Url.Action("SendMailSurvey", "CustomerSurvey", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var QuestionSurvey = function () {
+        var records = App.GrCustomerSurvey.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("QuestionForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ViewDetailSurvey = function () {
+        var records = App.GrCustomerSurvey.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerSurvey", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport()
+.Layout(LayoutType.Fit)
+.Border(false)
+.Margin(0).Frame(false)
+.StyleSpec("border: none;")
+    .Items(
+      X.Panel()
+            .Title("DANH SÁCH ĐỢT KHẢO SÁT").TitleAlign(TitleAlign.Center)
+            .Header(false)
+            .Collapsible(true)
+            .Border(false)
+            .Split(true)
+            .Layout(LayoutType.Fit)
+            .Items(
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerSurvey")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("AddNewSurvey();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateSurvey").ToolTip("Cập nhật khảo sát")
+                                        .Handler("UpdateSurveyItem();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ToolTip("Xóa khảo sát")
+                                        .ID("btnDeleteSurvey").Handler("onDelete(App.GrCustomerSurvey.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView()
+                                        .ToolTip("Xem chi tiết").ID("btnDetailOrder").Handler("ViewSurveyItem();"),
+                                   Html.X().ToolbarSeparator(),
+                                   Html.X().Button().Text("Đối tượng khảo sát").ID("btnSettingObject").Icon(Icon.Group).Handler("SettingObject();").Disabled(true) ,
+                                   Html.X().ToolbarSeparator(),
+                                   Html.X().Button().Text("Thiết lập câu hỏi khảo sát và thống kê").ID("btnQuestion").Icon(Icon.Sum).Handler("QuestionSurvey();").Disabled(true),
+                                   Html.X().ToolbarSeparator(),
+                                       Html.X().Button().Text("Gửi email khảo sát").ID("btnSendMailSurvey").Icon(Icon.EmailGo).Handler("SendMailSurvey();").Disabled(true),
+                                        Html.X().ToolbarFill(),
+                                        Html.X().ButtonTutorial()
+                            ))
+                            .Store(
+                            Html.X().Store().ID("StoreCustomerSurvey")
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerSurvey", "CustomerSurvey", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Cost"),
+                                        Html.X().ModelField().Name("StartTime"),
+                                        Html.X().ModelField().Name("EndTime"),
+                                        Html.X().ModelField().Name("Status")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    X.Column().DataIndex("Name").Text("Đợt khảo sát").Flex(1),
+                                    X.ComponentColumn().Text("Chi phí").Columns(
+                                    X.NumberColumn().DataIndex("Cost").Text("Giá trị").Width(100).Align(Alignment.Right),
+                                    X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                                    X.ComponentColumn().Text("Thời gian thực hiện").Columns(
+                                    X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                                    X.DateColumnExtend().DataIndex("EndTime").Text("Kết thúc").Width(120).Align(Alignment.Center)),
+                                    X.Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center)
+                            )
+                        .Features(
+                                Html.X().GridFilters()
+                                    .MenuFilterText("Tìm kiếm")
+                                    .Filters(
+                                        Html.X().StringFilter().DataIndex("Name"),
+                                        Html.X().NumericFilter().DataIndex("Cost").EmptyText("Nhập giá trị so sánh") ,
+                                        Html.X().DateFilter().DataIndex("StartTime").AfterText("Sau").BeforeText("Trước").OnText("Tại"),
+                                        Html.X().DateFilter().DataIndex("EndTime").AfterText("Sau").BeforeText("Trước").OnText("Tại")
+                                    )
+                            )   
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                        .BottomBar(X.CustomPagingToolbar())
+)))

@@ -1,0 +1,66 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+<form id="fileUpload" enctype="multipart/form-data">
+   @(Html.X().Window()
+        .ID("winBrowseImgProduct")
+        .Title("Chọn ảnh chi tiết vật tư hàng hóa")
+        .Icon(Icon.Image)
+        .Height(120)
+        .Width(500)
+        .BodyPadding(0)
+        .Modal(false)
+        .Items(
+        Html.X()
+        .FormPanel()
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border:none;")
+        .ID("frImg")
+        .Items(
+          Html.X().FieldSet()                    
+                            .Height(50)
+                            .Items(
+                                Html.X().Container()
+                                    .Layout(LayoutType.HBox)
+                                    .DefaultAnchor("100%")
+                                    .MarginSpec("10 0 0 0")
+                                    .Items(
+                                        Html.X().FileUploadField()
+                                            .ID("AttachFileProduct")
+                                            .EmptyText("Chọn ảnh chi tiết vật tư hàng hóa")
+                                            .FieldLabel("Ảnh chi tiết*")
+                                            .AllowBlank(false)
+                                            .ButtonText("")
+                                            .Icon(Icon.ImageAdd)
+                                            .Flex(1)
+                                            .Listeners(ls => ls.Change.Handler = "#{btnUpload}.setDisabled(false);"),
+                                        Html.X().Label().Html("&nbsp;&nbsp;"),
+                                        Html.X().Button()
+                                            .ID("btnUpload")
+                                            .Text("Tải lên")
+                                            .Icon(Icon.ArrowUp)
+                                            .Disabled(true)
+                                            .DirectEvents(de =>
+                                            {                                                
+                                                de.Click.Before = @"Ext.Msg.wait('Đang tải tệp lên Máy chủ...', 'Tải tệp');";
+                                                de.Click.Url = Url.Action("UploadClick");
+                                                de.Click.Failure = @"Ext.Msg.show({ 
+                                                    title   : 'Thông báo', 
+                                                    msg     : 'Lỗi phát sinh xảy ra trong quá trình tải tệp lên Máy chủ.', 
+                                                    minWidth: 200, 
+                                                    modal   : true, 
+                                                    icon    : Ext.Msg.ERROR, 
+                                                    buttons : Ext.Msg.OK 
+                                                });";
+                                            })
+                            )
+                )
+                
+         )
+        )
+        .Buttons(     
+            Html.X().ButtonExit()
+                )
+        )
+        </form>

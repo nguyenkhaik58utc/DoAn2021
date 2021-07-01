@@ -1,0 +1,222 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CalendarOverrideItem
+@{
+    var cateId = ViewData["CateID"];
+}
+@(Html.X().Window()
+.ID("winWeekendSetCalendar")
+.Title("Thiết lập lịch cho ngày cuối tuần")
+.Icon(Icon.Pencil)
+.Width(620)
+.BodyPadding(6)
+    .Listeners(ls => ls.Close.Handler = "App.stDateOverride.reload();ReloadHighLight();")
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frWeekendSetCalendar")
+.Layout(LayoutType.Form)
+.Frame(true)
+.Padding(0)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+     Html.X().ComboBoxFor(m => m.DaySet)
+                .TabIndex(5)
+                    .FieldLabel("Ngày thiết lập" + Html.Required())
+                .Items(
+                    new ListItem("Thứ 7", "Saturday"),
+                    new ListItem("Chủ nhật", "Sunday"),
+                    new ListItem("Cả 2", "Weekend")
+                ),
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().DateFieldFor(m => m.FromDate).AllowBlank(false).ID("FromDate").FieldLabel("Từ ngày" + Html.Required()).SelectedDate(DateTime.Now).ColumnWidth(0.5).MarginSpec("0 5 0 0"),
+                                    Html.X().DateFieldFor(m => m.ToDate).AllowBlank(false).ID("ToDate").ColumnWidth(0.5).FieldLabel("Đến ngày" + Html.Required())),
+             Html.X().ComboBoxFor(m => m.TaskCalendarEventID)
+                            .ID("cbTaskCalendarEvent")
+                        .MarginSpec("0 0 0 0")
+                        .FieldLabel("Loại lịch" + Html.Required())
+                        .EmptyText("Chọn loại lịch")
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Editable(false)
+                        .ColumnWidth(0.481)
+                        .Tpl(
+                        @<text>
+                            <tpl for=".">
+                                <div class="x-boundlist-item"><div style="text-align: center; width: 100%; background-color: {Color}; border: #cecece 1px solid;">{Name}</div></div>
+                            </tpl>
+                        </text>
+                            )
+                        .Store(
+                            Html.X().Store()
+                                    .ID("stTaskCalendarEvent")
+                                .AutoLoad(true)
+                                .Model(
+                                    Html.X().Model().IDProperty("ID")
+                                        .Fields(
+                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                            new ModelField("Color", ModelFieldType.String) { Mapping = "Color" },
+                                            new ModelField("IsWorking", ModelFieldType.Boolean) { Mapping = "IsWorking" }
+                                        )
+                                )
+                                .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("LoadStoreIsUse", "TaskCalendarEvent", new { area = "Task" }))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                              )
+                              .Listeners(l => l.Change.Handler = "changeColor(App.cbTaskCalendarEvent, App.stTaskCalendarEvent);updateEvent();"),
+                            Html.X().GridPanel()
+                             .ID("GridCalendarTimeOverride")
+                            .Height(240)
+                            .MarginSpec("2 0 0 0")
+                            .Border(true)
+                            .Header(true)
+                            .Title("Thiết lập thời gian làm việc")
+                            .TopBar(
+                             Html.X().Toolbar()
+                                     .Items(
+                            Html.X().ButtonCreate()
+                                        .ID("btnAddCalendarTimeWeekend")
+                                            .Handler("addRecordTimeWeekend(this.up('grid'));")
+
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                            .ID("stCalendarTimeOverride")
+                        .AutoLoad(false)
+                        .Proxy(
+                            Html.X().AjaxProxy()
+                                            .Url(Url.Action("LoadDataTimeOverride", "CalendarOverride"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("id", "0", ParameterMode.Value));
+                                    })
+                        .RemoteSort(false)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                            Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("StartTime").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("EndTime").Type(ModelFieldType.String)
+                                )
+                        )
+
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(33)
+                        .Align(Alignment.Center),
+                             Html.X().Column()
+                                .Text("Tên")
+                                .DataIndex("Name")
+                                .Flex(1)
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(180)
+                                .Wrap(true)
+                                .Editor(
+                                    Html.X().TextField()
+                                ),
+                        Html.X().DateColumn()
+                            .Text("Bắt đầu")
+                            .DataIndex("StartTime")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(100)
+                            .Format("g:i A")
+                            .Wrap(true)
+                            .Editor(
+                                Html.X().TimeField().Format("g:i A")
+                            ),
+                             Html.X().DateColumn()
+                            .Text("Kết thúc")
+                            .DataIndex("EndTime")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(100)
+                            .Format("g:i A")
+                            .Wrap(true)
+                            .Editor(
+                                Html.X().TimeField().Format("g:i A")
+                            ),
+
+
+                     Html.X().CommandColumn()
+                            .ID("commandCol")
+                            .Align(Alignment.Center)
+                            .Width(30)
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Commands(
+                                Html.X().GridCommand()                               
+                                    .CommandName("delete")
+                                    .Icon(Icon.Delete)
+                                    .ToolTip(tt => tt.Text = "Xóa")
+                            )
+                                .Listeners(ls => ls.Command.Handler = "deleteRecordCalendarTimeWeekend(this.up('grid'), recordIndex );")
+                    )
+                .SelectionModel(
+               Html.X().RowSelectionModel()
+                   .Mode(SelectionMode.Single)
+                       .Listeners(ls => ls.Select.Handler = "")
+                )
+                .Plugins(Html.X().CellEditing())
+                .BottomBar(
+                      Html.X().CustomPagingToolbar())
+    )
+)
+.Buttons(
+     Html.X().Button()
+        .ID("btnSave")
+        .Icon(Icon.Disk)
+        .TabIndex(6)
+        .Text("Lưu lại")
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frWeekendSetCalendar";
+            de.Click.Url = Url.Action("SetWeekendCalendar", "CalendarOverride");
+            de.Click.ExtraParams.Add(new { cateId = cateId });
+            de.Click.ExtraParams.Add(new { arrTime = new JRawValue("getTimeSet()") });
+            de.Click.Before = @"if (!#{frWeekendSetCalendar}.getForm().isValid()) { return false; }";
+            de.Click.EventMask.ShowMask = true;
+            de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+            de.Click.Success = "if(result.result){this.up('window').close();}";
+
+        }),
+    Html.X().ButtonExit()
+    )
+)
+<script>
+    var getTimeSet = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.stCalendarTimeOverride.data.length; i++) {
+            arr.push(App.stCalendarTimeOverride.data.items[i].data);
+        }
+        return JSON.stringify(arr);
+    };
+    var changeColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+        App.GridCalendarTimeOverride.setDisabled(record.get('IsWorking'));
+    };
+    function addRecordTimeWeekend(grid) {
+        grid.store.insert(0, { Name: 'Ca', StartTime: '', EndTime: '' });
+        grid.editingPlugin.startEditByPosition({ row: 0, column: 0 });
+    };
+    var deleteRecordCalendarTimeWeekend = function (grid, index) {
+        grid.store.removeAt(index);
+    };
+
+</script>

@@ -1,0 +1,73 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CenterAuditCategoryQuestionItem
+    @(Html.X().Window()
+                .ID("winEditCategoryQuestion")
+                .Title("Sửa thông tin bộ câu hỏi đánh giá")
+                .Icon(Icon.Pencil)
+                .Width(450)
+                .BodyPadding(6)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                Html.X().FormPanel()
+                .ID("frCategoryQuestion")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                        .FieldDefaults(d => { 
+                                            d.LabelAlign = LabelAlign.Left;
+                                              d.LabelWidth=110;
+                                            })
+                .Items(
+                Html.X().HiddenFor(m => m.ID),
+                Html.X().HiddenFor(m=>m.ParentID),
+                Html.X().ComboBoxFor(m => m.ISONaceCodeID).FieldLabel("Lĩnh vực" + Html.Required()).ReadOnly(true)
+                                                .AllowBlank(false)
+                                                .EmptyText("Lựa chọn lĩnh vực")
+                                                .DisplayField("Name")
+                                                .ValueField("ID")
+                                                .Editable(false)
+                                                .Store(
+                                                    Html.X().Store().AutoLoad(true)
+                                                    .Model(
+                                                        Html.X().Model().IDProperty("ID")
+                                                        .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                        )
+                                                    )
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadISONaceCodeActive", "ISONaceCode")).Reader(Html.X().JsonReader().Root("data")))
+                                        ),
+                Html.X().TextAreaFor(m => m.Name).FieldLabel("Tên bộ câu hỏi" + Html.Required())
+                            .BlankText("Tên bộ câu hỏi không được trống!").AllowOnlyWhitespace(false),
+                Html.X().CheckboxFor(m => m.IsUse).BoxLabel("Sử dụng").FieldLabel("Trạng thái")
+               )
+            )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnSaves")
+            .Text("Lưu lại")
+            .Icon(Icon.Disk)
+            .TabIndex(18)
+            .DirectEvents(de =>
+            {
+                de.Click.Before = @"if (!App.frCategoryQuestion.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "Update";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frCategoryQuestion";
+                de.Click.Success = " this.up('window').close();";
+            }),
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+            .Handler("App.frCategoryQuestion.reset(); this.up('window').close();")
+            )
+    )

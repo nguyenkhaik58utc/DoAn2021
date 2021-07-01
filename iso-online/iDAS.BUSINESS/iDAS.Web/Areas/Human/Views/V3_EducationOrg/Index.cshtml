@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateEducationOrg = '@(Url.Action("Create", "v3_EducationOrg", new { area = "Human" }))';
+    var urlUpdateEducationOrg = '@(Url.Action("Update", "v3_EducationOrg", new { area = "Human" }))';
+    var urlDeleteEducationOrg = '@(Url.Action("Delete", "v3_EducationOrg", new { Area = "Human" }))';
+    var urlDetailEducationOrg = '@(Url.Action("ShowFrmDetail", "v3_EducationOrg", new { Area = "Human" }))';
+    var sortEducationOrgIndex = null;
+    var showCreateEducationOrg = function () {
+        var url = urlCreateEducationOrg;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateEducationOrg = function () {
+        var url = urlUpdateEducationOrg;
+        var record = getEducationOrgSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getEducationOrgSelection = function () {
+        var records = App.EducationOrgPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setEducationOrgSelection = function () {
+        if (sortEducationOrgIndex != null) {
+            App.EducationOrgPanel.selModel.select(sortEducationOrgIndex);
+        }
+    };
+
+    var showDeleteEducationOrg = function () {
+        var url = urlDeleteEducationOrg;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ cơ sở đào tạo này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getEducationOrgSelection();
+                            var EducationOrgId = record == null ? 0 : record.data.ID;
+                            var params = { ID: EducationOrgId };
+                            onDirectMethod(url, params, 'post', reloadEducationOrg);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailEducationOrg = function () {
+        var url = urlDetailEducationOrg;
+        var record = getEducationOrgSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadEducationOrg = function () {
+        App.EducationOrgPanel.store.reload();
+    };
+
+    var selectionChangeEducationOrg = function () {
+        var record = getEducationOrgSelection();
+        var isDisabled = record == null;
+        App.btnUpdateEducationOrg.setDisabled(isDisabled);
+        App.btnDeleteEducationOrg.setDisabled(isDisabled);
+        App.btnDetailEducationOrg.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý cơ sở đào tạo đào tạo").Header(false)
+                    .ID("EducationOrgPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateEducationOrg").ID("btnCreateEducationOrg()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateEducationOrg").Handler("showUpdateEducationOrg();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteEducationOrg").Handler("showDeleteEducationOrg()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailEducationOrg").Handler("showDetailEducationOrg();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreEducationOrg")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setEducationOrgSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên cơ sở đào tạo").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeEducationOrg();")
+    )
+    )

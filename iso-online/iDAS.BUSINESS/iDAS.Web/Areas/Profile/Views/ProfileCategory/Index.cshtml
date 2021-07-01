@@ -1,0 +1,196 @@
+﻿@using iDAS.Web.ExtExtend
+@using Ext.Net
+@using Ext.Net.MVC
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int add = (int)iDAS.Items.DocumentForm.Insert;
+    int edit = (int)iDAS.Items.DocumentForm.Edit;
+    int detail = (int)iDAS.Items.DocumentForm.Detail;
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().Hidden().ID("hdfDepartmentID"),
+        Html.X().GridPanel()
+            .ID("GrProfileCate")
+            .Title("Danh mục hồ sơ")
+            .Header(false)
+            .MarginSpec("1 1 1 1")
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().ButtonCreate()
+                            .ID("btnRequest")
+                            .Disabled(false)
+                             .Handler("ShowFrm(" + add + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnEdit")
+                            .Handler("ShowFrm(" + edit + ");")
+                            .Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete()
+                            .ID("btnDelete")
+                            .Handler("deleteRecord();")
+                            .Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView()
+                            .ID("btnDetail")
+                            .Handler("ShowFrm(" + detail + ");")
+                            .Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Xem danh sách hồ sơ")
+                            .ToolTip("Xem danh sách hồ sơ")
+                            .ID("btnProfileDetail")
+                            .Icon(Icon.TableCell)
+                            .Handler("ShowProfile();")
+                            .Disabled(true),
+                                    Html.X().ToolbarFill(),
+                                 Html.X().ButtonTutorial()
+                        )
+               )
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(false)
+                    .ID("StProfileCate")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCate", "ProfileCategory")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("groupId", "App.hdfDepartmentID.getValue() > 0 ? App.hdfDepartmentID.getValue():0", ParameterMode.Raw));
+                    })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("CreateAt"),
+                            Html.X().ModelField().Name("CreateByName"),
+                            Html.X().ModelField().Name("Note"),
+                            Html.X().ModelField().Name("UpdateAt"),
+                            Html.X().ModelField().Name("UpdateByName")
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Width(30).Align(Alignment.Center),
+
+                Html.X().Column().DataIndex("Name").Text("Tên danh mục").Flex(1).StyleSpec("font-weight: bold;text-align: center"),
+
+                Html.X().Column().DataIndex("Note").Text("Ghi chú").Flex(2).StyleSpec("font-weight: bold;text-align: center"),
+
+                Html.X().Column().DataIndex("CreateByName").Text("Người tạo")
+                    .Width(120)
+                    .StyleSpec("font-weight: bold;text-align: center"),
+                Html.X().Column().DataIndex("UpdateByName").Text("Người sửa")
+                    .Width(120)
+                    .StyleSpec("font-weight: bold;text-align: center")
+                         )
+                .SelectionModel(
+                Html.X().CheckboxSelectionModel()
+                .ShowHeaderCheckbox(false)
+                .Mode(SelectionMode.Single)
+                .Listeners(l => l.SelectionChange.Handler = "checkStatus();")
+                            )
+                .BottomBar(Html.X().CustomPagingToolbar()),
+            Html.X().DepartmentPanel().Handler("onDepartmentReady").Margin(1)
+    ))
+
+<script>
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var ShowFrm = function (cmd) {
+        if (cmd == 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAdd", "ProfileCategory", new { Area = "Profile" }, null))'
+            });
+        } else {
+            var record = App.GrProfileCate.selModel.getSelection();
+            if (record.length > 0) {
+                var id = record[0].get('ID');
+                if (cmd == 1) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmUpdate", "ProfileCategory", new { Area = "Profile" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 6) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmDetail", "ProfileCategory", new { Area = "Profile" }, null))', params: { id: id, type: cmd }
+                    });
+                }
+            }
+        }
+    };
+    var ShowDocument = function () {
+        var record = App.GrProfileCate.selModel.getSelection();
+        var id = record[0].get('ID');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmDocument", "ProfileCategory", new { Area = "Profile" }, null))', params: { id: id }
+        });
+    };
+    function onDepartmentReady(records) {
+        App.hdfDepartmentID.setValue(records[0].get('id'));
+        App.GrProfileCate.getStore().reload();
+    };
+    var deleteRecord = function () {
+        var record = App.GrProfileCate.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "ProfileCategory", new { Area = "Profile" }, null))',
+                            params: { id: id },
+                            success: function () {
+
+                            }
+                        });
+                    }
+                }
+            });
+
+        }
+    }
+    var checkStatus = function () {
+        var record = App.GrProfileCate.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnProfileDetail.setDisabled(false);
+            App.btnEdit.setDisabled(false);
+            App.btnDelete.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+        } else {
+            App.btnProfileDetail.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+        }
+    }
+    var ShowProfile = function () {
+        var record = App.GrProfileCate.selModel.getSelection();
+        var id = record[0].get('ID');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmProfile", "ProfileCategory", new { Area = "Profile" }, null))', params: { id: id }
+        });
+    };
+    var showForm = function (cmd) {
+        var id = 0; var status = 0;
+        var records = App.grProfiles.selModel.getSelection();
+        id = records[0].get('ID');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmFromProfile", "ProfileCategory", new { Area = "Profile" }, null))',
+            params: { id: id, type: cmd }
+        });
+    };
+</script>

@@ -1,0 +1,252 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SuppliersOrderItem
+@(Html.X().Window()
+.ID("winRequirementList")
+.Title("Danh sách nhà cung cấp yêu cầu báo giá")
+.Layout(LayoutType.Fit).Maximized(true)
+    .Width(800)
+    .Height(400)
+    .Icon(Icon.User)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+                Html.X().HiddenFor(m => m.ID).ID("hdfOrderID"),
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrRequirementList")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().Button().Icon(Icon.UserAdd).Text("Thêm nhiều nhà cung cấp").Handler("AddMultiplePartial"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonCreate().Handler("AddNewPartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonUpdate().ID("btnUpdatePartial").Handler("UpdatePartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete().ID("btnDeletePartial").Handler("DeleteRecords();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView().ID("btnDetailPartial").Handler("ViewDetailPartial();"),
+                                Html.X().ToolbarSeparator(),
+                                        Html.X().Button().ID("btnReciveBid").Icon(Icon.ReportAdd).Text("Nhận báo giá").Handler("ReciveBid();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button().ID("btnViewRate").Icon(Icon.Comments).Text("Xem đánh giá NCC").ToolTip("Xem các đánh giá gần đây về NCC").Handler("ViewRate();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button().ID("btnSelectSupp").Icon(Icon.Accept).Text("Chọn nhà cung cấp").Handler("SelectSupp();"),
+                                Html.X().ToolbarFill()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreRequirementList")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetSuppliersList")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("id", "App.hdfOrderID.value", ParameterMode.Raw));
+                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                                        new ModelField("ID", ModelFieldType.Int),
+                                                        new ModelField("SupplierID", ModelFieldType.Int),
+                                                            new ModelField("Supplier.Code", ModelFieldType.String),
+                                                            new ModelField("Supplier.Name", ModelFieldType.String),
+                                                                new ModelField("Contents", ModelFieldType.String),
+                                                        new ModelField("StartDate", ModelFieldType.Date),
+                                                        new ModelField("EndDate", ModelFieldType.Date),
+                                                                new ModelField("ReceiveDate", ModelFieldType.Date),
+                                                        new ModelField("Status", ModelFieldType.Boolean),
+                                                            new ModelField("StatusDisp", ModelFieldType.String)
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("SupplierID").Width(100).Hidden(true),
+                                        Html.X().Column().DataIndex("Supplier.Code").Text("Mã NCC").Width(100),
+                                        Html.X().Column().DataIndex("Supplier.Name").Text("Tên nhà cung cấp").Wrap(true).Width(200),
+                                            Html.X().Column().DataIndex("Contents").Text("Nội dung").Wrap(true).Width(250),
+                                    Html.X().ComponentColumn().Text("Thời gian nhận báo giá")
+                                         .Columns(
+                                                Html.X().DateColumnExtend().DataIndex("StartDate").Text("Bắt đầu").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                    Html.X().DateColumnExtend().DataIndex("EndDate").Text("Kết thúc").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                            Html.X().DateColumnExtend().DataIndex("ReceiveDate").Text("Ngày nhận").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center)
+                                                ), Html.X().Column().DataIndex("Status").Hidden(true),
+                                            Html.X().Column().DataIndex("StatusDisp").Text("Trạng thái").Wrap(true).Width(100)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+            )
+.Buttons(
+                Html.X().ButtonExit().Handler("App.GrOrder.getStore().reload();this.up('window').close();")
+    )
+)
+<script>
+
+    function CheckStatus() {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetailPartial, App.btnDeletePartial, App.btnUpdatePartial, App.btnReciveBid, App.btnSelectSupp);
+            if (records[0].get('Status'))
+                SetDisabled(App.btnDeletePartial, App.btnUpdatePartial);
+        }
+        else {
+            SetDisabled(App.btnDetailPartial, App.btnDeletePartial, App.btnUpdatePartial, App.btnReciveBid, App.btnSelectSupp);
+        };
+    };
+    var ViewDetailPartial = function () {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetail", "SuppliersBidOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var UpdatePartial = function () {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "SuppliersBidOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+                ActionForm: '@(iDAS.Utilities.Form.Edit)'
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AddNewPartial = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrm", "SuppliersBidOrders", new { Area = "Suppliers" }, null))',
+            params: {
+                id: App.hdfOrderID.getValue()
+            }
+        });
+    };
+    var ReciveBid = function () {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ReciveBidForm", "SuppliersBidOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewRate = function () {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ViewRate", "SuppliersBidOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('SupplierID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SelectSupp = function () {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("SelectSupplier", "SuppliersBidOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var DeleteRecords = function () {
+        var records = App.GrRequirementList.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var url = '@(Url.Action("DeleteRequirement", "SuppliersBidOrders", new { Area = "Suppliers" }, null))';
+                        var params = {
+                            ID: records[0].get('ID'),
+                        };
+                        onDirectMethod(url, params);
+                    }
+                }
+            });
+        }
+    };
+    var AddMultiplePartial = function () {        
+            var url = '@(Url.Action("ShowSuppList", "SuppliersBidOrders", new { Area = "Suppliers" }, null))';            
+            onDirectMethod(url);
+        
+    };
+    var insertProductsToStempInward = function () {
+
+        var records = App.gpSupplier.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có NCC nào được chọn!',
+                    iconCls: '#Exclamation',
+                    buttons: { yes: 'Đồng ý' }
+                });
+                break;
+            default:
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("InsertSupplierMany", "SuppliersBidOrders", new { Area = "Suppliers" }, null))',
+                    params: { stringId: strId, orderID: App.hdfOrderID.getValue() }
+                });
+                break;
+                alert();
+        }
+    };
+    var selectEmployee = function (records) {
+        var url = '@(Url.Action("InsertMultiple"))';
+        var aId = new Array();
+        var strId = '';
+        for (var i = 0, r; r = records[i]; i++) {
+            aId[i] = records[i].get('ID');
+        }
+        strId = aId.join();
+        var id = App.hdfOrderID.value;
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: {
+                employeeIds: strId,
+                id: id
+            }
+        });
+    };
+</script>

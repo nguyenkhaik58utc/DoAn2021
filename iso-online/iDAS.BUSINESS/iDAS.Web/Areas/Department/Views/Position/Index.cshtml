@@ -1,0 +1,137 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Department.Controllers;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreatePosition = '@(Url.Action("Create", "Position", new { area = "Department" }))';
+    var urlUpdatePosition = '@(Url.Action("Update", "Position", new { area = "Department" }))';
+    var urlDeletePosition = '@(Url.Action("Delete", "Position", new { Area = "Department" }))';
+    var urlDetailPosition = '@(Url.Action("Detail", "Position", new { Area = "Department" }))';
+    var sortPositionIndex = null;
+    var showCreatePosition = function () {
+        var departmentId = 0 ;
+        var url = urlCreatePosition;
+        var params = { departmentId: departmentId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdatePosition = function () {
+        var url = urlUpdatePosition;
+        var record = getPositionSelection();
+        var PositionId = record == null ? 0 : record.data.ID;
+        var params = { PositionId: PositionId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getPositionSelection = function () {
+        var records = App.PositionPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setPositionSelection = function () {
+        if (sortPositionIndex != null) {
+            App.PositionPanel.selModel.select(sortPositionIndex);
+        }
+    };
+
+    var showDeletePosition = function () {
+        var url = urlDeletePosition;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ chức vụ này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getPositionSelection();
+                            var PositionId = record == null ? 0 : record.data.ID;
+                            var params = { PositionId: PositionId };
+                            onDirectMethod(url, params, 'post', reloadPosition);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailPosition = function () {
+        var url = urlDetailPosition;
+        var record = getPositionSelection();
+        var positionId = record == null ? 0 : record.data.ID;
+        var params = { positionId: positionId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadPosition = function () {
+        App.PositionPanel.store.reload();
+    };
+
+    var selectionChangePosition = function () {
+        var record = getPositionSelection();
+        var isDisabled = record == null;
+        App.btnUpdatePosition.setDisabled(isDisabled);
+        App.btnDeletePosition.setDisabled(isDisabled);
+        App.btnDetailPosition.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý chức vụ").Header(false)
+                    .ID("PositionPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreatePosition").ID("btnCreatePosition()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdatePosition").Handler("showUpdatePosition();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeletePosition").Handler("showDeletePosition()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailPosition").Handler("showDetailPosition();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StorePosition")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("PositionCode").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("PositionName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("ManagementLevelName").Type(ModelFieldType.String)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setPositionSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("PositionCode").Text("Mã chức vụ").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("PositionName").Text("Tên chức vụ").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("ManagementLevelName").Text("Cấp quản lý").Flex(1).MenuDisabled(true)
+             )
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangePosition();")
+    )
+    )

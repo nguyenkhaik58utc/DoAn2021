@@ -1,0 +1,130 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.LibraryContentItem
+
+@(Html.X().Window()
+    .Title("Danh sách file nội dung")
+    .Icon(Icon.Tick)
+    .Modal(true)
+    .Width(750)
+    .Height(400)
+    .Constrain(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Items(
+        Html.X().GridPanel()
+        .ID("LibraryContentPanel")
+        .Header(false)
+        .ColumnLines(true)
+        .Border(false)
+        .ForceFit(true)
+        .Collapsible(true)
+        .Split(true)
+        .Icon(Icon.TextListBullets)
+        .TopBarItem(
+            Html.X().Button().Text("Thêm").ID("btnCreateLibraryContent").Icon(Icon.Add).Handler("showCreateLibraryContent();"),
+            Html.X().Button().Text("Sửa").ID("btnUpdateLibraryContent").Icon(Icon.Pencil).Handler("showUpdateLibraryContent();").Disabled(true),
+            Html.X().Button().Text("Xóa").ID("btnDeleteLibraryContent").Icon(Icon.Delete).Handler("showDeleteLibraryContent();").Disabled(true),
+            Html.X().Button().Text("Xem chi tiết").ID("btnDetailLibraryContent").Icon(Icon.Zoom).Handler("showDetailLibraryContent();").Disabled(true)
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .Parameters(Html.X().StoreParameter().Name("libraryId").Value("getLibraryId()").Mode(ParameterMode.Raw))
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsVideo").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsImage").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.String)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectLibraryContent()")
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").Hidden(true),
+            Html.X().Column().Text("Tiêu đề").DataIndex(Model, m => m.Name).StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().CheckColumn().Text("Video").DataIndex(Model, m => m.IsVideo).StyleSpec("font-weight: bold;text-align: center").Width(130).Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Hình ảnh").DataIndex(Model, m => m.IsImage).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeLibraryContent()")
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var urlCreateLibraryContent = '@Url.Action("Create", "LibraryContent", new { area = "Web" })';
+    var urlUpdateLibraryContent = '@Url.Action("Update", "LibraryContent", new { area = "Web" })';
+    var urlDeleteLibraryContent = '@Url.Action("Delete", "LibraryContent", new { area = "Web" })';
+    var urlDetailLibraryContent = '@Url.Action("Detail", "LibraryContent", new { area = "Web" })';
+
+    var getLibraryId = function () {
+        var record = getLibrarySelection();
+        var libraryId = record == null ? 0 : record.data.ID;
+        return libraryId;
+    };
+    var getLibraryContentSelection = function () {
+        return App.LibraryContentPanel.getSelectionModel().getLastSelected();
+    };
+    var reloadLibraryContent = function () {
+        App.LibraryContentPanel.getStore().reload();
+        deSelectLibraryContent();
+    };
+    var deSelectLibraryContent = function () {
+        App.LibraryContentPanel.selModel.lastSelected = null;
+        selectionChangeLibraryContent();
+    };
+    var showCreateLibraryContent = function () {
+        var url = urlCreateLibraryContent;
+        var libraryId = getLibraryId();
+        var params = { libraryId: libraryId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateLibraryContent = function () {
+        var url = urlUpdateLibraryContent;
+        var record = getLibraryContentSelection();
+        var LibraryContentId = record == null ? 0 : record.data.ID;
+        var params = { LibraryContentId: LibraryContentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteLibraryContent = function () {
+        var url = urlDeleteLibraryContent;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getLibraryContentSelection();
+                            var LibraryContentId = record == null ? 0 : record.data.ID;
+                            var params = { LibraryContentId: LibraryContentId };
+                            onDirectMethod(url, params, 'post', reloadLibraryContent);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailLibraryContent = function () {
+        var url = urlDetailLibraryContent;
+        var record = getLibraryContentSelection();
+        var LibraryContentId = record == null ? 0 : record.data.ID;
+        var params = { LibraryContentId: LibraryContentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeLibraryContent = function () {
+        var record = getLibraryContentSelection();
+        App.btnUpdateLibraryContent.setDisabled(record == null);
+        App.btnDeleteLibraryContent.setDisabled(record == null);
+        App.btnDetailLibraryContent.setDisabled(record == null);
+    };
+</script>

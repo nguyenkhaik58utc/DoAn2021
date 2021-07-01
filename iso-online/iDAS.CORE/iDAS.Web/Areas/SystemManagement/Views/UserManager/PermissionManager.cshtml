@@ -1,0 +1,199 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model iDAS.Core.SystemActionItem
+
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@section headtag
+{
+    <script>
+        var updateUrl = '@(Url.Action("UpdatePermission"))';
+
+        var onEditPermission = function (editor, e) {
+            if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+                Ext.net.DirectMethod.request({
+                    url: updateUrl,
+                    params: {
+                        data: e.record.data,
+                        roleId: App.RoleID.value
+                    }
+                });
+            }
+        };
+
+        var updatePermissions = function (value) {
+            var perData = App.GridPanel3.getStore().getRange();
+            var gridData = new Array();
+            Ext.each(perData, function (record) {
+                gridData.push(record.data.ID);
+            });
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdatePermissions"))',
+                params: {
+                    data: gridData,
+                    roleId: App.RoleID.value,
+                    isEnable: value
+                }
+            });
+        }
+    </script>
+}
+
+@(Html.X().TextField().ID("RoleID").Hidden(true))
+@(Html.X().TextField().ID("GroupID").Hidden(true))
+@(Html.X().TextField().ID("ModuleID").Hidden(true))
+
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().Panel()
+            .Region(Region.Center)
+            .Layout(LayoutType.Border)
+            .Items(
+                Html.X().TreePanel()
+                    .ID("TreePanel1")
+                    .Title("Danh sách tổ chức")
+                    .Region(Region.Center)
+                    .Icon(Icon.TextListBullets)
+                    .ForceFit(true)
+                    .RootVisible(false)
+                    .SingleExpand(false)
+                    .SelectionModel(sm => sm.Add(Html.X().RowSelectionModel().SelectedIndex(0)))
+                    .Store(
+                        Html.X().TreeStore()
+                            .ID("StoreGroups")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadGroups")).Reader(Html.X().JsonReader().Root("data")))
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("id"),
+                                    Html.X().ModelField().Name("text")
+                                )
+                            )
+                    )
+                    .ColumnModel(Html.X().TreeColumn().Text("Sơ đồ tổ chức").DataIndex("text").Flex(1))
+                    .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "if (selected.length<=0) return; App.GridPanel1.setTitle('Danh sách chức danh của '+ selected[0].data.text); App.GroupID.value=selected[0].data.id; App.GridPanel1.getStore().proxy.extraParams={groupId: App.GroupID.value}; App.GridPanel1.getStore().load();";
+                    }),
+
+                Html.X().GridPanel()
+                    .ID("GridPanel1")
+                    .Title("Danh sách chức danh")
+                    .Split(true)
+                    .Collapsible(true)
+                    .Region(Region.East)
+                    .Width(300)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .Store(
+                        Html.X().Store()
+                            .AutoLoad(false)
+                            .ID("StoreRoles")
+                            .Listeners(ls => ls.Load.Fn = "function(records, operation, success){App.GridPanel1.getSelectionModel().select(0, true);}")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRoles")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        Html.X().Column().DataIndex("Name").Text("Tên chức danh").Editor(Html.X().TextField()).Width(350).Align(Alignment.Center)
+                    )
+                    .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "if (selected.length<=0) App.RoleID.value = null; else App.RoleID.value = selected[0].data.ID; App.GridPanel3.getStore().proxy.extraParams={roleId: App.RoleID.value, moduleId: App.ModuleID.value}; App.GridPanel3.getStore().load();";
+                    })
+            ),
+            
+        Html.X().Panel()
+            .Region(Region.East)
+            .Width(460)
+            .Layout(LayoutType.Border)
+            .Items(
+                Html.X().GridPanel()
+                    .ID("GridPanel2")
+                    .Title("Danh sách module hệ thống")
+                    .Region(Region.North)
+                    .Height(230)
+                    .Collapsible(true)
+                    .Split(true)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreModules")
+                            .Listeners(ls => ls.Load.Fn = "function(records, operation, success){App.GridPanel2.getSelectionModel().select(0, true);}")
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadModules")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Code")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        Html.X().Column().DataIndex("Name").Text("Tên Module").Align(Alignment.Center).Flex(1)
+                    )
+                    .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "if (selected.length<=0) App.ModuleID.value = null; else App.ModuleID.value = selected[0].data.Code; App.GridPanel3.getStore().proxy.extraParams={roleId: App.RoleID.value, moduleId: App.ModuleID.value}; App.GridPanel3.getStore().load();";
+                    }),
+            
+                Html.X().GridPanel()
+                    .ID("GridPanel3")
+                    .Title("Danh sách chức năng hệ thống")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .Store(
+                        Html.X().StoreForModel()
+                            .ID("StorePermissions")
+                            .AutoLoad(false)
+                            .RemotePaging(true)
+                            .PageSize(10)
+                            .GroupField(Model, m => m.FunctionName)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPermissions")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    )
+                    .ColumnModel(
+                        Html.X().Column().DataIndex(Model, m => m.FunctionName).Text("Nhóm chức năng"),
+                        Html.X().Column().DataIndex(Model, m => m.Permission).Text("Tên chức năng").Align(Alignment.Center).Flex(1),
+                        Html.X().CheckColumn().DataIndex(Model, m => m.IsEnable).Text("Cho phép").Align(Alignment.Center).Editable(true).Width(60)
+                            .HeaderItems(Html.X().Checkbox().Listeners(ls=>ls.Change.Handler ="updatePermissions(this.value)")).Sortable(false).Resizable(false)
+                    )
+                    .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditPermission"))
+                    .Features(
+                        Html.X().Grouping().HideGroupedHeader(true).GroupHeaderTplString("{name} ({[values.rows.length]})"),
+                        Html.X().RowWrap()
+                    )
+                    .BottomBar(
+                        Html.X().PagingToolbar()
+                            .EmptyMsg("Hiện không có dữ liệu")
+                            .NextText("Trang kế tiếp")
+                            .PrevText("Trang trước")
+                            .LastText("Trang cuối cùng")
+                            .FirstText("Trang đầu tiên")
+                            .DisplayMsg("Hiển thị {0}-{1} của {2} bản ghi")
+                            .BeforePageText("Trang")
+                            .AfterPageText("của {0}")
+                            .RefreshText("Tải lại dữ liệu")
+                            .HideRefresh(false)
+                            .Items(
+                                Html.X().ComboBox()
+                                    .Width(50)
+                                    .Items("10", "20", "30", "50", "100")
+                                    .SelectedItems("10")
+                                    .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                            )
+                    )
+            )
+    )
+)

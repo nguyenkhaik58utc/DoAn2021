@@ -1,0 +1,125 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentResultItem
+@{
+    var X = Html.X();
+    var title = "Thông tin tuyển dụng của hồ sơ: " + Model.ProfileName;
+}
+@(
+Html.X().ApprovalDetailWindow()
+    .ItemsExtend(
+            X.TabPanel()
+            .ActiveTabIndex(0)
+            .Border(true)
+            .Items(
+                    X.FormPanel().Title("Thông tin đề xuất phê duyệt")
+                    .MarginSpec("0 0 0 0").PaddingSpec("5 5 5 5")
+                    .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 120; df.LabelStyle = "padding: 5px 8px 5px 8px;"; })
+                    .Frame(true)
+                    .StyleSpec("border: none;")
+                    .Layout(LayoutType.Column)
+                    .Items(
+                            X.TextFieldFor(m => m.ProfileName).FieldLabel("Họ tên").ReadOnly(true).ColumnWidth(1),
+                            X.TextFieldFor(m => m.PlanName).FieldLabel("Kế hoạch").ReadOnly(true).ColumnWidth(1),
+                            X.TextFieldFor(m => m.RoleName).FieldLabel("Vị trí").ReadOnly(true).ColumnWidth(1),
+                            X.TextFieldFor(m => m.TotalPoint).FieldLabel("Kết quả tuyển dụng").ReadOnly(true).ColumnWidth(1),
+                            X.TextFieldFor(m => m.CriteriaMinPoint).FieldLabel("Điểm đạt").ReadOnly(true).ColumnWidth(1),
+                            X.DateFieldFor(m => m.StartTime).FieldLabel("Thời gian bắt đầu").ReadOnly(true).ColumnWidth(0.5),
+                            X.NumberFieldFor(m => m.Salary).FieldLabel("Đề xuất thu nhập").ReadOnly(true).ColumnWidth(0.5)
+                        )  ,
+                    X.FormPanel()
+                    .Title("Kết quả thi tuyển")
+                    .Layout(LayoutType.Form)
+                    .Border(false).Padding(0)
+                    .StyleSpec("border: none;")
+                    .FieldDefaults(df => df.LabelWidth = 150)
+                    .DefaultAnchor("100%")
+                    .Items(
+                            X.HiddenFor(m => m.PlanID).ID("hdfPlanID"),
+                            X.HiddenFor(m=>m.ProfileInterviewID).ID("hdfPofileInterviewID"),
+                                    Html.X().GridPanel().Height(200)
+                                    .Header(false)
+                                    .ID("GrInterview").Margin(0).Padding(0)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Border(false)
+                                    .Icon(Icon.TextListBullets)
+                                .Store(
+                                    Html.X().Store()
+                                        .ID("StoreInterview")
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadInterview", "RecruitmentInterview", new { Area = "Human" }, null)).Reader(Html.X().JsonReader().Root("data")))
+                                        .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("ProfileInterviewID", "App.hdfPofileInterviewID.value", ParameterMode.Raw));
+                                                    ps.Add(new StoreParameter("PlanID", "App.hdfPlanID.value", ParameterMode.Raw));
+                                                })
+                                        .Model(
+                                                Html.X().Model().IDProperty("TaskID")
+                                            .Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                    Html.X().ModelField().Name("PlanInterviewName"),
+                                                Html.X().ModelField().Name("TaskID"),
+                                                Html.X().ModelField().Name("PorfileInterviewID"),
+                                                Html.X().ModelField().Name("Result"),
+                                                Html.X().ModelField().Name("Note"),
+                                                Html.X().ModelField().Name("Time")
+                                            )
+                                         )
+                                )
+                                .ColumnModel(
+                                            X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                                X.Column().DataIndex("PlanInterviewName").Text("Vòng thi tuyển").Flex(1),
+                                            Html.X().Column().DataIndex("Result").Text("Kết quả").Width(100).Align(Alignment.Right),
+                                            X.DateColumnExtend().DataIndex("Time").Text("Thời gian").Width(100).Align(Alignment.Center),
+                                            Html.X().Column().Width(300).DataIndex("Note").Text("Nhận xét")
+                                        )
+                           )
+                       ,
+                      X.FormPanel().Title("Thông tin xét tuyển")
+                      .Items(
+                               X.HiddenFor(m => m.RequirementID).ID("hdfRequirementID"),
+                               Html.X().GridPanel()
+                                            .Header(false)
+                                            .ID("GrCriteria").Margin(0).Padding(0)
+                                            .ColumnLines(true)
+                                            .ForceFit(true)
+                                            .Border(false)
+                                            .Icon(Icon.TextListBullets)
+                                            .Store(
+                                                Html.X().Store()
+                                                    .ID("StoreCriteria").AutoLoad(true)
+                                                    .RemotePaging(true)
+                                                    .PageSize(20)
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCriteria", "RecruitmentReview", new { Area = "Human" }, null)).Reader(Html.X().JsonReader().Root("data")))
+                                                    .Parameters(ps =>
+                                                        {
+                                                            ps.Add(new StoreParameter("ProfileInterviewID", "App.hdfPofileInterviewID.value", ParameterMode.Raw));
+                                                            ps.Add(new StoreParameter("RequirementID", "App.hdfRequirementID.getValue()", ParameterMode.Raw));
+                                                        })
+                                                    .Model(
+                                                            Html.X().Model().IDProperty("CriteriaID")
+                                                        .Fields(
+                                                            Html.X().ModelField().Name("ID"),
+                                                            Html.X().ModelField().Name("CriteriaID"),
+                                                            Html.X().ModelField().Name("CriteriaName"),
+                                                            Html.X().ModelField().Name("ProfileInterviewID"),
+                                                            Html.X().ModelField().Name("Point"),
+                                                            Html.X().ModelField().Name("Time"),
+                                                            Html.X().ModelField().Name("Note")
+                                                        )
+                                                     )
+                                            )
+                                        .ColumnModel(
+                                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                X.Column().DataIndex("CriteriaName").Text("Tiêu chí").Flex(1),
+                                                        X.Column().DataIndex("Point").Text("Điểm").Align(Alignment.Right),
+                                                X.DateColumnExtend().DataIndex("Time").Text("Thời gian").Align(Alignment.Center),
+                                                X.Column().Width(300).DataIndex("Note").Text("Nhận xét")
+                                            )
+                      )
+              )
+    )
+)

@@ -1,0 +1,217 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+@( Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+
+        Html.X().GridPanel()
+            .Header(true)
+            .Region(Region.West)
+            .Width(470)
+            .Split(true)
+            .Title("DANH SÁCH KẾ HOẠCH ĐÀO TẠO")
+            .ID("grPlanDetail")
+            .Border(true)
+            .MarginSpec("1 0 1 1")
+            .TitleAlign(TitleAlign.Center)
+            .Layout(LayoutType.Fit)
+            .Collapsible(true)
+            .ForceFit(true)
+            .ColumnLines(true)
+            .RowLines(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                            .ID("tbgpDepartmentStatisticalProfile")
+                            .Items(
+                                                Html.X().SearchByDate("App.stMnPlanDetail.load();")
+                                                        .FromDateID("dfFromDate").ToDateID("dfToDate"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button()
+                                            .Icon(Icon.ChartCurve)
+                                            .ID("groupChart")
+                                                .Text("Xem dưới dạng biểu đồ").Hidden(true)
+                                            .Menu(Html.X().Menu()
+                                                .Items(
+                                                        Html.X().MenuItem()
+                                                    .Text("Biểu đồ hình cột(SL)")
+                                                                .ID("btnChartColumn")
+                                                        .Disabled(true)
+                                                        .Listeners(ls => ls.Click.Handler = "showChartColumn();")
+                                                        .Icon(Icon.ChartBar)
+                                            )
+                                    )
+                                    ))
+                      .Store(Html.X().Store()
+                        .ID("stMnPlanDetail")
+                        .AutoLoad(false)
+                        .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("LoadDataPlan", "TrainingEmployeeStatistiacl"))
+
+                        .Reader(Html.X().JsonReader().Root("data"))
+
+                        )
+                        .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                    })
+                        .RemoteSort(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                        Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                )
+                              )
+                          )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                        Html.X().Column()
+                                .Text("ID")
+                                .DataIndex("ID")
+                                .Hidden(true),
+                        Html.X().Column()
+                                .Text("Kế hoạch")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Name")
+                               .Flex(1)
+                                .Wrap(true)
+
+                )
+
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.SelectionChange.Handler = "App.grMnPractioners.getStore().reload();";
+                            })
+                            )
+
+                              .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+            .BottomBar(Html.X().CustomPagingToolbar()),
+               Html.X().GridPanel()
+               .Region(Region.Center)
+                .Margin(1)
+                        .Title("THỐNG KÊ ĐÀO TẠO NHÂN SỰ")
+                .Header(true)
+                .Icon(Icon.ApplicationViewDetail)
+                        .ID("grMnPractioners")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                        Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+
+
+                                                Html.X().ButtonExportExcelFile().GridIDGetFile("grMnPractioners").TitleFile("THỐNG KÊ ĐÀO TẠO NHÂN SỰ"),
+                                             Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonTutorial()
+                                )
+                        )
+            .Store(
+                Html.X().Store()
+                        .ID("StorePractioners")
+                    .RemotePaging(true)
+                    .AutoLoad(false)
+                    .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "TrainingEmployeeStatistiacl", new { Area = "Human" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("planID", "App.grPlanDetail.selModel.getSelection().length>0?App.grPlanDetail.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Content"),
+                            Html.X().ModelField().Name("NumberRegister"),
+                            Html.X().ModelField().Name("NumberReal"),
+                            Html.X().ModelField().Name("ToTalGood"),
+                            Html.X().ModelField().Name("TotalCreat"),
+                            Html.X().ModelField().Name("TotalAvg"),
+                            Html.X().ModelField().Name("TotalBad"),
+                            Html.X().ModelField().Name("TotalBest")
+                        )
+                     )
+            )
+            .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            X.Column().DataIndex("Content").Text("Nội dung").Width(300),
+                            X.Column().DataIndex("NumberRegister").Text("Số học viên đăng ký").Align(Alignment.Center).Width(140),
+                            X.Column().DataIndex("NumberReal").Text("Số học viên tham gia").Align(Alignment.Center).Width(140),
+                        X.ComponentColumn().Text("Kết quả xếp loại (Số học viên)").Columns(
+                                X.Column().DataIndex("ToTalGood").Text("Giỏi").Align(Alignment.Center).Width(70),
+                               X.Column().DataIndex("TotalCreat").Text("Khá").Align(Alignment.Center).Width(70),
+                               X.Column().DataIndex("TotalAvg").Text("Trung bình").Align(Alignment.Center).Width(70),
+                               X.Column().DataIndex("TotalBad").Text("Yếu").Align(Alignment.Center).Width(70),
+                               X.Column().DataIndex("TotalBest").Text("Kém").Align(Alignment.Center).Width(70)
+                        )
+                        
+                )
+            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Handler = "CheckStatus();"))
+            .BottomBar(X.CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    
+    
+    var checkPlanDetailStatus = function () {
+        //var records = App.grPlanDetail.selModel.getSelection();
+        //switch (records.length) {
+        //    case 0:
+        //        break;
+        //    case 1:
+        //        break;
+        //    default:
+        //}
+    };
+    function CheckStatus() {
+        //var records = App.grMnPractioners.selModel.getSelection();
+        //if (records.length > 0) {
+        //    App.btnCancelUser.setDisabled(false);
+        //}
+        //else {
+        //    App.btnCancelUser.setDisabled(true);
+        //};
+    };
+    var showDetailStatiscal = function (storeUrl) {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        var cateId = 0;
+        if (records.length > 0) {
+            cateId = records[0].get('id');
+        }
+        var url = '@(Url.Action("SuppliersList", "SupplierStatistical", new { Area = "Suppliers" }))';
+        var params = {
+            urlStore: storeUrl,
+            Name: 'cateId',
+            Value: cateId,
+            Mode: '@(ParameterMode.Value)',
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+        };
+        onDirectMethod(url, params);
+    };
+    var renderTotal = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotal", "SupplierStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalJoin = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalUse", "SupplierStatistical", new { Area = "Suppliers" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+</script>

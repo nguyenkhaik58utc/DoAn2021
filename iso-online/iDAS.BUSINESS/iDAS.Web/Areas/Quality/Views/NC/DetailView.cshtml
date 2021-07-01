@@ -1,0 +1,175 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityNCItem
+
+@( Html.X().Window()
+    .Title("Xem chi tiết điểm không phù hợp")
+    .ID("WindowNCDetail")
+    .Icon(Icon.Zoom)
+    .Layout(LayoutType.Fit)
+    .Width(800)
+    .Height(510)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Border(false)
+    .BodyPadding(0)
+    .Center()
+    .Items(
+             Html.X().FormPanel()
+                     .Layout(LayoutType.Fit)
+                    .StyleSpec("border: none;")
+                    .Border(false)
+                    .Items(
+                            Html.X().TabPanel()
+                            .ActiveTabIndex(0)
+                            .Border(true)
+                            .Items(
+                                Html.X().FormPanel().Title("Thông tin sự không phù hợp")
+                                    .AutoScroll(true)
+                                    .Layout(LayoutType.VBox)
+                                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                                    .Frame(true)
+                                    .FieldDefaults(df => { df.LabelWidth = 110; })
+                                    .PaddingSpec("5 10 0 10")
+                                    .StyleSpec("border: none;")
+                                    .Items(
+                                            Html.X().TextAreaFor(m => m.Content)
+                                                    .ID("txtName")
+                                                    .FieldLabel("Nội dung")
+                                                    .ReadOnly(true)
+                                                    .MinHeight(70).Flex(1),
+                                            Html.X().TextAreaFor(m => m.Source)
+                                                    .AllowBlank(false)
+                                                    .FieldLabel("Nguyên nhân")
+                                                    .Height(150),
+                                            Html.X().Container().Height(25)
+                                                .Layout(LayoutType.Column)
+                                                .Items(
+                                                Html.X().RadioGroupForEnum(m => m.Enums.Type).FieldLabel("Phân loại").ColumnWidth(0.55).Selectable(false)
+                                                    ),
+                                            Html.X().Container().Height(25)
+                                                .Layout(LayoutType.Column)
+                                                .Items(
+                                                     Html.X().DateTimeFieldFor(m => m.Time).FieldLabel("Thời gian phát hiện").ReadOnly(true).LabelWidth(100).ColumnWidth(0.55).Height(25)
+                                                ),
+                                            //Html.X().TextFieldFor(m=>m.CategoryName).FieldLabel("Nhóm KPH"),
+                                            //Html.X().CriteriaFieldFor(m=>m.Criteria).ReadOnly(true).FieldLabel(),
+                                            Html.X().DepartmentFieldFor(m => m.Department).ReadOnly(true).FieldLabel("Phòng ban")
+                                                    .AllowBlank(false).PaddingSpec("0 1 0 0").Height(25) ,
+                                            Html.X().HiddenFor(m => m.LisEmployeeID).ID("hdfLsEmployeeID"),
+                                            Html.X().HiddenFor(m => m.LisRoleID).ID("hdfLsRoleID") 
+                                    ),
+                    Html.X().Panel().Title(@"Người/ vị trí liên quan").Layout(LayoutType.Border)
+                            .Items(
+                                    Html.X().FieldSet()
+                                            .Title("Vị trí liên quan")
+                                            .Margin(0).Padding(0)
+                                            .StyleSpec("border-bottom: none;border-left: none;border-right: none;")
+                                            .Region(Region.North)
+                                            .Height(200).Layout(LayoutType.Fit)
+                                            .Items(
+                                                        Html.X().GridPanel()
+                                                                .ID("grNCRole")
+                                                                .Border(false)
+                                                                .StyleSpec("border-top: solid 1px #99bce8; border-bottom: solid 1px #99bce8;")
+                                                                .Store(
+                                                                        Html.X().Store()
+                                                                        .ID("storeNCRole")
+                                                                        .RemotePaging(true)
+                                                                        .PageSize(20)
+                                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRole", "NC", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                                                                        .Parameters(ps => ps.Add(new StoreParameter("lsRoleId", "App.hdfLsRoleID.getValue()", ParameterMode.Raw)))
+                                                                        .Model(
+                                                                            Html.X().Model().Fields(
+                                                                                        Html.X().ModelField().Name("ID"),
+                                                                                        Html.X().ModelField().Name("Name"),
+                                                                                            Html.X().ModelField().Name("Department")
+                                                                            )
+                                                                        )
+                                                                    )
+                                                                .ColumnModel(
+                                                                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                            Html.X().Column().DataIndex("Name").Flex(1).Text("Chức danh"),
+                                                                            Html.X().Column().DataIndex("Department").Flex(1).Text("Đơn vị")
+
+                                                                            )
+                                                                .BottomBar(Html.X().CustomPagingToolbar())
+                                        ),
+                                    Html.X().FieldSet()
+                                        .Title("Người liên quan")
+                                        .Margin(0).Padding(0)
+                                        .StyleSpec("border-bottom: none;border-left: none;border-right: none;")
+                                        .Region(Region.Center)
+                                        .MinHeight(100).Layout(LayoutType.Fit)
+                                        .Items(
+                                                      Html.X().GridPanel()
+                                                                .ID("grNCEmployee")
+                                                                .Border(false)
+                                                                .StyleSpec("border-top: solid 1px #99bce8; border-bottom: solid 1px #99bce8;")
+                                                                .Store(
+                                                                        Html.X().Store()
+                                                                        .ID("storeNCEmployee")
+                                                                        .RemotePaging(true)
+                                                                        .PageSize(20)
+                                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadEmployee", "NC", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                                                                        .Parameters(ps => ps.Add(new StoreParameter("lsEmployeeId", "App.hdfLsEmployeeID.getValue()", ParameterMode.Raw)))
+                                                                        .Model(
+                                                                            Html.X().Model().Fields(
+                                                                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                                                        Html.X().ModelField().Name("Name"),
+                                                                                        Html.X().ModelField().Name("Avatar")
+                                                                            )
+                                                                        )
+                                                                    )
+                                                                .ColumnModel(
+                                                                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                                            Html.X().Column().DataIndex("Avatar").Width(31).Text("").Renderer("AvatarRenderer"),
+                                                                            Html.X().Column().DataIndex("Name").Flex(1).Text("Họ Tên")
+                                                                            )
+                                                                .BottomBar(Html.X().CustomPagingToolbar())
+
+                                              )
+                            )    
+                                    ,
+                                 Html.X().FormPanel().Title("Thông tin kiểm tra").Hidden(true)
+                                     .AutoScroll(true)
+                                    .Layout(LayoutType.VBox)
+                                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                                    .Frame(true)
+                                    .FieldDefaults(df => { df.LabelWidth = 110; })
+                                    .PaddingSpec("5 10 0 10")
+                                    .StyleSpec("border: none;")
+                                    .Items(
+                                        Html.X().EmployeeFieldFor(m => m.CheckBy).ReadOnly(true).Title("Người kiểm tra"),
+                                        Html.X().DisplayField().Value(Model.IsVerify ? "Đã xác nhận" : "Chưa xác nhận").FieldLabel("Xác nhận").ReadOnly(true),
+                                        Html.X().Container().Layout(LayoutType.Column)
+                                                .Height(25)
+                                                .Items(
+                                                    Html.X().DateTimeFieldFor(m => m.CheckAt).ReadOnly(true).FieldLabel("Ngày kiểm tra").ColumnWidth(0.55)
+                                                ),
+                                        Html.X().TextAreaFor(m => m.CheckNote).ReadOnly(true).FieldLabel("Ghi chú").LabelAlign(LabelAlign.Top).MinHeight(70).Flex(1)
+
+                                    )
+
+                                )
+                        )
+    )
+    .Buttons(
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var AvatarRenderer = function (value) {
+        var tpl = "";
+        if (value == "") {
+            tpl = "<img src='/Content/images/underfind.jpg' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        }
+        else {
+            tpl = "<img src='" + value + "' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        };
+        return tpl;
+    };
+</script>

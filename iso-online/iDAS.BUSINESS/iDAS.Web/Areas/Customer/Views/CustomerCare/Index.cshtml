@@ -1,0 +1,151 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+    .Items(
+                Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrCustomerCare")
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                        Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                            Html.X().ButtonCreate().Handler("AddNew();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrCustomerCare.selModel.getSelection()[0].get('ID'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ToolTip("Xem chi tiết").ID("btnDetail").Handler("ViewDetail();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Text("Đối tượng khách hàng").ID("btnSettingObject").Icon(Icon.Group).Handler("SettingObject();").Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Text("Kết quả chăm sóc").ID("btnResultCare").Icon(Icon.CartMagnify).Handler("ResultCare();").Disabled(true),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreCustomerCare")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerCare", "CustomerCare", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Cost"),
+                                    Html.X().ModelField().Name("StartTime"),
+                                    Html.X().ModelField().Name("EndTime"),
+                                    Html.X().ModelField().Name("IsPause"),
+                                    Html.X().ModelField().Name("IsFinish"),
+                                    X.ModelField().Name("Status")
+                            )
+                      )
+                )
+                .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.Column().DataIndex("Name").Text("Chương trình chăm sóc").Flex(1),
+                        X.ComponentColumn().Text("Chi phí").Columns(
+                            X.NumberColumn().DataIndex("Cost").Text("Giá trị").Width(100).Align(Alignment.Right),
+                            X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                        X.ComponentColumn().Text("Thời gian thực hiện").Columns(
+                            X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                            X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(120).Align(Alignment.Center)),
+                        X.Column().DataIndex("Status").Text("Trạng thái").MinWidth(100).Align(Alignment.Center)
+                    )
+                .Features(
+                        Html.X().GridFilters()
+                            .MenuFilterText("Tìm kiếm")
+                            .Filters(
+                                Html.X().StringFilter().DataIndex("Name"),
+                                Html.X().NumericFilter().DataIndex("Cost").EmptyText("Nhập giá trị so sánh"),
+                                Html.X().DateFilter().DataIndex("StartTime").AfterText("Sau").BeforeText("Trước").OnText("Tại"),
+                                Html.X().DateFilter().DataIndex("EndTime").AfterText("Sau").BeforeText("Trước").OnText("Tại")
+                            )
+                    )     
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                .BottomBar(
+                        Html.X().CustomPagingToolbar()
+        )
+    )
+)
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatus() {
+        var records = App.GrCustomerCare.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetail, App.btnDelete, App.btnUpdate, App.btnSettingObject, App.btnResultCare);
+        }
+        else {
+            SetDisabled(App.btnDetail, App.btnDelete, App.btnUpdate, App.btnSettingObject, App.btnResultCare);
+        }
+    };
+    var ResultCare = function () {
+        var records = App.GrCustomerCare.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ResultForm", "CustomerCare", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SettingObject = function () {
+        var records = App.GrCustomerCare.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ObjectForm", "CustomerCare", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrCustomerCare.selModel.getSelection();
+        if (records.length > 0) {
+            var url =  '@(Url.Action("DetailForm", "CustomerCare", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var UpdateItem = function () {
+        var records = App.GrCustomerCare.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "CustomerCare", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var AddNew = function () {
+        var url = '@(Url.Action("UpdateForm", "CustomerCare", new { Area = "Customer" }, null))';
+        onDirectMethod(url, null);
+    };
+</script>

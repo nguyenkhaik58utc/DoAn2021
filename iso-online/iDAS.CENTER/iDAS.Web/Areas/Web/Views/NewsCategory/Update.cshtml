@@ -1,0 +1,51 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@model iDAS.Items.NewsCategoryItem
+
+@(Html.X().Window()
+    .Title("Cập nhật thông tin Danh mục tin tức")
+    .Icon(Icon.Pencil)
+    .Frame(true)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .BodyPadding(5)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmUpdate")
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Form)
+        .Items(
+            Html.X().HiddenFor(m => m.ID),
+            Html.X().TextFieldFor(m => m.Name).ID("Name").AllowBlank(false).BlankText("Tên danh mục bắt buộc nhập !").FieldLabel("Tên danh mục *:"),
+            Html.X().TextAreaFor(m => m.Description).ID("Description").FieldLabel("Mô tả").Height(80),
+            Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Kích hoạt"),
+            Html.X().NumberFieldFor(m => m.Position).FieldLabel("Vị trí")
+        )
+        .Buttons(
+            Html.X().Button()
+            .Text("Lưu lại")
+            .Icon(Icon.Disk)
+            .DirectEvents(de =>
+            {
+                de.Click.FormID = "frmUpdate";
+                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+                de.Click.Url = Url.Action("Update");
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Success = "this.up('window').close(); reloadNewsCategory();";
+            }),
+
+            Html.X().Button()
+            .Text("Thoát")
+            .Icon(Icon.Cancel)
+            .OnClientClick("this.up('window').close();")
+        )
+    )
+)

@@ -1,0 +1,155 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(X.Hidden().ID("hdfMeetingPerform"))
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(2).Frame(false).StyleSpec("border: none;")
+.Items(
+             Html.X().DepartmentPanel().Handler("onDepartmentReady")
+             ,
+        Html.X().GridPanel()
+                .Region(Region.Center)
+                .Layout(LayoutType.Fit)
+                .Header(false)
+                .ID("GrMeetingPerform")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                            Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().Text("Xác nhận thành phần tham gia").Icon(Icon.Group).ID("btnObject").Disabled(true).Handler("ObjectMeeting();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().Text("Biên bản họp").Icon(Icon.PageWhiteWord).ID("btnResultMeeting").Disabled(true)
+                                            .Handler("ResultMeeting();"),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                                )
+                    )
+            .Store(
+                Html.X().Store()
+                    .ID("StoreMeetingPerform")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMeetingPerfrom", "MeetingPerform", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("departmentID", "App.hdfMeetingPerform.value", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("StartTime").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("EndTime").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("Cost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("IsFinish"),
+                            Html.X().ModelField().Name("AttachmentFileIDs")
+
+                        )
+                     )
+            )
+            .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.Column().DataIndex("Name").Text("Tên cuộc họp").Width(300).Flex(1),
+                        X.ComponentColumn().Text("Thời gian thực hiện").Columns(
+                        X.DateColumn().DataIndex("StartTime").Format(iDAS.Utilities.DateFormat.DateTime).Text("Bắt đầu").Width(120).Align(Alignment.Center),
+                        X.DateColumn().Format(iDAS.Utilities.DateFormat.DateTime).DataIndex("EndTime").Text("Kết thúc").Width(120).Align(Alignment.Center)),
+                        X.ComponentColumn().Text("Chi phí").Columns(
+                        X.NumberColumn().DataIndex("Cost").Text("Giá trị").Width(100).Align(Alignment.Right),
+                        X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                        X.Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(80),
+                        Html.X().ColumnFileExtend("AttachmentFileIDs")
+                )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+            .BottomBar(
+                   X.CustomPagingToolbar()
+        )
+    )
+)
+
+<script>
+    function onDepartmentReady(records) {
+        App.hdfMeetingPerform.setValue(records[0].get('id'));
+        App.GrMeetingPerform.getStore().reload();
+    };
+    function CheckStatus() {
+        var records = App.GrMeetingPerform.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetail.setDisabled(false);
+            App.btnObject.setDisabled(false);
+            App.btnResultMeeting.setDisabled(false);
+        }
+        else {
+            App.btnDetail.setDisabled(true);
+            App.btnObject.setDisabled(true);
+            App.btnResultMeeting.setDisabled(true);
+        };
+    };
+    var ObjectMeeting = function () {
+        var records = App.GrMeetingPerform.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ObjectForm", "MeetingPerform", new { Area = "Quality" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ResultMeeting = function () {
+        var records = App.GrMeetingPerform.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ResultForm", "MeetingPerform", new { Area = "Quality" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var FinishMeeting = function () {
+        var records = App.GrMeetingPerform.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn kết thúc cuộc họp này ?', function (btn) {
+                if (btn == 'yes') {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Finish", "MeetingPerform", new { Area = "Quality" }, null))',
+                        params: {
+                            ID: records[0].get('ID')
+                        }
+                    });
+                };
+            })
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrMeetingPerform.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "MeetingPlan", new { Area = "Quality" }, null))',
+                params: { ID: records[0].get('ID') }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

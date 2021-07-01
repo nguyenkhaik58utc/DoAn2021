@@ -1,0 +1,77 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Human.Models.V3_Category.V3_DistrictResponse
+@(Html.X().Window()
+    .ID("UpdateDistrictWindow")
+    .Title("Sửa thông tin quận/huyện")
+    .Icon(Icon.Pencil)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("UpdateDistrictForm")
+            .Url(Url.Action("Update"))
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .MarginSpec("0 10 10 10")
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 100)
+            .DefaultAnchor("100%")
+            .Items(
+                                Html.X().TextAreaFor(m => m.ID).Hidden(true),
+                                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên quận/huyện" + Html.Required())
+                                    .EmptyText("Nhập tên quận/huyện")
+                                    .BlankText("Bạn phải nhập tên quận/huyện!")
+                                    .AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().ComboBoxFor(m => m.CityId)
+                                    .FieldLabel("Thành phố" + Html.Required())
+                                    .Editable(false)
+                                    .EmptyText("Chọm thành phố")
+                                        .Store(
+                                            Html.X().Store()
+                                            .AutoLoad(true)
+                                            .ID("CityCbox")
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadData", "v3_City", new { area = "Human" }))
+                                                    .Reader(
+                                                        Html.X().JsonReader().Root("data"))
+                                        )
+                                        .Model(
+                                            Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                new ModelField("ID"),
+                                                new ModelField("Name")
+                                            )
+                                        )
+                                    )
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("updateDistrictSubmit"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var updateDistrictSubmit = function () {
+        App.UpdateDistrictForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadDistrict();
+                    App.UpdateDistrictWindow.close();
+                }
+            }
+        });
+    };
+</script>

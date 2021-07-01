@@ -1,0 +1,118 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CalendarOverrideItem
+@{
+    var startDate = ViewData["StartDate"].ToString();
+    var endDate = ViewData["EndDate"].ToString();
+}
+@(Html.X().Window()
+.ID("winChartColumn")
+.Title("Biểu đồ thống kê hồ sơ theo mức độ bảo mật")
+.Icon(Icon.ChartBar)
+.Width(780)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+   Html.X().Panel()
+                    .Height(395)
+                    .Layout(LayoutType.Fit)
+                          .TopBar(Html.X().Toolbar()
+            .Items(
+                    Html.X().Button()
+                    .Text("Tải lại")
+                    .Icon(Icon.ArrowRefresh)
+                    .Handler("#{ChartTaskDepartment}.getStore().reload()"),
+                   Html.X().Button()
+                    .Text("Lưu biểu đồ")
+                    .Icon(Icon.Disk)
+                    .Handler("saveChart")
+            ))
+                    .Items(
+                 
+                    Html.X().Chart()
+                    .ID("ChartTaskDepartment")
+                    .Shadow(true)                    
+                    .StandardTheme(StandardChartTheme.Category1)
+                      //  .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Top)                    
+                    //.LabelFont("11px Tahoma")
+                    //.BoxStroke("#084594")                    
+                        //)
+                    .Animate(true)
+                        .Store(Html.X().Store()
+                        .Data(Model)
+                             .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                            })
+                            .Model(Html.X().Model()
+                            .Fields(
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Data1")
+                            )
+                        )
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataColumn"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                    )
+                    .Axes(
+                            Html.X().NumericAxis()
+                             .Fields("Data1")                            
+                            .Grid(true)
+                            .Title("Đơn vị: Hồ sơ")
+                            .Minimum(0)
+                                .Label(Html.X().AxisLabel()
+                                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                            ),
+                           Html.X().CategoryAxis()
+                            .Position(Position.Bottom)
+                                .Fields("Name")
+                                .Width(400)
+                                .Title("Biểu đồ thống kê hồ sơ từ ngày:"+ startDate +" đến ngày: "+endDate)
+                    )
+                        .Series(
+                        Html.X().ColumnSeries()
+                            .ShowInLegend(false)
+                        .Axis(Position.Bottom)
+                        .Highlight(true)
+                                    .XField("Name")
+                        .YField("Data1")
+                                   .Title("Tổng hồ sơ")                                   
+                            .Tips(Html.X().ChartTip()
+                            .TrackMouse(true)
+                            .Width(250)
+                            .Height(28)
+                            .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data1') + ' hồ sơ');")
+                             )
+                                      
+                    )
+    )
+
+)
+.Buttons(
+    Html.X().ButtonExit()
+    )
+)
+<script>
+    var tipRenderer = function (storeItem, item) {
+        var total = 0;
+        App.Chart1.getStore().each(function (rec) {
+            total += rec.get('Data1');
+        });
+        this.setTitle(storeItem.get('Name') + ': ' + Math.round(storeItem.get('Data1') / total * 100) + '%');
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+</script>

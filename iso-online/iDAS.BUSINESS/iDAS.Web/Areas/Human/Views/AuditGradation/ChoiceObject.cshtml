@@ -1,0 +1,53 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    var phaseAuditId = ViewData["AuditPhaseId"];
+    var recordIndex = ViewData["recordIndex"];
+    var commandName = ViewData["commandName"];
+}
+@(Html.X().Window().ID("windowObject").Layout(LayoutType.Fit)
+                        .Title("Danh sách nhân sự")
+                        .Icon(Icon.ApplicationSideList)
+                        .Border(false)
+                        .Height(450)
+                        .Width(900)
+                            .ItemsFromAction("EmployeeView", "Employee", new { Area = "Human", multi = false })
+                        .Buttons(
+                            Html.X().ButtonChoice()
+                            .Listeners(ls => ls.Click.Handler = "SaveObject();")
+                            .ID("btnSelectObject"),
+                            Html.X().ButtonExit()
+                            .Listeners(ls => ls.Click.Handler = "CancelObject();")
+                        
+                            )
+)
+<script type="text/javascript">
+    function SaveObject() {
+        if (App.windowObject.hidden == true) {
+            App.windowObject.show();
+        }
+        else {
+            var records = App.GridPanelEmployeeView.selModel.getSelection();
+            if (records.length >= 1) {
+                 if (records.length >= 1) {
+                if ('@commandName' == "Leader") {
+                    App.grMnObject.getStore().getAt(recordIndex).data.EmployeeAuditLeaderName = records[0].get('Name');
+                    App.grMnObject.getStore().getAt(recordIndex).data.EmployeeAuditLeaderID = records[0].get('ID');
+                } else {
+                    App.grMnObject.getStore().getAt(recordIndex).data.EmployeeAuditManagementName = records[0].get('Name');
+                    App.grMnObject.getStore().getAt(recordIndex).data.EmployeeAuditManagementID = records[0].get('ID');
+                }
+                App.grMnObject.view.refresh();
+                App.windowObject.hide();
+            }
+            else {
+                MessageBox();
+            };
+
+        };
+    };
+    function CancelObject() {
+        App.windowObject.hide();
+    };
+</script>

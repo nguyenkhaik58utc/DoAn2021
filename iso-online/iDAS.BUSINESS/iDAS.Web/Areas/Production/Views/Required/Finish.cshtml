@@ -1,0 +1,44 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductionRequirementItem
+@(
+ Html.X().Window()
+.ID("winFinishRequired")
+.Title("Kết thúc yêu cầu sản xuất")
+.Icon(Icon.FlagYellow)
+.Width(450)
+.Height(140)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+         Html.X().FormPanel()
+                    .AutoScroll(true)
+                    .ID("frmFinish")
+                    .Layout(LayoutType.Column)
+                    .Frame(true)
+                    .FieldDefaults(df => { df.LabelWidth = 120; })
+                    .StyleSpec("border: none;")
+                    .Items(
+                                Html.X().HiddenFor(m => m.ID).ID("hdfRequiredId"),
+                                Html.X().CheckboxFor(m => m.IsFinish).FieldLabel("Kết thúc").BoxLabel("Đồng ý").ColumnWidth(1).MarginSpec("0 0 8 5"),
+                                Html.X().DateTimeFieldFor(m => m.FinishTime).FieldLabel("Thời gian kết thúc").ColumnWidth(1).Height(25).MarginSpec("0 0 8 5")
+                    )
+    )
+    .Buttons(
+                Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                                    {
+                                        de.Click.Before = @"if (!App.frmFinish.getForm().isValid()) { return false; }; ";
+                                        de.Click.FormID = "frmFinish";
+                                        de.Click.Url = Url.Action("Finish");
+                                        de.Click.Success = "this.up('window').close();";
+                                    }),
+                Html.X().ButtonExit())
+)

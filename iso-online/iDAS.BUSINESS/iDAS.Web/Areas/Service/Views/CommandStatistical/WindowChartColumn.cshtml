@@ -1,0 +1,190 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CalendarOverrideItem
+@{
+    var startDate = ViewData["StartDate"].ToString();
+    var endDate = ViewData["EndDate"].ToString();
+}
+@(Html.X().Window()
+.ID("winChartColumn")
+.Title("Biểu đồ thống kê lệnh cung cấp theo dịch vụ")
+.Icon(Icon.ChartBar)
+.Width(780)
+.Maximizable(true)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+   Html.X().Panel()
+            .Height(395)
+            .Layout(LayoutType.Fit)
+            .TopBar(Html.X().Toolbar()
+            .Items(
+                    Html.X().Button()
+                    .Text("Tải lại")
+                    .Icon(Icon.ArrowRefresh)
+                    .Handler("#{ChartTaskDepartment}.getStore().reload()"),
+                   Html.X().Button()
+                    .Text("Lưu biểu đồ")
+                    .Icon(Icon.Disk)
+                    .Handler("saveChart")
+                      )
+                      )
+                    .Items(
+                    Html.X().Chart()
+                    .ID("ChartTaskDepartment")
+                    .Shadow(true)                    
+                    .StandardTheme(StandardChartTheme.Base)
+                            .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right)
+                        .LabelFont("11px Tahoma")
+                        .BoxStroke("#084594")
+                            )
+                    .Animate(true)
+                        .Store(Html.X().Store()
+                        .Data(Model)
+                             .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                            })
+                            .Model(Html.X().Model()
+                            .Fields(
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Data1"),
+                                    Html.X().ModelField().Name("Data2"),
+                                    Html.X().ModelField().Name("Data3"),
+                                    Html.X().ModelField().Name("Data4"),
+                                    Html.X().ModelField().Name("Data5"),
+                                    Html.X().ModelField().Name("Data6"),
+                                    Html.X().ModelField().Name("Data7")
+                                         
+                            )
+                        )
+                            .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataColumn"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                    )
+                    .Axes(
+                            Html.X().NumericAxis()
+                            .Fields(new string[] { "Data1", "Data2", "Data3", "Data4", "Data5", "Data6", "Data7" })                            
+                            .Grid(true)
+                            .Title("Đơn vị: lệnh cung cấp")
+                            .Minimum(0)
+                                .Label(Html.X().AxisLabel()
+                                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                            ),
+                           Html.X().CategoryAxis()
+                            .Position(Position.Bottom)
+                                .Fields("Name")
+                                .Width(400)
+                                .Label(Html.X().AxisLabel()
+                                .Font("9px Arial")
+                                .Rotate(Html.X().RotateAttribute().Degrees(270))
+                                    .Renderer(r => r.Handler = "return Ext.String.ellipsis(value, 15, false);")
+                                )
+                                .Title("Biểu đồ thống kê lệnh cung cấp từ ngày:"+ startDate +" đến ngày: "+endDate)
+                            )
+                        .Series(
+                        Html.X().ColumnSeries()
+                        .ShowInLegend(true)
+                        .Axis(Position.Bottom)
+                        .Highlight(true)
+                        .XField("Name")
+                        .YField(new string[]{"Data1", "Data2", "Data3"})
+                        .Titles(new string[] { "Tổng lệnh", "Phê duyệt", "Không phê duyệt" })                                   
+                        .Tips(Html.X().ChartTip()
+                        .TrackMouse(true)
+                        .Width(250)
+                        .Height(58)
+                            .Renderer(r => r.Handler = "this.setTitle('Tổng số lệnh: ' + storeItem.get('Data1') + '<br/> Phê duyệt: '+storeItem.get('Data2')+'<br/>Không phê duyệt: '+storeItem.get('Data3'));")
+                         ),
+
+                              Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                                            .Smooth(3).Fill(true)
+                                        .XField("Name")
+                                        .YField("Data4")
+                                        .Title("Đang thực hiện")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                              .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data4') + ' lệnh');")
+                                         )
+                                            .MarkerConfig(new SpriteAttributes { Type = SpriteType.Arrow, Size = 6, Radius = 6, StrokeWidth = 0 }),
+                                Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                                            .Smooth(3).Fill(true)
+                                        .XField("Name")
+                                        .YField("Data5")
+                                        .Title("Tạm dừng")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data5') + ' lệnh');")
+                                            )
+                                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Diamond, Size = 3, Radius = 3, StrokeWidth = 0 }),
+                                Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                                            .Smooth(3).Fill(true)
+                                        .XField("Name")
+                                        .YField("Data6")
+                                        .Title("Hủy")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data6') + ' lệnh');")
+                                            )
+                                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Cross, Size = 3, Radius = 3, StrokeWidth = 0 }),
+                                Html.X().LineSeries()
+                                        .Axis(Position.Left)
+                                                            .Smooth(3).Fill(true)
+                                        .XField("Name")
+                                        .YField("Data7")
+                                        .Title("Hoàn thành")
+                                        .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                        .Tips(Html.X().ChartTip()
+                                        .Width(280)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data7') + ' lệnh');")
+                                            )
+                                        .MarkerConfig(new SpriteAttributes { Type = SpriteType.Circle, Size = 3, Radius = 3, StrokeWidth = 0 })
+                              
+                         
+                                      
+                    )
+    )
+
+)
+.Buttons(
+    Html.X().ButtonExit()
+    )
+)
+<script>
+    var tipRenderer = function (storeItem, item) {
+        var total = 0;
+        App.Chart1.getStore().each(function (rec) {
+            total += rec.get('Data1');
+        });
+        this.setTitle(storeItem.get('Name') + ': ' + Math.round(storeItem.get('Data1') / total * 100) + '%');
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+</script>

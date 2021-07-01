@@ -1,0 +1,91 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.Position.PositionItem
+@(Html.X().Window()
+    .ID("UpdatePositionWindow")
+    .Title("Sửa thông tin chức vụ")
+    .Icon(Icon.Pencil)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("UpdatePositionForm")
+            .Url(Url.Action("Update"))
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Items(
+                Html.X().TabPanel().ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin chức vụ")
+                            .BodyPadding(5)
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().TextAreaFor(m => m.ID).Hidden(true),
+                                Html.X().TextFieldFor(m => m.PositionName).FieldLabel("Tên chức vụ" + Html.Required())
+                                    .EmptyText("Nhập tên chức vụ của phòng ban hoặc đơn vị")
+                                    .BlankText("Bạn phải nhập tên chức vụ của phòng ban hoặc đơn vị!")
+                                    .AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().TextAreaFor(m => m.PositionCode).FieldLabel("Mã chức vụ" + Html.Required())
+                                    .EmptyText("Nhập mã chức vụ").BlankText("Bạn phải nhập mã chức vụ").AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().ComboBoxFor(m => m.ManagementLevelID)
+                                    .ID("cboManageLevel")
+                                .MarginSpec("0 0 5 0")
+                                .FieldLabel("Cấp quản lý")
+                                .EmptyText("Chọn cấp quản lý")
+                                .DisplayField("ManagementLevelName")
+                                .ValueField("ID")
+                                .Editable(false)
+                                .ColumnWidth(0.5)
+                                .Store(
+                                    Html.X().Store()
+                                        .ID("stManageLevel")
+                                        .AutoLoad(true)
+                                        .Model(
+                                        Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                new ModelField("ID"),
+                                                new ModelField("ManagementLevelName")
+                                            )
+                                    )
+                                    .Proxy(Html.X().AjaxProxy()
+                                             .Url(Url.Action("GetAllManagementLevel", "Position", new { area = "Department" }))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    )
+                                ),
+                                Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Sử dụng").Checked(true)
+                            )
+                            )
+                    .Buttons(
+                        Html.X().ButtonSave().Handler("updatePositionSubmit"),
+                        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+            )
+    )
+)
+<script>
+    var updatePositionSubmit = function () {
+        App.UpdatePositionForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadPosition();
+                    App.UpdatePositionWindow.close();
+                }
+            }
+        });
+    };
+</script>

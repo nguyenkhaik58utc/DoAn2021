@@ -1,0 +1,157 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentPlanItem
+@{
+    var X = Html.X();
+    var title = "Lựa chọn hồ sơ ứng viên cho kế hoạch: " + Model.Name;
+}
+@(Html.X().Store().ID("RequirementStore").AutoLoad(true)
+        .Model(
+            Html.X().Model()
+                .IDProperty("ID")
+                .Fields(
+                    new ModelField("ID", ModelFieldType.Int) { Mapping = "RequiredID" },
+                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                    new ModelField("RoleName", ModelFieldType.String) { Mapping = "RoleName" }
+                )
+        )
+        .Parameters(ps =>
+        {
+            ps.Add(new StoreParameter("PlanID", "App.hdfPlanAddID.value", ParameterMode.Raw));
+        })
+        .Proxy(
+            Html.X().AjaxProxy()
+                    .Url(Url.Action("GetRequirement"))
+                .Reader(Html.X().JsonReader().Root("data")
+                )
+        )
+)
+@(Html.X().Window()
+.ID("winProfileInterviewAdd")
+.Title(title)
+.Icon(Icon.Add)
+.Width(800)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Form)
+    .Frame(true)
+    .Border(false).Padding(0)
+    .MarginSpec("-5 0 -3 0")
+    .StyleSpec("border: none;")
+    .DefaultAnchor("100%")
+    .Items(
+                   X.HiddenFor(m=>m.ID).ID("hdfPlanAddID"),
+                   Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrProfileInterviewAdd").Margin(0).Padding(0)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false).Height(400)
+                    .Icon(Icon.TextListBullets)
+                        .TopBar(
+                                X.Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                        Html.X().ButtonView().ToolTip("Xem chi tiết hồ sơ").ID("btnDetailProfile").Handler("ViewDetailProfile();"),
+                                Html.X().ToolbarSeparator()
+                                    )
+                        )
+                .Store(
+                    Html.X().Store()
+                        .ID("ProfileAddStore")
+                        .RemotePaging(true)
+                        .AutoLoad(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProfile")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("PlanID", "App.hdfPlanAddID.value", ParameterMode.Raw));
+                        }
+                                    )
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("Birthday"),
+                                Html.X().ModelField().Name("Gender"),
+                                Html.X().ModelField().Name("Avatar"),
+                                Html.X().ModelField().Name("IsSelect"),
+                                Html.X().ModelField().Name("RequirementName"),
+                                Html.X().ModelField().Name("RequirementID"),
+                                Html.X().ModelField().Name("ProfileID")
+                            )
+                         )
+                )
+                .ColumnModel(
+                            X.RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                            X.ImageColumn().DataIndex("Avatar"),
+                            X.Column().DataIndex("Name").Text("Họ tên").Flex(1),
+                            X.Column().DataIndex("Gender").Renderer("SexRenderer").Text("Giới tính").Width(80).Align(Alignment.Center),
+                            X.DateColumnExtend().DataIndex("Birthday").Format("dd/MM/yyyy").Text("Ngày sinh").Width(100).Align(Alignment.Center),
+                            X.Column().DataIndex("RequirementID").Renderer("RequirementRenderer").Text("Yêu cầu").Width(200)
+                                .Editor(X.ComboBox()
+                                .QueryMode(DataLoadMode.Local)
+                                .DisplayField("Name")
+                                .ValueField("ID")
+                                .StoreID("RequirementStore")
+                            ),
+                            X.CheckColumn().DataIndex("IsSelect").Text("Chọn").Width(50).Editable(true)
+                            )
+                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                    .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusInterview();"))
+                    .Plugins(Html.X().CellEditing().ClicksToEdit(1).Listeners(ls => ls.Edit.Fn = "onEditProfileInterview"))
+                    .BottomBar(Html.X().CustomPagingToolbar()
+            )
+            )
+    )
+    .Buttons(Html.X().ButtonExit())
+)
+<script>
+    var RequirementRenderer = function (value) {
+        if (value != null)
+        {
+            var r = App.RequirementStore.getById(value);
+            if (Ext.isEmpty(r)) {
+                return "";
+            }
+            return r.data.Name;
+        }
+        return null;
+    };
+    var onEditProfileInterview = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            var url = '@(Url.Action("UpdateProfileInterView"))';
+            var params = {
+                data: e.record.data,
+                PlanID: App.hdfPlanAddID.getValue()
+            };
+            onDirectMethod(url, params);
+        };
+    };
+    var ViewDetailProfile = function () {
+        var records = App.GrProfileInterviewAdd.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "RecruitmentProfile", new { Area = "Human" }, null))';
+            var params = { ID: records[0].get('ProfileID')};
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function CheckStatusInterview() {
+        var records = App.GrProfileInterviewAdd.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailProfile.setDisabled(false);
+        }
+        else {
+            App.btnDetailProfile.setDisabled(false);
+        };
+    };
+</script>

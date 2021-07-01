@@ -1,0 +1,139 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateCommune = '@(Url.Action("Create", "V3_Commune", new { area = "Human" }))';
+    var urlUpdateCommune = '@(Url.Action("Update", "V3_Commune", new { area = "Human" }))';
+    var urlDeleteCommune = '@(Url.Action("Delete", "V3_Commune", new { Area = "Human" }))';
+    var urlDetailCommune = '@(Url.Action("ShowFrmDetail", "V3_Commune", new { Area = "Human" }))';
+    var sortCommuneIndex = null;
+    var showCreateCommune = function () {
+        var url = urlCreateCommune;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateCommune = function () {
+        var url = urlUpdateCommune;
+        var record = getCommuneSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getCommuneSelection = function () {
+        var records = App.CommunePanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setCommuneSelection = function () {
+        if (sortCommuneIndex != null) {
+            App.CommunePanel.selModel.select(sortCommuneIndex);
+        }
+    };
+
+    var showDeleteCommune = function () {
+        var url = urlDeleteCommune;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ Xã/Phường này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getCommuneSelection();
+                            var CommuneId = record == null ? 0 : record.data.ID;
+                            var params = { ID: CommuneId };
+                            onDirectMethod(url, params, 'post', reloadCommune);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailCommune = function () {
+        var url = urlDetailCommune;
+        var record = getCommuneSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadCommune = function () {
+        App.CommunePanel.store.reload();
+    };
+
+    var selectionChangeCommune = function () {
+        var record = getCommuneSelection();
+        var isDisabled = record == null;
+        App.btnUpdateCommune.setDisabled(isDisabled);
+        App.btnDeleteCommune.setDisabled(isDisabled);
+        App.btnDetailCommune.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý Xã/Phường").Header(false)
+                    .ID("CommunePanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateCommune").ID("btnCreateCommune()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateCommune").Handler("showUpdateCommune();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteCommune").Handler("showDeleteCommune()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailCommune").Handler("showDetailCommune();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreCommune")
+                  .RemotePaging(true)
+                        .PageSize(40)
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setCommuneSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên Xã/Phường").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeCommune();")
+            .Plugins(Html.X().FilterHeader())
+                .BottomBar(
+                        X.CustomPagingToolbar()
+                )
+    )
+    )

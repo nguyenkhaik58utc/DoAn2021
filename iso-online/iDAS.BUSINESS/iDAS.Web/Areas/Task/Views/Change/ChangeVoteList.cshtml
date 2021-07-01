@@ -1,0 +1,286 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.TaskItem
+@{
+    int taskId = (int)ViewData["TaskID"];
+    bool isHidden = (bool)ViewData["isHidden"];
+    bool isHiddenApp = (bool)ViewData["isHiddenApp"]; 
+}
+@(
+ Html.X().Window()
+        .ID("winTaskChange")
+        .Title("Lịch sử điều chỉnh công việc")
+        .Icon(Icon.ArrowRefresh)
+        .Height(490)
+        .Width(1000)
+        .Maximizable(true)
+        .Constrain(true)
+        .Layout(LayoutType.Fit)
+        .Modal(true)
+        .Resizable(false)
+        .Center()
+        .Items(
+            Html.X().GridPanel()
+                    .ID("GridTaskViewChange")
+                    .Border(false)
+                    .AnchorHorizontal("100%")
+                    .AnchorVertical("100%")
+                    .TopBar(
+                        Html.X().Toolbar()
+                            .Items(
+                              Html.X().Button()
+                                    .ID("btnAddChangeVote")
+                                    .Text("Thêm phiếu điều chỉnh")
+                                    .Disabled(isHidden)
+                                    .Icon(Icon.Add)
+                                    .DirectEvents(de =>
+                                    {
+                                        de.Click.ExtraParams.Add(new { taskId = taskId });
+                                        de.Click.Url = Url.Action("AddChangeVote");                                
+                                        de.Click.EventMask.ShowMask = true;
+                                        de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+                                    }),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button()
+                                        .ID("btnEditChangeVote")
+                                        .Text("Sửa điều chỉnh")
+                                        .Disabled(!isHidden)
+                                        .Icon(Icon.Pencil)
+                                        .DirectEvents(de =>
+                                        {
+                                            de.Click.ExtraParams.Add(new { taskId = taskId });
+                                            de.Click.Url = Url.Action("EditChangeVote");
+                                            de.Click.EventMask.ShowMask = true;
+                                            de.Click.EventMask.Msg = "Đang xử lý Dữ liệu...";
+                                        }),
+                                    Html.X().ToolbarSeparator(),              
+                                    Html.X().Button()
+                                        .ID("btnApproveChange")
+                                        .Text("Xác nhận điều chỉnh")
+                                            .Disabled(isHiddenApp)
+                                        .Icon(Icon.ArrowRefresh)                                        
+                                        .Handler("approveChangeVote();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView()
+                                            .ID("btnDetail")
+                                            .Disabled(true)
+                                            .Handler("detailChange();")
+                             ) 
+                        )
+                    .Store(
+                        Html.X().Store()
+                            .ID("stTaskChange")
+                            .Proxy(
+                                  Html.X().AjaxProxy()
+                                      .Url(Url.Action("GetData"))
+                                      .Reader(Html.X().JsonReader().Root("data"))
+                                 )
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("taskId", taskId.ToString(), ParameterMode.Value));
+                                }
+                             )
+                            .RemoteSort(false)
+                            .RemotePaging(true)
+                            .PageSize(10)
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    new ModelField("ID"),
+                                    new ModelField("Name", ModelFieldType.String),
+                                    new ModelField("ModuleCode", ModelFieldType.String),
+                                    new ModelField("FunctionCode", ModelFieldType.String),
+                                    new ModelField("LevelName", ModelFieldType.String),
+                                    new ModelField("Color", ModelFieldType.String),
+                                    new ModelField("Content", ModelFieldType.String),
+                                    new ModelField("StartTime", ModelFieldType.Date),
+                                    new ModelField("EndTime", ModelFieldType.Date),
+                                    new ModelField("LevelID", ModelFieldType.Int),
+                                    new ModelField("IsAccept", ModelFieldType.Boolean),
+                                    new ModelField("IsChange", ModelFieldType.Boolean),
+                                    new ModelField("IsPause", ModelFieldType.Boolean),
+                                    new ModelField("IsPass", ModelFieldType.Boolean),
+                                    new ModelField("PerformBy", ModelFieldType.Int),
+                                    new ModelField("CheckBy", ModelFieldType.Int),
+                                    new ModelField("AuditBy", ModelFieldType.Int),
+                                    new ModelField("Note", ModelFieldType.String),
+                                    new ModelField("Status", ModelFieldType.String),
+                                    new ModelField("Rate", ModelFieldType.Float),
+                                    new ModelField("CreateByName", ModelFieldType.String),
+                                    new ModelField("UpdateByName", ModelFieldType.String),
+                                    new ModelField("PerformEmployeesName", ModelFieldType.String)
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                            .Text("STT.")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(33)
+                            .Align(Alignment.Center),
+                        Html.X().Column()
+                            .Text("Người giao việc")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .DataIndex("CreateByName")
+                            .Width(120)
+                            .HeaderItems(
+                            Html.X().TextField()
+                                    .ID("CreateByNameFilter")
+                                    .Listeners(l =>
+                                    {
+                                        l.Change.Handler = "applyFilter(this);";
+                                        l.Change.Buffer = 250;
+                                    })
+                                    .Plugins(Html.X().ClearButton())
+                                 ),
+                            Html.X().Column()
+                                .Text("Người thực hiện")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .DataIndex("PerformEmployeesName")
+                                .Width(120)
+                                .HeaderItems(
+                                    Html.X().TextField()
+                                            .ID("PerformEmployeesNameFilter")
+                                            .Listeners(l =>
+                                            {
+                                                l.Change.Handler = "applyFilter(this);";
+                                                l.Change.Buffer = 250;
+                                            })
+                                            .Plugins(Html.X().ClearButton())
+                                ),
+                        Html.X().Column()
+                            .Text("Công việc được giao")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .DataIndex("Name")
+                            .Wrap(true)
+                            .Flex(1)
+                            .HeaderItems(
+                                Html.X().TextField()
+                                    .ID("NameFilter")
+                                    .Listeners(l =>
+                                    {
+                                        l.Change.Handler = "applyFilter(this);";
+                                        l.Change.Buffer = 250;
+                                    })
+                                    .Plugins(Html.X().ClearButton())
+                            ),
+
+                            Html.X().Column()
+                                .Width(80)
+                                .Text("Mức độ")
+                                .DataIndex("LevelName")
+                                .Align(Alignment.Center)
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                                .HeaderItems(
+                                    Html.X().TextField()
+                                            .ID("LevelNameFilter")
+                                            .Listeners(l =>
+                                            {
+                                                l.Change.Handler = "applyFilter(this);";
+                                                l.Change.Buffer = 250;
+                                            })
+                                        .Plugins(Html.X().ClearButton())
+                                ),
+                        Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                            .Width(120)
+                            .Text("Ngày bắt đầu")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .DataIndex("StartTime")
+                            .Format("dd/MM/yyyy HH:mm A")
+                            .HeaderItems(
+                                Html.X().DateField()
+                                    .ID("StartTimeFilter")
+                                    .Format("dd/MM/yyyy")
+                                    .Editable(false)
+                                    .Listeners(l =>
+                                    {
+                                        l.Change.Handler = "applyFilter(this);";
+                                        l.Change.Buffer = 250;
+                                    })
+                                    .Plugins(Html.X().ClearButton())
+                            ),
+                        Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                            .Width(120)
+                            .Text("Kết thúc")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .DataIndex("EndTime")
+                            .Format("dd/MM/yyyy HH:mm A")
+                            .HeaderItems(
+                                Html.X().DateField()
+                                        .ID("EndTimeFilter")
+                                        .Format("dd/MM/yyyy")
+                                        .Editable(false)
+                                        .Listeners(l =>
+                                        {
+                                            l.Change.Handler = "applyFilter(this);";
+                                            l.Change.Buffer = 250;
+                                        })
+                                        .Plugins(Html.X().ClearButton())
+                            ),
+                      Html.X().Column()
+                            .Width(110)
+                            .Text("Trạng thái")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .DataIndex("Status")
+                            .HeaderItems(
+                                Html.X().TextField()
+                                    .Listeners(l =>
+                                    {
+                                        l.Change.Handler = "applyFilter(this);";
+                                        l.Change.Buffer = 250;
+                                    })
+                                    .Plugins(Html.X().ClearButton())
+                            )
+                    )
+                    .SelectionModel(
+                        Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(ls =>
+                               ls.Select.Handler = "checkStatus()"
+                            )
+                    )
+                .BottomBar(Html.X().CustomPagingToolbar("10", "20", "30", "50", "100"))
+                )
+                .Buttons(
+                    Html.X().ButtonExit()
+                )
+)
+<script type="text/javascript">
+    var approveChangeVote = function () {  
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ApproveChangeVote", "Change", new { Area = "Task" }, null))',
+                params: { taskId: '@(taskId)'}
+            });
+       
+    };
+    var checkStatus= function()
+    {
+        var records = App.GridTaskViewChange.selModel.getSelection();
+        if (records.length == 1) {
+            if(records[0].get('IsChange')==false)
+            {              
+                App.btnDetail.setDisabled(false);
+            }
+            else
+            {               
+                App.btnDetail.setDisabled(false);
+            }
+        }
+    };
+    var detailChange = function () {
+        var records = App.GridTaskViewChange.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ViewChangeDetail", "Change", new { Area = "Task" }, null))',
+                params: { changeId: records[0].get('ID') }
+            });
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có lịch sử nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+</script>

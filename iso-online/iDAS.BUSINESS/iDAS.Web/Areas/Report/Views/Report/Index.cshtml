@@ -1,0 +1,75 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ReportTemplateItem
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@(Html.X().Viewport().AutoScroll(false)
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        Html.X().GridPanel()
+            .ID("ReportTemplatePanel")
+            .Title("Danh sách mẫu báo cáo")
+            .Header(false)
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().ButtonCreate().Handler("showUploadReport"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnEdit").Handler(""),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDelete").Handler(""),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetail").Handler(""),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Thiết lập").Icon(Icon.Cog).Handler(""),
+                        Html.X().ToolbarSeparator()
+                    )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                    .AutoLoad(true)
+                    .RemotePaging(true)
+                    .PageSize(10)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().DateColumnExtend().DataIndex(Model, m => m.UpdateView).Text("Ngày cập nhật").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center).Filterable(false),
+                Html.X().Column().DataIndex(Model, m=> m.Name).Text("Tên mẫu báo cáo").Flex(1),
+                
+                Html.X().ComponentColumn().Text("Thông tin tệp").Filterable(false).Columns(
+                    Html.X().Column().DataIndex(Model, m => m.FileView).Text("Tên").Width(180).Align(Alignment.Right),
+                    Html.X().Column().DataIndex(Model, m=>m.TypeView).Text("Kiểu").Width(90).Align(Alignment.Center),
+                    Html.X().Column().DataIndex(Model, m=>m.SizeView).Text("Kích cỡ").Width(90).Align(Alignment.Right)
+                ),
+                    
+                Html.X().ComponentColumn().Text("Trạng thái").Filterable(false).Columns(
+                    Html.X().CheckColumn().DataIndex(Model, m=>m.IsActive).Text("Sử dụng").Width(80),
+                    Html.X().CheckColumn().DataIndex(Model, m=>m.IsMap).Text("Thiết lập").Width(80)
+                )
+            )
+            .Plugins(Html.X().FilterHeader().Remote(true))
+            .BottomBar(Html.X().CustomPagingToolbar("10", "20", "30", "50", "100"))
+    )
+)
+<script type="text/javascript">
+    var urlUploadReport = '@Url.Action("Upload", "Report", new { area = "Report"})';
+    var showUploadReport = function () {
+        var url = urlUploadReport;
+        onDirectMethod(url, null, 'get');
+    };
+    var reloadReportTemplate = function () {
+        App.ReportTemplatePanel.store.reload();
+    };
+</script>

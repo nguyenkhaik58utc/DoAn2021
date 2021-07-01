@@ -1,0 +1,135 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DocumentDistributionItem
+@(
+ Html.X().Window()
+    .ID("winAddDocument")
+    .Title("Phân phối tài liệu")
+    .Icon(Icon.PageCode)
+    .Layout(LayoutType.Border)
+    .Height(520)
+    .Width(890)
+    .BodyPadding(0).Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("frIssueDocument")
+            .Layout(LayoutType.Fit)
+            .Header(false)
+            .Region(Region.Center)
+            .Frame(true)
+            .Items(
+                 Html.X().FieldSet()
+                    .Title("Thông tin phân phối tài liệu cho từng phòng ban")
+                    .Padding(6)
+                    .MarginSpec("0 0 0 0")
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .Defaults(d =>
+                    {
+                        d.Add(new Parameter("LabelWidth", "120"));
+                    })
+                    .Items(
+                        Html.X().HiddenFor(m => m.DocumentDistributionID).ID("hrID"),
+                        Html.X().HiddenFor(m => m.DocumentID).ID("hrDocID"),
+                        Html.X().HiddenFor(m => m.IssuedDate).ID("hrEffectiveDate"),
+                            //Html.X().HiddenFor(m => m.DepartmentID).ID("hrDepartment"),
+                        Html.X().NumberFieldFor(m => m.Number)
+                            .ID("txtNumber").FieldLabel("Số lượng" + Html.Required())
+                            .AllowBlank(false).BlankText("Số lượng phân phối bắt buộc nhập!")
+                            .MinValue(1).MinText("Số lượng phân phối phải lớn hơn 0!")
+                            .AllowDecimals(false)
+                            .Value(1),
+                         Html.X().DepartmentFieldFor(m => m.Departments).FieldLabel("Phòng ban" + Html.Required()).AllowBlank(false),
+                        Html.X().DateFieldFor(m => m.DistributionDate)
+                            .ID("EffectiveDate")
+                            .FieldLabel("Ngày phân phối" + Html.Required())
+                            .Format("dd/MM/yyyy")
+                            .AllowBlank(false).BlankText("Ngày phân phối bắt buộc nhập!")
+                            ,
+                         Html.X().Container().Layout(LayoutType.Column).Items(
+                            Html.X().CheckboxFor(m => m.FormH).FieldLabel("Hình thức phân phối" + Html.Required()).BoxLabel("Bản cứng").ColumnWidth(0.5).ID("ckHard").LabelWidth(120),
+                         Html.X().CheckboxFor(m => m.FormS).FieldLabel("").BoxLabel("Bản mềm").ColumnWidth(0.5).MarginSpec("0 0 0 5").ID("ckSoft")
+                         ),
+                             Html.X().TextAreaFor(m => m.NoteObs).ID("Note").Flex(1).FieldLabel("Ghi chú").MinHeight(100),
+                            Html.X().EmployeeFieldFor(m => m.EmployeeInfo).AllowBlank(false).Title("Người phân phối" + Html.Required()).MarginSpec("0 0 0 125").ID("fsEmployee")
+                )
+            )
+        )
+        .Buttons(
+         Html.X().Button()
+                        .ID("btnSaves")
+                        .Icon(Icon.Disk)
+                               .MarginSpec("0 4 0 0")
+                        .Text("Phân phối")
+                        .TabIndex(20)
+                            .DirectEvents(de =>
+                            {
+                                de.Click.FormID = "frIssueDocument";
+                                de.Click.ExtraParams.Add(new { isExit = false });
+                                de.Click.Url = Url.Action("UpdateIssue");
+                                de.Click.Before = @"if (!#{frIssueDocument}.getForm().isValid()) { return false; }";
+                                de.Click.EventMask.ShowMask = true;
+                                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                                de.Click.Success = "this.up('window').close();";
+                            }),
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    //function onSelectEmployee(records) {
+    //    if (records.length == 1) {
+    //        App.nameApproval.setValue(records[0].get('Name'));
+    //        App.hdfEmployeeApproveId.setValue(records[0].get('ID'));
+    //        App.avatarApproval.setImageUrl(records[0].get('Avatar'));
+    //        var dept = role = 'N/A';
+    //        if (records[0].get('DepartmentName') != null)
+    //            dept = records[0].get('DepartmentName');
+    //        if (records[0].get('Role') != null)
+    //            role = records[0].get('Role');
+    //        var displayApproval = 'Phòng ban: ' + dept + '</br> Chức danh: ' + role;
+    //        App.displayApproval.setValue(displayApproval);
+    //    }
+    //    else {
+    //        MessageBox();
+    //    };
+    //};
+    @*function onDepartmentReady(records) {
+        var id = records[0].get('id');
+        App.hrDepartment.setValue(records[0].get('id'));
+        var docID = App.hrDocID.getValue();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("GetObjByDepartment", "Document", new { Area = "Document" }, null))', params: { id: id, docID: docID },
+            success: function (response) {
+                var frm = Ext.getCmp('frIssueDocument').getForm();
+                if (response.ID == 0) {
+                    frm.reset();
+                    var strDateIss = new Date(parseInt(response.IssuedDate.replace('/Date(', '')));
+                    var dateIss = Ext.Date.format(strDateIss, 'd/m/Y');
+                    response.IssuedDate = dateIss;
+                    App.hrEffectiveDate.setValue(response.IssuedDate);
+                    App.hrDepartment.setValue(response.DepartmentID);
+                    App.hrDocID.setValue(response.DocumentID);
+                }
+                else {
+                    var idDocDis = response.ID;
+                    var strDateEff = new Date(parseInt(response.DistributionDate.replace('/Date(', '')));
+                    var dateEff = Ext.Date.format(strDateEff, 'd/m/Y');
+                    response.DistributionDate = dateEff;
+                    var strDateIss = new Date(parseInt(response.IssuedDate.replace('/Date(', '')));
+                    var dateIss = Ext.Date.format(strDateIss, 'd/m/Y');
+                    response.IssuedDate = dateIss;
+                    frm.setValues(response);
+                    frm.findField('EmployeeInfo.ID').setValue(response.EmployeeInfo.ID);
+                    frm.findField('EmployeeInfo.Name').setValue(response.EmployeeInfo.Name);
+                    frm.findField('EmployeeInfo.Department').setValue(response.EmployeeInfo.Department);
+                    frm.findField('EmployeeInfo.Role').setValue(response.EmployeeInfo.Role);
+                }
+            }
+        });
+    };*@
+</script>

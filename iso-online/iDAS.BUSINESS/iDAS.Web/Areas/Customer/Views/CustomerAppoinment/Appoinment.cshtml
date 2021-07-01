@@ -1,0 +1,359 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Items;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@using iDAS.Web.Areas.Customer.Controllers
+@{
+    var style = ViewBag.Style;
+    var customerId = ViewBag.CustomerId;
+    var name = ViewBag.Name;
+}
+@Html.X().ResourceManager(this.ViewBag.ManagerConfig as MvcResourceManagerConfig).Namespace("iDas")
+<style>
+ @style
+</style>
+<style>
+    #unlicensed {
+        display: none !important;
+        width: 0px;
+    }
+</style>
+@(Html.X().Viewport().ID("WindowAppoinment")
+        .Layout(LayoutType.Fit)
+        .Items(
+                Html.X().Panel()
+                    .ID("Panel1")
+                    .MarginSpec("1 1 1 1")
+                    .Title("...")
+                    .TitleAlign(TitleAlign.Center)
+                    .Layout("border")
+                    .Cls("app-center")
+                    .Padding(0)
+                    .Items(
+                        Html.X().Panel()
+                            .Width(180)
+                            .Region(Region.West)
+                            .Border(true)
+                            .MarginSpec("1 1 1 1")
+                            .Cls("app-west")
+                            .Layout(LayoutType.Fit)
+                            .Items(
+                                Html.X().DatePicker().Margin(0)
+                                    .ID("DatePicker1")
+                                    .Cls("ext-cal-nav-picker")
+                                    .Listeners(events =>
+                                        {
+                                            events.Select.Fn = "iDas.setStartDate";
+                                            events.Select.Scope = "iDas";
+                                        })
+                            ),
+                        Html.X().CalendarPanel()
+                            .ID("CalendarPanel1")
+                            .Region(Region.Center)
+                            .ActiveIndex(2)
+                            .Border(true)
+                            .WeekText("Tuần")
+                            .MonthText("Tháng")
+                            .DayText("Ngày")
+                            .MarginSpec("1 1 1 1")
+                            .EventStore(
+                        Html.X().EventStore()
+                                .ID("EventStore1")
+                                .NoMappings(true)
+                                .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetEvents"))
+                                    .Reader(Html.X()
+                                    .JsonReader()
+                                    .Root("data")
+                                    )
+                                )
+                                .Listeners(events =>
+                                    events.BeforeSync.Handler = @"Ext.Msg.alert('Sync', 'The EventStore initiates a sync request after that action. The EventStore synchronization is not implemented in that example.');
+                                                              this.commitChanges();
+                                                              return false;"
+                                )
+                                .CustomConfig(cc => cc.Add(new { submitDataUrl = Url.Action("SubmitData") }))
+                            )
+                            .CalendarStore(Html.X().CalendarStore()
+                                .ID("CalendarStore1")
+                                    .AutoLoad(true)
+                                         .Model(
+                                            Html.X().Model()
+                                                .IDProperty("ID")
+                                                .Fields(
+                                                    new ModelField("CalendarId", ModelFieldType.Int) { Mapping = "ID" },
+                                                    new ModelField("Title", ModelFieldType.String) { Mapping = "Name" },
+                                                    new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                                )
+                                        )
+                                    .Proxy(Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetCalendars"))
+                                        .Reader(Html.X()
+                                        .JsonReader()
+                                        .Root("data")
+                                             )
+                                     )
+
+                            )
+                            .MonthView(Html.X().MonthView()
+                                .ShowHeader(true)
+                                .ShowWeekLinks(true)
+                                .ShowWeekNumbers(true)
+                            )
+                            .Listeners(events =>
+                            {
+                                events.ViewChange.Fn = "iDas.viewChange";
+                                events.ViewChange.Scope = "iDas";
+                                events.EventClick.Fn = "iDas.record.show";
+                                events.EventClick.Scope = "iDas";
+                                events.DayClick.Fn = "iDas.dayClick";
+                                events.DayClick.Scope = "iDas";
+                                events.RangeSelect.Fn = "iDas.rangeSelect";
+                                events.RangeSelect.Scope = "iDas";
+                                events.EventMove.Fn = "iDas.record.move";
+                                events.EventMove.Scope = "iDas";
+                                events.EventResize.Fn = "iDas.record.resize";
+                                events.EventResize.Scope = "iDas";
+                                events.EventAdd.Fn = "iDas.record.addFromEventDetailsForm";
+                                events.EventAdd.Scope = "iDas";
+                                events.EventUpdate.Fn = "iDas.record.updateFromEventDetailsForm";
+                                events.EventUpdate.Scope = "iDas";
+                                events.EventDelete.Fn = "iDas.record.removeFromEventDetailsForm";
+                                events.EventDelete.Scope = "iDas";
+                            })
+                    )
+            )
+)
+@(Html.X().CustomWindow().ID("UpdateAppoinment")
+.Hidden(true).Maximizable(false).Width(400)
+.Icon(Icon.Calendar).Title("Thiết lập lịch hẹn")
+.Items(
+    Html.X().CustomFormPanel().ID("formUpdate").Items(
+        Html.X().Hidden().ID("hdEventId"),
+        Html.X().DisplayField().ReadOnly(true).ID("TitleID").FieldLabel("Khách hàng"),
+        Html.X().DateField().FieldLabel("Thời gian").ID("StartDate"),
+        Html.X().ComboBox().FieldLabel("Hình thức" + Html.Required()).AllowBlank(false)
+                        .ID("cbForm")
+                        .QueryMode(DataLoadMode.Local)
+                        .ForceSelection(true)
+                        .AllowBlank(false)
+                        .TriggerAction(TriggerAction.All)
+                        .DisplayField("Name")
+                        .Editable(false)
+                            .ValueField("Id")
+                        .Store(
+                            Html.X().Store()
+                            .ID("stColor")
+                                .AutoLoad(true)
+                                .Model(
+                                    Html.X().Model()
+                                        .IDProperty("Id")
+                                        .Fields(
+                                            new ModelField("Id", ModelFieldType.Int) { Mapping = "ID" },
+                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                            new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                        )
+                                )
+                                .Proxy(
+                                    Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetCalendars"))
+                                        .Reader(Html.X().JsonReader().Root("data")
+                                        )
+                                )
+                        )
+                        .Tpl(
+                        @<text>
+                            <tpl for=".">
+                                <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                    <div style="width: 20px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left; font-size: 0.9em;">&nbsp;{Name}</div>
+                                </div>
+                            </tpl>
+                        </text>)
+                            .Listeners(l => l.Change.Handler = "getColor(iDas.cbForm, iDas.stColor);"),
+         Html.X().TextArea().MinHeight(100).ID("txtNotes")
+    )
+)
+.Buttons(
+Html.X().ButtonSave().Handler("insertData"), 
+Html.X().ButtonDelete().ID("btnDelete").Disabled(false).Hidden(true).Handler("deleteCalendar( iDas.hdEventId.value);"), 
+Html.X().ButtonExit())
+)
+
+<script type="text/javascript">
+    var insertData = function () {
+        if (!iDas.formUpdate.getForm().isValid()) { return false; };
+        var customerId = '@customerId';
+        var startDate = Ext.Date.format(iDas.StartDate.value, 'd/m/Y g:i A');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Insert", "CustomerAppoinment", new { Area = "Customer" }, null))',
+            params: { customerId: customerId, eventId: iDas.hdEventId.value, startDate: startDate, note: iDas.txtNotes.value, calendarId: iDas.cbForm.value }
+        });
+        iDas.UpdateAppoinment.hide();
+        iDas.getStore().reload();
+    };
+    var SetWinValue = function (rec) {
+        if (rec.data) {
+            iDas.TitleID.setValue(rec.data.Title);
+            iDas.StartDate.setValue(rec.data.StartDate);
+            iDas.cbForm.setValue(rec.data.CalendarId);
+            iDas.txtNotes.setValue(rec.data.Notes);
+            iDas.hdEventId.setValue(rec.data.EventId);
+            iDas.btnDelete.show();
+        }
+        else {
+            iDas.TitleID.setValue('@name');
+            iDas.StartDate.setValue(rec.StartDate);
+            iDas.hdEventId.setValue(null);
+            iDas.btnDelete.hide();
+        }
+    };
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var addCalendar = function (title, startDate, endDate, calendarId) {
+        var customerId = '@customerId';
+        App.txtNotes.
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Insert", "CustomerAppoinment", new { Area = "Customer" }, null))',
+            params: { customerId: customerId, title: title, startDate: startDate, endDate: endDate, calendarId: calendarId }
+        });
+    };
+    var updateCalendar = function (id, title, startDate, endDate, calendarId) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Update", "CustomerAppoinment", new { Area = "Customer" }, null))',
+            params: { id: id, title: title, startDate: startDate, endDate: endDate, calendarId: calendarId }
+        });
+    };
+    var deleteCalendar = function (id) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Delete", "CustomerAppoinment", new { Area = "Customer" }, null))',
+            params: { id: id }
+        });
+        iDas.UpdateAppoinment.hide();
+        iDas.getStore().reload();
+    };
+    var iDas = {
+        getCalendar: function () {
+            return iDas.CalendarPanel1;
+        },
+
+        getStore: function () {
+            return iDas.EventStore1;
+        },
+
+        getWindow: function () {
+            return iDas.UpdateAppoinment;
+        },
+
+        viewChange: function (p, vw, dateInfo) {
+            var win = this.getWindow();
+            if (win) {
+                win.hide();
+            }
+            if (dateInfo) {
+                this.DatePicker1.setValue(dateInfo.activeDate);
+                this.updateTitle(dateInfo.viewStart, dateInfo.viewEnd);
+            }
+        },
+
+        updateTitle: function (startDt, endDt) {
+            var msg = '',
+                fmt = Ext.Date.format;
+
+            if (Ext.Date.clearTime(startDt).getTime() == Ext.Date.clearTime(endDt).getTime()) {
+                msg = fmt(startDt, 'F j, Y');
+            } else if (startDt.getFullYear() == endDt.getFullYear()) {
+                if (startDt.getMonth() == endDt.getMonth()) {
+                    msg = fmt(startDt, 'F j') + ' - ' + fmt(endDt, 'j, Y');
+                } else {
+                    msg = fmt(startDt, 'F j') + ' - ' + fmt(endDt, 'F j, Y');
+                }
+            } else {
+                msg = fmt(startDt, 'F j, Y') + ' - ' + fmt(endDt, 'F j, Y');
+            }
+
+            this.Panel1.setTitle(msg);
+        },
+
+        setStartDate: function (picker, date) {
+            this.getCalendar().setStartDate(date);
+        },
+
+        rangeSelect: function (cal, dates, callback) {
+            this.record.show(cal, dates);
+            this.getWindow().on('hide', callback, cal, { single: true });
+        },
+
+        dayClick: function (cal, dt, allDay, el) {
+            this.record.show.call(this, cal, {
+                StartDate: dt,
+                IsAllDay: allDay
+            }, el);
+        },
+
+        record: {
+            addFromEventDetailsForm: function (win, rec) {
+                iDas.ShowMsg('Event ' + rec.data.Title + ' was added');
+            },
+
+            add: function (win, rec) {
+                win.hide();
+                iDas.getStore().add(rec);
+                addCalendar(rec.data.Title, Ext.Date.format(rec.data.StartDate, 'd/m/Y g:i A'), Ext.Date.format(rec.data.EndDate, 'd/m/Y g:i A'), rec.data.CalendarId);
+            },
+
+            updateFromEventDetailsForm: function (win, rec) {
+                iDas.ShowMsg('Event ' + rec.data.Title + ' was updated');
+            },
+
+            update: function (win, rec) {
+                win.hide();
+                rec.commit();
+                updateCalendar(rec.data.EventId, rec.data.Title, Ext.Date.format(rec.data.StartDate, 'd/m/Y g:i A'), Ext.Date.format(rec.data.EndDate, 'd/m/Y g:i A'), rec.data.CalendarId);
+            },
+
+            removeFromEventDetailsForm: function (win, rec) {
+                iDas.ShowMsg('Event ' + rec.data.Title + ' was deleted');
+            },
+
+            remove: function (win, rec) {
+                iDas.getStore().remove(rec);
+                deleteCalendar(rec.data.EventId);
+                win.hide();
+            },
+
+            edit: function (win, rec) {
+                win.hide();
+                rec.commit();
+                iDas.getCalendar().showEditForm(rec);
+            },
+
+            resize: function (cal, rec) {
+                rec.commit();
+                updateCalendar(rec.data.EventId, rec.data.Title, Ext.Date.format(rec.data.StartDate, 'd/m/Y g:i A'), Ext.Date.format(rec.data.EndDate, 'd/m/Y g:i A'), rec.data.CalendarId);
+            },
+
+            move: function (cal, rec) {
+                rec.commit();
+                updateCalendar(rec.data.EventId, rec.data.Title, Ext.Date.format(rec.data.StartDate, 'd/m/Y g:i A'), Ext.Date.format(rec.data.EndDate, 'd/m/Y g:i A'), rec.data.CalendarId);
+            },
+
+            show: function (cal, rec, el) {
+                SetWinValue(rec);
+                iDas.getWindow().show(rec, el);
+            },
+
+            saveAll: function () {
+                iDas.getStore().submitData({
+                    mappings: false
+                }, iDas.getStore().submitDataUrl);
+            }
+        }
+    };
+   
+    
+</script>

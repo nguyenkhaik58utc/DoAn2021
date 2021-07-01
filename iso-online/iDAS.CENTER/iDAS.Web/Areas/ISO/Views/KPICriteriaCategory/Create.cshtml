@@ -1,0 +1,98 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CenterKPICriteriaCategoryItem
+@(Html.X().Window()
+          .ID("winNewCategoryCriteria")
+          .Title("Thêm mới thông tin bộ tiêu chí đánh giá KPIs")
+          .Icon(Icon.Add)
+          .Width(450)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().FormPanel()
+                .ID("frCategoryCriteria")   
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => { d.LabelAlign = LabelAlign.Left; d.LabelWidth = 120; })
+                .Items(
+            Html.X().ComboBoxFor(m => m.ISONaceCodeID).FieldLabel("Lĩnh vực" + Html.Required()).ReadOnly(true)
+                                                                    .AllowBlank(false)
+                                                                    .EmptyText("Lựa chọn lĩnh vực")
+                                                                    .DisplayField("Name")
+                                                                    .ValueField("ID")
+                                                                    .Editable(false)
+                                                                    .Store(
+                                                                        Html.X().Store().AutoLoad(true)
+                                                                        .Model(
+                                                                            Html.X().Model().IDProperty("ID")
+                                                                            .Fields(
+                                                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                                            )
+                                                                        )
+                                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadISONaceCodeActive", "ISONaceCode")).Reader(Html.X().JsonReader().Root("data")))
+                                                            ), 
+            Html.X().TextFieldFor(m=>m.Name)
+                    .FieldLabel("Tên bộ tiêu chí"+Html.Required())
+                    .BlankText("Tên bộ tiêu chí không được trống!")
+                    .AllowOnlyWhitespace(false),
+            Html.X().TextAreaFor(m=>m.Note)
+                    .FieldLabel("Diễn giải")
+                    .MaxLength(500)
+                    .Height(130),
+            Html.X().CheckboxFor(m => m.IsUse)
+                    .BoxLabel("Sử dụng")
+                    .FieldLabel("Tình trạng")
+                    .Value(true)
+                    )
+                )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnSave")
+            .Text("Lưu lại")
+            .Icon(Icon.DiskMultiple)
+            .TabIndex(17)
+            .DirectEvents(de =>
+            {             
+                de.Click.ExtraParams.Add(new { val = false });
+                de.Click.Before = @"if (!App.frCategoryCriteria.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "Insert";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frCategoryCriteria";
+            }),
+            Html.X().Button()
+            .ID("btnSaves")
+            .Text("Lưu và thoát")
+            .Icon(Icon.Disk)
+            .TabIndex(18)
+            .DirectEvents(de =>
+            {               
+                de.Click.ExtraParams.Add(new { val = true });
+                de.Click.Before = @"if (!App.frCategoryCriteria.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "Insert";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frCategoryCriteria";
+                de.Click.Success = "this.up('window').close();";
+            }),
+            Html.X().Button()
+            .ID("btnReset")
+            .Text("Nhập lại")
+            .Icon(Icon.ArrowRefresh)
+            .TabIndex(19)
+            .Handler("App.frCategoryCriteria.reset();"),
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+            .Handler("App.frCategoryCriteria.reset(); this.up('window').close();")
+            )
+)

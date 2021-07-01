@@ -1,0 +1,172 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.AccountingPaymentItem
+@(Html.X().Window()
+.ID("winAccountingPament")
+.Title("Đề xuất thanh toán")
+.Icon(Icon.Money)
+.Maximized(true)
+.Width(800)
+.Height(500)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+        Html.X().HiddenFor(i=>i.CustomerContractID).ID("hdfContractId"),
+        Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrAccountingPayment")
+                .Header(false)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .Border(false)
+                .Icon(Icon.TextListBullets)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().ToolTip("Thêm mới thanh toán")
+                            .Text("Thêm mới")
+                            .ID("btnAccountingPaymentAdd").Icon(Icon.Add).Handler("AddAccounting();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnAccountingUpdate").ToolTip("Cập nhật thanh toán").Text("Cập nhật")
+                            .Handler("UpdateAccounting();").Icon(Icon.Pencil).Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ToolTip("Xóa thanh toán").Text("Xóa")
+                                .Icon(Icon.Delete).ID("btnAccountingDelete").Handler("DeleteAccounting();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Xem chi tiết").ToolTip("Xem chi tiết").ID("btnAccountingDetail")
+                            .Icon(Icon.Zoom).Handler("ViewDetailAccounting();").Disabled(true)
+                ))
+            .Store(
+            Html.X().Store().ID("StoreAccountingPayment")
+                .RemotePaging(true)
+                .GroupField("TypeName")
+                .PageSize(20)
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadAccountingPayment", "Contract", new { Area = "Accounting" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("id", "App.hdfContractId.value", ParameterMode.Raw));
+
+                    })
+                .Model(
+                    Html.X().Model().Fields(
+                        Html.X().ModelField().Name("ID"),
+                        Html.X().ModelField().Name("Content"),
+                        Html.X().ModelField().Name("TypeName"),
+                        Html.X().ModelField().Name("Rate"),
+                        Html.X().ModelField().Name("IsCustomer"),
+                        Html.X().ModelField().Name("Value"),
+                        Html.X().ModelField().Name("Note")
+                    )
+                )
+        )
+        .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                    Html.X().Column().DataIndex("Content").Text("Nội dung").Flex(1),
+                    Html.X().SummaryColumn().DataIndex("Value").Text("Số tiền").Width(100)
+                            .SummaryType(SummaryType.Sum)
+                            .SummaryRenderer("return value +' (VNĐ)';")
+                            .Align(Alignment.Right),
+                    Html.X().SummaryColumn().DataIndex("Rate").Text("Tỉ lệ thu hồi (%)").Width(100)
+                            .SummaryType(SummaryType.Sum)
+                            .Renderer("return value +' %';")
+                            .SummaryRenderer("return value +' %';")
+                            .Align(Alignment.Right),
+                    Html.X().Column().DataIndex("Note").Text("Ghi chú").Width(300).Wrap(true)
+            )
+        .Features(
+                            Html.X().GroupingSummary()
+                            .ID("GroupingSummaryAccounting")
+                            .GroupHeaderTplString("{name}")
+                            .HideGroupedHeader(true)
+                            .EnableGroupingMenu(false)
+                    )    
+        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                    .Listeners(ls => ls.SelectionChange.Fn = "CheckAccountingPaymentStatus"))
+            .BottomBar(Html.X().CustomPagingToolbar())
+)
+.Buttons(Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)
+<script>
+    function CheckAccountingPaymentStatus() {
+        var records = App.GrAccountingPayment.selModel.getSelection();
+        if (records.length == 1) {
+            if (records[0].get('IsCustomer') == false)
+            {
+                App.btnAccountingUpdate.setDisabled(false);
+                App.btnAccountingDelete.setDisabled(false);
+            }
+            else
+            {
+                App.btnAccountingUpdate.setDisabled(true);
+                App.btnAccountingDelete.setDisabled(true);
+            }
+            App.btnAccountingDetail.setDisabled(false);
+        }
+        else {
+            App.btnAccountingUpdate.setDisabled(true);
+            App.btnAccountingDelete.setDisabled(true);
+            App.btnAccountingDetail.setDisabled(true);
+        };
+    };
+    var AddAccounting = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("AccountingPaymentUpdateForm", "Contract", new { Area = "Accounting" }, null))',
+            params: {
+                id:0,
+                customerContractId: App.hdfContractId.value
+            }
+        });
+    };
+    var UpdateAccounting = function () {
+        var records = App.GrAccountingPayment.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AccountingPaymentUpdateForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    id: records[0].get('ID'),
+                    customerContractId: App.hdfContractId.value
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ViewDetailAccounting = function () {
+        var records = App.GrAccountingPayment.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AccountingPaymentDeatailForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var DeleteAccounting = function () {
+        var records = App.GrAccountingPayment.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes')
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("DeleteAccountingPayment", "Contract", new { Area = "Accounting" }, null))',
+                        params: {
+                            id: records[0].get('ID')
+                        }
+                    });
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>

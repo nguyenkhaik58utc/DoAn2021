@@ -1,0 +1,130 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ServiceProgramFileItem
+
+@(Html.X().Window()
+    .Title("Danh sách tệp đính kèm")
+    .Icon(Icon.Attach)
+    .Modal(true)
+    .Width(650)
+    .Height(380)
+    .Constrain(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Items(
+        Html.X().GridPanel()
+        .ID("ServiceProgramFilePanel")
+        .Header(false)
+        .ColumnLines(true)
+        .Border(false)
+        .ForceFit(true)
+        .Collapsible(true)
+        .Split(true)
+        .Icon(Icon.TextListBullets)
+        .TopBarItem(
+            Html.X().Button().Text("Thêm").ID("btnCreateServiceProgramFile").Icon(Icon.Add).Handler("showCreateServiceProgramFile();"),
+            Html.X().Button().Text("Sửa").ID("btnUpdateServiceProgramFile").Icon(Icon.Pencil).Handler("showUpdateServiceProgramFile();").Disabled(true),
+            Html.X().Button().Text("Xóa").ID("btnDeleteServiceProgramFile").Icon(Icon.Delete).Handler("showDeleteServiceProgramFile();").Disabled(true),
+            Html.X().Button().Text("Xem chi tiết").ID("btnDetailServiceProgramFile").Icon(Icon.Zoom).Handler("showDetailServiceProgramFile();").Disabled(true)
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .Parameters(Html.X().StoreParameter().Name("serviceProgramId").Value("getServiceProgramId()").Mode(ParameterMode.Raw))
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Extension").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Size").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectServiceProgramFile()")
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").Hidden(true),
+            Html.X().Column().Text("Tên tệp").DataIndex(Model, m => m.Name).StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().Column().Text("Kiểu tệp").DataIndex(Model, m => m.Extension).StyleSpec("font-weight: bold;text-align: center").Width(130).Align(Alignment.Center),
+            Html.X().Column().Text("Kích cỡ").DataIndex(Model, m => m.Size).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center).Renderer(RendererFormat.FileSize),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeServiceProgramFile()")
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var urlCreateServiceProgramFile = '@Url.Action("Create", "ServiceProgramFile", new { area = "Web" })';
+    var urlUpdateServiceProgramFile = '@Url.Action("Update", "ServiceProgramFile", new { area = "Web" })';
+    var urlDeleteServiceProgramFile = '@Url.Action("Delete", "ServiceProgramFile", new { area = "Web" })';
+    var urlDetailServiceProgramFile = '@Url.Action("Detail", "ServiceProgramFile", new { area = "Web" })';
+
+    var getServiceProgramId = function () {
+        var record = getServiceProgramSelection();
+        var serviceProgramId = record == null ? 0 : record.data.ID;
+        return serviceProgramId;
+    };
+    var getServiceProgramFileSelection = function () {
+        return App.ServiceProgramFilePanel.getSelectionModel().getLastSelected();
+    };
+    var reloadServiceProgramFile = function () {
+        App.ServiceProgramFilePanel.getStore().reload();
+        deSelectServiceProgramFile();
+    };
+    var deSelectServiceProgramFile = function () {
+        App.ServiceProgramFilePanel.selModel.lastSelected = null;
+        selectionChangeServiceProgramFile();
+    };
+    var showCreateServiceProgramFile = function () {
+        var url = urlCreateServiceProgramFile;
+        var serviceProgramId = getServiceProgramId();
+        var params = { serviceProgramId: serviceProgramId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateServiceProgramFile = function () {
+        var url = urlUpdateServiceProgramFile;
+        var record = getServiceProgramFileSelection();
+        var ServiceProgramFileId = record == null ? 0 : record.data.ID;
+        var params = { ServiceProgramFileId: ServiceProgramFileId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteServiceProgramFile = function () {
+        var url = urlDeleteServiceProgramFile;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getServiceProgramFileSelection();
+                            var ServiceProgramFileId = record == null ? 0 : record.data.ID;
+                            var params = { ServiceProgramFileId: ServiceProgramFileId };
+                            onDirectMethod(url, params, 'post', reloadServiceProgramFile);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailServiceProgramFile = function () {
+        var url = urlDetailServiceProgramFile;
+        var record = getServiceProgramFileSelection();
+        var ServiceProgramFileId = record == null ? 0 : record.data.ID;
+        var params = { ServiceProgramFileId: ServiceProgramFileId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeServiceProgramFile = function () {
+        var record = getServiceProgramFileSelection();
+        App.btnUpdateServiceProgramFile.setDisabled(record == null);
+        App.btnDeleteServiceProgramFile.setDisabled(record == null);
+        App.btnDetailServiceProgramFile.setDisabled(record == null);
+    };
+</script>

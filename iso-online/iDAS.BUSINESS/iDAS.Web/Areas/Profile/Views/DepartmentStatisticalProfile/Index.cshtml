@@ -1,0 +1,498 @@
+﻿@model System.Collections.IEnumerable
+@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().ChartTheme()
+    .ThemeName("White")
+    .Axis(new SpriteAttributes { Stroke = "rgb(8,69,148)", StrokeWidth = 1 })
+    .AxisLabel(new SpriteAttributes { Fill = "rgb(8,69,148)", Font = "12px Arial", FontFamily = "Arial" })
+    .AxisTitle(new SpriteAttributes { Font = "bold 18px Arial" })
+)
+@(Html.X().Viewport()
+          .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+            .Items (
+        Html.X().Panel()
+                .MarginSpec("1 0 1 1")
+                .Region(Region.West)
+                .Title("XEM THỐNG KÊ DƯỚI DẠNG DỮ LIỆU")
+                .TitleAlign(TitleAlign.Center)
+                .Icon(Icon.ApplicationViewDetail)
+                .Collapsible(true)
+                .Split(true)
+                .Header(false)
+                .Border(true)
+                .Layout(LayoutType.Fit)
+                .Width(700)
+                .Items (
+          Html.X().TreePanel()
+                    .Layout(LayoutType.Fit)
+                    .Split(true)
+                    .Region(Region.West)
+                    .ID("gpDepartmentStatisticalProfile")
+                    .TitleAlign(TitleAlign.Center)
+                    .Border(false)
+                    .Listeners(ls =>
+                    {
+                        ls.Load.Handler = "expandDepartment(records);";
+                    })
+                    .AutoScroll(true)
+                    .RootVisible(false)
+                    .ColumnLines(true)
+                    .RowLines(true)
+                    .TopBar(
+            Html.X().Toolbar()
+                    .ID("tbgpDepartmentStatisticalProfile")
+                    .Items(
+                                Html.X().SearchByDate("refreshDepartment();onSelect();").FromDateID("dfFromDate").ToDateID("dfToDate"),
+                                    Html.X().ToolbarFill(),
+                                                Html.X().ButtonExportExcelFile().GridIDGetFile("gpDepartmentStatisticalProfile").isTree(true),    
+                                Html.X().Button()
+                                        .Text("In báo cáo")
+                                        .Hidden(true)
+                                        .Handler("this.up('treepanel').print();")
+                                        .Icon(Icon.Printer),
+                                Html.X().ToolbarFill()
+                                      )
+                                )
+                                .Store(
+                                Html.X().TreeStore().ID("stDepartmentStatisticalProfile")
+                                    .AutoLoad(false)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData"))
+                                    .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                            ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                        })
+                                    .Model(
+                                Html.X().Model()
+                                        .Fields(
+                                            Html.X().ModelField().Name("id"),
+                                            Html.X().ModelField().Name("text"),
+                                            Html.X().ModelField().Name("ParentID"),
+                                            Html.X().ModelField().Name("TotalProfileUse"),
+                                            Html.X().ModelField().Name("TotalProfileBorrow"),
+                                            Html.X().ModelField().Name("TotalProfileBorrowOverTime"),
+                                            Html.X().ModelField().Name("TotalProfileNotUse"),
+                                            Html.X().ModelField().Name("TotalProfileCancel"),
+                                            Html.X().ModelField().Name("TotalProfileRequestCancel"),
+                                            Html.X().ModelField().Name("TotalPageCancel")
+                                            )
+                                        )
+                                    )
+                                .ColumnModel(
+                                Html.X().TreeColumn()
+                                        .Text("Phòng ban")
+                                        .Width(300)
+                                        .DataIndex("text"),
+                                Html.X().ComponentColumn()
+                                        .Text("Hồ sơ sử dụng")
+                                        .Columns(
+                                    Html.X().Column()
+                                            .DataIndex("TotalProfileUse")
+                                            .Text("Tổng số")
+                                            .Renderer("renderUse")
+                                            .Width(70).Align(Alignment.Right),
+                                    Html.X().Column()
+                                            .DataIndex("TotalProfileBorrow")
+                                            .Renderer("renderBorrow")
+                                            .Text("Đang mượn")
+                                            .Width(80)
+                                            .Align(Alignment.Right),
+                                    Html.X().Column()
+                                            .DataIndex("TotalProfileBorrowOverTime")
+                                            .Text("Mượn quá hạn")
+                                            .Renderer("renderBorrowOverTime")
+                                            .Width(100)
+                                            .Align(Alignment.Right)                                          
+                                            ),
+                                        Html.X().ComponentColumn()
+                                                    .Text("Hồ sơ không sử dụng")
+                                                    .Columns(
+                                            Html.X().Column()
+                                                    .DataIndex("TotalProfileNotUse")
+                                                    .Text("Tổng số")
+                                                    .Renderer("renderNotUse")
+                                                    .Width(70).Align(Alignment.Right),
+                                            Html.X().Column()
+                                                    .DataIndex("TotalProfileRequestCancel")
+                                                    .Text("Hồ sơ chờ hủy")
+                                                    .Renderer("renderRequestCancel")
+                                                    .Width(100)
+                                                    .Align(Alignment.Right),
+                                            Html.X().Column()
+                                                    .DataIndex("TotalProfileCancel")
+                                                    .Renderer("renderCancel")
+                                                    .Text("Hồ sơ đã hủy")
+                                                    .Width(90)
+                                                    .Align(Alignment.Right),
+                                            Html.X().Column()
+                                                    .DataIndex("TotalPageCancel")
+                                                    .Text("Tổng số trang hủy")
+                                                    .Width(120)
+                                                    .Align(Alignment.Right)
+                                                    )
+                                            )
+                        .SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "onSelect();";
+                            })
+                            )
+                        ),
+                    Html.X().Panel()
+                        .Layout(LayoutType.Fit)
+                        .MarginSpec("1 1 1 0")
+                        .Region(Region.Center)
+                        .AutoScroll(false)
+                        .Header(false)
+                        .Border(true)
+                        .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                        Html.X().ComboBox()
+                                .FieldLabel("Biểu đồ")
+                                .Width(300)
+                                .MarginSpec("0 0 0 5")
+                                .LabelWidth(50)
+                                .SelectedItems("0")
+                                .ID("cbSelectChart")
+                                    .Items(
+                                    new ListItem() { Value = "0", Text = "Biểu đồ hình tròn(%)", },
+                                    new ListItem() { Value = "1", Text = "Biểu đồ cột(SL)" }
+                                     )
+                                .Listeners(ls => ls.Select.Handler = "onComboboxSelect(this);"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                        )                   
+                        )
+                    .Items(
+                    Html.X().Panel()
+                        .Layout(LayoutType.Fit)
+                        .ID("pChart0")
+                        .Title("<b>Biểu đồ hình tròn kết quả thực hiện(%)</b>")
+                        .Header(false)
+                        .Border(false)
+                        .TopBar(Html.X().Toolbar()
+                        .Items(
+                            Html.X().Button()
+                                .Text("Tải lại dữ liệu")
+                                .Icon(Icon.ArrowRefresh)
+                                .Handler("#{Chart0}.getStore().reload()"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Icon(Icon.Style)
+                                .Text("Kiểu vành khăn")
+                                .EnableToggle(true)
+                                .Listeners(l => l.Toggle.Handler = "#{Chart0}.series.first().donut = pressed ? 35 : false;#{Chart0}.refresh();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Text("Lưu biểu đồ")
+                                .Icon(Icon.Disk)
+                                .Handler("saveChart")
+                        )
+                    )
+                .Items(
+                    Html.X().Chart()
+                        .ID("Chart0")
+                        .Animate(true)               
+                        .Shadow(true)
+                        .InsetPadding(30)
+                        .Theme("Base:gradients")
+                        .StandardTheme(StandardChartTheme.Base)
+                        .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Float).LabelFont("9px Helvetica,sans-serif"))
+                        .StyleSpec("background:#fff;")
+                        .Store(
+                        Html.X().Store()
+                        .ID("stChart0")
+                        .AutoLoad(false)
+                        .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("id", "App.gpDepartmentStatisticalProfile.getSelectionModel().getLastSelected().get('id')", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                            })
+                        .Model(Html.X().Model()
+                        .Fields(
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("Data1")
+                            )
+                            )
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetDataPie"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        )
+                    .Series(
+                Html.X().PieSeries()
+                    .AngleField("Data1")
+                    .ShowInLegend(true)
+                    .Donut(0)
+                    .Highlight(true)
+                    .HighlightSegmentMargin(20)
+                        .Label(Html.X().SeriesLabel()
+                        .Display(SeriesLabelDisplay.Rotate)
+                        .Field(new [] { "Name" })
+                        .Contrast(true)
+                        .Font("12px Helvetica,sans-serif")
+                        .Orientation(Orientation.Horizontal)
+                        )
+                        .Tips(Html.X().ChartTip()
+                        .TrackMouse(true)
+                        .Width(170)
+                        .Height(28)
+                        .Renderer(r => r.Fn = "tipRenderer")
+                         )
+                        )
+                     ),
+                    Html.X().Panel()
+                        .Layout(LayoutType.Fit)
+                        .ID("pChart1")
+                        .Title("<b>Biểu đồ cột kết quả thực hiện(SL)</b>")
+                        .Hidden(true)
+                        .Border(false)
+                        .Header(false)
+                        .TopBar(Html.X().Toolbar()
+                        .Items(
+                    Html.X().Button()
+                        .Text("Tải lại")
+                        .Icon(Icon.ArrowRefresh)
+                            .Handler("#{Chart1}.getStore().reload()"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().Button()
+                        .Text("Lưu biểu đồ")
+                        .Icon(Icon.Disk)
+                        .Handler("saveChart")
+                             )
+                        )
+                        .Items (
+                            Html.X().Chart()
+                        .ID("Chart1")
+                        .Shadow(true)
+                        .Theme("White")
+                        .InsetPadding(30)
+                        .Animate(true)
+                            .Background(Html.X().DrawBackground()
+                                .Gradient(Html.X().Gradient()
+                                .GradientID("backgroundGradient")
+                                .Angle(45)
+                                .Stops(s =>
+                                {
+                                    s.Add(Html.X().GradientStop()
+                                        .Offset(0)
+                                        .Color("#ffffff"));
+                                    s.Add(Html.X().GradientStop()
+                                        .Offset(100)
+                                        .Color("#eaf1f8"));
+                                })
+                            )
+                        )
+                        .Store(Html.X().Store()
+                            .ID("stChart1")
+                            .Model(Html.X().Model()
+                            .Fields(
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Data1")
+                            )
+                           )
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("id", "App.gpDepartmentStatisticalProfile.getSelectionModel().getLastSelected().get('id')", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                            })
+                            .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataColumn"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                          )
+                        )
+                           .Axes(
+                                Html.X().NumericAxis()
+                                .Fields("Data1")
+                                .Position(Position.Bottom)
+                                .Grid(true)
+                                .Title("Biểu đồ thống kê hồ sơ")
+                                .Minimum(0)
+                                .Label(Html.X().AxisLabel()
+                                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                                ),
+                                Html.X().CategoryAxis()
+                                .Position(Position.Left)
+                                .Fields("Name")
+                                 )
+                                .Series(Html.X().BarSeries()
+                                .Axis(Position.Bottom)
+                                .Highlight(true)
+                                .XField("Name")
+                                .YField("Data1")
+                                .Tips(Html.X().ChartTip()
+                                .TrackMouse(true)
+                                .Width(210)
+                                .Height(28)
+                                    .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data1') + ' hồ sơ');")
+                                 )
+                                .Label(Html.X().SeriesLabel()
+                                .Display(SeriesLabelDisplay.InsideEnd)
+                                .Field(new[] { "Data1" })
+                                .Orientation(Orientation.Horizontal)
+                                .Color("#333")
+                                .TextAnchor("middle")
+                            )
+                        )
+                       )
+                     )
+                    )
+)
+<script type="text/javascript">
+    var onSelect = function () {
+        var charId = "Chart" + App.cbSelectChart.getValue();
+        Ext.getCmp(charId).getStore().reload();
+    };
+    var onComboboxSelect = function (obj) {
+        var records = obj.store.getAllRange();
+        for (var i = 0; i < records.length; i++) {
+            var pcharId = "pChart" + records[i].data.field1;
+            Ext.getCmp(pcharId).hide();
+        };
+        Ext.getCmp("pChart" + obj.value).show();
+        Ext.getCmp("Chart" + obj.value).getStore().reload();
+    };
+    var tipRenderer = function (storeItem, item) {
+        this.setTitle(storeItem.get('Name'));
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+    var getDepartmentID = function () {
+        var records = App.gpDepartmentStatisticalProfile.selModel.getSelection();
+        if (records.length > 0) {
+            return records[0].get('id');
+        } else {
+            return 0;
+        }
+    };
+    var showProfileStatiscal = function (storeUrl) {
+        var records = App.gpDepartmentStatisticalProfile.selModel.getSelection();
+        var departmentID = 0;
+        if (records.length > 0) {
+            departmentID = records[0].get('id');
+        }
+        var url = '@(Url.Action("ProfileViewStatistical", "DepartmentStatisticalProfile", new { Area = "Profile" }))';
+        var params = {
+            urlStore: storeUrl,
+            Name: 'departmentId',
+            Value: departmentID,
+            Mode: '@(ParameterMode.Value)',
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+        };
+        onDirectMethod(url, params);
+    };
+     var renderUse = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotalProfileUse", "DepartmentStatisticalProfile", new { Area = "Profile" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showProfileStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderBorrow = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotalProfileBorrow", "DepartmentStatisticalProfile", new { Area = "Profile" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showProfileStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderBorrowOverTime = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotalProfileBorrowOverTime", "DepartmentStatisticalProfile", new { Area = "Profile" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showProfileStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderNotUse = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotalProfileNotUse", "DepartmentStatisticalProfile", new { Area = "Profile" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showProfileStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderRequestCancel = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotalProfileRequestCancel", "DepartmentStatisticalProfile", new { Area = "Profile" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showProfileStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderCancel = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotalProfileCancel", "DepartmentStatisticalProfile", new { Area = "Profile" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showProfileStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var recordDepartments = null;
+    var expandDepartment = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                var node = records[i];
+                if (recordDepartments != null && checkExpandDepartment(node)) {
+                    node.expand();
+                }
+                else if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+                    node.expand();
+                }
+            }
+        }
+        if (App.gpDepartmentStatisticalProfile.selModel.getCount() <= 0) {
+            setDepartmentSelection(0);
+        }
+    };
+    var checkExpandDepartment = function (record) {
+        var check = false;
+        recordDepartments.forEach(function (obj) {
+            if (!check && obj.id == record.data.id) {
+                check = obj.expanded;
+                if (obj.selected) {
+                    setDepartmentSelection(record);
+                }
+            }
+        })
+        return check;
+    };
+    var getDepartmentRecords = function () {
+        var records = App.gpDepartmentStatisticalProfile.getView().store.getRange();
+        var node = getDepartmentSelection();
+        var data = [];
+        records.forEach(function (obj) {
+            var selected = obj.data.id == node.data.id;
+            var item = {
+                id: obj.data.id,
+                expanded: obj.data.expanded,
+                selected: selected
+            };
+            data.push(item);
+        });
+        return data;
+    };
+    var setDepartmentSelection = function (record) {
+        if (record != null) {
+            App.gpDepartmentStatisticalProfile.selModel.select(record);
+        }
+    };
+    var getDepartmentSelection = function () {
+        return App.gpDepartmentStatisticalProfile.getSelectionModel().getLastSelected();
+    };
+
+    var reloadDepartment = function () {
+        recordDepartments = getDepartmentRecords();
+        var node = getDepartmentSelection();
+        App.gpDepartmentStatisticalProfile.store.reload({ node: node.parentNode });
+    };
+    var reloadDepartmentNode = function () {
+        recordDepartments = getDepartmentRecords();
+        var node = getDepartmentSelection();
+        App.gpDepartmentStatisticalProfile.store.reload({ node: node });
+        node.data.leaf = false;
+        node.data.expanded = true;
+        node.expand();
+    };
+    var refreshDepartment = function () {
+        recordDepartments = getDepartmentRecords();
+        App.gpDepartmentStatisticalProfile.selModel.deselectAll()
+        App.gpDepartmentStatisticalProfile.getRootNode().reload();
+    };
+</script>

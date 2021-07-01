@@ -1,0 +1,104 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditCriteriaItem
+@(Html.X().Window()
+                .ID("winDetailCriteria")
+                .Title("Xem chi tiết thông tin tiêu chí đánh giá")
+                .Icon(Icon.Zoom)
+                .Width(650)
+                .BodyPadding(6)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                Html.X().FormPanel()
+                .ID("frCriteria")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                        Html.X().HiddenFor(m => m.ID),
+                        Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên tiêu chí").ReadOnly(true)
+                        .AllowOnlyWhitespace(false),
+                             Html.X().NumberFieldFor(m => m.Factory).FieldLabel("Hệ số").ReadOnly(true),
+                        Html.X().TextAreaFor(m => m.Note).FieldLabel("Diễn giải").Flex(1).ReadOnly(true),
+                            Html.X().Panel().Title("Gợi ý chấm điểm").Height(250).Icon(Icon.ApplicationViewDetail).Layout(LayoutType.Fit).Items(
+                    Html.X().GridPanel()
+                    .ID("GridPointEdit")
+                    .Height(400)
+                    .Border(false)
+                    .Store(
+                        Html.X().Store()
+                                    .ID("stPointEdit")
+                            .Proxy(
+                                Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataPoint"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("criteriaId", Model.ID.ToString(), ParameterMode.Value));
+                            })
+                            .RemoteSort(false)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                                Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Point").Type(ModelFieldType.Float)
+                                    )
+                            )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                            .Text("STT")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(33)
+                            .Align(Alignment.Center),
+                        Html.X().Column()
+                            .Text("Tên điểm")
+                            .DataIndex("Name")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(250)
+                            .Wrap(true),
+                        Html.X().Column()
+                                .Text("Điểm")
+                                .DataIndex("Point")
+                                .Align(Alignment.Right)
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(100)
+                                .Wrap(true),
+                        Html.X().Column()
+                            .Text("Mô tả")
+                            .DataIndex("Note")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Flex(1)
+                            .Wrap(true)
+                            
+                    )
+                    .SelectionModel(
+                   Html.X().RowSelectionModel()
+                                       .Mode(SelectionMode.Multi)
+                    )
+                    .Plugins(Html.X().CellEditing())
+                    .BottomBar(
+                         Html.X().CustomPagingToolbar())
+                     )
+                )
+            )
+            .Buttons(           
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Thoát")
+            .Icon(Icon.Decline)
+            .TabIndex(20)
+            .Handler("App.frCriteria.reset(); this.up('window').close();")
+            )
+)

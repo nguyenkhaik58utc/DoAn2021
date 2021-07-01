@@ -1,0 +1,66 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.WebCustomerCityItem
+
+@(Html.X().Window()
+    .Title("Cập nhật thông tin Tỉnh thành")
+    .Icon(Icon.Pencil)
+    .Height(300)
+    .Constrain(true)
+    .Width(500)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmUpdate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .FieldDefaults(f => f.LabelWidth = 120)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(1).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).EmptyText("Tên Tỉnh hoặc Thành phố").AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Tên Tỉnh thành *"),
+                            Html.X().TextFieldFor(m => m.Code).FieldLabel("Mã Tỉnh Thành"),
+                            Html.X().TextFieldFor(m => m.CountryCode).FieldLabel("Mã Quốc gia")
+                        )
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.4).HideLabel(false).FieldLabel("Kích hoạt")
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmUpdate";
+            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Update");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if(result.result){ this.up('window').close(); reloadWebCustomerCity(); }";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+

@@ -1,0 +1,85 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.IntroItem
+@{
+    var required = "<span style='color: red;'>(*)</span>";
+}
+<script>
+    function renderEditor(htmlEditor) {
+        var toolbar = htmlEditor.getToolbar();
+        toolbar.add({ handler: function () { BrowseImage(); }, iconCls: "icon-imageedit", text: "", tooltip: '<b> Insert Image</b><br>Upload a new Image</br>' });
+    };
+    function BrowseImage() {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("frmBrowseImage", "News", new { Area = "Web" }, null))'
+        });
+    };
+    function insertHandler(htmlEditor) {
+        var urlImage = App.urlImage.getValue();
+        App.Contents.insertAtCursor(urlImage);
+    };
+</script>
+@(
+ Html.X().Window()
+    .ID("winEditCateSV")
+    .Title("Cập nhật bài giới thiệu")
+    .Icon(Icon.Pencil)
+    .Maximized(true)
+    .Height(1)
+            .Layout(LayoutType.Fit)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmEditCateSV")
+        .Layout(LayoutType.Form)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+         .FieldDefaults(df => df.LabelWidth = 100)
+        .DefaultAnchor("100%")
+        .Items(
+            Html.X().HiddenFor(m=>m.ID),
+            Html.X().TextFieldFor(m => m.Title).ID("txtName")
+                    .FieldLabel("Tiêu đề" + required)
+                    .AllowOnlyWhitespace(false).BlankText("Tiêu đề bắt buộc nhập!"),
+               Html.X().Container().Layout(LayoutType.Column).Items(
+                Html.X().CheckboxFor(m => m.IsShow).ColumnWidth(0.5)
+                        .FieldLabel("Hiển thị"),
+                                   Html.X().NumberFieldFor(m => m.Order).ColumnWidth(0.5)
+                        .FieldLabel("Thứ tự")
+                        ),
+            //Html.X().FileUploadFieldFor(m => m.File).Multiple(false),        
+                Html.X().HtmlEditorFor(m => m.Content).LabelAlign(LabelAlign.Top).EnableFont(false).EnableLinks(true).ID("Contents").FieldLabel("Nội dung").Height(340).Listeners(
+                                        ls => ls.Render.Handler = "renderEditor(this)"
+                                    ),
+                Html.X().Button().Icon(Icon.ImageEdit).Hidden(true).ID("imgHidden")
+        ))
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmEditCateSV";
+                    de.Click.Url = Url.Action("UpdateCate");
+                    de.Click.Before = @"if (!#{frmEditCateSV}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                    de.Click.Success = "App.frmEditCateSV.reset(); App.winEditCateSV.close();";
+                }),
+            Html.X().Button()
+                .Text("Nhập lại")
+                .Icon(Icon.ArrowRefresh)
+                .OnClientClick("App.frmEditCateSV.reset();"),
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Hủy")
+                .Handler("App.frmEditCateSV.reset(); App.winEditCateSV.close();")
+        )
+)

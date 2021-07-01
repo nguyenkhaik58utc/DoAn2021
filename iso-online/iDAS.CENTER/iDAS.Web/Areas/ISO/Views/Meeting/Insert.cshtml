@@ -1,0 +1,111 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@model iDAS.Items.ISOMeetingItem
+@(
+ Html.X().Window()
+    .ID("winNewIsoMeeting")
+    .Title("Tạo mới thông tin Họp xem xét")
+    .Icon(Icon.Add)
+    .Width(600)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmNewIsoMeeting")
+        .Layout(LayoutType.Form)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => df.LabelWidth = 120)
+        .DefaultAnchor("100%")
+        .Items(
+           Html.X().ComboBoxFor( m => m.IsoID).ID("cboIso")       
+                .QueryMode(DataLoadMode.Local)
+                .TriggerAction(TriggerAction.All)
+                .SelectOnFocus(true)
+                 .TabIndex(1)  
+                .EmptyText("Chọn Iso ...")
+                .DisplayField("Name")
+                .ValueField("ID")
+                .FieldLabel("Iso")
+                .AllowBlank(false).BlankText("Iso bắt buộc phải chọn!")
+                .Store(
+                    Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                        .Fields(
+                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                            )//end Fields
+                                )
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadIso"))//ham load dl cho combobox
+                    .Reader(Html.X().JsonReader().Root("data"))
+                                          
+                    )//end Store  
+                    .Listeners(ls => ls.Load.Handler = "App.cboIso.select(App.cboIso.store.getAt(0))") 
+                    )
+                 ,
+
+            Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                .FieldLabel("Tiêu đề *")
+                .TabIndex(2)
+                .AllowBlank(false).BlankText("Tiêu đề bắt buộc nhập!"),
+        Html.X().CheckboxFor(m => m.IsUse).ID("ckActive")
+            .FieldLabel("Kích hoạt")
+            .TabIndex(3)
+            .Checked(true)
+            ,
+            Html.X().TextAreaFor(m => m.Note).ID("txtNote")
+                .FieldLabel("Ghi chú")
+                .TabIndex(4)
+                .Height(200)
+        ))
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaveMultis")
+                .Icon(Icon.DiskMultiple)
+                .Text("Lưu lại")
+                .TabIndex(5)
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frmNewIsoMeeting";
+              
+                        de.Click.Url = Url.Action("Insert");
+                        de.Click.Before = @"if (!#{frmNewIsoMeeting}.getForm().isValid()) { return false; }";
+                        de.Click.EventMask.ShowMask = true;
+                        de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                        de.Click.Success = "App.frmNewIsoMeeting.reset();";
+                    })
+                ,
+
+                 Html.X().Button()
+                    .ID("btnSaveSingle")
+                    .Icon(Icon.Disk)
+                    .Text("Lưu và thoát")
+                    .TabIndex(6)
+                        .DirectEvents(de =>
+                        {
+                            de.Click.FormID = "frmNewIsoMeeting";
+                         
+                            de.Click.Url = Url.Action("Insert");
+                            de.Click.Before = @"if (!#{frmNewIsoMeeting}.getForm().isValid()) { return false; }";
+                            de.Click.EventMask.ShowMask = true;
+                            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                            de.Click.Success = "App.winNewIsoMeeting.close();";
+                        })
+                    ,    
+
+            Html.X().Button()
+                .Text("Nhập lại")
+                .Icon(Icon.ArrowRefresh)
+                .TabIndex(7)
+                        .OnClientClick("App.frmNewIsoMeeting.reset();")
+                        ,
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Hủy")
+                .TabIndex(8)
+                    .Handler("App.frmNewIsoMeeting.reset(); App.winNewIsoMeeting.close();")
+        )
+)

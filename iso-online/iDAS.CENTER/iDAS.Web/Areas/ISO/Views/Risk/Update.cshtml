@@ -1,0 +1,61 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.RiskItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    bool isUpdate = false;
+    if (actionForm == "Add")
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới ứng phó rủi ro";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật ứng phó rủi ro";
+        isUpdate = true;
+    }
+}
+@(
+ Html.X().Window().ItemID("windowId")
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .ID("winRiskMethod")
+    .Title(title)
+    .Icon(IconView)
+    .Items(
+            X.CustomFormPanel().ID("frmUpdate").FieldDefaults(lf=>lf.LabelWidth=80)
+                .Items(
+                        Html.X().HiddenFor(m => m.ID),
+                        Html.X().HiddenFor(m=>m.CenterRiskCategoryID).ID("hdfRiskCategoryID"),
+                        Html.X().TextFieldFor(m => m.RiskCategoryName).ReadOnly(true).FieldLabel("Nhóm rủi ro"),
+                        X.TextFieldFor(m => m.Name).FieldLabel("Tên rủi ro")
+                                .EmptyText("Nhập tên rủi ro..."),
+                        X.TextAreaFor(m => m.Weakness).FieldLabel("Điểm yếu")
+                                .EmptyText("Nhập điểm yếu...").Height(80),                   
+                        X.TextAreaFor(m => m.Description).FieldLabel("Mô tả")
+                                .EmptyText("Nhập mô tả kiểm soát rủi ro...").Height(80).Flex(1)
+                        )
+            )  
+    .Buttons(
+               Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                de.Click.Url = Url.Action("Update");
+                                de.Click.FormID = "frmUpdate";
+                                de.Click.Success = "this.up('window').close();";
+                            }), 
+               Html.X().ButtonExit()
+            )
+)

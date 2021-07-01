@@ -1,0 +1,297 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+@( Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+
+        Html.X().GridPanel()
+            .Header(true)
+            .Region(Region.West)
+            .Width(370)
+            .Split(true)
+            .Title("DANH SÁCH ĐỢT ĐÀO TẠO")
+            .ID("grPlanDetail")
+            .Border(true)
+            .MarginSpec("1 0 1 1")
+            .TitleAlign(TitleAlign.Center)
+            .Layout(LayoutType.Fit)
+            .Collapsible(true)
+            .ForceFit(true)
+            .ColumnLines(true)
+            .RowLines(true)
+            .TopBar(
+                Html.X().Toolbar()
+                .Items(
+                    Html.X().ComboBox()
+                                .FieldLabel("Kế hoạch")
+                                .EmptyText("Chọn kế hoạch đào tạo")
+                                .LabelWidth(50)
+                                .AllowBlank(false)
+                                .ID("cbPlanID")
+                                .Width(270)
+                                .Editable(false)
+                                .DisplayField("Name")
+                                .Listeners(ls => ls.Change.Handler = "App.grPlanDetail.getStore().reload();")
+                                .ValueField("ID")
+                                .Store(
+                                        Html.X().Store()
+                                            .ID("StorePlanTraining")
+                                            .AutoLoad(true)
+                                                 .Proxy(Html.X().AjaxProxy()
+                                                        .Url(Url.Action("LoadDataPlan", "Practioners", new { area = "Human" }))
+                                                    .Reader(Html.X().JsonReader().Root("data")
+                                                    )
+                                                    )
+                                            .Model(Html.X().Model()
+                                                .Fields(
+                                                    new ModelField("Name"),
+                                                    new ModelField("ID")
+                                                )
+                                            )
+                                    ),
+                 Html.X().ToolbarSeparator(),
+                Html.X().ButtonView().ID("btnDetailCommand").Handler("showDetail();")
+                            )
+                        )
+                                .Store(Html.X().Store()
+                                                .ID("stMnPlanDetail")
+                                                .AutoLoad(false)
+                                                .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("GetDataPlanDetailResult", "Practioners"))
+                                                .Reader(Html.X().JsonReader().Root("data"))
+                                        )
+                                .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("planId", "App.cbPlanID.getValue()", ParameterMode.Raw));
+                                    })
+                                .RemoteSort(true)
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Model(
+                                        Html.X().Model()
+                                                .Fields(
+                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("Content").Type(ModelFieldType.String),
+                                                      Html.X().ModelField().Name("Number").Type(ModelFieldType.Int)
+                                                )
+                                              )
+                                )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                        Html.X().Column()
+                                .Text("ID")
+                                .DataIndex("ID")
+                                .Hidden(true),
+                        Html.X().Column()
+                                .Text("Nội dung")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Content")
+                               .Flex(1)
+                                .Wrap(true),
+                          Html.X().Column()
+                                    .Text("Số lượng học viên")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("Number")
+                              .Width(110)
+                                    .Wrap(true)
+
+                )
+
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.SelectionChange.Handler = "checkPlanDetailStatus(); App.grMnPractioners.getStore().reload();";
+                            })
+                            )
+
+                              .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                    .BottomBar(Html.X().CustomPagingToolbar())
+                ,
+               Html.X().GridPanel()
+               .Region(Region.Center)
+                .Margin(1)
+                .Title("DANH SÁCH HỌC VIÊN")
+                .Header(true)
+                .Icon(Icon.ApplicationViewDetail)
+                .ID("grMnPractioners")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                            Html.X().Button().ID("btnNotJoin").Disabled(true).Icon(Icon.ArrowJoin).Text("Xác nhận tham gia").Handler("updateJoin();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnResult").Disabled(true).Icon(Icon.StarBronze).Text("Nhập kết quả").Handler("updateResult();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnInsertToProfile").Handler("insertIntoProfile").Text("Đưa vào hồ sơ đào tạo").Icon(Icon.PageWord).Disabled(true),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                Html.X().Store()
+                        .ID("StorePractioners")
+                    .RemotePaging(true)
+                    .AutoLoad(false)
+                    .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "Practioners", new { Area = "Human" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("detailId", "App.grPlanDetail.selModel.getSelection().length>0?App.grPlanDetail.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("EmployeesName"),
+                            Html.X().ModelField().Name("Birthday"),
+                            Html.X().ModelField().Name("Address"),
+                            Html.X().ModelField().Name("sex"),
+                            Html.X().ModelField().Name("TimeRegister"),
+                            Html.X().ModelField().Name("TotalPoint"),
+                            Html.X().ModelField().Name("NumberAbsence"),
+                            Html.X().ModelField().Name("NumberPresence"),
+                            Html.X().ModelField().Name("StatusInProfile"),
+                            Html.X().ModelField().Name("RankID"),
+                            Html.X().ModelField().Name("RankName"),
+                                Html.X().ModelField().Name("IsInProfile"),
+                            Html.X().ModelField().Name("IsJoin"),
+                            Html.X().ModelField().Name("CommentOfTeacher")
+                            
+                        )
+                     )
+            )
+            .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),                                        
+                        X.Column().DataIndex("EmployeesName").Text("Tên học viên").Width(300).Flex(1),
+                        X.DateColumnExtend().DataIndex("Birthday").Text("Ngày sinh").Format("dd/MM/yyyy").Align(Alignment.Center).Width(80),
+                        X.Column().DataIndex("sex").Text("Giới tính").Align(Alignment.Center).Width(60),
+                        X.CheckColumn().DataIndex("IsJoin").Text("Tham gia").Align(Alignment.Center).Width(70),
+                        X.Column().DataIndex("TotalPoint").Text("Tổng điểm").Align(Alignment.Right).Width(70),
+                        X.Column().DataIndex("NumberPresence").Text("Có mặt").Align(Alignment.Right).Width(70),
+                        X.Column().DataIndex("NumberAbsence").Text("Vắng mặt").Align(Alignment.Right).Width(70),
+                        X.Column().DataIndex("RankName").Text("Xếp loại").Width(70),
+                        X.Column().DataIndex("StatusInProfile").Text("Tình trạng").Width(90)
+                )
+            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatus();"))
+            .BottomBar(
+                   X.CustomPagingToolbar()
+        )
+
+
+
+
+
+       )
+)
+<script type="text/javascript">
+    var showDetail = function () {
+        var record = App.grPlanDetail.selModel.getSelection();
+        if (record.length > 0) {
+            var url =  '@(Url.Action("ShowFrmDetail", "PlanDetail", new { Area = "Human" }, null))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params);
+        }
+    };
+    var insertIntoProfile = function () {
+        var records = App.grMnPractioners.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnNotJoin.setDisabled(true);
+                        App.btnResult.setDisabled(true);
+                        App.btnInsertToProfile.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn đưa kết quả đào tạo của học viên vào hồ sơ quá trình đào tạo không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("InsertToProfile", "ResultTraining", new { Area = "Human" }, null))',
+                                params: { id: records[0].get('ID') }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var checkPlanDetailStatus = function () {
+        var records = App.grPlanDetail.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnDetailCommand.setDisabled(true);
+                break;
+            case 1:
+                App.btnDetailCommand.setDisabled(false);
+                break;
+            default:
+                App.btnDetailCommand.setDisabled(true);
+        }
+
+    };
+    function CheckStatus() {
+        var records = App.grMnPractioners.selModel.getSelection();
+        if (records.length > 0) {
+            if (records[0].get('IsJoin')) {
+                App.btnResult.setDisabled(false);
+            }
+            else {
+                App.btnResult.setDisabled(true);
+            }
+            if (records[0].get('IsInProfile')) {
+                App.btnInsertToProfile.setDisabled(true);
+            }
+            else if (!records[0].get('IsInProfile') && records[0].get('IsJoin')) {
+                App.btnInsertToProfile.setDisabled(false);
+            }
+            else
+            {
+                App.btnInsertToProfile.setDisabled(true);
+            }
+            App.btnNotJoin.setDisabled(false);
+        }
+        else {
+            App.btnNotJoin.setDisabled(true);
+            App.btnResult.setDisabled(true);
+            App.btnInsertToProfile.setDisabled(true);
+        };
+    };
+    var updateResult = function () {
+        var records = App.grMnPractioners.selModel.getSelection();
+        var url = '@(Url.Action("UpdateForm", "ResultTraining", new { Area = "Human" }, null))';
+        var params = { Id: records[0].get('ID') };
+        onDirectMethod(url, params);
+    };
+    var updateJoin = function () {
+        var records = App.grMnPractioners.selModel.getSelection();
+        var url = '@(Url.Action("UpdateFormJoin", "ResultTraining", new { Area = "Human" }, null))';
+        var params = { id: records[0].get('ID') };
+        onDirectMethod(url, params);
+    };
+
+</script>

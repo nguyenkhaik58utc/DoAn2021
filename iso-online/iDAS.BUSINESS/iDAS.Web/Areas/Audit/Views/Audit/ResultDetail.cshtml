@@ -1,0 +1,70 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@(Html.X().TreePanel()
+    .Header(false)
+    .Split(true)
+    .Border(false)
+    .ID("grResult")
+    .TitleAlign(TitleAlign.Center)
+    .Layout(LayoutType.Fit)
+    .Collapsible(true)
+    .ForceFit(true)
+    .RootVisible(false)
+    .ColumnLines(true)
+    .RowLines(true)
+    .SingleExpand(false)  
+    .Store(Html.X().TreeStore().ID("StoreTreeCriteria")
+        .AutoLoad(true)
+        .Proxy(Html.X().AjaxProxy()
+                    .Url(Url.Action("LoadResult", "Result", new { area = "Audit" }))
+                    .Reader(Html.X().JsonReader()
+                    .Root("data"))
+                )
+              .Parameters(ps =>
+                {
+                    ps.Add(new StoreParameter("cateId", "App.cbCriteriaCategoryID.getValue()!=null? App.cbCriteriaCategoryID.getValue():0", ParameterMode.Raw));
+                    ps.Add(new StoreParameter("auditId", "App.hdfAuditId.getValue()!=null? App.hdfAuditId.getValue():0", ParameterMode.Raw));
+                })
+            .Model(
+            Html.X().Model().IDProperty("ID")
+            .Fields(
+                    Html.X().ModelField().Name("ID"),
+                    Html.X().ModelField().Name("Name"),
+                    Html.X().ModelField().Name("ParentID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("MinPoint").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("MaxPoint").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("AuditAt").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsCategory").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("Point").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Result").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsPass").Type(ModelFieldType.Boolean)
+            )
+        )
+    )
+    .ColumnModel(
+        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+        Html.X().TreeColumn()
+            .Text("Tiêu chí đánh giá")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Align(Alignment.Left)
+            .DataIndex("Name")
+            .Flex(1),
+        Html.X().Column()
+            .Text("Thời gian đánh giá")
+            .Align(Alignment.Center)
+            .Width(130)
+            .DataIndex("AuditAt"),
+        Html.X().Column()
+            .Text("Điểm")
+            .Width(100)
+            .Align(Alignment.Right)
+            .DataIndex("Point"),
+        Html.X().Column()
+            .Text("Kết quả")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(100)
+            .DataIndex("Result")
+            .Align(Alignment.Center)
+    )    
+)

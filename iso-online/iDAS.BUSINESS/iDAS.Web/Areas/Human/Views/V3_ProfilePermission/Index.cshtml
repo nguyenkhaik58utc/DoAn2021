@@ -1,0 +1,139 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Base;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Hidden().ID("Code").Value("root"))
+@(Html.X().Hidden().ID("IsModule").Value(false))
+@(Html.X().Hidden().ID("IsGroup").Value(false))
+@(Html.X().Hidden().ID("IsFunction").Value(false))
+@(Html.X().Hidden().ID("IsPermission").Value(false))
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Border(false)
+    .AutoScroll(false)
+    .Items(
+        Html.X().TreePanel()
+            .ID("DepartmentPanel")
+            .Region(Region.West)
+            .Width(360)
+            .Header(false)
+            .Border(true)
+            .RowLines(true)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)
+            .SingleExpand(false)
+            .Split(true)
+            .Collapsible(true)
+            .MarginSpec("1 0 1 1")
+            .Listeners(ls =>
+            {
+                ls.Load.Handler = "expandDepartment(records);";
+                ls.Select.Handler = "reloadPermissionStore();";
+            })
+            .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                        Html.X().Button().Text("Mở rộng").Icon(Icon.ControlAddBlue).Handler("this.up('treepanel').expandAll();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Thu gọn").Icon(Icon.ControlRemoveBlue).Handler("this.up('treepanel').collapseAll();")
+                    )
+            )
+            .Store(
+                Html.X().TreeStore()
+                    .ID("StoreDepartments")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Department", new { area = "Department"})).Reader(Html.X().JsonReader().Root("data")))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("id"),
+                            Html.X().ModelField().Name("text"),
+                            Html.X().ModelField().Name("ParentID"),
+                            Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsMerge").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().TreeColumn().Text("Cơ cấu tổ chức").StyleSpec("font-weight: bold;text-align: center")
+                    .DataIndex("text").Flex(1).Filterable(false).Sortable(false)
+            ),
+        Html.X().GridPanel()
+            .ID("PermissionPanel")
+            .ColumnLines(true)
+            .MarginSpec("1 1 1 0")
+            .Icon(Icon.TextListBullets)
+            .Region(Region.Center)
+            .Header(false)
+            .Border(true)
+            .Collapsible(true)
+            .ForceFit(true)
+            .EnableLocking(true)
+            .TopBarItem(
+                Html.X().Button().Text("Phân quyền").DirectEvents(
+                    de =>
+                    {
+                        de.Click.ExtraParams.Add(new { DepartmentTitleFromID = new JRawValue("App.PermissionPanel.selModel.getSelection()[0].data.id") });
+                        de.Click.Url = Url.Action("FormPermission", "V3_ProfilePermission", new { area = "Human" });
+                    }).Icon(Icon.TableKey),
+                Html.X().ToolbarFill()
+               // Html.X().ButtonTutorial()
+            )
+            .Store(
+                Html.X().Store()
+                    .ID("StorePermissions")
+                    .AutoLoad(false)
+                    .RemoteSort(true)
+                    .Model(Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("id"),
+                            Html.X().ModelField().Name("titleID"),
+                            Html.X().ModelField().Name("titleName"),
+                            Html.X().ModelField().Name("departmentID")
+                        )
+                    )
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDepartmentTitleList")).Reader(Html.X().JsonReader().Root("data")))
+                    .SortOnLoad(false)
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("departmentId", "getDepartmentSelection().data.id", ParameterMode.Raw));
+                    })
+            )
+            .ColumnModel(
+                Html.X().Column().DataIndex("id").Hidden(true),
+                Html.X().Column().DataIndex("titleID").Hidden(true),
+                Html.X().Column().DataIndex("titleName").Text("Chức danh").Flex(1).MenuDisabled(true),
+                Html.X().Column().DataIndex("departmentID").Hidden(true)
+            )
+            .Features(Html.X().Grouping().GroupHeaderTplString("{name}").HideGroupedHeader(true))
+            .Plugins(Html.X().CellEditing())
+    )
+)
+
+<script>
+    var getDepartmentSelection = function () {
+        return App.DepartmentPanel.getSelectionModel().getLastSelected();
+    };
+    var expandDepartment = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+        var count = App.DepartmentPanel.selModel.getCount();
+        if (count <= 0) {
+            App.DepartmentPanel.selModel.select(0);
+        }
+    };
+
+    var reloadPermissionStore = function () {
+        App.PermissionPanel.store.reload();
+        App.PermissionPanel.selModel.deselectAll();
+    };
+</script>

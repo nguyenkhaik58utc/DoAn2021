@@ -1,0 +1,117 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ProductionStageItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatusStage() {
+        var records = App.GrStage.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateStage, App.btnDeleteStage, App.btnDetailStage);
+        }
+        else {
+            SetDisabled(App.btnUpdateStage, App.btnDeleteStage, App.btnDetailStage);
+        };
+    };
+    var ShowAdd = function () {
+        var url = '@(Url.Action("Update", "Stage", new { Area = "Production" }))';
+        onDirectMethod(url, null, 'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.GrStage.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "Stage", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowView = function () {
+        var records = App.GrStage.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "Stage", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrStage")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowAdd();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateStage").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteStage").Handler("onDelete(App.GrStage.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailStage").Handler("ShowView();"),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                            ))
+                            .Store(
+                                Html.X().Store().ID("StoreStage")
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .GroupField("Product.Name")
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Stage", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("Product.Name"),
+                                                Html.X().ModelField().Name("quotaStr"),
+                                                Html.X().ModelField().Name("ResultProduct.Name"),
+                                                Html.X().ModelField().Name("IsActive")
+                                            )
+                                      )
+                        )
+                        .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("Name").Text("Tên công đoạn").Flex(1),
+                                    Html.X().Column().DataIndex("quotaStr").Text("Định mức nỗ lực").Align(Alignment.Center).Width(200),
+                                    Html.X().Column().DataIndex("ResultProduct.Name").Text("Thành phẩm").Align(Alignment.Center).Width(200),
+                                    Html.X().CheckColumn().DataIndex("IsActive").Text("Sử dụng").Width(80).Align(Alignment.Center)
+                            )
+                        .Features(
+                                Html.X().GridFilters()
+                                    .MenuFilterText("Tìm kiếm")
+                                    .Filters(
+                                        Html.X().StringFilter().DataIndex("Name"),
+                                        Html.X().BooleanFilter().DataIndex("IsActive").YesText("Có").NoText("Không")
+                                    ),
+                                Html.X().GroupingSummary()
+                                    .ID("GroupingSummaryProduct")
+                                    .GroupHeaderTplString("{name}")
+                                    .HideGroupedHeader(true)
+                                    .EnableGroupingMenu(false)
+                                    .ShowSummaryRow(false)
+                            )
+                        .SelectionModel(
+                                        Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusStage")
+                                        )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+

@@ -1,0 +1,88 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@model iDAS.Items.ISOMeetingItem
+@(
+ Html.X().Window()
+    .ID("winEditIsoMeeting")
+    .Title("Cập nhật thông tin Họp xem xét")
+    .Icon(Icon.Pencil)
+    .Width(600)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmEditIsoMeeting")
+        .Layout(LayoutType.Form)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => df.LabelWidth = 120)
+        .DefaultAnchor("100%")
+        .Items(
+        Html.X().HiddenFor(m => m.ID),
+           Html.X().ComboBoxFor(m => m.IsoID).ID("cboIso")
+                .QueryMode(DataLoadMode.Local)
+                .TriggerAction(TriggerAction.All)
+                .SelectOnFocus(true)
+                .TabIndex(1)
+                .EmptyText("Chọn Iso ...")
+                .DisplayField("Name")
+                .ValueField("ID")
+                .FieldLabel("Iso")
+                .AllowBlank(false).BlankText("Iso bắt buộc phải chọn!")
+                .Store(
+                    Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                        .Fields(
+                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                            )//end Fields
+                                )
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadIso"))//ham load dl cho combobox
+                    .Reader(Html.X().JsonReader().Root("data"))
+
+                    )//end Store
+                    .Listeners(ls => ls.Load.Handler = "App.cboIso.select(App.cboIso.store.getAt(0))")
+                    )
+                 ,
+
+            Html.X().TextFieldFor(m => m.Name).ID("txtIndex")
+                .FieldLabel("Tiêu đề *")
+                .TabIndex(2)
+                .AllowBlank(false).BlankText("Tiêu đề bắt buộc nhập!"),
+            Html.X().CheckboxFor(m => m.IsUse).ID("ckActive")
+                .FieldLabel("Kích hoạt")
+                .TabIndex(3),
+            Html.X().TextAreaFor(m => m.Note).ID("txtNote")
+                .FieldLabel("Ghi chú")
+                .TabIndex(5)
+                .Height(200)
+        ))
+        .Buttons(
+     
+
+                 Html.X().Button()
+                    .ID("btnSaveSingle")
+                    .Icon(Icon.Disk)
+                    .Text("Lưu lại")
+                    .TabIndex(6)
+                        .DirectEvents(de =>
+                        {
+                            de.Click.FormID = "frmEditIsoMeeting";                        
+                            de.Click.Url = Url.Action("Update");
+                            de.Click.Before = @"if (!#{frmEditIsoMeeting}.getForm().isValid()) { return false; }";
+                            de.Click.EventMask.ShowMask = true;
+                            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                            de.Click.Success = "App.winEditIsoMeeting.close();";
+                        })
+                  
+                        ,
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Hủy")
+                .TabIndex(7)
+                    .Handler("App.frmEditIsoMeeting.reset(); App.winEditIsoMeeting.close();")
+        )
+)

@@ -1,0 +1,143 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    var insertDataTemplateUrl = '@(Url.Action("InsertDataTemplate"))';
+    var reloadMainGrid = function () {
+        App.GrRequirment.store.reload();
+    };
+    function RequirmentNameRenderer(value) {
+        var result = "<a class='a-grid-cell' onclick ='ShowContent()'>" + value + "</a>";
+        return result;
+    };
+    function onSelectRequirment() {
+        var records = App.GrRequirment.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDeleteForm, App.btnUpdateForm, App.btnDetailForm);
+        }
+        else {
+            SetDisabled(App.btnDeleteForm, App.btnUpdateForm, App.btnDetailForm);
+        };
+    };
+    var ShowAdd = function () {
+        var url = '@(Url.Action("Update"))';
+        onDirectMethod(url, null, 'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.GrRequirment.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowContent = function () {
+        var records = App.GrRequirment.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Content"))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowView = function () {
+        var records = App.GrRequirment.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowDelete = function () {
+        var records = App.GrRequirment.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            onDelete(id);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowDataTemplate = function () {
+        var url = '@(Url.Action("DataTemplate", "Requirment"))';
+        onDirectMethod(url, null);
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+            .Items(
+                    Html.X().Hidden().ID("hdfParentDepartmentId"),
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrRequirment")
+                            .Width(650)
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowAdd();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateForm").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteForm").Handler("ShowDelete();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailForm").Handler("ShowView();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().Icon(Icon.PackageDown).Text("Dữ liệu mẫu")
+                                                .ID("btnUseData").Handler("ShowDataTemplate();"),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                            ))
+                            .Store(
+                                Html.X().Store().ID("StoreRequirment")
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                    Html.X().ModelField().Name("ID"),
+                                                    Html.X().ModelField().Name("Name"),
+                                                    Html.X().ModelField().Name("Time"),
+                                                    Html.X().ModelField().Name("Scope"),
+                                                    Html.X().ModelField().Name("Object"),
+                                                    Html.X().ModelField().Name("IsUse")
+                                            )
+                                      )
+                        )
+                        .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("Name").Renderer("RequirmentNameRenderer").Text("Tên").Width(250).Locked(true),
+                                        Html.X().DateColumnExtend().DataIndex("Time").Text("Ngày áp dụng").Align(Alignment.Center).Width(200),
+                                        Html.X().Column().DataIndex("Scope").Text("Phạm vi").Width(200),
+                                        Html.X().Column().DataIndex("Object").Text("Đối tượng").Flex(1),
+                                        Html.X().CheckColumn().DataIndex("IsUse").Text("Sử dụng").Width(60).Align(Alignment.Center)
+                            )
+                        .SelectionModel(
+                                        Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                                .Listeners(ls => ls.SelectionChange.Fn = "onSelectRequirment")
+                                        )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+

@@ -1,0 +1,166 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    var windowID = "StatisticalProfile";
+    var StoreParamProfile = ViewData["StoreParamProfileStatiscal"] as StoreParameter;
+}
+@(Html.X().Window()
+            .ID(windowID)
+            .Title("Danh sách hồ sơ")
+            .StyleSpec("-webkit-border-radius:0")
+            .Icon(Icon.ApplicationSideList)
+            .Height(1)
+            .Maximized(true)
+            .Constrain(true)
+            .Layout(LayoutType.Fit)
+            .Modal(true)
+            .Resizable(false)
+            .Margin(0)
+            .BodyPadding(0)
+            .Border(true)
+            .Items(
+         Html.X().GridPanel()
+                    .ID("grProfileInfo")
+                    .ColumnLines(true)
+                    .Border(false)
+                         .TopBar(
+                        Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                            Html.X().ButtonView()
+                                .Disabled(true)
+                                .ID("btnDetail")
+                                    .Handler("showFrmDetail(this.up('grid'));"),
+                            Html.X().ToolbarFill()
+                           )
+                        )
+                      .Store(
+                    Html.X().Store()
+                        .ID("stProfileInfo")
+                         .AutoLoad(true)
+                    .Proxy(
+                        Html.X().AjaxProxy().Url(ViewData["StoreUrlProfile"].ToString()).Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .Parameters(a =>
+                    {
+                        a.Add(StoreParamProfile);
+                        a.Add(new { fromDate = ViewData["FromDate"] });
+                        a.Add(new { toDate = ViewData["ToDate"] });
+                    })
+                    .RemoteSort(false).RemotePaging(true).PageSize(20)
+                    .Model(Html.X().Model()
+                        .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Code").Type(ModelFieldType.String),//Ma Ho so
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),//Ten Ho so
+                                Html.X().ModelField().Name("ReceivedAt").Type(ModelFieldType.Date),//Thoi gian tiep nhan HS
+                                Html.X().ModelField().Name("StoragePartTime").Type(ModelFieldType.String),//Thoi gian luu tai bo phan
+                                Html.X().ModelField().Name("StoreRoomTime").Type(ModelFieldType.String),//Thoi gian luu tai phong luu tru
+                                Html.X().ModelField().Name("StorageRoomPosition").Type(ModelFieldType.String),//Vi tri luu tai
+                                Html.X().ModelField().Name("ReceivedName").Type(ModelFieldType.String),//Nguoi luu tru
+                                Html.X().ModelField().Name("Status").Type(ModelFieldType.String),//Trang thai
+                                Html.X().ModelField().Name("StatusCode").Type(ModelFieldType.Int),//Trang thai
+                                Html.X().ModelField().Name("FormH").Type(ModelFieldType.Boolean),//Hinh thuc luu tru
+                                Html.X().ModelField().Name("FormS").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("Security").Type(ModelFieldType.String),//Muc do mat
+                                Html.X().ModelField().Name("Color").Type(ModelFieldType.String)
+                                )
+                        )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(30)
+                                .Align(Alignment.Center),
+                        Html.X().Column()
+                                .DataIndex("Code")
+                                .Text("Mã hồ sơ")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(110),
+                        Html.X().Column()
+                                .DataIndex("Name")
+                                .Text("Tên hồ sơ")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Flex(2),
+                        Html.X().ComponentColumn().Text("Thời gian lưu trữ tại (tháng)").Columns(
+                        Html.X().Column()
+                                .Text("Bộ phận")
+                                .DataIndex("StoragePartTime")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(90)
+                                .Align(Alignment.Right),
+                            Html.X().Column()
+                                .Text("Phòng lưu trữ")
+                                .DataIndex("StoreRoomTime")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(90)
+                                .Align(Alignment.Right)
+                                ),
+                            Html.X().ComponentColumn().Text("Loại hồ sơ").Filterable(false).Columns(
+                            Html.X().CheckColumn()
+                                .DataIndex("FormH")
+                                .Text("Bản cứng")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(90)
+                                .Align(Alignment.Center),
+                            Html.X().CheckColumn()
+                                .DataIndex("FormS")
+                                .Text("Bản mềm")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(90)
+                                .Align(Alignment.Center)
+                            ),
+                        Html.X().Column()
+                            .Text("Mức độ bảo mật")
+                            .Filterable(false)
+                            .DataIndex("Security")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                            .Width(100)
+                            .Align(Alignment.Center),
+                        Html.X().Column()
+                            .Text("Người lưu trữ")
+                            .DataIndex("ReceivedName")
+                            .Filterable(false)
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(120)
+                        )
+                    .Plugins(
+                        Html.X().FilterHeader().Remote(true)
+                            )
+             .View(Html.X().GridView().StripeRows(false))
+            .SelectionModel(
+                    Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Handler = "App.btnDetail.setDisabled(false);")
+            )
+            .BottomBar(
+                  Html.X().CustomPagingToolbar())
+ )
+)
+<script type="text/javascript">
+    var showFrmDetail = function (grid) {
+        var record = grid.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("ShowFrmDetail", "Profile", new { Area = "Profile" }, null))', params: { id: id }
+                });
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var ShowFrmDocCate = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmDocCate", "Profile", new { Area = "Profile" }, null))'
+        });
+    };
+</script>

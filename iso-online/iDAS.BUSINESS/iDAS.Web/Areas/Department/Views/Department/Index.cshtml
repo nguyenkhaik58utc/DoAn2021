@@ -1,0 +1,311 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .DepartmentActive {
+        color: #000;
+    }
+    .DepartmentDeactive {
+        color: #808080;
+    }
+    .DepartmentCancel {
+        color: #b200ff;
+    }
+    .DepartmentMerge {
+        color: #0026ff;
+    }
+    .DepartmentDelete {
+        color: #ff0000;
+    }
+</style>
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().TreePanel()
+            .ID("DepartmentPanel")
+            .Header(false)
+            .Border(false)
+            .Region(Region.Center)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)             
+            .ColumnLines(true)
+            .RowLines(true)
+            .SingleExpand(false)
+            .Listeners(ls => {
+                ls.Load.Handler = "expandDepartment(records);";
+                ls.SelectionChange.Handler = "selectionChangeDepartment();";
+            })
+            .TopBarItem(
+                Html.X().ButtonCreate().Handler("showCreateDepartment").ID("btnCreateDepartment"),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonUpdate().Handler("showUpdateDepartment").ID("btnUpdateDepartment").Disabled(false),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonDelete().Handler("showDeleteDepartment").ID("btnDeleteDepartment").Disabled(false),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonView().Handler("showDetailDepartment").ID("btnDetailDepartment").Disabled(false),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonRestore().Handler("showRestoreDepartment").ID("btnRestoreDepartment").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonDestroy().Handler("showDestroyDepartment").ID("btnDestroyDepartment"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Text("Chức danh").Handler("showRoleDepartment()").ID("btnRoleDepartment").Icon(Icon.Star).Disabled(false),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Text("Sắp xếp").Handler("showSortDepartment").ID("btnSortDepartment").Icon(Icon.ArrowNsew).Disabled(false),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonRefresh().Handler("refreshDepartment"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Text("Mở rộng").Handler("this.up('treepanel').expandAll();").Icon(Icon.ControlAddBlue),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Text("Thu gọn").Handler("this.up('treepanel').collapseAll();").Icon(Icon.ControlRemoveBlue),
+                Html.X().ToolbarFill(),
+                Html.X().ButtonTutorial()
+            )
+            .BottomBarItem(
+                Html.X().Checkbox().ID("ViewDeactive").BoxLabel("Dừng hoạt động").BoxLabelCls("DepartmentDeactive").MarginSpec("0 5 0 10").Handler("refreshDepartment();"),
+                Html.X().ToolbarSeparator().MarginSpec("0 5 0 0"),
+                Html.X().Checkbox().ID("ViewCancel").BoxLabel("Giải thể").BoxLabelCls("DepartmentCancel").MarginSpec("0 5 0 0").Handler("refreshDepartment();"),
+                Html.X().ToolbarSeparator().MarginSpec("0 5 0 0"),
+                Html.X().Checkbox().ID("ViewMerge").BoxLabel("Sát nhập").BoxLabelCls("DepartmentMerge").MarginSpec("0 5 0 0").Handler("refreshDepartment();"),
+                Html.X().ToolbarSeparator().MarginSpec("0 5 0 0"),
+                Html.X().Checkbox().ID("ViewDelete").BoxLabel("Đã xóa").BoxLabelCls("DepartmentDelete").Handler("refreshDepartment();")
+            )
+            .Store(
+                Html.X().TreeStore()
+                    .ID("StoreDepartments")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("id"),
+                            Html.X().ModelField().Name("text"),
+                            Html.X().ModelField().Name("ParentID"),
+                            Html.X().ModelField().Name("UpdateAt"),
+                            Html.X().ModelField().Name("EstablishedDate"),
+                            Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsMerge").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                        )
+                    )
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("viewDeactive", "App.ViewDeactive.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("viewCancel", "App.ViewCancel.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("viewMerge", "App.ViewMerge.getValue()", ParameterMode.Raw));
+                        ps.Add(new StoreParameter("viewDelete", "App.ViewDelete.getValue()", ParameterMode.Raw));
+                    })
+            )
+            .ColumnModel(
+                Html.X().TreeColumn().Text("Cơ cấu tổ chức")
+                    .MenuDisabled(true).Sortable(false)
+                    .Align(Alignment.Left).DataIndex("text").Flex(1),
+                Html.X().Column().Text("Ngày thành lập")
+                    .MenuDisabled(true).Sortable(false)
+                    .DataIndex("EstablishedDate").Width(100).Align(Alignment.Center),
+                Html.X().Column().Text("Ngày cập nhật")
+                    .MenuDisabled(true).Sortable(false)
+                    .DataIndex("UpdateAt").Width(100).Align(Alignment.Center)       
+            )   
+    )
+)
+<script type="text/javascript">
+    var recordDepartments = null;
+    var urlCreateDepartment = '@Url.Action("Create", "Department", new { area = "Department"})';
+    var urlUpdateDepartment = '@Url.Action("Update", "Department", new { area = "Department"})';
+    var urlDeleteDepartment = '@Url.Action("Delete", "Department", new { area = "Department"})';
+    var urlDestroyDepartment = '@Url.Action("Destroy", "Department", new { area = "Department"})';
+    var urlDetailDepartment = '@Url.Action("Detail", "Department", new { area = "Department"})';
+    var urlRestoreDepartment = '@Url.Action("Restore", "Department", new { area = "Department"})';
+    var urlSortDepartment = '@Url.Action("Sort", "Department", new { area = "Department" })';
+    var urlRoleDepartment = '@Url.Action("Index", "Role", new { area = "Department"})';
+    var expandDepartment = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                var node = records[i];
+                if (recordDepartments != null && checkExpandDepartment(node)) {
+                    node.expand();
+                }
+                else if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+                    node.expand();
+                }
+            }
+        }
+        if (App.DepartmentPanel.selModel.getCount() <= 0) {
+            setDepartmentSelection(0);
+        }
+    };
+    var checkExpandDepartment = function (record) {
+        var check = false;
+        recordDepartments.forEach(function (obj) {
+            if (!check && obj.id == record.data.id) {
+                check = obj.expanded;
+                if (obj.selected) {
+                    setDepartmentSelection(record);
+                }
+            }
+        })
+        return check;
+    };
+    var getDepartmentRecords = function () {
+        var records = App.DepartmentPanel.getView().store.getRange();
+        var node = getDepartmentSelection();
+        var data = [];
+        records.forEach(function (obj) {
+            var selected = obj.data.id == node.data.id;
+            var item = {
+                id: obj.data.id,
+                expanded: obj.data.expanded,
+                selected: selected
+            };
+            data.push(item);
+        });
+        return data;
+    };
+    var setDepartmentSelection = function (record) {
+        if (record != null) {
+            App.DepartmentPanel.selModel.select(record);
+        }
+    };
+    var getDepartmentSelection = function () {
+        return App.DepartmentPanel.getSelectionModel().getLastSelected();
+    };
+    var getDepartmentParentNode = function (record) {
+        var node = record.parentNode;
+        if (node == null) {
+            node = new Object({ data: { IsDelete: false } });
+        }
+        return node;
+    }
+    var reloadDepartment = function () {
+        recordDepartments = getDepartmentRecords();
+        var node = getDepartmentSelection();
+        App.DepartmentPanel.store.reload({ node: node.parentNode });
+    };
+    var reloadDepartmentNode = function () {
+        recordDepartments = getDepartmentRecords();
+        var node = getDepartmentSelection();
+        App.DepartmentPanel.store.reload({ node: node });
+        node.data.leaf = false;
+        node.data.expanded = true;
+        node.expand();
+    };
+    var refreshDepartment = function () {
+        recordDepartments = getDepartmentRecords();
+        App.DepartmentPanel.selModel.deselectAll()
+        App.DepartmentPanel.getRootNode().reload();
+    };
+    var showCreateDepartment = function () {
+        var url = urlCreateDepartment;
+        var record = getDepartmentSelection();
+        var departmentId = record == null ? 0 : record.data.id;
+        var params = { departmentId: departmentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateDepartment = function () {
+        var url = urlUpdateDepartment;
+        var record = getDepartmentSelection();
+        var departmentId = record == null ? 0 : record.data.id;
+        var params = { departmentId: departmentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteDepartment = function () {
+        var url = urlDeleteDepartment;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ phòng ban này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getDepartmentSelection();
+                            var departmentId = record == null ? 0 : record.data.id;
+                            var params = { departmentId: departmentId };
+                            onDirectMethod(url, params, 'post', reloadDepartment);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showRestoreDepartment = function () {
+        var url = urlRestoreDepartment;
+        var restoreSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn khôi phục phòng ban này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getDepartmentSelection();
+                            var departmentId = record == null ? 0 : record.data.id;
+                            var params = { departmentId: departmentId };
+                            onDirectMethod(url, params, 'post', reloadDepartment);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', restoreSuccess);
+    };
+    var showDestroyDepartment = function () {
+        var url = urlDestroyDepartment;
+        var destroySuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn hủy bỏ phòng ban này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getDepartmentSelection();
+                            var departmentId = record == null ? 0 : record.data.id;
+                            var params = { departmentId: departmentId };
+                            var node = App.DepartmentPanel.store.getNodeById(record.data.ParentID);
+                            var handle = function () { reloadDepartment(); setDepartmentSelection(node) };
+                            onDirectMethod(url, params, 'post', handle);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', destroySuccess);
+    };
+    var showDetailDepartment = function () {
+        var url = urlDetailDepartment;
+        var record = getDepartmentSelection();
+        var departmentId = record == null ? 0 : record.data.id;
+        var params = { departmentId: departmentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showRoleDepartment = function () {
+        var url = urlRoleDepartment;
+        var record = getDepartmentSelection();
+        var departmentId = record == null ? 0 : record.data.id;
+        var params = { departmentId: departmentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showSortDepartment = function () {
+        var url = urlSortDepartment;
+        var record = getDepartmentSelection();
+        var departmentId = record == null ? 0 : record.data.id;
+        var params = { departmentId: departmentId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeDepartment = function () {
+        var record = getDepartmentSelection();
+        if (record != null) {
+            App.btnCreateDepartment.setDisabled(record.data.IsDelete || !record.data.IsActive);
+            App.btnUpdateDepartment.setDisabled(record.data.IsDelete);
+            App.btnRestoreDepartment.setDisabled(!record.data.IsDelete || getDepartmentParentNode(record).data.IsDelete);
+            App.btnDeleteDepartment.setDisabled(record.data.IsDelete || record.data.ParentID == 0);
+            App.btnDestroyDepartment.setDisabled(!record.data.IsDelete);
+            App.btnRoleDepartment.setDisabled(!record.data.IsActive);
+        }
+    };
+</script>

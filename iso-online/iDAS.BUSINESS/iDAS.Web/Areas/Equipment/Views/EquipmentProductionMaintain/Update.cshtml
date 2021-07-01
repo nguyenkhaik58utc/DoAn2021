@@ -1,0 +1,66 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.EquipmentProductionMaintainItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Lập kế hoạch thông tin bảo dưỡng thiết bị";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật kế hoạch bảo dưỡng thiết bị";
+    }
+}
+@(Html.X().Window()
+.ID("WinEquipmentProductionMaintain")
+.Title(title)
+.Icon(IconView)
+.Width(500)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmEquipmentMaintainUpdate")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .Border(false)
+    .MarginSpec("0 -4 -3 -4")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 120; })
+    .Items(
+            X.HiddenFor(m => m.ID).ID("hdfEquipmentDepartment"),
+            X.HiddenFor(m => m.EquipmentProductionID).ID("hdfEquipmentProduction"),
+            X.DateTimeFieldFor(m => m.PlanTime).AllowBlank(false).FieldLabel("Thời gian bảo dưỡng"+Html.Required())
+                .ColumnWidth(1).MarginSpec("5 8 5 8") ,
+            X.TextAreaFor(m => m.Content).FieldLabel("Nội dung").LabelAlign(LabelAlign.Top)
+                .ColumnWidth(1).MarginSpec("5 8 5 8").Height(150)            
+            )
+    )
+    .Buttons(
+        Html.X().Button()
+                        .Text("Lưu lại")
+                        .Icon(Icon.DatabaseSave)
+                        .DirectEvents(de =>
+                                    {
+                                        de.Click.Before = @"if (!App.frmEquipmentMaintainUpdate.getForm().isValid()) { return false; }; ";
+                                        de.Click.ExtraParams.Add(new { exit = true });
+                                        de.Click.Url = Url.Action("Update", "EquipmentProductionMaintain", new { Area = "Equipment" });
+                                        de.Click.EventMask.ShowMask = true;
+                                        de.Click.Success = "this.up('window').close();App.StoreMaintain.reload();";
+                                        de.Click.FormID = "frmEquipmentMaintainUpdate";
+                                    })
+        , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

@@ -1,0 +1,119 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.CustomerContractItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới hợp đồng";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật hợp đồng";
+    }
+}
+@(Html.X().Window()
+.ID("winUpdateCustomerContract")
+.Title(title)
+.Icon(IconView)
+.Maximized(true)
+.Height(100)
+.Width(800)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+     X.FormPanel().ID("frmUpdate")
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .AutoScroll(true)
+            .Frame(true)
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 120; })
+            .Items(
+                X.HiddenFor(m => m.ID), X.HiddenFor(m => m.CustomerID), X.HiddenFor(i => i.IsEdit).ID("hdfContractIsEdit"),
+                X.TextFieldFor(m => m.CustomerName).FieldLabel("Khách hàng").ReadOnly(true).MarginSpec("5 8 0 8"),
+                X.Container().Layout(LayoutType.Column).MarginSpec("5 8 0 8")
+                        .Items(
+                                X.TextFieldFor(m => m.Code)
+                                        .FieldLabel("Mã hợp đồng" + Html.Required())
+                                        .EmptyText("Nhập mã hợp đồng...")
+                                        .BlankText("Mã hợp đồng không được bỏ trống!")
+                                        .AllowOnlyWhitespace(false).MarginSpec("0 8 0 0")
+                                        .ColumnWidth(0.35),
+                                X.TextFieldFor(m => m.Name)
+                                        .FieldLabel("Tên hợp đồng" + Html.Required())
+                                        .EmptyText("Nhập hợp đồng...")
+                                        .BlankText("Hợp đồng không được bỏ trống!")
+                                        .AllowOnlyWhitespace(false)
+                                        .ColumnWidth(0.65)
+                                ),
+                X.Container().Layout(LayoutType.Column).MarginSpec("5 8 0 8")
+                        .Items(X.DateTimeFieldFor(m => m.StatTime).FieldLabel("Bắt đầu")
+                                        .ColumnWidth(0.5).MarginSpec("0 8 0 0"),
+                            X.DateTimeFieldFor(m => m.EndTime).FieldLabel("Kết thúc" + Html.Required())
+                                        .AllowBlank(false)
+                                        .ColumnWidth(0.5)
+                        ),
+                X.Container().Layout(LayoutType.Column).MarginSpec("5 8 0 8")
+                        .Items(
+                                X.NumberFieldFor(m => m.Total).FieldLabel("Tổng giá trị" + Html.Required())
+                                    .ColumnWidth(0.5).MarginSpec("0 8 0 0")
+                                    .EmptyText("Nhập tổng giá trị hợp đồng...")
+                                    .BlankText("Tổng giá trị hợp đồng bắt buộc nhập")
+                                    .Icon(Icon.Money).MinValue(0),
+                                X.NumberFieldFor(m=>m.TotalOrder).FieldLabel("Giá trị đơn hàng")
+                                    .EmptyText("Chưa có đơn hàng")
+                                    .ColumnWidth(0.5)
+                                    .Icon(Icon.Money).MinValue(0).ReadOnly(true)  
+                        ),
+                Html.X().FileUploadFieldFor(m => m.AttachmentFiles).ReadOnly(true).Layout(LayoutType.Column).MarginSpec("5 8 0 8"),                    
+                X.FieldSet().Layout(LayoutType.Column).MarginSpec("5 8 0 8").Title("Phản hồi của khách hàng")
+                        .Items(
+                                X.CheckboxFor(m => m.IsSignCustomer).BoxLabel("Xác nhận")
+                                    .FieldLabel("Ký hợp đồng").ColumnWidth(0.5),
+                                X.DateFieldFor(m => m.SignCustomerAt).FieldLabel("Thời gian ký")
+                                    .ID("tffSignCustomerAt").ColumnWidth(0.5),
+                                X.CheckboxFor(m => m.IsCancel).ColumnWidth(0.5).ReadOnly(true).FieldLabel("Hủy hợp đồng").BoxLabel("Xác nhận"),
+                                X.TextAreaFor(m => m.CancelNote).ReadOnly(true)
+                                    .FieldLabel("Lý do hủy hợp đồng")
+                                    .LabelAlign(LabelAlign.Top)
+                                    .EmptyText("Nhập lý do hủy hợp đồng...")
+                                    .MinHeight(80)
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("0 0 5 0")
+                        ),
+                X.TextAreaFor(m => m.Content).Flex(1)
+                                    .LabelAlign(LabelAlign.Top)
+                                    .LabelStyle("font-weight: bold;")
+                                    .FieldLabel("Nội dung")
+                                    .EmptyText("Nhập nội dung...")
+                                    .MinHeight(100)
+                                    .ColumnWidth(0.5).MarginSpec("5 8 5 8")
+    )
+)
+.Buttons(
+    Html.X().Button()
+                    .Text("Lưu lại")
+                    .Icon(Icon.DatabaseSave)
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.ExtraParams.Add(new { exit = true });
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.EventMask.ShowMask = true;
+                                    de.Click.FormID = "frmUpdate";
+                                })
+    , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

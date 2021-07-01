@@ -1,0 +1,72 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerCareResultItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới kết quả chăm sóc";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật kết quả chăm sóc";
+    }
+}
+@(Html.X().Window()
+.ID("winUpdateCustomerCareResult")
+.Title(title)
+.Icon(IconView)
+.Width(800)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+     X.FormPanel().ID("frmUpdate")
+    .Layout(LayoutType.Column)
+         .StyleSpec("border: none;")
+    .Frame(true)
+    .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 120; })
+    .Items(
+                        X.HiddenFor(m => m.ID), 
+                        X.HiddenFor(m=>m.CareID),
+                        X.HiddenFor(m => m.CustomerID),
+                        X.TextFieldFor(m => m.Name).FieldLabel("Khách hàng")
+                                .ColumnWidth(1)
+                                .MarginSpec("5 8 0 8").ReadOnly(true),
+                        X.TextFieldFor(m => m.Method).ColumnWidth(1).FieldLabel("Hình thức")
+                                    .MarginSpec("5 8 0 8"),                  
+                        X.TextAreaFor(m=>m.Note)
+                            .FieldLabel("Nội dung")
+                            .ColumnWidth(1)
+                                .MarginSpec("5 8 0 8")
+                            .Height(100)
+                            .EmptyText("Nhập nội dung chương trình chăm sóc...")
+                                ,
+                        X.CheckboxFor(m => m.IsSuccess).FieldLabel("Kết quả").BoxLabel("Thành công")
+                                .ColumnWidth(1)
+                                .MarginSpec("5 8 0 8")
+             )
+           )
+.Buttons(
+    Html.X().ButtonSave()
+            .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                            de.Click.ExtraParams.Add(new { exit = true });
+                            de.Click.Url = Url.Action("UpdateCustomerCareResult");
+                            de.Click.FormID = "frmUpdate";
+                        })
+    , Html.X().ButtonExit())
+)

@@ -1,0 +1,116 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.EquipmentProductionAttachItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới thiết bị đi kèm";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật thiết bị đi kèm";
+    }
+}
+@(Html.X().Window()
+    .ID("winUpdateEquipmentProductionAttach")
+    .Title(title)
+    .Icon(IconView)
+    .Height(500)
+    .Maximized(true)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .AutoScroll(true)
+    .Items(
+       Html.X().FormPanel().ID("frmUpdateProductionAttach")
+        .Layout(LayoutType.Fit)
+        .Border(false)
+        .AutoScroll(true)
+        .Items(
+          Html.X().TabPanel()
+            .ID("TabPanelUpdateAttach")
+            .ActiveTabIndex(0)
+            .Border(true)
+            .Items(
+              Html.X().FormPanel().ID("frmProductionAttachInfo")
+                .Layout(LayoutType.Column)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .Title("<b>Thông tin thiết bị đi kèm</b>")
+                .Icon(Icon.ServerConnect)
+                .FieldDefaults(df => { df.LabelAlign = LabelAlign.Left; df.LabelWidth = 110; })
+                .Items(
+                        Html.X().HiddenFor(m => m.ID).ID("hdfEquipmentProductionAttachforAttachID"),
+                        Html.X().HiddenFor(m => m.EquipmentProductionID).ID("hdfEquipmentProductionforAttachID"),
+                        Html.X().TextFieldFor(m => m.Code).ID("tffCode").ColumnWidth(0.3).FieldLabel("Mã thiết bị" + Html.Required())
+                                    .EmptyText("Nhập mã thiết bị đi kèm ...")
+                                    .BlankText("Mã thiết bị đi kèm không được bỏ trống!")
+                                    .MarginSpec("5 8 0 8"),
+                        Html.X().TextFieldFor(m => m.SerialNumber).ID("tffSerialNumber").ColumnWidth(0.7).FieldLabel("Số hiệu" + Html.Required())
+                                    .EmptyText("Nhập số hiệu thiết bị đi kèm ...")
+                                    .BlankText("Số hiệu thiết bị đi kèm không được bỏ trống!")
+                                    .MarginSpec("5 8 0 8"),
+        //Html.X().TextFieldFor(m => m.EquipmentProductionName).ID("tffEquipmentProductionName").ReadOnly(true)
+        //                .FieldLabel("Tên thiết bị").ColumnWidth(0.3).MarginSpec("5 8 0 8"),
+                        Html.X().TextFieldFor(m => m.Name).ID("tffName")
+                                .FieldLabel("Thiết bị đi kèm" + Html.Required())
+                                .EmptyText("Nhập tên thiết bị đi kèm ...")
+                                .BlankText("Tên thiết bị đi kèm không được bỏ trống!")
+                                .MaxLength(500)
+                                .AllowOnlyWhitespace(false)
+                                .ColumnWidth(1)
+                                .MarginSpec("5 8 0 8"),
+                        Html.X().DateFieldFor(m => m.MadeYear).ID("dffMadeYear").FieldLabel("Năm sản xuất").ColumnWidth(0.3).MarginSpec("5 8 0 8"),
+                        Html.X().TextFieldFor(m => m.MadeIn).ID("tftMadeIn").FieldLabel("Nơi sản xuất").ColumnWidth(0.7).MarginSpec("5 8 0 8"),
+                        Html.X().CheckboxFor(m => m.IsUsing).ID("cbxIsUsing").FieldLabel("Sử dụng").BoxLabel("Đang sử dụng").MarginSpec("5 8 0 8").ColumnWidth(0.7),
+                        Html.X().TextAreaFor(m => m.Note).FieldLabel("Ghi chú").LabelAlign(LabelAlign.Top).Height(250).ColumnWidth(1).MarginSpec("5 8 0 8")
+                    ),
+            Html.X().Panel().ID("frmProductionAttachSpecific")
+                    .Layout(LayoutType.Anchor)
+                    .Frame(true)
+                    .Title("Đặc tính kỹ thuật")
+                    .Icon(Icon.Information)
+                    .StyleSpec("border: none;")
+                    .Items(
+                          Html.X().TextAreaFor(m => m.Specifications).ID("tafSpecifications").Height(150).FieldLabel("Đặc tính kỹ thuật").MarginSpec("0 8 0 8")
+                                        .AnchorHorizontal("100%").AnchorVertical("48%").LabelAlign(LabelAlign.Top),
+                        Html.X().TextAreaFor(m => m.Features).ID("tafFeatures").FieldLabel("Tính năng").MarginSpec("0 8 0 8")
+                                        .AnchorHorizontal("100%").AnchorVertical("50%").LabelAlign(LabelAlign.Top)
+                    )
+               )
+        )
+    )
+        .Buttons(
+                Html.X().ButtonSave().ID("btnSaveEquipmentAttactch")
+                        .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmUpdateProductionAttach.getForm().isValid()) { return false; }; ";
+                            de.Click.Url = Url.Action("Update", "EquipmentProductionAttach", new { area = "Equipment" });
+                            de.Click.FormID = "frmUpdateProductionAttach";
+                            de.Click.Success = "App.StoreEquipmentAttach.load();";
+                        }),
+                Html.X().ButtonSaveAndExit().ID("btnSaveAndExitEquipmentAttactch")
+                        .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmUpdateProductionAttach.getForm().isValid()) { return false; } ";
+                            de.Click.Url = Url.Action("Update", "EquipmentProductionAttach", new { area = "Equipment" });
+                            de.Click.FormID = "frmUpdateProductionAttach";
+                            de.Click.Success = "App.winUpdateEquipmentProductionAttach.close(); App.StoreEquipmentAttach.load();";
+                        }),
+                Html.X().ButtonReset().ID("btnResetEquipmentAttactch")
+                         .Handler("App.frmUpdateProductionAttach.reset();"),
+                Html.X().ButtonExit().ID("btnExitEquipmentAttactch")
+                    )
+)

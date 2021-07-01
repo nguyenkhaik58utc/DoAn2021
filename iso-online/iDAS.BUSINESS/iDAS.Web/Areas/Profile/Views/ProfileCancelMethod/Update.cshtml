@@ -1,0 +1,56 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCategoryItem
+@(Html.X().Window()
+    .ID("winEditCancelMethod")
+    .Title("Cập nhật thông tin Phương thức hủy Hồ sơ")
+    .Icon(Icon.Pencil)
+    .Width(500)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+            .ID("frmNewCancelMethod")
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .Items(
+                Html.X().HiddenFor(m => m.ID),
+                Html.X().TextFieldFor(m => m.Name)
+                    .FieldLabel("Phương thức hủy" + Html.Required())
+                    .AllowOnlyWhitespace(false)
+                    .MaxLength(50).MaxLengthText("Phương thức không quá 50 ký tự!")
+                        .AllowBlank(false).BlankText("Phương thức hủy bắt buộc nhập!")
+                    .TabIndex(1),
+                Html.X().CheckboxFor(m => m.IsActive)
+                    .FieldLabel("Kích hoạt")
+                    .TabIndex(2),
+                Html.X().TextAreaFor(m => m.Note)
+                    .ID("txtContent")
+                    .FieldLabel("Mô tả")
+                    .TabIndex(3).Height(100)
+                    .MaxLength(1000)
+                )
+        )
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(4)
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewCancelMethod";
+                    de.Click.Url = Url.Action("Update");
+                    de.Click.Before = @"if (!#{frmNewCancelMethod}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                }),
+            Html.X().ButtonExit()
+        )
+)

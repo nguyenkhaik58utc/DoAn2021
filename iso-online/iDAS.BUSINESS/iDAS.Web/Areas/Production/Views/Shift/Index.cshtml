@@ -1,0 +1,112 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ProductionShiftItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatusShift() {
+        var records = App.GrShift.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateShift, App.btnDeleteShift, App.btnDetailShift);
+        }
+        else {
+            SetDisabled(App.btnUpdateShift, App.btnDeleteShift, App.btnDetailShift);
+        };
+    };
+    var ShowAdd = function () {
+        var url = '@(Url.Action("Update", "Shift", new { Area = "Production" }))';
+        onDirectMethod(url, null, 'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.GrShift.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "Shift", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowView = function () {
+        var records = App.GrShift.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "Shift", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrShift")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowAdd();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateShift").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteShift").Handler("onDelete(App.GrShift.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailShift").Handler("ShowView();"),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                            ))
+                            .Store(
+                                Html.X().Store().ID("StoreShift")
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Shift", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("StartTime"),
+                                                Html.X().ModelField().Name("EndTime"),
+                                                Html.X().ModelField().Name("IsUse")
+                                            )
+                                      )
+                        )
+                        .ColumnModel(
+                                  Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                  Html.X().Column().DataIndex("Name").Text("Tên Ca").Flex(1),
+                                  Html.X().Column().Text("Thời gian").MenuDisabled(true)
+                                            .Columns(
+                                                        Html.X().Column().DataIndex("StartTime").Text("Bắt đầu").Align(Alignment.Center).Width(150),
+                                                        Html.X().Column().DataIndex("EndTime").Text("Kết thúc").Align(Alignment.Center).Width(150)
+                                            ),
+                                  Html.X().CheckColumn().DataIndex("IsUse").Text("Sử dụng").Width(100).Align(Alignment.Center)
+                            )
+                        .Features(
+                                Html.X().GridFilters()
+                                    .MenuFilterText("Tìm kiếm")
+                                    .Filters(
+                                        Html.X().StringFilter().DataIndex("Name"),
+                                        Html.X().BooleanFilter().DataIndex("IsUse").YesText("Có").NoText("Không")
+                                    )
+                            )
+                        .SelectionModel(
+                                        Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusShift")
+                                        )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+

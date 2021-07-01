@@ -1,0 +1,279 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityAuditRecordedVoteItem
+@(
+ Html.X().Window()
+    .Title("Phiếu ghi chép đánh giá của " + Model.QualityAuditProgram)
+    .Icon(Icon.PageWhite)
+    .Width(570).Height(400).Maximizable(true).Maximized(true)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .BodyPadding(0)
+    .Border(true)
+    .Resizable(false)
+    .Center()
+    .Items(
+            Html.X().HiddenFor(m => m.QualityAuditProgramID).ID("hdfResultQualityAuditProgramID"),
+            Html.X().GridPanel().Split(true).Border(false).ID("grRecordedVote")
+                        .ColumnLines(true).RowLines(true).ForceFit(true).Header(false)
+                        .TopBar(
+                                Html.X().Toolbar()           
+                                    .Items(
+                                            Html.X().ButtonCreate().ID("btnCreateVote").Handler("createVote();").Text("Thêm điểm phát hiện"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonUpdate().ID("btnUpdateVote").Handler("updateVote();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonDelete().ID("btnDeleteVote").Handler("deleteVote();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonView().ID("btnDetailVote").Handler("detailVote();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().Button().Icon(Icon.Tick).Text("Xác nhận điểm phát hiện").ID("btnVerifyVote")
+                                                     .Handler("verifyResult();")
+                                        )
+                                )
+                        .Store(Html.X().Store().ID("stRecordedVotes")
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProgramVote")).Reader(Html.X().JsonReader().Root("data")))
+                                        .Parameters(ps => ps.Add(new StoreParameter("programId", "App.hdfResultQualityAuditProgramID.value", ParameterMode.Raw)))
+                                    .PageSize(20)
+                                    .GroupField("AuditName")
+                                    .Model(
+                                            Html.X().Model()
+                                                    .Fields(
+                                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                            Html.X().ModelField().Name("QualityAuditRecordedVoteID").Type(ModelFieldType.Int),
+                                                            Html.X().ModelField().Name("HumanDepartmentName"),
+                                                            Html.X().ModelField().Name("HumanDepartmentID"),
+                                                            Html.X().ModelField().Name("QualityAuditProgramID").Type(ModelFieldType.Int),
+                                                            Html.X().ModelField().Name("AuditName"),
+                                                            Html.X().ModelField().Name("AuditAt").Type(ModelFieldType.Date),
+                                                            Html.X().ModelField().Name("IsObs").Type(ModelFieldType.Boolean),
+                                                            Html.X().ModelField().Name("IsMaximum").Type(ModelFieldType.Boolean),
+                                                            Html.X().ModelField().Name("IsMedium").Type(ModelFieldType.Boolean),
+                                                            Html.X().ModelField().Name("IsComplete").Type(ModelFieldType.Boolean),
+                                                            Html.X().ModelField().Name("ISOIndexName"),
+                                                            Html.X().ModelField().Name("FunctionName"),
+                                                            Html.X().ModelField().Name("FunctionCode"),
+                                                            Html.X().ModelField().Name("ModuleName"),
+                                                            Html.X().ModelField().Name("ModuleCode"),
+                                                            Html.X().ModelField().Name("Contents")
+                                                        )
+                                            )
+                            )
+                         .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                        Html.X().DateColumn().Text("Ngày đánh giá").Align(Alignment.Center).Wrap(true).DataIndex("AuditAt")
+                                            .Format("dd/MM/yyyy HH:mm").Width(120),
+                                        Html.X().Column().Text("Chuyên viên").Align(Alignment.Left).Wrap(true)
+                                                .DataIndex("AuditName").Width(140).Flex(1),
+        //Html.X().Column().DataIndex("ISOIndexName").Flex(1).Text("Điều khoản"),
+        //Html.X().Column().DataIndex("ModuleName").Flex(1).Text("Module"),
+        //Html.X().Column().DataIndex("FunctionName").Flex(1).Text("Chức năng"),
+                                        Html.X().Column().Text("Phòng ban phát hiện").Align(Alignment.Left).Wrap(true)
+                                                .DataIndex("HumanDepartmentName").Width(180),
+                                        Html.X().Column().DataIndex("Contents").Flex(1).Text("Nội dung phát hiện").Wrap(true),
+                                        Html.X().ComponentColumn().Text("Điểm không phù hợp")
+                                                            .Columns(
+                                                                    Html.X().CheckColumn().Text("M").Align(Alignment.Right)
+                                                                                .DataIndex("IsMaximum").Width(80).Wrap(true),
+                                                                    Html.X().CheckColumn().Text("m").Align(Alignment.Right)
+                                                                                .DataIndex("IsMedium").Width(80).Wrap(true),
+                                                                    Html.X().CheckColumn().Text("Obs").Align(Alignment.Right)
+                                                                                .DataIndex("IsObs").Width(80)
+                                                                    ),
+                                        Html.X().CheckColumn().DataIndex("IsComplete").Width(70)
+                                                .Text("Xác nhận")
+        //(<img src='/icons/tick-png/ext.axd' style='right: auto; left: 0px; top: 0px; margin: 0px;'/>)")
+                                                .Renderer("VerifyRenderer")
+                                                .Align(Alignment.Center).Editable(false)
+                                    )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi)
+                                            .Listeners(l =>
+                                            {
+                                                l.SelectionChange.Handler = "checkVotesStatus()";
+                                                l.BeforeSelect.Fn = "onBeforeSelect";
+                                            })
+                                        )
+                        .Features(Html.X().GroupingSummary()
+                                    .ID("GroupingSummary1")
+                                    .GroupHeaderTplString("{name}")
+                                    .HideGroupedHeader(true)
+                                    .EnableGroupingMenu(false).ShowSummaryRow(false)
+                            )
+                        .Plugins(Html.X().RowExpander()
+                                                .Listeners(l =>
+                                                {
+                                                    l.Collapse.Delay = 1;
+                                                    l.Expand.Delay = 1;
+                                                }).TemplateHtml(@"<div style='padding-left: 50px;'><div><b>Module: </b>{ModuleName}</div><br/>
+                                                                 <div><b>Chức năng: </b>{FunctionName}</div><br/>
+                                                                 <div><b>Điều khoản: </b>{ISOIndexName}</div><br/></div>"),
+                                Html.X().CellEditing().Listeners(ls =>
+                                    {
+                                        ls.BeforeEdit.Fn = "beforeTickVote";
+                                        ls.Edit.Fn = "editTickVote";
+                                    })
+                                )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+        .Buttons(Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var deleteVote = function () {
+        var records = App.grRecordedVote.selModel.getSelection();
+        if (records.length == 1) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa kết quả đánh giá đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var id = records[0].get('ID');
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("DeleteVote"))',
+                            params: { id: id }
+                        });
+                    }
+                }
+            });
+        }
+    };
+    var checkVotesStatus = function () {
+        var records = App.grRecordedVote.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnUpdateVote.setDisabled(true);
+                App.btnDetailVote.setDisabled(true);
+                App.btnVerifyVote.setDisabled(true);
+                App.btnDeleteVote.setDisabled(true);
+                break;
+            case 1:
+                App.btnDetailVote.setDisabled(false);
+                if (!records[0].get('IsComplete') && records[0].get('ID') > 0) {
+                    App.btnVerifyVote.setDisabled(false);
+                    App.btnUpdateVote.setDisabled(false);
+                    App.btnDeleteVote.setDisabled(false);
+                }
+                else {
+                    App.btnVerifyVote.setDisabled(true);
+                    App.btnUpdateVote.setDisabled(true);
+                    App.btnDeleteVote.setDisabled(true);
+                };
+                break;
+            default:
+                App.btnUpdateVote.setDisabled(true);
+                App.btnDetailVote.setDisabled(true);
+                App.btnVerifyVote.setDisabled(false);
+                App.btnDeleteVote.setDisabled(true);
+        }
+    };
+    var getSelectGrids = function (grid) {
+        var arr = new Array();
+        for (var i = 0; i < grid.selModel.getSelection().length; i++) {
+            arr.push(grid.selModel.getSelection()[i].data.ID);
+        }
+        var ids = arr.toString();
+        return ids;
+    };
+    var verifyResult = function () {
+        var records = App.grRecordedVote.selModel.getSelection();
+        if (records.length == 0) {
+            MessageBox();
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xác nhận điểm phát hiện này không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var ids = getSelectGrids(App.grRecordedVote);
+                        var url = '@(Url.Action("VerifyVote"))';
+                        var params = { ids: ids };
+                        onDirectMethod(url, params);
+                    }
+                }
+            });
+
+        }
+    };
+    var createVote = function () {
+        var auditProgramId = App.hdfResultQualityAuditProgramID.value;
+        var url = '@(Url.Action("InsertVoteForm"))';
+        var params = { auditProgramId: auditProgramId };
+        onDirectMethod(url, params);
+    };
+    var updateVote = function () {
+        var records = App.grRecordedVote.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetailVote.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            var url = '@(Url.Action("UpdateVoteForm"))';
+            var params = { id: id };
+            onDirectMethod(url, params);
+        }
+    };
+    var detailVote = function () {
+        var records = App.grRecordedVote.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnDetailVote.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            var url = '@(Url.Action("DetailVoteForm"))';
+            var params = { id: id };
+            onDirectMethod(url, params);
+        }
+    };
+    var VerifyRenderer = function (value) {
+        if (value == true) {
+            return '<img src="/icons/tick-png/ext.axd" style="right: auto; left: 0px; top: 0px; margin: 0px;"/>';
+        }
+        else {
+            return '';
+        }
+    };
+    var beforeTickVote = function (editor, e) {
+        if (e.record.data.IsComplete == true) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    };
+    var editTickVote = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            if (e.record.data.IsComplete == true) {
+            }
+            return true;
+        }
+    };
+    function onBeforeSelect(evt, t, o) {
+        if (t.data.IsComplete) {
+            App.btnUpdateVote.setDisabled(true);
+            App.btnDeleteVote.setDisabled(true);
+            return false;
+        }
+        else
+            return true;
+    };
+</script>

@@ -1,0 +1,101 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Web.Areas.Problem.Models.ProblemEventReportInsModel
+@{
+    bool readOnly = (bool)ViewData["ReadOnly"];
+}
+@(Html.X().Window()
+.ID("winProblemEventReportInsert")
+.Title("Thêm mới báo cáo")
+.Icon(Icon.Pencil)
+.Width(720)
+.BodyPadding(4)
+.Maximizable(true)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+        Html.X().FormPanel()
+                .ID("frUpdate")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(lf => { lf.LabelAlign = LabelAlign.Left; lf.LabelWidth = 120; })
+                .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().HiddenFor(m => m.ProblemEventID),
+                    Html.X().Container()
+                        .Layout(LayoutType.Column)
+                        .ColSpan(2)
+                        .MarginSpec("0 0 0 0")
+                        .Items(
+                            Html.X().DateTimeFieldFor(m => m.ReportDate, true, 0)
+                                .AllowBlank(false)
+                                .FieldLabel("Ngày báo cáo" + Html.Required())
+                                .ColumnWidth(0.5)
+                                .ID("dfReportDay")
+                                .MarginSpec("0 5 5 0"),
+                            Html.X().ComboBoxFor(m => m.Status)
+                                .Editable(false)
+                                .AllowBlank(false)
+                                .FieldLabel("Trạng thái" + Html.Required())
+                                .EmptyText("Chọn trạng thái")
+                                .BlankText("Trạng thái không được bỏ trống!")
+                                .ID("cboIsProblemOrEvent")
+                                .ColumnWidth(0.5)
+                                .MarginSpec("0 0 5 0")
+                                //.SelectedItems(new ListItem("Đang xử lý", 1))
+                                .Items(
+                                    new ListItem("Đang xử lý", 1),
+                                    new ListItem("Đã hoàn thành", 2),
+                                    new ListItem("Tạm dừng", 3)
+                                    )
+                                ),
+                    Html.X().Container()
+                        .Layout(LayoutType.Column)
+                        .ColSpan(2)
+                        .MarginSpec("0 0 0 0")
+                        .Items(
+                            Html.X().DateTimeFieldFor(m => m.From, true, 0)
+                                .AllowBlank(false)
+                                .FieldLabel("Xử lý: từ" + Html.Required())
+                                .ColumnWidth(0.5)
+                                .ID("dfStart")
+                                .MarginSpec("0 5 5 0"),
+                            Html.X().DateTimeFieldFor(m => m.To, isDefault: true)
+                                .AllowBlank(true)
+                                .FieldLabel("đến" + Html.Required())
+                                .ColumnWidth(0.5)
+                                .MarginSpec("0 0 5 0")
+                                ),
+                    Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung").Height(200).Flex(1),
+                    Html.X().NumberFieldFor(m => m.Percent).FieldLabel("Tiến độ xử lý").MaxValue(100).MinValue(0).AllowDecimals(false).Step(1).EnableKeyEvents(true).Listeners(ls => ls.KeyDown.Fn= "validateKeyDown")
+                        )
+                    )
+.Buttons(
+    Html.X().ButtonSave().Hidden(readOnly)
+        .DirectEvents(de =>
+        {
+            de.Click.Before = @"if (!App.frUpdate.getForm().isValid()) { return false; } ";
+            de.Click.Action = "InsertUpdateReport";
+            de.Click.FormID = "frUpdate";
+            de.Click.Success = "this.up('window').close();";
+        }),
+        Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var validateKeyDown = function (field, e) {
+        try {
+            if (!((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105) || (e.keyCode == 8) || (e.keyCode == 46))) {
+                e.stopEvent();
+            }
+        }
+        catch (err) {
+            alert('error: ' + err);
+        }
+    }
+</script>

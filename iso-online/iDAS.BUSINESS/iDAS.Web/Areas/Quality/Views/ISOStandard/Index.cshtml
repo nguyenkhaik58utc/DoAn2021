@@ -1,0 +1,221 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@model System.Collections.IEnumerable
+@{   
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+ .Layout(LayoutType.Border)
+        .Items
+        (
+    Html.X().Panel()
+        .ID("CatePanel")
+        .Region(Region.West)
+        .Width(350)
+        .Split(true)
+        .Title("TIÊU CHUẨN ISO")
+        .Border(true)
+        .MarginSpec("1 0 1 1")
+        .Header(true)
+        .TitleAlign(TitleAlign.Center)
+        .Layout(LayoutType.Fit)
+        .Header(true)
+        .Items(
+            Html.X().GridPanel()
+                    .AnchorHorizontal("100%")
+                    .AnchorVertical("100%")
+                    .ID("grMnISO")
+                    .Border(false)     
+                .Store(Html.X().Store()
+                        .ID("stMnISO")
+                        .Proxy(Html.X().AjaxProxy()
+                                   .Url(Url.Action("GetData", "ISOStandard", new { area = "Quality" }))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        )     
+                        .RemoteSort(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                        Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),                                   
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                                                        
+                                )
+                              )
+                          )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                        Html.X().Column()
+                                .Text("ID")
+                                .DataIndex("ID")
+                                .Hidden(true),
+                        Html.X().Column()
+                                .Text("Tiêu chuẩn ISO")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                .DataIndex("Name")
+                               .Flex(1)
+                                .Wrap(true)
+                        
+
+                )
+                .HideHeaders(true)
+            .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)                        
+                             .Listeners(lS => lS.Select.Handler = "App.grStandard.getStore().reload();"))
+                             .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                            .Plugins(Html.X().CellEditing())
+                            .BottomBar
+                            (
+                                     Html.X().CustomPagingToolbar()
+            )
+         ),
+            Html.X().GridPanel()
+                .ID("grStandard")
+                .Header(false)
+                    .Region(Region.Center)
+                        .Split(true)
+                        .Border(true)
+                        .MarginSpec("1 1 1 0")
+                        .TitleAlign(TitleAlign.Center)
+                        .Layout(LayoutType.Fit)
+                        .Collapsible(true)
+                .ForceFit(true)
+                .ColumnLines(true)
+                .RowLines(true)
+                    .TopBar(
+                            Html.X().Toolbar()
+                                .Items(
+                                   Html.X().ButtonView()
+                                .ID("btnDetailClause")                                
+                                .Disabled(true)
+                                .Handler("showFormDetailClause();"),
+                                Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .ID("btnCateCriteria")                                
+                                .Disabled(true)
+                                .Text("Danh sách tiêu chí đánh giá")
+                                .Icon(Icon.ApplicationViewDetail)
+                                .Handler("showFormSet();"),
+                                     Html.X().ToolbarFill(),
+                                                         Html.X().ButtonTutorial()                           
+                               
+                                )
+                             )
+                    .Store(Html.X().Store().ID("StoreStandard")
+                        .AutoLoad(true)
+                        .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetDataISOIndex", "ISOClause", new { area = "Quality" }))
+                            .Reader(Html.X().JsonReader()
+                            .Root("data"))
+                        )
+                         .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("isoId", "App.grMnISO.selModel.getSelection().length > 0 ? App.grMnISO.getSelectionModel().getLastSelected().data.ID:0", ParameterMode.Raw));
+                            })
+                        .Model(
+                            Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                      Html.X().ModelField().Name("ListModuleName").Type(ModelFieldType.String),     
+                                 Html.X().ModelField().Name("Clause")
+                            )
+                            )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                    Html.X().Column()
+                            .Text("Điều")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Left)
+                                .DataIndex("Clause")
+                                .Width(110),
+                Html.X().Column()
+                        .Text("Yêu cầu tiêu chuẩn")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Left)
+                        .DataIndex("Name")
+                        .Flex(1),                        
+                   Html.X().Column()
+                            .Text("Module tham chiếu")                       
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                                    .DataIndex("ListModuleName")
+                            .Width(170)
+                            .Align(Alignment.Left)
+                            
+                    )
+                              .Listeners(ls => { ls.SelectionChange.Handler = "checkStatus();"; })   
+                                  .View(
+                                Html.X().GridView().MarkDirty(false)
+                                )
+                                .Plugins(Html.X().CellEditing())
+                                .BottomBar
+                                (
+                             Html.X().CustomPagingToolbar()
+                )
+     )
+   )
+
+<script type="text/javascript">
+
+    var showFormSet = function () {
+        var records = App.grStandard.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("FormSetCateCriteria", "ISOStandard", new { Area = "Quality" }, null))',
+                params: { id: records[0].get('ID') },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có điều khoản nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        };
+    };
+    var showFormDetailClause = function () {
+        var records = App.grStandard.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "ISOClause", new { Area = "Quality" }, null))',
+                params: { id: records[0].get('ID') },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có điều khoản nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        };
+    };
+    var checkStatus = function () {
+        var records = App.grStandard.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnCateCriteria.setDisabled(true);
+                App.btnDetailClause.setDisabled(true);
+                break;
+            case 1:
+                App.btnCateCriteria.setDisabled(false);
+                App.btnDetailClause.setDisabled(false);
+                break;                
+            default:
+                App.btnCateCriteria.setDisabled(true);
+                App.btnDetailClause.setDisabled(true);
+
+        }
+    };
+    </script>

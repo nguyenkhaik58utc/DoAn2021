@@ -1,0 +1,187 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@{
+    var edit = (int)iDAS.Items.ProfileForm.UpdateProfileCancel;
+    var chose = (int)iDAS.Items.ProfileForm.ChoseProfileCancel;
+}
+@model iDAS.Items.ProfileCancelItem
+@(
+ Html.X().Window()
+    .ID("winLstProfileCancel")
+    .Title("Danh sách hồ sơ hủy")
+    .Icon(Icon.TableColumnAdd)
+    .Width(800)
+    .Height(500)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().HiddenFor(m => m.ID)
+            .ID("IDCancel"),
+        Html.X().GridPanel()
+            .ID("grProfileCancels")
+          .Layout(LayoutType.Fit)
+            .MarginSpec("0 0 0 0")
+            .ColumnLines(true)
+            .Header(false)
+            .Border(false)
+                .TopBar(
+                        Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                            Html.X().Button()
+                                .Text("Chọn hồ sơ")
+                                .Icon(Icon.ApplicationSideList)
+                                .ID("btnChosePro")
+                                    .Handler("showFormChoseProfileCancel(" + chose + ");"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Text("Sửa")
+                                .Disabled(true)
+                                .Icon(Icon.Pencil)
+                                .ID("btnEditCancel")
+                                .Handler("showFormOfProfileCancel(" + edit + ");"),
+                                  Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                .Text("Xóa")
+                                .Disabled(true)
+                                .Icon(Icon.Delete)
+                                .ID("btnDelCancel")
+                                .Handler("deleteCancel();")
+                           )
+                        )
+            .Store(
+                Html.X().Store()
+                    .RemotePaging(true)
+                    .AutoLoad(true)
+                    .ID("stProfileCancels")
+                    .PageSize(20)
+                    .Model(
+                            Html.X().Model().IDProperty("Module")
+                            .Fields(
+                                     Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("ProfileID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("CancelID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Code").Type(ModelFieldType.String),//Ma Ho so
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),//Ten Ho so
+                                    Html.X().ModelField().Name("TotalPage").Type(ModelFieldType.Int),//Thoi gian tiep nhan HS
+                                    Html.X().ModelField().Name("Reason").Type(ModelFieldType.String),//Nguoi luu tru
+                                    Html.X().ModelField().Name("CancelAt").Type(ModelFieldType.Date),//Nguoi luu tru
+                                    Html.X().ModelField().Name("Status").Type(ModelFieldType.String)
+                                )
+                                )
+                                .Proxy(
+                                    Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetDataProfileCancelByCancelID"))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("id", Model.ID.ToString(), ParameterMode.Raw));
+                                }
+                                )
+                )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                    .Text("STT")
+                    .Align(Alignment.Center)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(33),
+                Html.X().Column()
+                    .DataIndex("Code")
+                    .Text("Mã Hồ sơ")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(80)
+                    .Align(Alignment.Center),
+                Html.X().Column()
+                    .DataIndex("Name")
+                    .Text("Tên Hồ sơ")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Flex(1),
+            Html.X().Column()
+                    .Text("Tổng số trang")
+                    .DataIndex("TotalPage")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(90)
+                    .Align(Alignment.Right),
+            Html.X().DateColumnExtend()
+                    .Text("Ngày hủy")
+                    .DataIndex("CancelAt")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Format("dd/MM/yyyy")
+                    .Align(Alignment.Center)
+                    .Width(80),
+                Html.X().Column()
+                    .Text("Lý do hủy")
+                    .DataIndex("Reason")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Flex(1)
+            )
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                        .ShowHeaderCheckbox(false)
+                        .Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Handler = "checkStatus();")
+                            )
+         .BottomBar(Html.X().CustomPagingToolbar())
+        )
+        .Buttons(
+            Html.X().ButtonExit()
+
+        )
+)
+<script type="text/javascript">
+    var showFormOfProfileCancel = function (cmd) {
+        var id = 0; var status = 0;
+        var recordProfileCancel = App.grProfileCancels.selModel.getSelection();
+        if (recordProfileCancel.length > 0) {
+            id = recordProfileCancel[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmProfile", "ProfileCancel", new { Area = "Profile" }, null))',
+                params: { id: id, type: cmd }
+            });
+        }
+    };
+    var deleteCancel = function () {
+        var record = App.grProfileCancels.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa Hồ sơ đã chọn khỏi Danh sách Hồ sơ hủy không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("DeleteProfileCancel", "ProfileCancel", new { Area = "Profile" }, null))',
+                            params: { id: id },
+                            success: function () {
+                            }
+                        });
+                    }
+                }
+            });
+
+        }
+    };
+    var checkStatus = function () {
+        var record = App.grProfileCancels.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnEditCancel.setDisabled(false);
+            App.btnDelCancel.setDisabled(false);
+        } else {
+            App.btnEditCancel.setDisabled(true);
+            App.btnDelCancel.setDisabled(true);
+        }
+    };
+    var showFormChoseProfileCancel = function (cmd) {
+        var id = App.IDCancel.getValue();
+        if (cmd == 2) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmChoseProfileCancel", "ProfileCancel", new { Area = "Profile" }, null))', params: { id: id }
+            });
+        }
+    };
+</script>

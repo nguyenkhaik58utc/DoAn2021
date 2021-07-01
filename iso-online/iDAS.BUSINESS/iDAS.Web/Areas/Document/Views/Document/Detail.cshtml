@@ -1,0 +1,329 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.DocumentItem
+@(Html.X().ApprovalDetailWindow()
+    .ItemsExtend (
+        Html.X().FormPanel()
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Listeners(l => l.BeforeRender.Handler = "checkParentID(" + Model.ParentID + ");")
+            .FieldDefaults(f => { f.LabelWidth = 110; f.ReadOnly = true; })
+            .ID("frAddDocument")
+            .Items(
+              Html.X().HiddenFor(m => m.ParentID),
+                Html.X().TabPanel()
+                    .ID("TabPanel1")
+                    .ActiveTabIndex(0)
+                    .Border(true)
+                    .Items(
+                        Html.X().Panel()
+                            .ID("Tab1")
+                            .Icon(Icon.ApplicationViewDetail)
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .StyleSpec("border: none;")
+                            .Title("Thông tin tài liệu")
+                            .Frame(true)
+                            .Items(
+                                Html.X().TextFieldFor(m => m.DocumentParent)
+                                    .ID("DocParrent").FieldLabel("Tài liệu cũ")
+                                    .TabIndex(1),
+                                Html.X().Container()
+                                        .Layout(LayoutType.Column).MarginSpec("0 0 5 0")
+                                    .Items(
+                                        Html.X().TextFieldFor(m => m.Code)
+                                                    .ID("Code").FieldLabel("Mã tài liệu")
+                                                    .TabIndex(1)
+                                                    .ColumnWidth(0.7),
+                                        Html.X().TextFieldFor(m => m.Version)
+                                                    .ID("txtVersion")
+                                                    .FieldLabel("Phiên bản")
+                                                    .MarginSpec("0 0 0 5")
+                                                    .TabIndex(2)
+                                                    .LabelWidth(80)
+                                                    .ColumnWidth(0.3)
+                                                ),
+                                        Html.X().TextFieldFor(m => m.Name).MarginSpec("0 0 5 0")
+                                        .ID("txtName")
+                                        .FieldLabel("Tên tài liệu")
+                                        .TabIndex(3),
+                                        Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 5 0").Items(
+                                    Html.X().TextFieldFor(m => m.Type)
+                                        .ID("cbType")
+                                        .ColumnWidth(0.5)
+                                        .FieldLabel("Loại tài liệu")
+                                        .TabIndex(6),
+                                      Html.X().ComboBoxFor(m => m.SecurityID)
+                                        .ID("cbSecurity")
+                                        .ColumnWidth(0.5)
+                                        //.LabelWidth(90)
+                                        .MarginSpec("0 0 0 5")
+                                        .FieldLabel("Mức độ bảo mật")
+                                        .EmptyText("Chọn mức độ mật của tài liệu...")
+                                        .AllowBlank(false)
+                                        .BlankText("Mức độ mật bắt buộc chọn!")
+                                        .QueryMode(DataLoadMode.Local)
+                                        .ForceSelection(true)
+                                        .TriggerAction(TriggerAction.All)
+                                        .DisplayField("Name")
+                                        .ValueField("ID")
+                                            .Tpl(
+                                            @<text>
+                                                <tpl for=".">
+                                                    <div class="x-boundlist-item"><div style="text-align: center; width: 100%; background-color: {Color}; border: #cecece 1px solid;">{Name}</div></div>
+                                                </tpl>
+                                            </text>)
+                                .Store(
+                                        Html.X().Store()
+                                            .ID("stDocSecurity")
+                                            .AutoLoad(true).Model(
+                                                Html.X().Model().IDProperty("ID")
+                                                        .Fields(
+                                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                                                new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                                                )
+                                                )
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataCboSecurity")).Reader(Html.X().JsonReader().Root("data")))
+                                        )
+                                    .Listeners(l => l.Change.Handler = "getColor(App.cbSecurity, App.stDocSecurity);")
+                                    ),
+                                    Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 5 0").Items(
+                                            Html.X().TextFieldFor(m => m.Category)
+                                                .FieldLabel("Danh mục tài liệu")
+                                                .ColumnWidth(0.5)
+                                                .ID("cbCategory"),
+                                            Html.X().TextFieldFor(m => m.DepartmentOfCategory)
+                                            .FieldLabel("Thuộc phòng")
+                                                .ReadOnly(true)
+                                                .ID("txtCategoryDept")
+                                                //.LabelWidth(90)
+                                                .ColumnWidth(0.5)
+                                                .MarginSpec("0 0 0 3")
+                                        ),
+                                    Html.X().Container().Layout(LayoutType.Column)
+                                    .Items(
+                                        Html.X().CheckboxGroupFor(m => m.StorageFormID, new List<Checkbox.Config> {
+                                            new Checkbox.Config{BoxLabel = "Bản mềm", InputValue =iDAS.Items.StorageForm.SoftCopy.ToString() , TabIndex=8},
+                                            new Checkbox.Config{BoxLabel = "Bản cứng", InputValue =iDAS.Items.StorageForm.HardCopy.ToString(), TabIndex=9}
+                                                }).FieldLabel("Hình thức lưu trữ")
+                                            .ID("rabgrStore")
+                                            .ColumnWidth(0.5)
+                                            .MarginSpec("0 0 0 0"),
+                                        Html.X().DepartmentFieldFor(m => m.Department).ReadOnly(true)
+                                            .FieldLabel("Phòng/ban lưu trữ")
+                                            .ColumnWidth(0.5)
+                                            .MarginSpec("0 0 0 5")
+                                        ),
+                                Html.X().Container()
+                                        .Layout(LayoutType.Column).MarginSpec("0 0 5 0")
+                                    .Items(
+                                        Html.X().NumberFieldFor(m => m.IssuedTime)
+                                            .ID("IssuedTime")
+                                            .FieldLabel("Lần ban hành")                                            
+                                            .TabIndex(12)
+                                            .ColumnWidth(0.5),
+                                        Html.X().ComboBoxFor(m => m.FolderID).ID("cboDocumentFolder")
+                                            .FieldLabel("Thư mục")
+                                            .EmptyText("Chọn thư mục")
+                                            .BlankText("Bạn phải chọn thư mục")
+                                            .AllowBlank(true).AllowOnlyWhitespace(false)
+                                            .DisplayField("Name")
+                                            .ValueField("ID")
+                                            .Editable(false)
+                                            .ColumnWidth(0.5)
+                                            .MarginSpec("0 0 0 5")
+                                            .Store(
+                                                Html.X().Store()
+                                                    .ID("stDocumentFolderCbb")
+                                                    .AutoLoad(true)
+                                                    .Model(
+                                                    Html.X().Model().IDProperty("ID")
+                                                        .Fields(
+                                                            new ModelField("ID"),
+                                                            new ModelField("Name")
+                                                        )
+                                                )
+                                                .Proxy(Html.X().AjaxProxy()
+                                                         .Url(Url.Action("LoadData", "DocumentFolder", new { area = "Document" }))
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                                )
+                                            )
+                                     ),
+                            
+                                Html.X().DateFieldFor(m => m.EffectiveDate)
+                                    .FieldLabel("Ngày ban hành")
+                                    .MarginSpec("0 0 5 0")
+                                    .TabIndex(13)
+                                    .Format("dd/MM/yyyy")
+                                    ,
+                                 Html.X().FileUploadFieldFor(m => m.AttachmentFile).ReadOnly(true).MarginSpec("0 0 0 0"),
+                                      Html.X().TextAreaFor(m => m.Content).MarginSpec("5 0 5 0")
+                                        .ID("txtDescription")
+                                        .FieldLabel("Nội dung chính")
+                                        .Flex(1),
+                                   Html.X().TextFieldFor(m => m.Note).FieldLabel("Ghi chú").MarginSpec("0 0 5 0"),
+                                   Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 5 0").Items(
+                                Html.X().TextFieldFor(m => m.CreateByName)
+                                    .FieldLabel("Người tạo")
+                                    .ColumnWidth(0.5),
+                                Html.X().DateFieldFor(m => m.CreateAt)
+                                    .FieldLabel("Ngày tạo")
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("0 0 0 5")
+                                    .Format("dd/MM/yyyy")
+                             ),
+                             Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 5 0").Items(
+                                Html.X().TextFieldFor(m => m.UpdateByName)
+                                    .FieldLabel("Người sửa")
+                                    .ColumnWidth(0.5),
+                                Html.X().DateFieldFor(m => m.UpdateAt)
+                                    .FieldLabel("Ngày sửa")
+                                    .ColumnWidth(0.5)
+                                    .MarginSpec("0 0 0 5")
+                                    .Format("dd/MM/yyyy")
+                             ),
+                             Html.X().TextFieldFor(m => m.QuickDownloadLink)
+                                .FieldLabel("Link download nhanh")
+                                .ReadOnly(true),
+                             Html.X().Container()
+                                .Layout(LayoutType.Column)
+                                .MarginSpec("0 0 5 0")
+                                .Items(
+                                    Html.X().CheckboxFor(m => m.QuickDownload)
+                                        .FieldLabel("Download nhanh")
+                                        .BoxLabel("Cho phép")
+                                        .ColumnWidth(0.5),
+                                    Html.X().DateTimeFieldFor(m => m.DayDownloadLimited)
+                                        .FieldLabel("Thời hạn ngừng")
+                                        .LabelWidth(115)
+                                        .ColumnWidth(0.5)
+                                    )
+                          ),
+                    Html.X().Panel()
+                        .ID("fsIssued")
+                        .Icon(Icon.ScriptAdd)
+                        .Border(false)
+                        .StyleSpec("border: none;")
+                        .Frame(true)
+                        .Padding(0)
+                        .Margin(0)
+                        .Title("Thông tin Phân phối - Thu hồi tài liệu")
+                        .Layout(LayoutType.Fit)
+                        .Items(
+                            Html.X().GridPanel()
+                                .ID("grDocumentIssued")
+                                .MarginSpec("0 0 0 0")
+                                .ColumnLines(true)
+                                .Header(false)
+                                .Border(false)
+                                .Store(
+                                    Html.X().Store()
+                                        .RemotePaging(true)
+                                        .AutoLoad(true)
+                                        .ID("stDocumentIssued")
+                                        .PageSize(20)
+                                        .Model(
+                                                Html.X().Model().IDProperty("ID")
+                                                .Fields(
+                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("Department.Name").Type(ModelFieldType.String),//Ten Ho so
+                                                    Html.X().ModelField().Name("Number").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("NumberObsolete").Type(ModelFieldType.Int),
+                                                    Html.X().ModelField().Name("DistributionDate").Type(ModelFieldType.Date),
+                                                    Html.X().ModelField().Name("ObsoleteDate").Type(ModelFieldType.Date),
+                                                    Html.X().ModelField().Name("IssueForm").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("ObsoleteForm").Type(ModelFieldType.String)
+                                                    )
+                                                    )
+                                                    .Proxy(
+                                                        Html.X().AjaxProxy()
+                                                            .Url(Url.Action("LoadDocumentIssued"))
+                                                            .Reader(Html.X().JsonReader().Root("data"))
+                                                    ).Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("docID", Model.ID.ToString(), ParameterMode.Raw));
+                                                    }
+                                                    )
+                                            )
+                                .ColumnModel(
+                                    Html.X().RowNumbererColumn()
+                                        .Text("STT")
+                                        .Align(Alignment.Center)
+                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                        .Width(33),
+                                    Html.X().Column()
+                                        .DataIndex("Department.Name")
+                                        .Text("Phòng ban")
+                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                        .Flex(1),
+                                    Html.X().ComponentColumn().Text("Số lượng").Columns(
+                                        Html.X().Column()
+                                            .DataIndex("Number")
+                                            .Text("Phân phối")
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Align(Alignment.Right)
+                                            .Width(80),
+                                        Html.X().Column()
+                                            .DataIndex("NumberObsolete")
+                                            .Text("Thu hồi")
+                                            .Align(Alignment.Right)
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Width(80)
+                                          ),
+                                    Html.X().ComponentColumn().Text("Thời gian").Columns(
+                                        Html.X().DateColumnExtend()
+                                            .DataIndex("DistributionDate")
+                                            .Text("Phân phối")
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Align(Alignment.Center)
+                                            .Format("dd/MM/yyyy")
+                                            .Width(100),
+                                        Html.X().DateColumnExtend()
+                                            .DataIndex("ObsoleteDate")
+                                            .Text("Thu hồi")
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Align(Alignment.Center)
+                                            .Format("dd/MM/yyyy")
+                                            .Width(100)
+                                            ),
+                                    Html.X().ComponentColumn().Text("Hình thức").Columns(
+                                        Html.X().Column()
+                                            .DataIndex("IssueForm")
+                                            .Text("Phân phối")
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Width(90),
+                                        Html.X().Column()
+                                            .DataIndex("ObsoleteForm")
+                                            .Text("Thu hồi")
+                                            .StyleSpec("font-weight: bold; text-align: center;")
+                                            .Width(90)
+                                            )
+                                    )
+                                    .SelectionModel(
+                                        Html.X().CheckboxSelectionModel()
+                                            .ShowHeaderCheckbox(false)
+                                                    .Mode(SelectionMode.Single)
+                                                )
+                                    .BottomBar(Html.X().CustomPagingToolbar())
+                          )
+                     )
+                )
+        )
+            .Title("Xem chi tiết thông tin tài liệu")
+                     .Header(true)
+                     .Icon(Icon.Zoom)
+)
+<script type="text/javascript">
+    var checkParentID = function (id) {
+        if (id > 0) {
+            App.DocParrent.show(true);
+
+        } else
+            App.DocParrent.hide(true);
+    };
+</script>

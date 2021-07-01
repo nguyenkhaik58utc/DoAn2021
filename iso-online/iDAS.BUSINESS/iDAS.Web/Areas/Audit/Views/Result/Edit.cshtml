@@ -1,0 +1,143 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.AuditResultItem
+@{
+    var auditId = ViewData["auditId"] != null ? ViewData["auditId"].ToString() : "0";
+    var criteriaId = ViewData["criteriaId"] != null ? ViewData["criteriaId"].ToString() : "0";
+     var criteriaName = ViewData["criteriaName"] != null ? ViewData["criteriaName"].ToString() : string.Empty;
+      var criteriaNote = ViewData["criteriaNote"] != null ? ViewData["criteriaNote"].ToString() : string.Empty;
+    int min = (int)ViewData["min"];
+    int max = (int)ViewData["max"];
+}
+@(Html.X().Window()
+          .ID("winEditResultAAAAAAAAAAAAAAA")
+          .Title("Chấm điểm theo tiêu chí đánh giá")
+          .Icon(Icon.Pencil)
+          .Width(650)       
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+            Html.X().FormPanel()
+                    .ID("frResultPoint")
+                    .Layout(LayoutType.Form)
+                    .Frame(true)
+                    .StyleSpec("border: none;")
+                    .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+            .Items(
+            Html.X().HiddenFor(m => m.ID),
+                Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 0 0").Items(
+             Html.X().ComboBoxFor(m => m.QualityCAPARequirementID)
+             .Hidden(!Model.IsHasCAPARequirement)
+                            .ID("cbQualityCAPARequirementID")
+                                .MarginSpec("0 5 0 0")
+                                         .LabelWidth(120)
+                            .FieldLabel("Phiếu khắc phục")
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .AllowBlank(true)
+                            .Editable(false)
+                            .ColumnWidth(0.7)
+                            .Store(
+                                Html.X().Store()
+                                    .ID("stQualityCAPARequirement")
+                                    .AutoLoad(true)
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("qualityCriteriaID", Model.QualityCriteriaID.ToString(), ParameterMode.Value));
+                                            })
+                                    .Model(
+                                        Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                            )
+                                    )
+                                    .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("LoadCAPARequireNotCorrective", "CAPARequire", new { area = "Quality" }))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                            ),
+                    Html.X().CheckboxFor(m => m.IsCorrertive)
+                                        .ID("chbFinish")
+                                            .ColumnWidth(0.3)
+                                            .TabIndex(4).Hidden(!Model.IsHasCAPARequirement)
+                                        .LabelAlign(LabelAlign.Right)
+                                        .HideLabel(true)
+                                        .BoxLabel("(Đánh giá lại của phiếu khắc phục)")
+                            ),
+                                Html.X().TextField().Value(criteriaName).FieldLabel("Tên tiêu chí").LabelWidth(120).ReadOnly(true),
+                                     Html.X().TextArea().Value(criteriaNote).FieldLabel("Diễn giải").LabelWidth(120).ReadOnly(true),
+                Html.X().ComboBoxFor(m => m.Point)
+                .ID("cbPoint")
+                .FieldLabel("Điểm" + Html.Required())
+                             .AllowBlank(false)
+                             .AllowOnlyWhitespace(false)
+                             .BlankText("Điểm không được trống")
+                             .Editable(false)
+                             .LabelWidth(120)
+                    .DisplayField("Point")
+                .ValueField("ID")
+                .Store(
+                Html.X().Store()
+                    .ID("StorePoint")
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("min", min.ToString(), ParameterMode.Value));
+                                ps.Add(new StoreParameter("max", max.ToString(), ParameterMode.Value));
+                            })
+                    .AutoLoad(true)
+                         .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("LoadPoint", "Result", new { area = "Audit" }))
+                            .Reader(Html.X().JsonReader().Root("data")
+                            )
+                            )
+                    .Model(Html.X().Model()
+                        .Fields(
+                            new ModelField("Point"),
+                            new ModelField("ID")
+                        )
+                    )
+                ),
+
+                         Html.X().ComboBoxFor(m => m.IsPass)
+                         .ID("txResultCriteria")
+                             .FieldLabel("Kết quả" + Html.Required())
+                             .Editable(false).LabelWidth(120)
+                             .AllowBlank(false)
+                             .AllowOnlyWhitespace(false)
+                             .BlankText("Điểm không được trống")
+                             .Items(
+                             new ListItem("Đạt", true),
+                             new ListItem("Không đạt", false)
+                             ),
+                         Html.X().TextAreaFor(m => m.AuditNote)
+                             .ID("txtNoteCriteria")
+                             .FieldLabel("Nhận xét")
+                             .Height(150)
+                             .LabelWidth(120)
+                         )
+                 )
+            .Buttons(
+            Html.X().ButtonSave()
+                .ID("btnSavePointResultAuditTask")
+                .DirectEvents(de =>
+                {
+                    de.Click.Before = @"if (!App.frResultPoint.getForm().isValid()) { return false; } ";
+                    de.Click.ExtraParams.Add(new { AuditID = auditId });
+                    de.Click.ExtraParams.Add(new { QualityCriteriaID = criteriaId });
+                    de.Click.Action = "Update";
+                    de.Click.FormID = "frResultPoint";
+                    de.Click.Success = "this.up('window').close(); refreshDataResult(null);";
+                }),
+            Html.X().ButtonExit()
+            )
+)
+<script type="text/javascript">
+    var refreshDataResult = function () {
+        var node = GridResult.getStore().reload();
+    };
+</script>

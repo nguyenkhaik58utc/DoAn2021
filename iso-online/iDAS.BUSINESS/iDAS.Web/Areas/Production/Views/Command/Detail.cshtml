@@ -1,0 +1,87 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ProductionCommandItem
+@(Html.X().CustomWindow()
+    .Title("Chi tiết lệnh sản xuất")
+    .Icon(Icon.Zoom)
+    .Items(
+            Html.X().CustomFormPanel()
+                .Items(
+                       Html.X().TextFieldFor(m => m.HumanDepartment.Name).FieldLabel("Phòng ban").ReadOnly(true),
+                       Html.X().ComboBoxFor(m => m.ProductionRequirementID).ID("ProductionRequirementID").FieldLabel("Yêu cầu").AllowBlank(false).ReadOnly(true)
+                                .Listeners(ls => ls.Change.Handler = "App.StoreProductionPlan.reload(); App.StoreProductionStage.reload();")
+                                .Store(
+                                        Html.X().Store().ID("StoreProductionRequirement")
+                                                .AutoLoad(true)
+                                                .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("LoadCombobox", "Required"))
+                                                            .ActionMethods(am => am.Read = HttpMethod.POST)
+                                                            .Reader(Html.X().JsonReader().Root("data")))
+                                                .Model(Html.X().Model()
+                                                            .IDProperty("ID")
+                                                            .Fields(
+                                                                    new ModelField("ID", ModelFieldType.Int),
+                                                                    new ModelField("ProductID", ModelFieldType.Int) { Mapping = "Product.ID" },
+                                                                    new ModelField("Name", ModelFieldType.String))
+                                                                    )
+                                )
+                                .DisplayField("Name")
+                                .ValueField("ID"),
+                        Html.X().ComboBoxFor(m => m.ProductionPlanID).FieldLabel("Kế hoạch").ReadOnly(true)
+                                        .Store(
+                                            Html.X().Store().ID("StoreProductionPlan")
+                                                    .AutoLoad(false)
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlanForCommand", "Plan")).ActionMethods(am => am.Read = HttpMethod.POST)
+                                                                                    .Reader(Html.X().JsonReader().Root("data")))
+                                                                .Parameters(ps =>
+                                                                                {
+                                                                                    ps.Add(new StoreParameter("requirementId", "App.ProductionRequirementID.value", ParameterMode.Raw));
+                                                                                })
+                                                    .Model(Html.X().Model()
+                                                                .IDProperty("ID")
+                                                                .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                            new ModelField("PlanName")
+                                                                        ))
+                                            )
+                                            .DisplayField("PlanName")
+                                            .ValueField("ID"),
+                            Html.X().ComboBoxFor(m => m.ProductionStageID).FieldLabel("Công đoạn").AllowBlank(false).ReadOnly(true)
+                                        .Store(
+                                                Html.X().Store().ID("StoreProductionStage")
+                                                        .AutoLoad(false)
+                                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadByProduct", "Stage")).ActionMethods(am => am.Read = HttpMethod.POST)
+                                                                                        .Reader(Html.X().JsonReader().Root("data")))
+                                                                    .Parameters(ps =>
+                                                                                    {
+                                                                                        ps.Add(new StoreParameter("productId", "getProductId()", ParameterMode.Raw));
+                                                                                    })
+                                                        .Model(Html.X().Model()
+                                                                    .IDProperty("ID")
+                                                                    .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                                new ModelField("Name")
+                                                                            ))
+                                            )
+                                            .DisplayField("Name")
+                                            .ValueField("ID"),
+                            Html.X().Container().Layout(LayoutType.Column).Height(24)
+                                .Items(
+                                        Html.X().TextFieldFor(m => m.Code).ReadOnly(true).InputWidth(100).AllowBlank(false).ColumnWidth(0.5).FieldLabel("Mã lệnh"),
+                                        Html.X().TextFieldFor(m => m.BatchCode).ReadOnly(true).FieldLabel("Mã lô").InputWidth(100).LabelWidth(60).ColumnWidth(0.5).MarginSpec("0 0 0 10")
+                                ),
+                            Html.X().DateTimeFieldFor(m => m.StartTime).ReadOnly(true).FieldLabel("Thời gian bắt đầu").Height(24),
+                            Html.X().DateTimeFieldFor(m => m.EndTime).ReadOnly(true).FieldLabel("Thời gian kết thúc").Height(24),
+                            Html.X().TextFieldFor(m => m.Quantity).ReadOnly(true).FieldLabel("Số lượng"),
+                            Html.X().TextAreaFor(m => m.Note).ReadOnly(true).FieldLabel("Ghi chú").MinHeight(100).Flex(1)
+                    )
+)
+.Buttons( Html.X().ButtonExit())
+)
+<script type="text/javascript">
+    var getProductId = function () {
+        var select = App.StoreProductionRequirement.getById(App.ProductionRequirementID.value);
+        if (select)
+            return select.data.ProductID;
+        else return 0;
+    };
+</script>

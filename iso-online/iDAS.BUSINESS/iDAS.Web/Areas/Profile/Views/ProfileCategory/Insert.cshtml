@@ -1,0 +1,79 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCategoryItem
+@(Html.X().Window()
+    .ID("winNewCate")
+    .Title("Thêm mới danh mục hồ sơ")
+    .Icon(Icon.Add)
+    .Width(500)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+            .ID("frmNewCate")
+            .Items(
+                Html.X().TextFieldFor(m => m.Name)
+                    .FieldLabel("Tên danh mục" + Html.Required())
+                    .AllowBlank(false).BlankText("Tên danh mục bắt buộc nhập!")
+                    .AllowOnlyWhitespace(false)
+                    .TabIndex(1)
+                    .MaxLength(200).MaxLengthText("Tên danh mục hồ sơ không được quá 200 ký tự!"),
+               Html.X().DepartmentFieldFor(m => m.Department).FieldLabel("Phòng ban" + Html.Required()).Multiple(false).AllowBlank(false).Height(25),
+                Html.X().TextAreaFor(m => m.Note)
+                    .ID("txtContent")
+                    .FieldLabel("Ghi chú")
+                    .Height(100)
+                    .TabIndex(3)
+                    .MaxLength(1000)
+                        )
+        )
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(4)
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewCate";
+                    de.Click.Url = Url.Action("InsertCate");
+                    de.Click.Before = @"if (!#{frmNewCate}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                }),
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var showDepartment = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowDepartment", "Request", new { Area = "Document" }, null))'
+        });
+    };
+    var fillDepartent = function (id) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            App.cbDepartment.setValue(parseInt(id));
+            App.winChoiceDepartment.close();
+        }
+
+    };
+</script>

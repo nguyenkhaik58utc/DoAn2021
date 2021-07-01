@@ -1,0 +1,118 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var SatrusCombobox = new List<ListItem>();
+    SatrusCombobox.Add(new ListItem() { Text = "Tất cả", Value = "-1" });
+    SatrusCombobox.Add(new ListItem() { Text = "Chờ giải trình", Value = "1" });
+    SatrusCombobox.Add(new ListItem() { Text = "Đã giải trình, Chờ xét duyệt", Value = "2" });
+    SatrusCombobox.Add(new ListItem() { Text = "Đã duyệt", Value = "3" });
+    SatrusCombobox.Add(new ListItem() { Text = "Từ chối", Value = "4" });
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items( 
+
+                    Html.X().GridPanel()
+                    .Header(false)
+               .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .ID("gnExplanation")
+                     .TopBar(
+                  Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                            Html.X().DateField().Type(DatePickerType.Month).Width(120).ID("MonthPickerTimeKeeping")
+                            .Format("MM/yyyy").EmptyText("Chọn tháng").Value(DateTime.Now).FieldLabel("Tháng").LabelWidth(40)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "App.stMnExplanation.reload();";
+                            }),
+                            Html.X().ComboBox().ID("ccbStatusTimeKeeping_Explanation")
+                            .FieldLabel("Trạng thái").LabelWidth(60).Width(230)
+                            .Items(SatrusCombobox).EmptyText("Chọn trạng thái")
+                            .Listeners(ls => ls.Select.Handler = "App.stMnExplanation.reload();")
+                            .SelectedItems(new ListItem("Tất cả", "-1")).Editable(false).Margins("0 0 0 5"),
+                            Html.X().Button().ID("btnDeleteExplanation")
+                            .Text("Xóa")
+                            .Icon(Icon.Delete)
+                            .Disabled(true)
+                            .DirectEvents(de =>
+                            {
+                                de.Click.Method = HttpMethod.POST;
+                                de.Click.Confirmation.ConfirmRequest = true;
+                                de.Click.Confirmation.Message = "Bạn có chắc chắn muốn xóa dữ liệu này không?";
+                                de.Click.Confirmation.Title = "Xác nhận";
+                                de.Click.ExtraParams.Add(new { id = new JRawValue("this.up('grid').selModel.getSelection()[0].data.Id") });
+                                de.Click.Confirmation.BeforeConfirm = "Ext.Msg.buttonText.yes='Đồng ý'; Ext.Msg.buttonText.no='Không';";
+                                de.Click.Url = Html.X().XController().UrlHelper.Action("Delete");
+                                de.Click.Success = "App.stMnExplanation.reload();";
+                            })
+                    ))
+                    .Store(Html.X().Store()
+                    .Parameters(pr =>
+                    {
+                        pr.Add(new StoreParameter("Status", "App.ccbStatusTimeKeeping_Explanation.getValue()", ParameterMode.Raw));
+                        pr.Add(new StoreParameter("curMonth", "App.MonthPickerTimeKeeping.rawValue", ParameterMode.Raw));
+                    })
+                    .AutoLoad(true)
+                    .ID("stMnExplanation")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataExplanation"))
+                    .Reader(Html.X().JsonReader().Root("data")))
+                    .PageSize(25)
+                    .Model(Html.X().Model()
+                    .Fields(
+                            new ModelField("Id"),
+                            new ModelField("Name"),
+                            new ModelField("DateCheck"),
+                            new ModelField("DateOfWeek"),
+                            new ModelField("TimeIn1"),
+                            new ModelField("TimeOut1"),
+                            new ModelField("Reason"),
+                            new ModelField("ReasonExplanation"),
+                            new ModelField("ApproveName"),
+                            new ModelField("StatusText")
+                            )
+                        )
+                    )
+                    .EmptyText("Không có dữ liệu")
+                    .ColumnModel(
+                        Html.X().RowNumbererColumnFormat(),
+                        Html.X().Column().Text("Họ tên").DataIndex("Name").Width(150).Align(Alignment.Left),
+                        Html.X().DateColumn().Text("Ngày chấm công").DataIndex("DateCheck").Format("dd/MM/yyyy").Width(120).Align(Alignment.Center),
+                        Html.X().Column().Text("Ngày trong tuần").DataIndex("DateOfWeek").Width(120).Align(Alignment.Center),
+                        Html.X().Column().Text("Giờ chấm công").Columns(
+                            Html.X().Column().Text("Giờ vào").DataIndex("TimeIn1").Width(70).Align(Alignment.Center),
+                            Html.X().Column().Text("Giờ ra").DataIndex("TimeOut1").Width(70).Align(Alignment.Center)
+                        ),
+                        Html.X().Column().Text("Vi phạm").DataIndex("Reason").Width(250),
+                        Html.X().Column().Text("Trạng thái").DataIndex("StatusText").Width(180),
+                        Html.X().Column().Text("Người duyệt").DataIndex("ApproveName").Width(150),
+                        Html.X().Column().Text("Lý do giải trình").DataIndex("ReasonExplanation").Flex(1)
+                    )
+                    .View(
+                        Html.X().GridView().MarkDirty(false)
+                    )
+                    .SelectionModel(
+
+                         Html.X().RowSelectionModel()
+                    .Mode(SelectionMode.Single)
+                    .Listeners(ls => ls.SelectionChange.Handler = "SelectionChange();")
+                    )
+                )
+            // .BottomBar(Html.X().PagingToolbarFormat()
+            )
+<script>
+    var SelectionChange = function () {
+        var records = App.gnExplanation.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDeleteExplanation.setDisabled(false);
+        } else {
+            App.btnDeleteExplanation.setDisabled(true);
+        }
+    };
+    </script>

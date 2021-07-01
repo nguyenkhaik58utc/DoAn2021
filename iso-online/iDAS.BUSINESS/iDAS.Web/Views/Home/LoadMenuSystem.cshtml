@@ -1,0 +1,121 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model IEnumerable<iDAS.Items.BusinessMenuModuleItem>
+@{
+    Layout = null;
+}
+<script>
+    var expandMenu = function (panel) {
+        var store = panel.getStore();
+        if (store.getRootNode().childNodes.length <= 0) {
+            panel.body.mask('Đang tải dữ liệu...', 'x-mask-loading');
+            App.ModuleExpand.value = true;
+            store.reload();
+        };
+    };
+    var UnpinMenu = function () {
+        App.MenuPanel.show();
+        App.PinMenu.hide();
+    };
+    var PinItemMenu = function (treepanel) {
+        App.PinMenu.show();
+        App.MenuPanel.hide();
+        App.ModuleCodeValue.setValue(treepanel.id);
+        App.ModuleExpand.setValue(true);
+        App.treePinMenu.setTitle(treepanel.title);
+        App.treePinMenu.store.reload();
+    };
+</script>
+@(Html.X().Hidden().ID("ModuleExpand").Value(false))
+@(Html.X().Hidden().ID("ModuleCodeValue"))
+
+@(Html.X().MenuPanel()
+    .ID("MenuPanel")
+    .Header(false)
+    .Border(false)
+    .Padding(0)
+    .BodyPadding(0)
+    .Listeners(ls => ls.BoxReady.Handler = "App.MenuPanel.menu.clearListeners()")
+    .Menu(menu =>
+    {
+        menu.Add(
+            Html.X().Panel()
+            .ID("SubMenu")
+            .Layout(LayoutType.Accordion)
+            .LayoutConfig(new AccordionLayoutConfig { HideCollapseTool = true })
+            .Header(false)
+            .Margin(0)
+            .Items(i =>
+            {
+                i.Add(Html.X().TreePanel().ID("MenuEmpty").Hidden(true));
+                foreach (var module in Model)
+                {
+                    var id = module.Code;
+                    var panel = "App." + id;
+                    var tree = Html.X().TreePanel()
+                                .ID(id)
+                                .Title("<strong>" + module.Name.ToUpper() + "</strong>")
+                                .OverlapHeader(true)
+                                .FrameHeader(true)
+                                .Icon(iDAS.Utilities.Ultility.ConvertToIcon(module.Icon))
+                                .Border(false)
+                                .AutoScroll(true)
+                                .RootVisible(false)
+                                .SingleExpand(true)
+                                .Collapsed(true)
+                                .Height(350)
+                                .Tools(Html.X().Tool().ID(id + "tool").Type(ToolType.Pin).Handler("PinItemMenu(this.up().up());"))
+                                .Listeners(ls =>
+                                {
+                                    ls.ItemClick.Handler = "if (record.data.hrefTarget) {e.stopEvent(); addTab(App.ContentMain, record);}";
+                                    ls.Expand.Handler = "expandMenu(" + panel + ")";
+                                })
+                                .Store(
+                                    Html.X().TreeStore()
+                                        .AutoLoad(false)
+                                        .Listeners(ls => ls.BeforeLoad.Handler = "return App.ModuleExpand.value;")
+                                        .Listeners(ls => ls.Load.Fn = "function(node, records, success){if (success) " + panel + ".body.unmask()}")
+                                        .Proxy(
+                                            Html.X().AjaxProxy().Url(Url.Action("LoadMenu"))
+                                                .ExtraParams(item =>
+                                                {
+                                                    item.Add(Html.X().Parameter().Name("moduleCode").Value(module.Code).Mode(ParameterMode.Value));
+                                                })
+                                        )
+                                );
+                    i.Add(tree);
+                }
+            })
+        );
+        menu.ShowSeparator = false;
+    })
+)
+@(Html.X().Panel()
+    .Hidden(true)
+    .ID("PinMenu")
+    .Header(false)
+    .AutoScroll(true)
+    .Border(false)
+    .Layout(LayoutType.Accordion)
+    .LayoutConfig(new AccordionLayoutConfig { HideCollapseTool = true, Fill = false })
+    .Items(
+        Html.X().TreePanel().ID("treePinMenu")
+            .Tools(Html.X().Tool().ID("ToolUnpin").Type(ToolType.Unpin).Handler("UnpinMenu();"))
+            .Border(false)
+            .AutoScroll(true)
+            .RootVisible(false)
+            .Width(245)
+            .Padding(0)
+            .Listeners(ls => ls.ItemClick.Handler = "if (record.data.hrefTarget) {e.stopEvent();addTab(App.ContentMain, record);}")
+            .Store(
+                Html.X().TreeStore()
+                    .AutoLoad(false)
+                    .Listeners(ls => ls.BeforeLoad.Handler = "return App.ModuleExpand.value;")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMenu")))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("moduleCode", "App.ModuleCodeValue.getValue()", ParameterMode.Raw));
+                    })
+            )
+    )
+)

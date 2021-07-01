@@ -1,0 +1,231 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@model iDAS.Items.TrainingItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+@(Html.X().Viewport()
+    .Layout(LayoutType.Fit)
+    .Items(
+         Html.X().Menu()
+            .ID("cmMenu")
+            .Items(
+                new MenuItem { Text = "Xem chi tiết", ID = "cmViewDetail", Icon = Icon.Zoom, Handler = "showFormDetail();" },
+                Html.X().MenuSeparator(),
+                new MenuItem { Text = "Thêm mới", ID = "cmInsert", Icon = Icon.Add, Handler = "ShowFrmInsert();" },
+                new MenuItem { Text = "Sửa", ID = "cmUpdate", Icon = Icon.Pencil, Handler = "showFormUpdate();" },
+                new MenuItem { Text = "Xóa", ID = "cmDelete", Icon = Icon.Delete, Handler = "deleteRecord();" }
+                ),
+         Html.X().GridPanel()
+            .Header(true)
+            .ID("grTraining")
+            .ColumnLines(true)
+            .Border(false)
+            .ForceFit(true)
+            .TopBar(
+                Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                        Html.X().Button()
+                                .Text("Thêm mới")
+                                .Icon(Icon.Add)
+                                .ID("btnInsert")
+                                            .Handler("ShowFrmInsert();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .Text("Sửa")
+                                .Icon(Icon.Pencil)
+                                .ID("btnEdit").Disabled(true)
+                                    .Handler("showFormUpdate();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .Text("Xóa")
+                                .Icon(Icon.Delete).Disabled(true)
+                                .ID("btnDelete")
+                                .Handler("deleteRecord();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .Text("Xem chi tiết")
+                                .Icon(Icon.Zoom).Disabled(true)
+                                .ID("btnDetail")
+                                .Handler("showFormDetail();")
+                        
+                    )
+            )
+            .Store(
+                Html.X().StoreForModel()
+                        .ID("stTraining")
+                        .PageSize(10)
+                        .RemotePaging(true)
+                        .AutoLoad(true)
+                         .Proxy(
+                            Html.X().AjaxProxy()
+
+                                        .Url(Url.Action("LoadData"))
+                                .Reader(
+                                Html.X().JsonReader().Root("data")
+                                    ).IDParam("ID")
+                            )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .Width(33)
+                        .Align(Alignment.Center)
+                        .StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column()
+                        .DataIndex(Model, m => m.ID)
+                        .Text("ID")
+                        .Hidden(true),
+                Html.X().Column()
+                        .DataIndex(Model, m => m.Name)
+                        .Text("Tên khóa đào tạo")
+                        .Flex(1)
+                        .StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column()
+                        .DataIndex(Model, m => m.Order)
+                        .Text("Thứ tự hiện thị trên web")
+                        .Align(Alignment.Right)
+                        .Width(150)
+                        .StyleSpec("font-weight: bold; text-align: center;"),
+               Html.X().CheckColumn()
+                       .DataIndex(Model, m => m.IsShow)
+                       .Text("Hiển thị")
+                       .Width(100)
+                       .Align(Alignment.Center)
+                       .StyleSpec("font-weight: bold; text-align: center;")
+            ).Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+            .View(Html.X().GridView().TrackOver(false))
+            .BottomBar(
+                Html.X().PagingToolbar()
+                        .EmptyMsg("Hiện không có dữ liệu")
+                        .NextText("Trang kế tiếp")
+                        .PrevText("Trang trước")
+                        .LastText("Trang cuối cùng")
+                        .FirstText("Trang đầu tiên")
+                        .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                        .BeforePageText("Trang")
+                        .AfterPageText("của {0}")
+                        .RefreshText("Tải lại Dữ liệu")
+                        .Items(
+                                Html.X().Label("Số bản ghi trên 1 trang"),
+                                Html.X().ToolbarSpacer(10),
+                                Html.X().ComboBox()
+                                    .Width(50)
+                                    .Items("10", "20", "30", "50", "100")
+                                    .SelectedItems("10")
+                                   .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                            )
+                    .Plugins(Html.X().ProgressBarPager())
+                 )
+                 .SelectionModel(
+                        Html.X().CheckboxSelectionModel()
+                        .Mode(SelectionMode.Single)
+                        .Listeners(
+                        ls => ls.SelectionChange.Handler = "checkStatus(); "
+                        )
+                )
+
+
+
+    )
+)
+<script type="text/javascript">
+    var ShowFrmInsert = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("FrmInsert", "Training", new { Area = "Web" }, null))'
+        });
+    };
+    var deleteRecord = function () {
+        var records = App.grTraining.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận',
+                msg: 'Bạn có chắc chắn muốn xóa Training đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Help',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "Training", new { Area = "Web" }, null))', params: { ID: id },
+                            success: function (result) {
+                                if (result == 'Error') {
+                                    Ext.MessageBox.show({
+                                        title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa Dữ liệu phát sinh lỗi. Đề nghị liên hệ với Admin!',
+                                        buttons: { yes: 'Đồng ý' },
+                                        iconCls: '#Cancel',
+                                        fn: function (btn) {
+                                            records[0].reject();
+                                            return false;
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn chưa chọn bản ghi cần xóa!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclution',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+
+    };
+   
+    
+    var checkStatus = function () {
+        var records = App.grTraining.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnDetail.setDisabled(false);
+            App.btnEdit.setDisabled(false);
+            App.btnDelete.setDisabled(false);
+        } else {
+            App.btnDetail.setDisabled(true);
+        }
+    };
+    var showFormUpdate = function () {
+        var records = App.grTraining.selModel.getSelection();
+        if (records.length <= 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn phải chọn một bản ghi!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation'
+            });
+        }
+        else {
+            var trainingId = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("FrmUpdate", "Training", new { Area = "Web" }, null))',
+                params: { id: trainingId }
+            });
+        }
+    };
+    var showFormDetail = function () {
+        var records = App.grTraining.selModel.getSelection();
+        if (records.length <= 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Bạn phải chọn một bản ghi!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation'
+            });
+        }
+        else {
+            var trainingId = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("Detail", "Training", new { Area = "Web" }, null))',
+                params: { id: trainingId }
+            });
+        }
+    };
+</script>
+

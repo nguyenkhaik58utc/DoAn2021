@@ -1,0 +1,779 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Utilities;
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.StockInwardItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/Content/FieldSet.css" rel="stylesheet" />
+<script type="text/javascript" src="@Url.Content("~/Areas/Stock/Content/js/jsCommon.js")"></script>
+<style>
+    .search-item {
+        font: normal 11px tahoma, arial, helvetica, sans-serif;
+        padding: 3px 10px 3px 10px;
+        border: 1px solid #fff;
+        border-bottom: 1px solid #eeeeee;
+        white-space: normal;
+        color: #555;
+    }
+
+        .search-item h3 {
+            -moz-font-feature-settings: inherit;
+            -moz-font-language-override: inherit;
+            color: #222;
+            display: block;
+            font-family: Cambria,Times New Roman,Tahoma;
+            font-size: 1.1em;
+            font-size-adjust: inherit;
+            font-stretch: inherit;
+            font-style: inherit;
+            font-variant: inherit;
+            font-weight: bold;
+            line-height: inherit;
+            margin: 0;
+        }
+
+    .x-grid-body .x-grid-cell-Cost {
+        background-color: #f1f2f4;
+    }
+
+    .x-grid-row-summary .x-grid-cell-Cost .x-grid-cell-inner {
+        background-color: #e1e2e4;
+    }
+
+    .task .x-grid-cell-inner {
+        padding-left: 15px;
+    }
+
+    .x-grid-row-summary .x-grid-cell-inner {
+        font-weight: bold;
+        font-size: 11px;
+        background-color: #f1f2f4;
+    }
+</style>
+<script type="text/javascript">
+    var template = '<span title="Click để nhập số lượng nhập" style="color:{0};">{1}</span>';
+    var change = function (value, p, record) {
+        var rs = value.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, "$1,");
+        return Ext.String.format(template, (value > 0) ? "green" : "red", rs);
+    };
+    var getValuetxtFAmount = function () {
+        return App.txtFAmount.getValue();
+    };
+    var getValuetxtDiscount = function () {
+        return App.txtDiscount.getValue();
+    };
+    var getValuetxtAmount = function () {
+        return App.txtAmount.getValue();
+    };
+    var deleteProductRecord = function () {
+        var records = App.gpProductChoise.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnDeleteProduct.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Help',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("DeleteProductInStorage", "InwardStart", new { Area = "Stock" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var RenderAmountVND = function (value, p, record) {
+        var value1 = record.get('Quantity') * record.get('UnitPrice')
+        if (value1 == null)
+            return "";
+        return value1.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, "$1,") + " VNĐ";
+    };
+    var ConvertToVND = function (value) {
+        return value.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, "$1,") + " VNĐ";
+    };
+    var totalCost = function (records) {
+        var i = 0,
+            length = records.length,
+            total = 0,
+            record;
+        for (; i < length; ++i) {
+            record = records[i];
+            total += record.get('Quantity') * record.get('UnitPrice');
+        }
+        if (App.txtDiscount.getValue() == 0) {
+            App.txtFAmount.setValue(total);
+            App.txtAmount.setValue(total);
+        }
+        else {
+            App.txtFAmount.setValue(total - (total * App.txtDiscount.getValue() / 100));
+            App.txtAmount.setValue(total);
+        }
+        return total;
+    };
+    var totalCostPaint = function () {
+        var records = App.stProductChoice.getCount();
+        var total = 0;
+        if (records >= 1) {
+            for (var ii = 0; ii < records; ii++) {
+                var rec = App.gpProductChoise.getStore().getAt(ii);
+                total += rec.get('Quantity') * rec.get('UnitPrice');
+            }
+        }
+        App.txtAmount.setValue(total);
+        var stamp = total - (total * App.txtDiscount.getValue() / 100);
+        App.txtFAmount.setValue(stamp);
+    };
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var checkStatus = function () {
+        var records = App.gpProductChoise.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnDeleteProduct.setDisabled(true);
+                break;
+            case 1:
+                App.btnDeleteProduct.setDisabled(false);
+                break;
+            default:
+                App.btnDeleteProduct.setDisabled(false);
+                break;
+        }
+    };
+    var showFormEdit = function () {
+        var records = App.gpProductChoice.selModel.getSelection();
+        var id = records[0].get('ID');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowWdEditProduct", "Product", new { Area = "Stock" }, null))',
+            params: { id: id }
+        });
+    };
+    var deleteRecord = function () {
+        var records = App.gpProductChoice.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnEdit.setDisabled(true);
+                        App.btnDelete.setDisabled(true);
+                        App.cmEdit.setDisabled(true);
+                        App.cmDelete.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "Product", new { Area = "Stock" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var getRecord = function () {
+        var id = App.cbProvider.getValue();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("GetRecordSupplier", "Stock_Inward", new { Area = "Stock" }, null))',
+            params: { id: id },
+            success: function (result) {
+                App.txtAddress.setValue(result.Address.trim());
+                App.txtSupplierID.setValue(result.Code.trim());
+                App.txtMobi.setValue(result.Phone.trim());
+                App.hdfCustomerName.setValue(result.Name.trim());
+            }
+        });
+    };
+
+    var insertProductsToStempInward = function () {
+        var records = App.gpProducts.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có vật tư hàng hóa nào được chọn!',
+                    iconCls: '#Exclamation',
+                    buttons: { yes: 'Đồng ý' }
+                });
+                break;
+            default:
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("GetProducts", "Stock_Inward", new { Area = "Stock" }, null))',
+                    params: { stringId: strId }
+                });
+                break;
+        }
+    };
+    var insertProductsToStempInwardStart = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Chờ trong giây lát ...." });
+        var records = App.gpProducts.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có vật tư hàng hóa nào được chọn!',
+                    iconCls: '#Exclamation',
+                    buttons: { yes: 'Đồng ý' }
+                });
+                break;
+            default:
+                mask.show();
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("GetProductsStart", "InwardStart", new { Area = "Stock" }, null))',
+                    params: { stringId: strId },
+                    success: function (result) {
+                        mask.hide();
+                    }
+                });
+                break;
+        }
+    };
+    var handleProductChoice = function (cmd, grid) {
+        var records = grid.selModel.getSelection();
+        var id = records[0].get('ID'), stock_Name = records[0].get('Stock_Name'), quantity = records[0].get('Quantity'), unitPrice = records[0].get('UnitPrice'), amount = records[0].get('Amount');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("HandleChangesInward_Start", "InwardStart", new { Area = "Stock" }, null))',
+            params: { id: id, stock_Name: stock_Name, quantity: quantity, unitPrice: unitPrice, amount: amount }
+        });
+    };
+    var edit = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("HandleChangesInward_Start"))',
+                params: {
+                    id: e.record.data.ID,
+                    field: e.field,
+                    oldValue: e.originalValue,
+                    newValue: e.value,
+                    stock_Name: e.record.data.Stock_Name,
+                    quantity: e.record.data.Quantity,
+                    unitPrice: e.record.data.UnitPrice,
+                    amount: e.record.data.Amount,
+                    product: e.record.data
+                }
+            });
+        }
+    };
+    var showFrmPrintInwardStartVote = function () {
+        var name = App.cbUser.getValue();
+        var date = Ext.Date.format(App.txtRefDate.getValue(), 'd/m/Y g:i A');
+        var code = App.txtCode.getValue();
+        var des = App.txtDescription.getValue();
+        var amount = getValuetxtAmount();
+        var id = 'ReportInwardStartTab001';
+        var icon = '#Printer';
+        var title = 'Phiếu nhập kho đầu kỳ';
+        var link = '/Stock/InwardStart/FrmPrintInwardStart?code=' + code + '&&namecreate=' + name + '&&date=' + date + '&&des=' + des+'&&amount='+amount;
+        window.parent.customTab(id, icon, title, link);
+    };
+</script>
+@(Html.X().Menu()
+          .ID("cmMenu")
+          .Items(
+                new MenuItem
+                {
+                    Text = "Thêm mới",
+                    ID = "cmAdd",
+                    Icon = Icon.Add,
+                    DirectClickAction = "ShowFrmFindProductStart"
+                },
+                new MenuItem
+                {
+                    Text = "Xóa",
+                    ID = "cmDelete",
+                    Disabled = true,
+                    Icon = Icon.Delete,
+                    Handler = "deleteProductRecord();"
+                }
+           )
+)
+@(Html.X().Viewport()
+          .Layout(LayoutType.Anchor)
+          .Items(
+          Html.X().FormPanel()
+              .ID("frDetailStock_InwardStart")
+              .Layout(LayoutType.Fit)
+              .Border(false)
+              .Region(Region.North)
+              .TopBar(
+                Html.X().Toolbar().ID("tbfrDetailStart")
+                        .Items(
+                        Html.X().Button()
+                                .ID("btnSave")
+                                .Text("Lưu lại")
+                                .Icon(Icon.Disk)
+                                .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frDetailStock_InwardStart.getForm().isValid() || App.txtDiscount.getValue()>100 || App.txtDiscount.getValue()<0) {return false;} ";
+                                    de.Click.ExtraParams.Add(new { discount = new JRawValue("getValuetxtDiscount()") });
+                                    de.Click.ExtraParams.Add(new { amount = new JRawValue("getValuetxtAmount()") });
+                                    de.Click.ExtraParams.Add(new { fAmount = new JRawValue("getValuetxtFAmount()") });
+                                    de.Click.EventMask.ShowMask = true;
+                                    de.Click.Action = "InsertStart";
+                                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                                    de.Click.FormID = "frDetailStock_InwardStart";
+                                }),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .ID("btnReset")
+                                .Text("Nhập lại")
+                                .Icon(Icon.ArrowRefresh)
+                                .Handler("App.frDetailStock_InwardStart.reset();")
+                                .DirectClickAction("ResetGridStart"),
+        //Html.X().ToolbarSeparator(),
+        //Html.X().Button()
+        //        .ID("btnReport")
+        //        .Text("In phiếu")
+        //        .Icon(Icon.Printer)
+        //        .Disabled(false)
+        //        .Handler("showFrmPrintInwardStartVote();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                        )
+
+                    )
+                    .Items
+                    (
+                Html.X().Panel()
+                        .ID("Tab1")
+                        .Border(false)
+                        .StyleSpec("border:none")
+                        .Frame(true)
+                        .Layout(LayoutType.Fit)
+                        .AutoScroll(true)
+                        .Items(
+                Html.X().FieldSet()
+                        .Title("Thông tin phiếu nhập kho đầu kỳ")
+                        .Layout(LayoutType.Form)
+                        .Items(
+                Html.X().Container()
+                        .Layout(LayoutType.Column)
+                        .Items(
+                Html.X().Container()
+                        .ColumnWidth(0.78)
+                        .Layout(LayoutType.Form)
+                        .Items(
+                Html.X().Container()
+                        .Layout(LayoutType.Column)
+                        .Items(
+                        Html.X().ComboBox()
+                                .DisplayField("Name")
+                                .ValueField("ID")
+                                .FieldLabel("Người nhập" + Html.Required())
+                                .AllowBlank(false)
+                                .Editable(true)
+                                .TabIndex(1)
+                                .ID("cbUser")
+                                .LabelWidth(90)
+                                .ColumnWidth(0.5)
+                                .MarginSpec("0 5 0 0")
+                                .TypeAhead(false)
+                                .PageSize(10)
+                                .MinChars(0)
+                        .ForceSelection(true)
+                                .ListConfig(Html.X().BoundList()
+                                .LoadingText("Searching...")
+                                .ItemTpl(Html.X().XTemplate()
+                                    .Html(@<text>
+                                    <div class="search-item">
+                                        {Name}
+                                    </div>
+                                    </text>)
+                                )
+                            )
+                            .Store(Html.X().Store()
+                                .AutoLoad(true)
+                                .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("LoadUser","Stock_Build"))
+                                    .ActionMethods(am => am.Read = HttpMethod.POST)
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Model(Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("ID")
+                                    )
+                                    )
+                                )
+                                .Listeners(ls =>
+                                    ls.Select.Handler = "var s = App.cbUser.getValue(); App.txtEmployee_ID.setValue(s); "
+                                ),
+                            Html.X().TextFieldFor(m=>m.Employee_ID)
+                                .FieldLabel("Mã NV" + Html.Required())
+                                .LabelWidth(60)
+                                .ReadOnly(true)
+                                .ColumnWidth(0.25)
+                                .ID("txtEmployee_ID")
+                                .TabIndex(2),
+                            Html.X().DateFieldFor(m=>m.RefDate)
+                                    .SelectedDate(DateTime.Now)
+                                    .ColumnWidth(0.25)
+                                    .AllowBlank(false)
+                                    .FieldLabel("Ngày nhập"+Html.Required())
+                                    .MarginSpec("0 0 0 10")
+                                    .ID("txtRefDate")
+                                    .TabIndex(3)
+                                    .LabelWidth(100)
+                                     ),
+                            Html.X().TextFieldFor(m => m.Description)
+                                    .FieldLabel("Lý do nhập")
+                                    .ID("txtDescription")
+                                    .TabIndex(4)
+                                    .LabelWidth(90)
+                                ),
+                            Html.X().Container()
+                                    .ColumnWidth(0.2)
+                                    .Layout(LayoutType.Form)
+                                    .Items(
+                            Html.X().TextFieldFor(m=>m.Barcode)
+                                    .FieldLabel("Số phiếu" + Html.Required())
+                                    .AllowBlank(false)
+                                    .ReadOnly(true)
+                                    .MarginSpec("0 0 0 10")
+                                    .MaxLength(20)
+                                    .Text(ViewBag.CodeAutoStart)
+                                    .MaxLengthText("Trường không vượt quá 20 ký tự")
+                                    .LabelWidth(70)
+                                    .ID("txtCode")
+                                    .TabIndex(5),
+                                Html.X().DateFieldFor(m=>m.CreateAt)
+                                    .SelectedDate(DateTime.Now)
+                                    .ReadOnly(true)
+                                    .FieldLabel("Ngày lập" + Html.Required())
+                                    .MarginSpec("0 0 0 10")
+                                    .ID("txtDateCreate")
+                                    .TabIndex(6)
+                                    .LabelWidth(70)
+                                     )
+                                    )
+                                   )
+                                  )
+                                )
+                                .AnchorHorizontal("100%")
+                                .AnchorVertical("24%"),
+            Html.X().GridPanel()
+                    .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                    .ID("gpProductChoise")
+                    .Region(Region.South)
+                    .ColumnLines(true)
+                    .Title("DANH SÁCH VẬT TƯ HÀNG HÓA NHẬP KHO ĐẦU KỲ")
+                    .TitleAlign(TitleAlign.Center)
+                    .Icon(Icon.TextListBullets)
+                    .MarginSpec("0 1 0 1")
+                    .AnchorHorizontal("100%")
+                    .AnchorVertical("76%")
+                    .Border(true)
+                    .TopBar(
+                        Html.X().Toolbar()
+                                .ID("tbgpProductChoiseStart")
+                                .Items(
+                                Html.X().Button()
+                                        .ID("btnAddProduct")
+                                        .Text("Thêm mới")
+                                        .Icon(Icon.Add)
+                                        //.Disabled((bool)ViewBag.Disable)
+                                        .DirectClickAction("ShowFrmFindProductStart"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button()
+                                        .ID("btnDeleteProduct")
+                                        .Text("Xóa")
+                                        .Icon(Icon.Delete)
+                                        .Disabled(true)
+                                        .Handler("deleteProductRecord();"),
+                                Html.X().ToolbarFill(),
+                                Html.X().Label().Text("(Double click vào cột 'Kho','Số lượng' và 'Đơn giá' để thay đổi giá trị)").StyleSpec("color:red").MarginSpec("2 0 2 0")
+                                    )
+                                )
+                    .Store(Html.X().Store()
+                    .ID("stProductChoice")
+                       .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataStart"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .RemoteSort(true)
+                        .RemotePaging(true)
+                       // .PageSize(10)
+                        .GroupField("Group_Name")
+                        .Sorters(
+                        Html.X().DataSorter()
+                            .Property("Group_Name")
+                            .Direction(Ext.Net.SortDirection.ASC))
+                            .Model(Html.X().Model()
+                            .IDProperty("ID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Inward_ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("ProductCode").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StockProductID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Group_Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("ProductName").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("RefType").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("StockID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Stock_Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Lev1").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Lev2").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Lev3").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Lev4").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Unit").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("UnitConvert").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Vat").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("CurrentQty").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Quantity").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("UnitPrice").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Amount").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("QtyConvert").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Discount").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Charge").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Limit").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("Width").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Height").Type(ModelFieldType.Float),
+                                Html.X().ModelField().Name("Orgin").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Size").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Color").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Batch").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Serial").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("ChassyNo").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("IME").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StoreID").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Sorted").Type(ModelFieldType.Auto),
+                                Html.X().ModelField().Name("Active").Type(ModelFieldType.Boolean)
+                            )
+                    )
+            )
+.ColumnModel(
+    Html.X().RowNumbererColumn()
+            .Text("STT")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(33)
+            .Wrap(true)
+            .Align(Alignment.Center),
+    Html.X().Column()
+            .Text("ID")
+            .DataIndex("ID")
+            .Wrap(true)
+            .Hidden(true),
+    Html.X().Column()
+            .Text("Mã")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .DataIndex("ProductCode")
+            .Align(Alignment.Center)
+            .Wrap(true)
+            .Width(100),
+    Html.X().SummaryColumn()
+            .Text("Tên vật tư hàng hóa")
+            .DataIndex("ProductName")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(200)
+            .Flex(1)
+            .Wrap(true)
+            .SummaryType(SummaryType.Count)
+            .SummaryRenderer("return 'Tổng : ' + ((value === 0 || value > 1) ? '(' + value +' Vật tư hàng hóa)' : '(0 Vật tư hàng hóa)');"),
+            Html.X().Column()
+            .Text("Đơn vị tính")
+            .DataIndex("Unit")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(100)
+            .Wrap(true),
+        Html.X().Column()
+            .Text("Kho")
+            .DataIndex("Stock_Name")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(230)
+            .Wrap(true)
+            .Editor(
+              Html.X().ComboBox()
+                    .DisplayField("Name")
+                    .ValueField("Name")
+                    .ID("cbStock")
+                    .LabelWidth(70)
+                    .MarginSpec("0 0 2 0")
+                    .TypeAhead(false)
+                    .PageSize(10)
+                    .MinChars(0)
+                    .ForceSelection(true)
+                    .ListConfig(Html.X().BoundList()
+                    .LoadingText("Searching...")
+                    .ItemTpl(Html.X().XTemplate()
+                    .Html(@<text>
+                        <div class="search-item">
+                            <h3>{Name}</h3>
+                            Địa chỉ: {Address}
+                        </div>
+                    </text>)
+                            )
+                        )
+                    .Store(Html.X().Store()
+                        .AutoLoad(true)
+                        .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("LoadStock"))
+                            .ActionMethods(am => am.Read = HttpMethod.POST)
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .Model(Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("Address"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("ID")
+                            )
+                        )
+                      )
+                ),
+        Html.X().SummaryColumn()
+            .Text("Số lượng")
+            .DataIndex("Quantity")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(90)
+            .Renderer("change")
+            .Align(Alignment.Right)
+            .Wrap(true)
+            .SummaryType(SummaryType.Sum)
+            .SummaryRenderer("change")
+            .Editor(
+            Html.X().NumberField().MinValue(0.001)
+            ),
+        Html.X().NumberColumn()
+            .Text("Đơn giá (VNĐ)")
+            .DataIndex("UnitPrice")
+            .Renderer("RenderVND")
+            .Align(Alignment.Right)
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Width(130)
+            .Wrap(true)
+            .Renderer("RenderVND")
+            .Editor(
+            Html.X().NumberField().MinValue(0.001)
+            ),
+        Html.X().SummaryColumn()
+            .Text("Thành tiền (VNĐ)")
+            .DataIndex("Amount")
+            .Renderer("RenderVND")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Align(Alignment.Right)
+            .Width(120)
+            .Wrap(true)
+            .Groupable(false)
+                        .CustomSummaryType("totalCost")
+                        .Renderer("RenderAmountVND")
+                        .SummaryRenderer("RenderVND")
+            )
+            .SelectionModel(
+                        Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                .Listeners(l =>
+                                {
+                                    l.Select.Handler = "checkStatus()";
+                                })
+                                )
+                                .View(
+                                Html.X().GridView().MarkDirty(false)
+                                )
+                                .Features(
+                                    Html.X().GroupingSummary()
+                                            .ID("GroupingSummaryProductGroup")
+                                            .GroupHeaderTplString("{name}")
+                                            .HideGroupedHeader(true)
+                                            .EnableGroupingMenu(false),
+                                    Html.X().Summary().Dock(SummaryDock.Bottom)
+                                )
+                                .Plugins(
+                                Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "edit")
+                                )
+                                .BottomBar
+                                (
+
+                                    Html.X().PagingToolbar()
+                                            .EmptyMsg("Hiện không có dữ liệu")
+                                            .NextText("Trang kế tiếp")
+                                            .PrevText("Trang trước")
+                                            .LastText("Trang cuối cùng")
+                                            .FirstText("Trang đầu tiên")
+                                            .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                                            .BeforePageText("Trang")
+                                            .AfterPageText("của {0}")
+                                            .RefreshText("Tải lại dữ liệu")
+                                            .Items
+                                            (
+                                            Html.X().ToolbarFill(),
+                                            Html.X().Hidden().ID("txtAmount"),
+                                            Html.X().NumberField()
+                                                    .MarginSpec("0 5 0 20")
+                                                    .ID("txtDiscount")
+                                                    .Listeners(ls => ls.Change.Handler = "totalCostPaint()")
+                                                    .LabelWidth(60)
+                                                    .Width(130)
+                                                    .FieldLabel("Chiết khấu")
+                                                    .Value(0)
+                                                    .MaxValue(100)
+                                                    .MinValue(0),
+                                            Html.X().Label()
+                                                    .Text("%")
+                                                    .MarginSpec("0 5 0 0"),
+                                            Html.X().NumberField()
+                                                    .FieldLabel("Thanh toán")
+                                                    .DataIndex("Amount")
+                                                    .Cls("total-field")
+                                                    .ID("txtFAmount")
+                                                    .LabelWidth(60)
+                                                    .ReadOnly(true),
+                                            Html.X().Label()
+                                                    .Text("VNĐ")
+                                            )
+                                            .DisplayInfo(false)
+                )
+         )
+)

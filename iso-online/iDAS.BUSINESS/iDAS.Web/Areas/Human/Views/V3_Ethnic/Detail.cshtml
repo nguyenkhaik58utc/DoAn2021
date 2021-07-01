@@ -1,0 +1,60 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Human.Models.V3_Category.V3_EthnicResponse
+@(Html.X().Window()
+    .ID("DetailEthnicWindow")
+    .Title("Thông tin dân tộc")
+    .Icon(Icon.Pencil)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("DetailEthnicForm")
+            .Url(Url.Action("Update"))
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .MarginSpec("0 10 10 10")
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 100)
+            .DefaultAnchor("100%")
+            .Items(
+                                Html.X().TextAreaFor(m => m.ID).Hidden(true),
+                                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên dân tộc" + Html.Required())
+                                    .EmptyText("Nhập tên dân tộc").ReadOnly(true)
+                                    .BlankText("Bạn phải nhập tên dân tộc!")
+                                    .AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().ComboBoxFor(m => m.NationalityID).ReadOnly(true)
+                                    .FieldLabel("Quốc gia" + Html.Required())
+                                    .Editable(false)
+                                    .EmptyText("Chọn quốc gia")
+                                        .Store(
+                                            Html.X().Store()
+                                            .AutoLoad(true)
+                                            .ID("NationalityCbox")
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadData", "V3_Nationality", new { area = "Human" }))
+                                                    .Reader(
+                                                        Html.X().JsonReader().Root("data"))
+                                        )
+                                        .Model(
+                                            Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                new ModelField("ID"),
+                                                new ModelField("Name")
+                                            )
+                                        )
+                                    )
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+            )
+    )
+)

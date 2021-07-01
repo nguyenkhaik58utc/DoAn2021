@@ -1,0 +1,328 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditTickItem
+    <style>
+        .search-item {
+            font: normal 11px tahoma, arial, helvetica, sans-serif;
+            padding: 3px 10px 3px 10px;
+            border: 1px solid #fff;
+            border-bottom: 1px solid #eeeeee;
+            white-space: normal;
+            color: #555;
+            font-weight:bold;
+            }
+            .search-item h3 {
+                display: block;
+                font: inherit;
+                font-weight: bold;
+                color: #222;
+                margin: 0px;
+            }
+            .search-item h3 span {
+                float: right;
+                text-align: right;
+                font-weight: normal;
+                margin: 0 0 5px 5px;
+                width: 100px;
+                display: block;
+                clear: none;
+            }
+    </style>
+@(Html.X().Window()
+.ID("winUpdateResult")
+.Title("Cập nhật kết quả đánh giá nhân sự")
+.Icon(Icon.StarBronze)
+.Width(800)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frResult")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+        .Layout(LayoutType.VBox)
+        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+        .Items(
+            Html.X().HiddenFor(m => m.ID),
+            Html.X().EmployeeFieldFor(m => m.EmployeeAudit).ReadOnly(true).Title("Nhân sự").MarginSpec("0 0 3 105"),
+            Html.X().Container().Layout(LayoutType.Column).ColSpan(3).MarginSpec("0 0 5 0").Items(
+            Html.X().NumberFieldFor(m => m.TotalEmployeeAuditResult).FieldLabel("Điểm tự đánh giá").ReadOnly(true).MinValue(0).MarginSpec("0 5 0 0"),
+                Html.X().NumberFieldFor(m => m.TotalManagementAuditResult).MinValue(0).ReadOnly(true).FieldLabel("Quản lý đánh giá").MarginSpec("0 5 0 0"),
+            Html.X().NumberFieldFor(m => m.TotalLeaderAuditResult).FieldLabel("Lãnh đạo đánh giá").ReadOnly(true).MinValue(0)),
+            Html.X().Container().Layout(LayoutType.Column).ColSpan(3).MarginSpec("0 0 5 0").Items(
+            Html.X().NumberFieldFor(m=>m.TotalPointBonus).ID("txtPointBonus").FieldLabel("Điểm cộng/trừ").ReadOnly(true).MarginSpec("0 5 0 0"),
+                Html.X().NumberFieldFor(m => m.TotalPoint).ID("txtTotal").ReadOnly(true).FieldLabel("<b>Kết quả</b>").MarginSpec("0 5 0 0"),
+            Html.X().ComboBoxFor(m => m.HumanAuditLevelID)
+                    .FieldLabel("Xếp loại")
+                    .Editable(false)
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .TypeAhead(false)
+                    .PageSize(20)
+                    .MinChars(0)
+                    .ForceSelection(true)
+                            .MatchFieldWidth(false)
+                            .ListConfig(
+                    Html.X().BoundList().StyleSpec("width:245px")
+                            .LoadingText("Searching...")
+                            .ItemTpl(Html.X().XTemplate()
+                                .Html(@<text>
+                                <div class="search-item">
+                                    {Name}
+                                    <h3><span>{PointFrom} - {PointTo}</span>Điểm từ: </h3>
+                                </div>
+                                </text>)
+                                )
+                            )
+                    .Store(
+                Html.X().Store()
+                    .ID("StoreLevel")
+                    .AutoLoad(true)
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("humanAuditDepartmentId", Model.HumanAuditDepartmentID.ToString(), ParameterMode.Value));
+                        ps.Add(new StoreParameter("humanRoleId", Model.HumanRoleID.ToString(), ParameterMode.Value));
+                    })
+                    .Proxy(
+                Html.X().AjaxProxy()
+                        .Url(Url.Action("LoadLevelData", "AuditTickResult", new { area = "Human" }))
+                        .Reader(Html.X().JsonReader().Root("data")
+                        )
+                        )
+                    .Model(Html.X().Model()
+                    .Fields(
+                        new ModelField("Name"),
+                        new ModelField("PointFrom"),
+                        new ModelField("PointTo"),
+                        new ModelField("ID")
+                    )
+                )
+            )
+            ),
+                Html.X().TextAreaFor(m => m.Comments).FieldLabel("Nhận xét").MaxLength(500).Flex(1),
+                Html.X().Panel().Title("Điểm cộng/trừ").Height(200).Icon(Icon.ApplicationViewDetail).Layout(LayoutType.Fit).Items(
+                    Html.X().GridPanel()
+                        .ID("GridPoint")
+                        .Height(400)
+                        .Border(false)
+                        .TopBar(
+                        Html.X().Toolbar()
+                            .Items(
+                                Html.X().ButtonCreate()
+                                    .ID("btnAddPoint")
+                                    .Handler("addRecordPoint(this.up('grid'));"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete()
+                                    .ID("butDeletePoint")
+                                            .Handler("this.up('grid').deleteSelected();loadTotalPoint();"),
+                                    Html.X().ToolbarFill()
+                            )
+                        )
+                        .Store(
+                            Html.X().Store()
+                                .ID("stPoint")
+                                .Proxy(
+                                    Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetDataPoint"))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("TickResultId", Model.ID.ToString(), ParameterMode.Value));
+                                })
+                                .RemoteSort(false)
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Model(
+                                    Html.X().Model()
+                                        .Fields(
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("CT").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("Point").Type(ModelFieldType.Float)
+                                        )
+                                )
+                        )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                .Text("STT").DataIndex("ID")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(33)
+                                .Align(Alignment.Center),
+                            Html.X().Column()
+                                .Text("Cộng/trừ")
+                                .DataIndex("CT")
+                                .Align(Alignment.Right)
+                                .Renderer("if(value == '+'){return '<span style=\"color:green;\">+</span>'} else{return '<span style=\"color:red;\">-</span>'};")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(100)
+                                .Wrap(true)
+                                .Editor(
+                            Html.X().ComboBox()
+                                    .AllowOnlyWhitespace(false)
+                                    .AllowBlank(false).Editable(false)
+                                    .BlankText("Không được để trống").Items(
+                                    new ListItem ( "+", "+"),
+                                    new ListItem ( "-", "-")
+                                    )
+                                    ),
+                            Html.X().Column()
+                                    .Text("Điểm")                                    
+                                    .DataIndex("Point")                                    
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Width(100)
+                                    .Wrap(true)
+                                    .Editor(
+                                Html.X().NumberField()
+                                        .AllowOnlyWhitespace(false)
+                                        .AllowBlank(false)
+                                        .MinValue(0)
+                                    ),
+                            Html.X().Column()
+                                .Text("Lý do")
+                                .DataIndex("Note")                                
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Flex(1)
+                                .Wrap(true)
+                                .Editor(
+                                    Html.X().TextField()
+                                        .TabIndex(4)
+                                        .MaxLength(500)
+                                ),
+                                     Html.X().CommandColumn()
+                            .ID("commandCol")
+                            .Text("Chức năng")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(70)
+                            .Commands(
+                                Html.X().GridCommand()
+                                    .CommandName("ok")
+                                    .Icon(Icon.Disk)
+                                    .ToolTip(tt => tt.Text = "Lưu"),
+                                Html.X().GridCommand()
+                                    .CommandName("reject")
+                                    .Icon(Icon.ArrowUndo)
+                                    .ToolTip(tt => tt.Text = "Hủy")
+                                ).Listeners(ls => ls.Command.Handler = "handlecmd(command,this.up('grid'),record );")
+                        )
+                        .SelectionModel(
+                       Html.X().RowSelectionModel()
+                                   .Mode(SelectionMode.Multi).Listeners(ls => ls.SelectionChange.Handler = "checkPointStatus();")
+                        )
+                        .Plugins(Html.X().CellEditing())
+                         )
+                )
+             )
+        )
+        .Buttons(
+        Html.X().Button()
+        .ID("btnSaves")
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .TabIndex(7)
+        .DirectEvents(de =>
+        {
+            de.Click.Before = @"if (!App.frResult.getForm().isValid()) { return false; } ";
+            de.Click.ExtraParams.Add(new { strPoint = new JRawValue("getPoint()") });
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Action = "Update";
+            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+            de.Click.FormID = "frResult";
+            de.Click.Success = "this.up('window').close(); App.StoreEmployeeAudtitResults.reload();";
+        }),
+        Html.X().Button()
+        .ID("btnCancel")
+        .Text("Hủy")
+        .Icon(Icon.Cancel)
+        .TabIndex(9)
+        .Handler("App.frResult.reset(); App.winUpdateResult.close();")
+        )
+)
+<script>
+    var getPoint = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.stPoint.data.length; i++) {
+            arr.push(App.stPoint.data.items[i].data);
+        }
+        return JSON.stringify(arr);
+    };
+    function addRecordPoint(grid) {
+        grid.store.insert(0, { Name: '', Point: 0 });
+        grid.editingPlugin.startEditByPosition({ row: 0, column: 0 });
+    };
+    var checkPointStatus = function () {
+        var records = App.GridPoint.selModel.getSelection();
+        if (records.length > 0) {
+            App.butDeletePoint.setDisabled(false);
+        }
+        else {
+            App.butDeletePoint.setDisabled(true);
+        };
+    };
+    var deleteRecordPoint = function () {
+        var records = App.GridPoint.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Thông báo',
+                    msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) {
+                    label = ' các ';
+                } else {
+                    label = ' ';
+                }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            for (var i = 0, r; r = records[i]; i++) {
+                                records[i].reject();
+                            }
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var loadTotalPoint = function () {
+        var totalBonus = 0;
+        var leaderPoint = App.TotalLeaderAuditResult.getValue();
+        for (var i = 0; i < App.stPoint.data.length; i++) {
+            if (App.stPoint.data.items[i].data.CT == "+")
+                totalBonus += App.stPoint.data.items[i].data.Point;
+            else
+                totalBonus -= App.stPoint.data.items[i].data.Point;
+        }
+        var total = leaderPoint + totalBonus;
+        App.txtPointBonus.setValue(totalBonus);
+        App.txtTotal.setValue(total);
+    };
+    var handlecmd = function (cmd, grid, record) {
+        if (cmd == 'ok') {
+            loadTotalPoint();
+        }
+        if (cmd == 'reject') {
+            record.reject();
+        }
+    };
+</script>

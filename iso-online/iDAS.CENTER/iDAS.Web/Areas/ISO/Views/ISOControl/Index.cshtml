@@ -1,0 +1,155 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    var onSelectISOStandard = function (obj) {
+        var records = obj.selModel.getSelection();
+        if (records.length > 0) {
+            App.hdfISOStandardID.setValue(records[0].data.ID);
+            App.StoreISOControl.reload();
+            App.btnInsertISOControl.setDisabled(false);
+        }
+        else {
+            App.btnInsertISOControl.setDisabled(true);
+        };
+    };
+    function CheckStatusISOControl() {
+        var records = App.GrISOControl.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateISOControl, App.btnDeleteISOControl, App.btnDetailISOControl);
+        }
+        else {
+            SetDisabled(App.btnUpdateISOControl, App.btnDeleteISOControl, App.btnDetailISOControl);
+        };
+    };
+    var ShowInsert = function () {
+        var records = App.GrISOStandard.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = { isoStandardId: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowUpdate = function () {
+        var records = App.GrISOControl.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowViewDetail = function () {
+        var records = App.GrISOControl.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = { ID: records[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Padding(1).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().Hidden().ID("hdfISOStandardID"),
+                    Html.X().GridPanel().Region(Region.West).Width(300)
+                        .Title("Tiêu chuẩn ISO").TitleAlign(TitleAlign.Center)
+                        .ID("GrISOStandard")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Collapsible(true).Split(true)
+                        .Store(
+                                Html.X().Store()
+                                        .ID("StoreISOStandard")
+                                        .RemotePaging(true)
+                                        .AutoLoad(true)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadISOHasAnnex", "ISOStandard")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(Html.X().Model()
+                                                    .Fields(
+                                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                            Html.X().ModelField().Name("Code").Type(ModelFieldType.String)
+                                                        )
+                                              )
+                                )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                    .Text("STT")
+                                    .Width(33)
+                                    .Align(Alignment.Center)
+                                    .StyleSpec("font-weight: bold; text-align: center;"),
+                            Html.X().Column()
+                                        .DataIndex("Code")
+                                    .Text("ISO")
+                                    .Width(120)
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                        )
+                        .Listeners(ls => ls.SelectionChange.Handler = "onSelectISOStandard(this);"),
+                    Html.X().GridPanel().ID("GrISOControl")
+                            .Region(Region.Center)
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().ID("btnInsertISOControl").Handler("ShowInsert();").Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateISOControl").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteISOControl").Handler("onDelete(App.GrISOControl.selModel.getSelection()[0].get('ID'));"),
+                                         Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailISOControl").Handler("ShowViewDetail();")
+                                )
+                            )
+                            .Store(
+                            Html.X().Store().ID("StoreISOControl")
+                                .AutoLoad(false)
+                                .RemotePaging(true)
+                                .PageSize(10)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("isoStandardId", "App.hdfISOStandardID.getValue()", ParameterMode.Raw));
+
+                                    })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Clause"),
+                                        Html.X().ModelField().Name("Target"),
+                                        Html.X().ModelField().Name("Control")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Width(30).Align(Alignment.Center),
+                                    X.Column().DataIndex("Clause").StyleSpec("font-weight: bold; text-align: center;")
+                                            .Text("Điều khoản").Width(100),
+                                    X.Column().DataIndex("Target").StyleSpec("font-weight: bold; text-align: center;")
+                                            .Text("Mục tiêu").Width(200),
+                                    X.Column().DataIndex("Control").StyleSpec("font-weight: bold; text-align: center;")
+                                            .Text("Kiểm soát").Flex(1)
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusISOControl"))
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar("10", "20", "30", "50", "100")
+            )
+     )
+)
+

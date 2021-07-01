@@ -1,0 +1,225 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var urlSubmitAudit = Url.Action("Insert", "CustomerCampaignAudit", new { area = "Customer" });
+    var urlStoreAudit = Url.Action("LoadAudits", "CustomerCampaignAudit", new { Area = "Customer" });
+    var paramStoreAudit = Html.X().StoreParameter().Name("campaignId").Value("getCampaignId()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Viewport().StyleSpec("border: none;").Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+            .Header(false)
+            .ID("GrCustomerCompaign")
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                .Layout(LayoutType.HBox)
+                .Items(
+                    Html.X().ButtonCreate().Handler("ShowAdd();"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonUpdate().ID("btnUpdate").Handler("ShowUpdate();"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonDelete().ID("btnDelete")
+                            .Handler("onDelete(App.GrCustomerCompaign.selModel.getSelection()[0].get('ID'));"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonView().ToolTip("Xem chi tiết").ID("btnDetail").Handler("ShowDetail();"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().Button().Text("Mục tiêu").ID("btnTarget").Icon(Icon.ApplicationSideList).Handler("showTargetWindow();").Disabled(true),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().Button().Text("Kế hoạch").ID("btnPlan").Icon(Icon.ApplicationSideList).Handler("showPlanWindow();").Disabled(true),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonSend().ID("btnSendCampaign").Handler("SendCampaignApprove(true);"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonApproval().ID("btnApproveCampaign").Handler("SendCampaignApprove(false);"),
+                    Html.X().ToolbarFill(),
+                    Html.X().ButtonTutorial()
+                )
+        )
+        .Store(
+            Html.X().Store()
+                    .ID("StoreCustomerCampaign")
+                .RemotePaging(true)
+                .PageSize(20)
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerCampaign", "CustomerCampaign", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                .Model(
+                    Html.X().Model().Fields(
+                        Html.X().ModelField().Name("ID"),
+                        Html.X().ModelField().Name("Name"),
+                        Html.X().ModelField().Name("Cost"),
+                        Html.X().ModelField().Name("Income"),
+                        Html.X().ModelField().Name("StartTime"),
+                        Html.X().ModelField().Name("EndTime"),
+                        Html.X().ModelField().Name("IsEdit"),
+                        Html.X().ModelField().Name("Status")
+                    )
+                )
+        )
+        .ColumnModel(
+                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                X.Column().DataIndex("Name").Text("Chiến dịch bán hàng").Flex(1),
+                X.ComponentColumn().Text("Chi phí").Columns(
+                    X.NumberColumn().DataIndex("Cost").Text("Giá trị").Width(100).Align(Alignment.Right),
+                    X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                X.ComponentColumn().Text("Doanh thu").Columns(
+                    X.NumberColumn().DataIndex("Income").Text("Giá trị").Width(100).Align(Alignment.Right),
+                    X.Column().Renderer("return 'VNĐ';").Text("Đơn vị").Width(50).Align(Alignment.Center)),
+                X.ComponentColumn().Text("Thời gian thực hiện").Columns(
+                    X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyyy").Text("Bắt đầu").Width(100).Align(Alignment.Center),
+                    X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyyy").Text("Kết thúc").Width(100).Align(Alignment.Center)),
+                X.Column().DataIndex("Status").Text("Trạng thái").Width(80).Align(Alignment.Center)
+            )
+        .Features(
+                    Html.X().GridFilters()
+                        .MenuFilterText("Tìm kiếm")
+                        .Filters(
+                            Html.X().StringFilter().DataIndex("Name"),
+                            Html.X().NumericFilter().DataIndex("Cost").EmptyText("Nhập giá trị so sánh"),
+                            Html.X().NumericFilter().DataIndex("Income").EmptyText("Nhập giá trị so sánh"),
+                            Html.X().DateFilter().DataIndex("StartTime").AfterText("Sau").BeforeText("Trước").OnText("Tại"),
+                            Html.X().DateFilter().DataIndex("EndTime").AfterText("Sau").BeforeText("Trước").OnText("Tại")
+                        )
+                )    
+        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    var insertTarget = function (form, isEdit) {
+        var records = App.GrCustomerCompaign.selModel.getSelection();
+        form.submit({
+            url: '@(Url.Action("Insert", "CustomerCampaignTarget", new { area = "Customer" }))',
+            params: {
+                CampaignID: records[0].get('ID'),
+                IsEdit: isEdit,
+            },
+        });
+    };
+    var showTargetWindow = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        var records = App.GrCustomerCompaign.selModel.getSelection();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("TargetWindowView", "Target", new { Area = "Quality" }))',
+            params: {
+                urlStore: '@Url.Action("LoadTargets", "CustomerCampaignTarget", new { area = "Customer" })',
+                paramID: records[0].get('ID'),
+            },
+            success: function (result) {
+                mask.hide();
+            },
+        });
+    };
+    var showPlanWindow = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        var records = App.GrCustomerCompaign.selModel.getSelection();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("PlanWindowView", "Plan", new { Area = "Quality" }))',
+            params: {
+                urlPlanStore: '@Url.Action("LoadPlans", "CustomerCampaignPlan", new { area = "Customer" })',
+                urlTargetStore: '@Url.Action("LoadTargets", "CustomerCampaignTarget", new { area = "Customer" })',
+                urlSubmit: '@(Url.Action("Insert", "CustomerCampaignPlan", new { area = "Customer" }))',
+                paramID: records[0].get('ID'),
+            },
+            success: function (result) {
+                mask.hide();
+            },
+        });
+    };
+    function CheckStatus() {
+        var records = App.GrCustomerCompaign.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetail.setDisabled(false);
+            var IsEdit = records[0].get('IsEdit');
+            if (IsEdit == true) {
+                SetEnabled(App.btnUpdate, App.btnDelete, App.btnTarget, App.btnPlan, App.btnSendCampaign);
+                App.btnApproveCampaign.setDisabled(true);
+            }
+            else {
+                SetDisabled(App.btnUpdate, App.btnDelete, App.btnTarget, App.btnPlan, App.btnSendCampaign);
+                App.btnApproveCampaign.setDisabled(false);
+            };
+        }
+        else {
+            SetDisabled(App.btnUpdate, App.btnDelete, App.btnDetail, App.btnTarget, App.btnPlan, App.btnSendCampaign, App.btnApproveCampaign);
+        };
+    };
+    var ShowAdd = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "CustomerCampaign", new { Area = "Customer" }, null))',
+            success: function (result) {
+                mask.hide();
+            },
+        });
+    };
+    var ShowUpdate = function () {
+        var records = App.GrCustomerCompaign.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "CustomerCampaign", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowDetail = function () {
+        var records = App.GrCustomerCompaign.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerCampaign", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SendCampaignApprove = function (isSend) {
+        var records = App.GrCustomerCompaign.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ApproveForm", "CustomerCampaign", new { Area = "Customer" }, null))';
+            var params = {
+                id: records[0].get('ID'),
+                isSend: isSend
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+
+    var getCampaignId = function () {
+        var campaignId = 0;
+        var records = App.GrCustomerCompaign.selModel.getSelection();
+        if (records.length > 0) {
+            campaignId = records[0].get('ID');
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có Công việc nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+        return campaignId;
+    };
+</script>

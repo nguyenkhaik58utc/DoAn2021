@@ -1,0 +1,257 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SuppliersOrderItem
+@(Html.X().Window()
+        .Maximized(true)
+        .Constrain(true)
+            .Layout(LayoutType.Anchor)
+        .Modal(true)
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(true)
+          .ID("vpfrOrderDetail")
+          .Items(
+          Html.X().FormPanel().ID("frOrderDetail").Layout(LayoutType.Fit).Border(false).Region(Region.North)
+                                .Items
+                                (
+                                Html.X().Panel()
+                                .ID("Tab1")
+                                .Border(false)
+                                .StyleSpec("border:none")
+                                .Frame(true)
+                                .Layout(LayoutType.Fit)
+                                .AutoScroll(true)
+                                .Items(
+                                Html.X().FieldSet()
+                                .Title("Thông tin đơn hàng")
+                                .Layout(LayoutType.Column)
+                                .Items(
+                                Html.X().Container()
+                                .ColumnWidth(0.4)
+                                .Layout(LayoutType.Form)
+                                .MarginSpec("0 5 0 0")
+                                .Items(
+                                Html.X().HiddenFor(m => m.ID),
+                                    Html.X().TextFieldFor(m => m.CODE)
+                                    .AllowBlank(false)
+                                    .MaxLength(255)
+                                    .MaxLengthText("Trường không vượt quá 255 ký tự")
+                                        .FieldLabel("Mã đơn hàng" + Html.Required()).ReadOnly(true)
+                                    .ID("txt_Title")
+                                    .TabIndex(2)
+                                    .LabelWidth(100)
+                                    .MarginSpec("3 0 2 0"),
+                                    Html.X().TextFieldFor(m => m.SupplierName)
+                                    .ReadOnly(true)
+                                    .FieldLabel("Tên NCC" + Html.Required())
+                                    .ID("txt_Address")
+                                    .TabIndex(2)
+                                    .LabelWidth(100)
+                                    .MarginSpec("0 0 2 0"),
+                                        Html.X().ComboBoxFor(m => m.Payment).FieldLabel("Thanh toán").LabelWidth(100)
+                                                .ID("ComboBoxCountry")
+                                                .Editable(false)
+                                                .QueryMode(DataLoadMode.Local)
+                                                .EmptyText("Chọn hình thức thanh toán")
+                                                .Items(new ListItem("Trả trước", 1),
+                                                        new ListItem("Chốt sổ", 2)).ReadOnly(true)
+
+                                ),
+                                Html.X().Container()
+                                .ColumnWidth(0.6)
+                                .Layout(LayoutType.Form)
+                                    .MarginSpec("0 5 0 0").Items(
+                                        Html.X().TextFieldFor(m => m.Name)
+                                                .AllowBlank(false).LabelWidth(140)
+                                            .MaxLength(255).MarginSpec("3 0 2 0")
+                                            .MaxLengthText("Trường không vượt quá 255 ký tự")
+                                            .FieldLabel("Tên đơn hàng" + Html.Required()).ReadOnly(true),
+                                        Html.X().TextFieldFor(m => m.ReciepPlace)
+                                            .AllowBlank(false)
+                                            .MaxLength(500).LabelWidth(140)
+                                            .MaxLengthText("Trường không vượt quá 500 ký tự")
+                                            .FieldLabel("Địa điểm chyển hàng" + Html.Required()),
+                                        Html.X().Container().Layout(LayoutType.Column).Items(
+                                                    Html.X().DateFieldFor(m => m.OrderDate).ReadOnly(true)
+                                        .SelectedDate(DateTime.Now).ColumnWidth(0.5).LabelWidth(140)
+                                        .FieldLabel("Ngày Tạo")
+                                    .ID("txtDateCreate"),
+                                           Html.X().DateFieldFor(m => m.ShipDate)
+                                            .SelectedDate(DateTime.Now).ColumnWidth(0.5).LabelWidth(140).ReadOnly(true)
+                                            .FieldLabel("Ngày nhận hàng").MarginSpec("0 0 0 10")
+                                    .ID("txtDateShip")
+                                            )
+
+                                )))
+                                .AnchorHorizontal("100%").AnchorVertical("28%")),
+               Html.X().GridPanel()
+                   .ID("gpProductOder")
+                        .Region(Region.South)
+                        .ColumnLines(true)
+                        .Title("DANH SÁCH VẬT TƯ HÀNG HÓA ")
+                        .TitleAlign(TitleAlign.Center)
+                        .Icon(Icon.TextListBullets)
+                        .MarginSpec("0 1 0 1")
+                        .AnchorHorizontal("100%")
+                        .AnchorVertical("70%")
+                        .Border(false)
+            .Store(Html.X().Store().
+                ID("stProductOrder")
+                       .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetData"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .RemoteSort(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(Html.X().Model()
+                            .IDProperty("ID")
+                            .Fields(
+                             new ModelField("ID", ModelFieldType.Int),
+                             new ModelField("ProductCode", ModelFieldType.String),
+                             new ModelField("ProductName"),
+                             new ModelField("ProductUnitName", ModelFieldType.String),
+                             new ModelField("Quantity", ModelFieldType.Auto),
+                             new ModelField("Price", ModelFieldType.Auto),
+                                 new ModelField("Amount", ModelFieldType.Auto),
+                                 new ModelField("Note", ModelFieldType.Auto)
+                    )
+                )
+
+            )
+            .ColumnModel(
+                Html.X().Column().Text("ID").DataIndex("ID").Width(35),
+                Html.X().Column()
+                    .Text("Mã")
+                        .DataIndex("ProductCode"),
+                Html.X().SummaryColumn()
+                        .Text("Tên hàng hóa")
+                        .SummaryType(SummaryType.Count)
+                        .SummaryRenderer("return 'Tổng : ' + ((value === 0 || value > 1) ? '(' + value +' Vật tư hàng hóa)' : '(0 Vật tư hàng hóa)');")
+                        .DataIndex("ProductName")
+                        .Flex(1),
+                Html.X().Column()
+                        .Text("ĐVT")
+                        .DataIndex("ProductUnitName"),
+                Html.X().SummaryColumn()
+                            .Text("Số lượng").Renderer("RenderNumber")
+                            .Align(Alignment.Right)
+                            .Wrap(true)
+                            .DataIndex("Quantity"),
+                Html.X().NumberColumn()
+                        .Text("Đơn giá")
+                        .DataIndex("Price")
+                        .Renderer("RenderVND")
+                        .Align(Alignment.Right)
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(130)
+                        .Wrap(true)
+                        .Renderer("RenderVND"),
+        Html.X().SummaryColumn()
+            .Text("Thành tiền")
+            .DataIndex("Amount")
+            .Renderer("RenderVND")
+            .StyleSpec("font-weight: bold; text-align: center;")
+            .Align(Alignment.Right)
+            .Width(120)
+            .Wrap(true)
+            .Groupable(false)
+                        .CustomSummaryType("totalCost")
+                        .Renderer("RenderAmountVND")
+                        .SummaryRenderer("RenderVND")
+             .Editor(
+            Html.X().NumberField().MinValue(0.001)
+            ),
+                    Html.X().Column().Text("Ghi chú").Align(Alignment.Right).DataIndex("Note").Width(200)
+
+            )
+                .SelectionModel(Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(l =>
+                            {
+                                //l.Select.Handler = "checkStatus()";
+                            }))
+            .Features(
+
+                                        Html.X().Summary().Dock(SummaryDock.Bottom)
+                                        )
+
+                .BottomBar(Html.X().CustomPagingToolbar())
+       ).Buttons(
+           
+                Html.X().ButtonExit()
+            ))
+
+
+
+<script type="text/javascript">
+
+    var checkPrice = function () {
+        var records = App.stProductOrder.getCount();
+        var total = 0;
+        if (records >= 1) {
+            for (var ii = 0; ii < records; ii++) {
+                var rec = App.gpProductOder.getStore().getAt(ii);
+                total = rec.get('Quantity') * rec.get('Price');
+                if (total == 0) {
+                    Ext.MessageBox.show({
+                        title: 'Bạn phải nhập đầy đủ thông tin sản phẩm?',
+                        buttons: { yes: 'Đồng ý' },
+                        iconCls: '#Information'
+                    });
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+    
+
+    var RenderAmountVND = function (value, p, record) {
+        var value1 = record.get('Quantity') * record.get('Price');
+        if (value1 == null)
+            return "";
+        return value1.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, "$1,") + " VNĐ";
+    };
+    var ConvertToVND = function (value) {
+        if (value == null)
+            return "";
+        return value.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, "$1,") + " VNĐ"
+    };
+    var totalCost = function (records) {
+        var i = 0,
+            length = records.length,
+            total = 0,
+            record;
+
+        for (; i < length; ++i) {
+            record = records[i];
+            total += record.get('Quantity') * record.get('Price');
+        }
+        if (App.txtDiscount.getValue() == 0) {
+            App.txtFAmount.setValue(total);
+            App.txtAmount.setValue(total);
+        }
+        else {
+            App.txtFAmount.setValue(total - (total * App.txtDiscount.getValue() / 100));
+            App.txtAmount.setValue(total);
+        }
+        return total;
+    };
+    var totalCostPaint = function () {
+        var records = App.stProductOrder.getCount();
+        var total = 0;
+        if (records >= 1) {
+            for (var ii = 0; ii < records; ii++) {
+                var rec = App.gpProductOder.getStore().getAt(ii);
+                total += rec.get('Quantity') * rec.get('Price');
+            }
+        }
+        App.txtAmount.setValue(total);
+        var stamp = total - (total * App.txtDiscount.getValue() / 100);
+        App.txtFAmount.setValue(stamp);
+    };
+
+</script>

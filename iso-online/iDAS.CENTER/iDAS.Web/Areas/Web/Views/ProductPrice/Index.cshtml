@@ -1,0 +1,132 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.ProductPriceItem
+
+@(Html.X().Window()
+    .Title("Bảng giá sản phẩm")
+    .Icon(Icon.Tick)
+    .Modal(true)
+    .Width(750)
+    .Height(400)
+    .Constrain(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Items(
+        Html.X().GridPanel()
+        .ID("ProductPricePanel")
+        .Header(false)
+        .ColumnLines(true)
+        .Border(false)
+        .ForceFit(true)
+        .Collapsible(true)
+        .Split(true)
+        .Icon(Icon.TextListBullets)
+        .TopBarItem(
+            Html.X().Button().Text("Thêm").ID("btnCreateProductPrice").Icon(Icon.Add).Handler("showCreateProductPrice();"),
+            Html.X().Button().Text("Sửa").ID("btnUpdateProductPrice").Icon(Icon.Pencil).Handler("showUpdateProductPrice();").Disabled(true),
+            Html.X().Button().Text("Xóa").ID("btnDeleteProductPrice").Icon(Icon.Delete).Handler("showDeleteProductPrice();").Disabled(true),
+            Html.X().Button().Text("Xem chi tiết").ID("btnDetailProductPrice").Icon(Icon.Zoom).Handler("showDetailProductPrice();").Disabled(true)
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .Parameters(Html.X().StoreParameter().Name("productId").Value("getProductId()").Mode(ParameterMode.Raw))
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("ProductMethodName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("Price").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectProductPrice()")
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").Hidden(true),
+            Html.X().Column().Text("Hình thức").DataIndex(Model, m => m.ProductMethodName).StyleSpec("font-weight: bold;text-align: center").Flex(1).Wrap(true),
+            Html.X().NumberColumn().Text("Giá thành").DataIndex(Model, m => m.Price).StyleSpec("font-weight: bold;text-align: center").Width(130).Align(Alignment.Right).Format("0,0.00 ₫"),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).StyleSpec("font-weight: bold;text-align: center").Width(120).Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày tạo").DataIndex(Model, m => m.CreateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày sửa").DataIndex(Model, m => m.UpdateAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProductPrice()")
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var urlCreateProductPrice = '@Url.Action("Create", "ProductPrice", new { area = "Web" })';
+    var urlUpdateProductPrice = '@Url.Action("Update", "ProductPrice", new { area = "Web" })';
+    var urlDeleteProductPrice = '@Url.Action("Delete", "ProductPrice", new { area = "Web" })';
+    var urlDetailProductPrice = '@Url.Action("Detail", "ProductPrice", new { area = "Web" })';
+
+    var getProductId = function () {
+        var record = getProductSelection();
+        var productId = record == null ? 0 : record.data.ID;
+        return productId;
+    };
+    var getProductPriceSelection = function () {
+        return App.ProductPricePanel.getSelectionModel().getLastSelected();
+    };
+    var reloadProductPrice = function () {
+        App.ProductPricePanel.getStore().reload();
+        deSelectProductPrice();
+    };
+    var deSelectProductPrice = function () {
+        App.ProductPricePanel.selModel.lastSelected = null;
+        selectionChangeProductPrice();
+    };
+    var showCreateProductPrice = function () {
+        var url = urlCreateProductPrice;
+        var productId = getProductId();
+        var params = { productId: productId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showUpdateProductPrice = function () {
+        var url = urlUpdateProductPrice;
+        var record = getProductPriceSelection();
+        var ProductPriceId = record == null ? 0 : record.data.ID;
+        var params = { ProductPriceId: ProductPriceId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteProductPrice = function () {
+        var url = urlDeleteProductPrice;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProductPriceSelection();
+                            var ProductPriceId = record == null ? 0 : record.data.ID;
+                            var params = { ProductPriceId: ProductPriceId };
+                            onDirectMethod(url, params, 'post', reloadProductPrice);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProductPrice = function () {
+        var url = urlDetailProductPrice;
+        var record = getProductPriceSelection();
+        var ProductPriceId = record == null ? 0 : record.data.ID;
+        var params = { ProductPriceId: ProductPriceId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeProductPrice = function () {
+        var record = getProductPriceSelection();
+        App.btnUpdateProductPrice.setDisabled(record == null);
+        App.btnDeleteProductPrice.setDisabled(record == null);
+        App.btnDetailProductPrice.setDisabled(record == null);
+    };
+</script>

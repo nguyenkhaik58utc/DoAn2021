@@ -1,0 +1,248 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.ProductionPerformItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới thông tin ca sản xuất";
+        Model.Date = DateTime.Today;
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật thông tin ca sản xuất";
+    }
+}
+@(Html.X().CustomWindow()
+            .Title(title)
+            .Icon(IconView)
+            .Items(
+                    Html.X().CustomFormPanel().ID("frmUpdate")
+                    .Items(
+                            Html.X().HiddenFor(m => m.ID),
+                            Html.X().EmployeeFieldFor(m => m.HumanEmployee).AllowBlank(false).Title("Người giám sát" + Html.Required()),
+                            Html.X().DepartmentFieldFor(m => m.HumanDepartment).ReadOnly(true),
+                            Html.X().HiddenFor(m => m.ProductionCommandID),
+                            Html.X().TextFieldFor(m => m.CommandCode).ReadOnly(true).FieldLabel("Mã lệnh sản xuất").InputWidth(150),
+                            Html.X().DateFieldFor(m => m.Date).AllowBlank(false).FieldLabel("Ngày thực hiện" + Html.Required()).InputWidth(150),
+                            Html.X().ComboBoxFor(m => m.ProductionShiftID).FieldLabel("Ca sản xuất" + Html.Required()).AllowBlank(false)
+                                .Store(
+                                        Html.X().Store().ID("StoreProductionRequirement")
+                                                .AutoLoad(true)
+                                                .Proxy(Html.X().AjaxProxy()
+                                                            .Url(Url.Action("LoadDataActived", "Shift"))
+                                                            .ActionMethods(am => am.Read = HttpMethod.POST)
+                                                            .Reader(Html.X().JsonReader().Root("data")))
+                                                .Model(Html.X().Model()
+                                                            .IDProperty("ID")
+                                                            .Fields(
+                                                                    new ModelField("ID", ModelFieldType.Int),
+                                                                    new ModelField("Name", ModelFieldType.String))
+                                                                    )
+                                )
+                                .DisplayField("Name")
+                                .ValueField("ID")
+                    )
+                )
+.Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                                {
+                                    de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                    de.Click.Url = Url.Action("Update");
+                                    de.Click.FormID = "frmUpdate";
+                                    de.Click.Success = "this.up('window').close();";
+                                }),
+            Html.X().ButtonExit()
+      )
+)
+<script>
+    function CheckValueChange(obj) {
+        if (obj.value == true) {
+
+            switch (obj) {
+                case App.cbxPlanByCommand:
+                    App.cbxPlanByPlan.setValue(false);
+                    App.fsPlanByCommand.show();
+                    App.fsPlanByPlan.hide();
+                    break;
+                case App.cbxPlanByPlan:
+                    App.cbxPlanByCommand.setValue(false);
+                    App.fsPlanByPlan.show();
+                    App.fsPlanByCommand.hide();
+                    break;
+            }
+        };
+        if (!App.cbxPlanByPlan.value && !App.cbxPlanByCommand.value) {
+            switch (obj) {
+                case App.cbxPlanByCommand:
+                    App.cbxPlanByPlan.setValue(true);
+                    App.fsPlanByPlan.show();
+                    App.fsPlanByCommand.hide();
+                    break;
+                case App.cbxPlanByPlan:
+                    App.cbxPlanByCommand.setValue(true);
+                    App.fsPlanByCommand.show();
+                    App.fsPlanByPlan.hide();
+                    break;
+            }
+        };
+    };
+    var CheckGridStatus = function (grid, btnUpdate, btnDelete) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            SetEnabled(btnUpdate, btnDelete);
+        }
+        else {
+            SetDisabled(btnUpdate, btnDelete);
+        }
+    };
+    var editQuatity = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            e.record.commit();
+        };
+    };
+    var DeleteRecord = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    grid.store.remove(records);
+                };
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowCreateEquipement = function () {
+        onDirectMethod('@Url.Action("EquipmentWindow")');
+    };
+    var ShowUpdateEquipement = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@Url.Action("EquipmentWindow")';
+            var parmas = { isUpdate: true };
+            onDirectMethod(url, parmas, 'post', function () { App.frmEquipmentUpdate.getForm().loadRecord(records[0]); });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SaveEquipment = function (value, isUpdate) {
+        var grid = App.GrEquipment;
+        var store = grid.store;
+        if (isUpdate.toLowerCase() == "true") {
+            var record = grid.selModel.getSelection()[0];
+            record.data.EquipmentProductionCategoryID = value.EquipmentProductionCategoryID;
+            record.data.EquipementName = value.EquipementName;
+            record.data.Quatity = value.Quatity;
+            record.commit();
+        }
+        else {
+            var records = store.getRecordsValues();
+            if (records.length > 0) {
+                for (var i = 0; i < records.length; i++) {
+                    if (records[i].EquipmentProductionCategoryID == value.EquipmentProductionCategoryID) {
+                        Ext.MessageBox.show({
+                            title: 'Thông báo', msg: "Đã tồn tại thiết bị!",
+                            buttons: { yes: 'Đồng ý' },
+                            iconCls: '#Exclamation'
+                        });
+                        return;
+                    };
+                };
+            };
+            grid.store.insert(grid.store.data.length, value);
+        };
+    };
+    var ShowCreateMaterial = function () {
+        onDirectMethod('@Url.Action("MaterialWindow")');
+    };
+    var ShowUpdateMaterial = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@Url.Action("MaterialWindow")';
+            var parmas = { isUpdate: true };
+            onDirectMethod(url, parmas, 'post', function () { App.frmMaterialUpdate.getForm().loadRecord(records[0]); });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SaveMaterial = function (value, isUpdate) {
+        var grid = App.GrMaterial;
+        var store = grid.store;
+        if (isUpdate.toLowerCase() == "true") {
+            var record = grid.selModel.getSelection()[0];
+            record.data.StockMaterialID = value.StockMaterialID;
+            record.data.MaterialName = value.MaterialName;
+            record.data.Quatity = value.Quatity;
+            record.commit();
+        }
+        else {
+            var records = store.getRecordsValues();
+            if (records.length > 0) {
+                for (var i = 0; i < records.length; i++) {
+                    if (records[i].StockMaterialID == value.StockMaterialID) {
+                        Ext.MessageBox.show({
+                            title: 'Thông báo', msg: "Đã tồn tại nguyên vật liệu!",
+                            buttons: { yes: 'Đồng ý' },
+                            iconCls: '#Exclamation'
+                        });
+                        return;
+                    };
+                };
+            };
+            grid.store.insert(grid.store.data.length, value);
+        };
+    };
+    var ShowCreateProduct = function () {
+        onDirectMethod('@Url.Action("ProductWindow")');
+    };
+    var ShowUpdateProduct = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@Url.Action("ProductWindow")';
+            var parmas = { isUpdate: true, StockProductID: records[0].data.StockProductID, ProductName: records[0].data.ProductName, Quatity: records[0].data.Quatity };
+            onDirectMethod(url, parmas);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SaveHaftProductResult = function (value, isUpdate) {
+        var grid = App.GrHaftProductResult;
+        var store = grid.store;
+        if (isUpdate.toLowerCase() == "true") {
+            var record = grid.selModel.getSelection()[0];
+            record.data.StockProductID = value.StockProductID;
+            record.data.ProductName = value.ProductName;
+            record.data.Quatity = value.Quatity;
+            record.commit();
+        }
+        else {
+            var records = store.getRecordsValues();
+            if (records.length > 0) {
+                for (var i = 0; i < records.length; i++) {
+                    if (records[i].StockProductID == value.StockProductID) {
+                        Ext.MessageBox.show({
+                            title: 'Thông báo', msg: "Đã tồn tại nguyên vật liệu!",
+                            buttons: { yes: 'Đồng ý' },
+                            iconCls: '#Exclamation'
+                        });
+                        return;
+                    };
+                };
+            };
+            grid.store.insert(grid.store.data.length, value);
+        };
+    };
+</script>

@@ -1,0 +1,48 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerAssessResultItem
+@(Html.X().Window()
+          .ID("winEditResult")
+          .Title("Chấm điểm theo tiêu chí đánh giá").Header(false)
+          .Icon(Icon.Pencil)
+          //.Height(300)
+          .Width(350)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+        Html.X().FormPanel()
+                .ID("frResult")
+                .Layout(LayoutType.Form)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+        .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().HiddenFor(m=>m.AuditID),
+                    Html.X().HiddenFor(m=>m.CustomerID),
+                    Html.X().HiddenFor(m=>m.CriteriaID),
+                    Html.X().NumberFieldFor(m => m.Point)
+                            .FieldLabel("Điểm" +Html.Required())
+                            .MaxValue(Model.MaxPoint)
+                            .MinValue(Model.MinPoint)
+                            .AllowOnlyWhitespace(false)
+                            .BlankText("Điểm không được trống")
+                            .LabelWidth(120)
+                     )
+                 )
+            .Buttons(
+            Html.X().ButtonSave()
+                .DirectEvents(de =>
+                {
+                de.Click.Before = @"if (!App.frResult.getForm().isValid()) { return false; } ";
+                de.Click.Action = "UpdateAuditResult";
+                de.Click.FormID = "frResult";
+                de.Click.Success = "this.up('window').close(); refresh();";
+            }),
+            Html.X().ButtonExit()
+            )
+)

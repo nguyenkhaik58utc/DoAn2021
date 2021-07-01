@@ -1,0 +1,61 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductionStageMaterialItem
+@{
+    string title = "";
+    var IconView = new Icon();
+    bool isUpdate = (bool)ViewData["Update"];
+    if (isUpdate)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật nguyên liệu";
+    }
+    else
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới nguyên vật liệu";
+    }
+}
+@(Html.X().Window()
+    .Title(title)
+    .Icon(IconView)
+    .BodyPadding(0)
+    .Width(350)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+            Html.X().CustomFormPanel().ID("frmMaterialUpdate")
+                        .Items(
+                                Html.X().HiddenFor(m => m.StockMaterialID).ID("hdfStockMaterialID"),
+                                Html.X().TextFieldFor(m => m.MaterialName).ID("txtMaterialName").FieldLabel("nguyên vật liệu" + Html.Required()).Height(24)
+                                            .BlankText("Bắt buộc nhập nguyên vật liệu").EmptyText("Nhập nguyên vật liệu --->")
+                                            .RightButtons(Html.X().Button().Icon(Icon.Pencil).Handler("ShowSelectMaterial")).AllowOnlyWhitespace(false),
+                                Html.X().NumberFieldFor(m => m.Quantity).MinValue(1).FieldLabel("Số lượng" + Html.Required())
+                                            .EmptyText("Nhập số lượng cần")
+                                            .AllowBlank(false).BlankText("Bắt buộc nhập số lượng nguyên vật liệu")
+                        )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                .Handler("onSaveMaterial(this.up('window'))"),
+        Html.X().ButtonExit()
+    )
+)
+<script>
+    var onSaveMaterial = function (window) {
+        if (!App.frmMaterialUpdate.getForm().isValid()) { return false; };
+        var form = window.down("form");
+        SaveMaterial(form.getForm().getValues(),'@isUpdate');
+        window.close();
+    };
+    var ShowSelectMaterial = function () {
+        onDirectMethod('@Url.Action("MaterialWindowSelect")');
+    };
+    var SelectMaterial = function (records) {
+        App.hdfStockMaterialID.setValue(records[0].data.ID);
+        App.txtMaterialName.setValue(records[0].data.MaterialName);
+    };
+</script>

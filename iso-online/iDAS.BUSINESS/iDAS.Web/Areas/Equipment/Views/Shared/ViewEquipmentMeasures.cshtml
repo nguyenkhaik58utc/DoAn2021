@@ -1,0 +1,70 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    var windowID = "StatisticalProfile";
+    var StoreParamProfile = ViewData["StoreParamProfileStatiscal"] as StoreParameter;
+}
+@(Html.X().Window()
+            .ID(windowID)
+            .Title("Danh sách thiết bị đo")
+            .StyleSpec("-webkit-border-radius:0")
+            .Icon(Icon.ApplicationSideList)
+            .Height(1)
+            .Maximized(true)
+            .Constrain(true)
+            .Layout(LayoutType.Fit)
+            .Modal(true)
+            .Resizable(false)
+            .Margin(0)
+            .BodyPadding(0)
+            .Border(true)
+            .Items(
+         Html.X().GridPanel()
+                    .ID("grProfileInfo")
+                    .ColumnLines(true)
+                    .Border(false)
+                        .Store(
+                            Html.X().Store()
+                               .ID("StoreEquipmentProdutionID")
+                                .PageSize(20)
+                                .RemotePaging(true)
+                                .Proxy(
+                                    Html.X().AjaxProxy().Url(ViewData["StoreUrlProfile"].ToString())
+                                        .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(a =>
+                                    {
+                                        a.Add(StoreParamProfile);
+                                        a.Add(new { fromDate = ViewData["FromDate"] });
+                                        a.Add(new { toDate = ViewData["ToDate"] });
+                                        a.Add(new { depId = ViewData["DepID"] });
+                                    })
+                                .Model(
+                                       Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Code"),
+                                                Html.X().ModelField().Name("SerialNumber"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("Status"),
+                                                Html.X().ModelField().Name("UseStartTime"),
+                                                Html.X().ModelField().Name("MadeYear"),
+                                                Html.X().ModelField().Name("MadeIn")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                        X.Column().DataIndex("Code").Text("Mã").Width(100).Locked(true),
+                                        X.Column().DataIndex("SerialNumber").Text("Số hiệu").Width(100).Locked(true),
+                                        X.Column().DataIndex("Name").Text("Tên thiết bị").Width(250).Locked(true),
+                                        X.DateColumnExtend().DataIndex("MadeYear").Format("dd/MM/yyyy").Text("Năm sản xuất").Width(100).Align(Alignment.Center),
+                                        X.Column().DataIndex("MadeIn").Text("Nơi sản xuất").MinWidth(100).Flex(1)
+                            )
+                        .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                        )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+
+
+ )
+)

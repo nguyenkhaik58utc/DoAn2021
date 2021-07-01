@@ -1,0 +1,86 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.EquipmentMeasureCalibrationItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thông tin hiệu chỉnh thiết bị";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Thông tin hiệu chỉnh thiết bị";
+    }
+}
+@(Html.X().Window()
+.ID("winEquipmentCalibrationUpdate")
+.Title(title)
+.Icon(IconView)
+.Width(500)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+        .ID("frmEquipmentCalibration")
+        .Layout(LayoutType.Column)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => { df.LabelWidth = 110; })
+        .Items(
+                X.HiddenFor(m => m.ID).ID("hdfEquipmentDepartment"),
+                X.HiddenFor(m => m.EquipmentMeasureID).ID("hdfEquipmentMeasure"),
+                X.ComboBoxFor(m => m.EquipmentCalibrationID)
+                                        .EmptyText("Nhập thiết bị hiệu chỉnh...")
+                                        .QueryMode(DataLoadMode.Local)
+                                        .DisplayField("Name")
+                                        .ValueField("ID")
+                                        .Store(
+                                            Html.X().Store()
+                                            .RemotePaging(true)
+                                            .AutoDataBind(true)
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCalibration", "EquipmentMeasureCalibration"))
+                                            .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                            .Model(
+                                                Html.X().Model().Fields(
+                                                    Html.X().ModelField().Name("ID"),
+                                                    Html.X().ModelField().Name("Name")
+                                                    )
+                                                )
+                                        )
+                                        .AllowBlank(false)
+                                        .FieldLabel("Thiết bị hiệu chỉnh" + Html.Required()).ColumnWidth(0.7).MarginSpec("5 8 0 8"),    
+                X.EmployeeFieldFor(m=>m.HumanEmployee).AllowBlank(false).Title("Người thực hiện" + Html.Required())
+                    .ColumnWidth(1).MarginSpec("5 8 5 8"),
+                X.DateTimeFieldFor(m => m.Time).FieldLabel("Thời gian").ColumnWidth(1).MarginSpec("5 8 5 8"),
+                X.CheckboxFor(m => m.IsPass).FieldLabel("Kết quả").BoxLabel("Đạt").ColumnWidth(1).MarginSpec("5 8 5 8"),
+                X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú").LabelAlign(LabelAlign.Top)
+                    .ColumnWidth(1).MarginSpec("0 8 0 8").Height(200)            
+            )
+    )
+    .Buttons(
+        Html.X().Button()
+                .Text("Lưu lại")
+                .Icon(Icon.DatabaseSave)
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmEquipmentCalibration.getForm().isValid()) { return false; }; ";
+                                de.Click.ExtraParams.Add(new { exit = true });
+                                de.Click.Url = Url.Action("Update", "EquipmentMeasureCalibration", new { Area = "Equipment" });
+                                de.Click.EventMask.ShowMask = true;
+                                de.Click.Success = "this.up('window').close();App.StoreMeasureCalibration.reload();";
+                                de.Click.FormID = "frmEquipmentCalibration";
+                            })
+        , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

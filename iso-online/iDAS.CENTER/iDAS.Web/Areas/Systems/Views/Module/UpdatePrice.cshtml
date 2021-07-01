@@ -1,0 +1,82 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@model iDAS.Items.SystemModuleItem
+@(
+ Html.X().Window()
+    .ID("winUpdateModule")
+    .Title("Cập nhật thông tin giá của Module")
+    .Icon(Icon.Zoom)
+    .Width(500)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("frmUpdateModule")
+            .Layout(LayoutType.Form)
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+                .FieldDefaults(df => { df.LabelWidth = 100; })
+            .DefaultAnchor("100%")
+            .Items(
+
+                Html.X().TextFieldFor(m => m.ID).ID("ID").Hidden(true),
+                Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                    .FieldLabel("Tên Module").ReadOnly(true)
+                    .TabIndex(1)
+                ,           
+                Html.X().NumberFieldFor(m => m.Position).ID("txtPos")
+                    .FieldLabel("Vị trí hiển thị")
+                    .ReadOnly(true)
+                    .TabIndex(2),
+                Html.X().TextAreaFor(m => m.Description).ID("txtDes")
+                    .FieldLabel("Mô tả")
+                    .ReadOnly(true)
+                    .TabIndex(2),
+                Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 0 105")
+                    .Items(
+                        Html.X().CheckboxFor(m => m.IsActive).ID("ckIsActive")
+                            .BoxLabel("Kích hoạt").HideLabel(true).ReadOnly(true)
+                            ,
+                        Html.X().CheckboxFor(m => m.IsShow).HideLabel(true).ID("ckvIsShow")
+                            .BoxLabel("Hiển thị").ReadOnly(true)
+                            .MarginSpec("0 0 0 15") ,
+                        Html.X().CheckboxFor(m => m.IsDeleted).HideLabel(true).ID("ckIsDeleted")
+                            .BoxLabel("Không sử dụng")
+                            .MarginSpec("0 0 0 15").ReadOnly(true)
+                    ),
+                  Html.X().NumberFieldFor(m => m.Price).ID("txtPrice")
+                    .FieldLabel("Giá (VNĐ)").MinValue(0).AllowBlank(false)
+                    .TabIndex(2)    
+                 
+                  )        
+        )
+        .Buttons(
+
+         Html.X().Button()
+            .ID("btnUpdate")
+                .Text("Lưu lại")
+                .Icon(Icon.Disk)
+                .TabIndex(5)
+                .DirectEvents(de =>
+                {
+                    de.Click.Before = @"if (!App.frmUpdateModule.getForm().isValid()) { return false; } ";
+                    de.Click.ExtraParams.Add(new { exit = true });
+                    de.Click.Url = Url.Action("UpdatePrice");
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.FormID = "frmUpdateModule";
+                    de.Click.Success = "App.winUpdateModule.close();";
+                })
+              
+                ,
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Decline)
+                .Text("Thoát")
+                .TabIndex(2)
+                .Handler("App.winUpdateModule.close();")
+        )
+)

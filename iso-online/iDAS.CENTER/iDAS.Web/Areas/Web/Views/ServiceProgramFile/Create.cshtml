@@ -1,0 +1,61 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ServiceProgramFileItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin tệp đính kèm")
+    .Icon(Icon.Add)
+    .Height(250)
+    .Constrain(true)
+    .Width(550)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.ServiceProgramID).Value(ViewData["ServiceProgramID"]),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(1).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).AllowBlank(false).EmptyText("Nhập tên tệp đính kèm").BlankText("Bắt buộc nhập !").FieldLabel("Tên tệp *"),
+                            Html.X().UploadFieldFor(m => m.File),
+                            Html.X().CheckboxFor(m => m.IsActive).FieldLabel("Kích hoạt").Value(true)
+                        )
+                    )
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if(result.result){this.up('window').close(); reloadServiceProgramFile();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)

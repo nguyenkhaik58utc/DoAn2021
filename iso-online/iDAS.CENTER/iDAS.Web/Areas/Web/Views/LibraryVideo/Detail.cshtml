@@ -1,0 +1,53 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.LibraryItem
+@(Html.X().Window()
+        .ID("winDetail")
+        .Title("Thông tin chi tiết")
+        .Icon(Icon.Zoom)
+        .Frame(true)
+        .Constrain(true)
+        .Width(600)
+        .BodyPadding(5)
+        .Center()
+        .Resizable(false)
+        .Modal(true)
+        .Items(
+            Html.X().FormPanel().DefaultAnchor("100%")
+            .ID("frmDetail")
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .FieldDefaults(df => df.LabelWidth = 120)
+            .Items(
+                    Html.X().ComboBoxFor(m => m.WebLibraryCategoryID).ReadOnly(true)
+                            .QueryMode(DataLoadMode.Local)
+                            .TriggerAction(TriggerAction.All)
+                            .SelectOnFocus(true)
+                            .EmptyText("Chọn danh mục")
+                            .DisplayField("Title")
+                            .ValueField("ID")
+                            .AllowBlank(false)
+                            .FieldLabel("Danh mục" )
+                            .Store(
+                                Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Title", ModelFieldType.String) { Mapping = "Title" }
+                                        )
+                                            )
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadVideoCategory", "LibraryCategory"))//ham load dl cho combobox
+                                .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                ),
+                    Html.X().TextFieldFor(m => m.Name).AllowOnlyWhitespace(false).BlankText("Tên video bắt buộc nhập !").FieldLabel("Tên video").ReadOnly(true),
+                    Html.X().TextFieldFor(m => m.Link).FieldLabel("Đường dẫn").ReadOnly(true),
+                    Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").Height(100).ReadOnly(true),
+                    Html.X().CheckboxFor(m => m.IsShow).FieldLabel("Hiển thị").ReadOnly(true)
+                )
+            )
+            .Buttons(
+                    Html.X().ButtonExit()
+        )
+)

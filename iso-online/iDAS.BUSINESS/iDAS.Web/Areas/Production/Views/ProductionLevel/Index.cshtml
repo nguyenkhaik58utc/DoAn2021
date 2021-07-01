@@ -1,0 +1,115 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatusCommandLevel() {
+        var records = App.GrCommandLevel.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateCommandLevel, App.btnDeleteCommandLevel, App.btnDetailCommandLevel);
+        }
+        else {
+            SetDisabled(App.btnUpdateCommandLevel, App.btnDeleteCommandLevel, App.btnDetailCommandLevel);
+        };
+    };
+    var ShowAdd = function () {
+        var url = '@(Url.Action("Update", "ProductionLevel", new { Area = "Production" }))';
+        onDirectMethod(url, null, 'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.GrCommandLevel.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update", "ProductionLevel", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowView = function () {
+        var records = App.GrCommandLevel.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "ProductionLevel", new { Area = "Production" }))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCommandLevel")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowAdd();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateCommandLevel").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteCommandLevel").Handler("onDelete(App.GrCommandLevel.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailCommandLevel").Handler("ShowView();"),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                            ))
+                            .Store(
+                                Html.X().Store().ID("StoreCommandLevel")
+                                        .RemotePaging(true)
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "ProductionLevel", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("Color"),
+                                                Html.X().ModelField().Name("Note"),
+                                                Html.X().ModelField().Name("IsActive")
+                                            )
+                                      )
+                        )
+                        .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    X.Column().DataIndex("Name").Text("Tên").Flex(1),
+                                      Html.X().Column()
+                                        .Text("Màu sắc")
+                                        .DataIndex("Color")
+                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                        .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                                        .Align(Alignment.Center)
+                                        .Width(140),
+                                    X.Column().DataIndex("Note").Text("Ghi chú").Flex(2),
+                                    X.CheckColumn().DataIndex("IsActive").Text("Kích hoạt").Width(100).Align(Alignment.Center)
+                            )
+                        .Features(
+                                Html.X().GridFilters()
+                                    .MenuFilterText("Tìm kiếm")
+                                    .Filters(
+                                        Html.X().StringFilter().DataIndex("Name"),
+                                        Html.X().BooleanFilter().DataIndex("IsActive").YesText("Đã kích hoạt").NoText("Chưa kích hoạt")
+                                    )
+                            )
+                        .SelectionModel(
+                                        Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusCommandLevel")
+                                        )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+

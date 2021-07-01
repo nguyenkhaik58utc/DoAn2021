@@ -1,0 +1,95 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProductModuleItem
+
+@(Html.X().Window()
+    .Title("Cập nhật thông tin module sản phẩm")
+    .Icon(Icon.Pencil)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmUpdate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.ID),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().ComboBoxFor(m => m.CenterModuleID).FieldLabel("Module")
+                            .ID("cboModule")
+                            .DisplayField("Name")
+                            .ValueField("ID")
+                            .Store(
+                                Html.X().Store().AutoLoad(true)
+                                .Parameters(Html.X().StoreParameter().Name("productId").Value("getProductId()").Mode(ParameterMode.Raw))
+                                .Parameters(Html.X().StoreParameter().Name("moduleId").Value(Model.CenterModuleID.ToString()).Mode(ParameterMode.Value))
+                                .Model(
+                                    Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                    )
+                                )
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadModules")).Reader(Html.X().JsonReader().Root("data")))
+                                .Listeners(ls => ls.Load.Handler = "App.cboModule.select(App.cboModule.store.getAt(0))")
+                            ),
+                            Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").Height(80)
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true)
+                        )
+                    ),
+                    Html.X().TextFieldFor(m => m.Tags).FieldLabel("Tags"),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.Position).FieldLabel("Thứ tự hiển thị"),
+                        Html.X().Container().ColumnWidth(0.1),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.3).FieldLabel("Kích hoạt")
+                    )
+                ),
+                 Html.X().Panel().Title("Nội dung").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Fit)
+                .Items(
+                    Html.X().HtmlEditorFor(m => m.Html)
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmUpdate";
+            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Update");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if(result.result){ this.up('window').close(); reloadProductModule();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+

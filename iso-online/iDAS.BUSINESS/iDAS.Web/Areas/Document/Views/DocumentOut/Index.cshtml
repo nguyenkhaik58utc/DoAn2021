@@ -1,0 +1,489 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int userID = ViewData["UserLogOn"] != null ? (int)ViewData["UserLogOn"] : 0;
+}
+
+@(Html.X().Viewport().AutoScroll(false)
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        Html.X().Hidden().ID("hdfFolderID").Value(0),
+        Html.X().Panel()
+                    .Title("Thư mục tài liệu").TitleAlign(TitleAlign.Center)
+                    .Header(false)
+                    .Collapsible(true)
+                    .Region(Region.West).Width(300)
+                    .MarginSpec("-1 0 -1 -1")
+                    .Split(true)
+                    .Layout(LayoutType.Fit)
+                    //.ItemsFromAction("List", "Department", new { area = "Department" }),
+                    .Items(
+            Html.X().TreePanel().Margin(0).Padding(0)
+                .Tools(
+                        Html.X().Tool().Type(ToolType.Plus).Handler("showCreateDocumentFolderOut").ToolTip("Thêm thư mục"),
+                        Html.X().Tool().Type(ToolType.Up).ToolTip("Sửa thư mục").Handler("showUpdateDocumentFolderOut"),
+                        Html.X().Tool().Type(ToolType.Close).ToolTip("Xóa thư mục").Handler("showDeleteDocumentFolderOut"),
+                        Html.X().Tool().Type(ToolType.Minus).Handler("App.treFolderOut.collapseAll();").ToolTip("Thu gọn"),
+                        Html.X().Tool().Type(ToolType.Refresh).Handler("App.treFolderOut.store.reload();").ToolTip("Tải lại")
+                       )
+                .Title("Thư mục tài liệu")
+                .ID("treFolderOut")
+                .TitleAlign(TitleAlign.Left)
+                .Border(false)
+                .AutoScroll(true)
+                    .SingleExpand(true)
+                .Region(Region.West)
+                .HideHeaders(true)
+                .RootVisible(false)
+                
+                .Store(
+                        Html.X().TreeStore().ID("stTreeFolderOut")
+                            .AutoDataBind(true)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadTreeFolder", "DocumentFolderOut", new { Area = "Document" }))
+                            .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("id"),
+                                Html.X().ModelField().Name("text")//,
+                                //Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+                            )
+                        )
+                    )
+                .Listeners(ls =>
+                {
+                    ls.SelectionChange.Handler = "FolderSelectChange();";
+                })
+            ),
+        Html.X().GridPanel()
+            .ID("grdDocumentOut")
+            .Title("Danh sách tài liệu")
+            //.View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+            .Header(false)
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(true)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().ButtonCreate().Handler("ShowInsert"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnEdit").Handler("ShowEdit"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDelete").Handler("deleteRecord();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetail").Handler("ShowDetail"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonApproval().ID("btnApprove").Handler("ShowApprove"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Ban hành").Icon(Icon.PageForward).ID("btnIssues").Disabled(true).Handler("ShowIssues"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Đề nghị sửa đổi").ID("btnInsertModified").Icon(Icon.CommentAdd).Disabled(false)
+                            .Handler("RequiredEdits();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Sửa đổi").ID("btnModifield").Icon(Icon.PageRefresh).Disabled(true).Handler("ShowModified"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Phân phối").Icon(Icon.PageCode).ID("btnDistribution").Disabled(true).Handler("ShowDistribution"),//
+                        Html.X().ToolbarSeparator(),
+                  
+                        Html.X().Button().Text("Thu hồi").Icon(Icon.PageRed).ID("btnDestroy").Disabled(true)
+                            .Handler("ShowDestroy"),
+                                    Html.X().ToolbarFill(),
+                                 Html.X().ButtonTutorial()
+                      )
+                   )
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(false)
+                    .ID("StDocument")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "DocumentOut")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("folderID", "App.hdfFolderID.getValue() > 0 ? App.hdfFolderID.getValue():0", ParameterMode.Raw));
+                    })
+                    .Model(
+                        Html.X().Model().Fields(
+                        Html.X().ModelField().Name("ID"),
+                        Html.X().ModelField().Name("Name"),
+                        Html.X().ModelField().Name("Code"),
+                        Html.X().ModelField().Name("Version"),
+                        Html.X().ModelField().Name("PublicDate"),
+                        Html.X().ModelField().Name("PublicNumber"),
+                        Html.X().ModelField().Name("FormH"),
+                        Html.X().ModelField().Name("FormS"),
+                        Html.X().ModelField().Name("Security"),
+                        Html.X().ModelField().Name("Status"),
+                        Html.X().ModelField().Name("StatusCode"),
+                        Html.X().ModelField().Name("Note"),
+                        Html.X().ModelField().Name("Color"),
+                        Html.X().ModelField().Name("IsEdit"),
+                        Html.X().ModelField().Name("IsApproval"),
+                        Html.X().ModelField().Name("IsAccept"),
+                        Html.X().ModelField().Name("IsPublic"),
+                        Html.X().ModelField().Name("AllUserAccess"),
+                        Html.X().ModelField().Name("IsObsolete"),
+                        Html.X().ModelField().Name("HasRequest"),
+                        Html.X().ModelField().Name("ApprovalBy"),
+                        Html.X().ModelField().Name("AttachmentFileIDs")
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Code").Text("Mã số tài liệu").Width(100),
+                Html.X().Column().DataIndex("Name").Text("Tên tài liệu").Flex(1),
+                Html.X().DateColumnExtend().DataIndex("PublicDate").Text("Ngày ban hành").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().Column().DataIndex("PublicNumber").Text("Lần ban hành").Width(80).Align(Alignment.Right).Filterable(false),
+                Html.X().ComponentColumn().Text("Hình thức lưu trữ").Filterable(false).Columns(
+                    Html.X().CheckColumn().DataIndex("FormH").Text("Bản cứng").Width(80),
+                    Html.X().CheckColumn().DataIndex("FormS").Text("Bản mềm").Width(80)
+                    ),
+                Html.X().Column().DataIndex("Security").Text("Mức độ mật").Width(100).Align(Alignment.Center).Filterable(false)
+                    .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" }),
+                Html.X().Column().DataIndex("Status").Text("Trạng thái").Width(100).Align(Alignment.Center).Filterable(false),
+                Html.X().ColumnFileExtend("AttachmentFileIDs"),
+                Html.X().ColumnFileDownload("AttachmentFileIDs")
+                )
+                .Plugins(
+                        Html.X().FilterHeader().Remote(true)
+                    )
+            .SelectionModel(
+                Html.X().CheckboxSelectionModel()
+                    .ShowHeaderCheckbox(false)
+                    .Mode(SelectionMode.Single)
+                    .Listeners(l => l.SelectionChange.Handler = "checkStatus();")
+            )
+            .BottomBar(Html.X().CustomPagingToolbar()
+            )
+    )
+)
+<script>
+
+    var urlCreateDocumentFolderOut = '@(Url.Action("Create", "DocumentFolderOut", new { Area = "Document" }))';
+    var urlUpdateDocumentFolderOut = '@(Url.Action("Update", "DocumentFolderOut", new { Area = "Document" }))';
+    var urlDeleteDocumentFolderOut = '@(Url.Action("Delete", "DocumentFolderOut", new { Area = "Document" }))';
+    var urlDetailDocumentFolderOut = '@(Url.Action("ShowFrmDetail", "DocumentFolderOut", new { Area = "Document" }))';
+    var sortDocumentFolderOutIndex = null;
+    var reloadDocumentFolderOut = function () {
+        App.treFolderOut.store.reload();
+    };
+
+    var getDocumentFolderOutSelection = function () {
+        var records = App.treFolderOut.getSelectionModel().getLastSelected();
+        if (records != null)
+            return records.data.id;
+        else return null;
+
+    };
+    var setDocumentFolderOutSelection = function () {
+        if (sortDocumentFolderOutIndex != null) {
+            App.treFolderOut.selModel.select(sortDocumentFolderOutIndex);
+        }
+    };
+
+    var getDocumentFolderOutRecords = function () {
+        var records = App.treFolderOut.getView().store.getRange();
+        var node = getDocumentFolderOutSelection();
+        var data = [];
+        records.forEach(function (obj) {
+            var selected = obj.data.id == node.data.id;
+            var item = {
+                id: obj.data.id,
+                expanded: obj.data.expanded,
+                selected: selected
+            };
+            data.push(item);
+        });
+        return data;
+    };
+
+    var reloadDocumentFolderOut = function () {
+        recordDocumentFolders = getDocumentFolderOutRecords();
+        var node = getDocumentFolderSelection();
+        App.treFolderOut.store.reload({ node: node });
+        node.data.leaf = false;
+        node.data.expanded = true;
+        node.expand();
+    };
+
+    var showCreateDocumentFolderOut = function () {
+        var url = urlCreateDocumentFolderOut;
+        var record = getDocumentFolderOutSelection();
+        var ID = record == null ? 0 : record;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateDocumentFolderOut = function () {
+        var url = urlUpdateDocumentFolderOut;
+        var record = getDocumentFolderOutSelection();
+        var ID = record == null ? 0 : record;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showDeleteDocumentFolderOut = function () {
+        var url = urlDeleteDocumentFolderOut;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ thư mục này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getDocumentFolderOutSelection();
+                            var ID = record == null ? 0 : record;
+                            var params = { ID: ID };
+                            onDirectMethod(url, params, 'post', reloadDocumentFolderOut);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+
+    function onFolderReady(records) {
+        App.hdfFolderID.setValue(records[0].get('id'));
+        App.grdDocumentOut.getStore().reload();
+    };
+
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var ShowInsert = function () {
+       
+        var url = '@(Url.Action("Insert"))';
+        var folderID = App.hdfFolderID.getValue();
+        if (folderID == null) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Chưa có thư mục nào được chọn',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    return false;
+                }
+            });
+        }
+        else {
+            var params = { folderID: folderID };
+            onDirectMethod(url, params, 'get');
+        }
+    };
+    var ShowEdit = function () {
+        var record = App.grdDocumentOut.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowDetail = function () {
+        var record = App.grdDocumentOut.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Detail"))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowApprove = function () {
+        var record = App.grdDocumentOut.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Approve"))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowModified = function () {
+        var record = App.grdDocumentOut.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Modified"))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowDistribution = function () {
+        var record = App.grdDocumentOut.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Distribution"))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowDestroy = function () {
+        var record = App.grdDocumentOut.selModel.getSelection();
+        if (record.length > 0) {
+            var url = '@(Url.Action("Obsolete"))';
+            var params = { id: record[0].get('ID') };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowIssues = function (cmd) {
+        var record = App.grdDocumentOut.selModel.getSelection();
+        var id = record[0].get('ID');
+        var ck = record[0].get('HasRequest');
+        var isPublic = record[0].get('IsPublic');
+        if (ck) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Tài liệu đã chọn đang có yêu cầu Sửa đổi. Bạn có chắc chắn muốn thay đổi trạng thái Ban hành của Tài liệu không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        var url = '@(Url.Action("Issued", "DocumentOut", new { Area = "Document" }, null))';
+                        var params = { id: id };
+                        onDirectMethod(url, params, 'get');
+                    }
+                }
+            });
+
+        } else {
+            var url = '@(Url.Action("Issued", "DocumentOut", new { Area = "Document" }, null))';
+            var params = { id: id };
+            onDirectMethod(url, params, 'get');
+        }
+    };
+    var RequiredEdits = function () {
+        var record = App.grdDocumentOut.selModel.getSelection();
+        var id = record[0].get('ID');
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("InsertModified", "Request", new { Area = "Document" }, null))',
+            params: { id: id }
+        });
+    };
+    var ShowFrmDocCate = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmDocCate", "DocumentOut", new { Area = "Document" }, null))'
+        });
+    };
+    var checkStatus = function () {
+        var record = App.grdDocumentOut.selModel.getSelection();
+        if (record.length > 0) {
+            if (record[0].get('StatusCode') == 1)
+            {
+                App.btnDelete.setDisabled(false);
+            }
+            else
+            {
+                App.btnDelete.setDisabled(true);
+            }
+            App.btnDetail.setDisabled(false);
+            if (record[0].get('IsEdit')) {
+                App.btnEdit.setDisabled(false);
+            }
+            else {
+                App.btnEdit.setDisabled(true);
+            }
+            if ((!record[0].get('IsEdit') && !record[0].get('IsApproval')) || (!record[0].get('IsAccept') && record[0].get('IsApproval'))) {
+                if ('@userID' > 0 && record[0].get('ApprovalBy') == '@userID') {
+                    App.btnApprove.setDisabled(false);
+                }
+                else {
+                    App.btnApprove.setDisabled(true);
+                }
+            } else {
+                App.btnApprove.setDisabled(true);
+            }
+            if (record[0].get('IsApproval') && record[0].get('IsAccept')) {
+                App.btnIssues.setDisabled(false);
+            } else
+                App.btnIssues.setDisabled(true);
+            if (record[0].get('IsApproval') && record[0].get('IsAccept') && record[0].get('IsPublic') && !record[0].get('IsObsolete')) {
+                App.btnDistribution.setDisabled(false);
+                App.btnInsertModified.setDisabled(false);
+            } else {
+                App.btnDistribution.setDisabled(true);
+                App.btnInsertModified.setDisabled(true)
+            }
+            if (record[0].get('IsPublic') && !record[0].get('IsObsolete'))
+                App.btnModifield.setDisabled(false);
+            else
+                App.btnModifield.setDisabled(true);
+            if (record[0].get('IsObsolete')) {
+                App.btnDestroy.setDisabled(false);
+            } else
+                App.btnDestroy.setDisabled(true);
+
+        } else {
+            App.btnDetail.setDisabled(true);
+            App.btnEdit.setDisabled(true);
+            App.btnApprove.setDisabled(true);
+            App.btnIssues.setDisabled(true);
+            App.btnModifield.setDisabled(true);
+            App.btnDestroy.setDisabled(true);
+        }
+    };
+    var deleteRecord = function () {
+        var records = App.grdDocumentOut.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnDelete.setDisabled(true);
+                        App.btnDetail.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa tài liệu đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var id = records[0].get('ID');
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "DocumentOut", new { Area = "Document" }, null))',
+                                params: { id: id }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+</script>
+
+<script type="text/javascript">
+    var FolderSelectChange = function () {
+        var component = App.treFolderOut;
+        var records = component.selModel.getSelection();
+        if (records.length == 1) {
+            onFolderReady(records);
+        };
+    };
+</script>

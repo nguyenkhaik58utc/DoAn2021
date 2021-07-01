@@ -1,0 +1,138 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.StockProductBuildItem 
+@{
+    var build_id = ViewData["build_id"] != null ? System.Convert.ToInt16(ViewData["build_id"]) : 0;
+}
+<script type="text/javascript">
+    var getProductRecord = function () {
+        var id = App.txtStockProductID.getValue();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("GetRecordProduct", "Product", new { Area = "Stock" }, null))',
+            params: { id: id },
+            success: function (result) {
+                App.txtUnitName.setValue(result.Unit_Name.trim());
+                App.txtPrice.setValue(result.Org_Price);                
+            }
+        });
+     };
+</script>
+@(Html.X().Window()
+.ID("winEditProductStructure")
+.Title("Sửa vật tư cấu thành sản phẩm")
+.Icon(Icon.Pencil)
+.Height(230)
+.Width(400)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frEditProductStructure")
+.Layout(LayoutType.Form)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().HiddenFor(m=>m.ID),
+       Html.X().ComboBoxFor(m => m.StockProductID)                
+                .FieldLabel("Vật tư"+ Html.Required())
+                .ID("txtStockProductID")
+                .AllowBlank(false)                            
+                .Editable(true)        
+                .BlankText("Vật tư cấu thành không được để trống!")
+                .TabIndex(1)
+                .DisplayField("Name")
+                .ValueField("ID")
+                    .TypeAhead(false)
+                    .PageSize(20)
+                    .MinChars(0)
+                    .ForceSelection(true)
+                        .ListConfig(Html.X().BoundList()
+                            .LoadingText("Searching...")
+                            .ItemTpl(Html.X().XTemplate()
+                                .Html(@<text>
+                                    <div class="search-item">
+							            <h3>{Name}</h3>
+						            </div>
+                                </text>)
+                            )
+                        )
+                        .Store(Html.X().Store()
+                            .AutoLoad(true)
+                            .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("LoadCboProduct"))
+                                .ExtraParams(p => p.Add(new { prodcuctCreate_id = build_id }))   
+                                .ActionMethods(am => am.Read = HttpMethod.POST)
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Model(Html.X().Model()
+                                .Fields(  
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),                
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                     Html.X().ModelField().Name("Code").Type(ModelFieldType.String),                 
+                                      Html.X().ModelField().Name("Unit_Name").Type(ModelFieldType.String)                                                  
+                                )
+                        
+             )
+        ).Listeners(ls=>ls.Select.Handler="getProductRecord()"),
+       
+         Html.X().TextFieldFor(m=>m.Unit)                
+                .FieldLabel("Đơn vị tính"+ Html.Required())
+                .ID("txtUnitName")
+                .ReadOnly(true)
+                .AllowBlank(false)
+                .MaxLength(200)
+                .TabIndex(3),
+        Html.X().NumberFieldFor(m => m.Quantity)                
+                .FieldLabel("Số lượng"+ Html.Required())
+                .ID("txtQuantity")
+                .AllowBlank(false)
+                .MaxLength(200)  
+                .MinValue(0)                       
+                .BlankText("Số lượng không được để trống")
+                .AllowOnlyWhitespace(false)
+                .TabIndex(4)
+                .Listeners(ls=>ls.Change.Handler="App.txtAmount.setValue(App.txtQuantity.getValue()*App.txtPrice.getValue())"), 
+                Html.X().Container().Layout(LayoutType.HBox)   .MarginSpec("2 0 2 0").Items(
+                Html.X().NumberFieldFor(m => m.Price)                
+                        .FieldLabel("Đơn giá")
+                        .ID("txtPrice")
+                        .MinValue(0)
+                          .Width(300)
+                        .MarginSpec("0 5 0 0")
+                        .Listeners(ls=>ls.Change.Handler="App.txtAmount.setValue(App.txtQuantity.getValue()*App.txtPrice.getValue())")
+                        .TabIndex(5),
+                        Html.X().Label().Text("VNĐ")                        
+                        ),
+                         Html.X().Container().Layout(LayoutType.HBox).Items(
+                         Html.X().NumberFieldFor(m => m.Amount)                
+                        .FieldLabel("Thành tiền")
+                        .ReadOnly(true)
+                          .MarginSpec("0 5 0 0")
+                        .MinValue(0)
+                          .Width(300)
+                        .ID("txtAmount")
+                        .TabIndex(6),
+                                Html.X().Label().Text("VNĐ")                      
+                        )
+                        )
+   
+        )
+        .Buttons(
+        Html.X().ButtonSave()
+        .ID("btnSaveEdit")
+        .DirectEvents(de =>
+        {
+            de.Click.ExtraParams.Add(new { val = false });
+            de.Click.ExtraParams.Add(new { build_id = build_id });
+            de.Click.Before = @"if (!App.frEditProductStructure.getForm().isValid()) { return false; } ";
+            de.Click.Action = "UpdateBuild";
+            de.Click.FormID = "frEditProductStructure";
+        }),       
+        Html.X().ButtonExit()
+        )
+    )

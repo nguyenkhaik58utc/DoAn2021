@@ -1,0 +1,160 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCategoryItem
+@{
+    var X = Html.X();
+    var depId = Model.DepartmentID;
+}
+@( Html.X().Window()
+    .ID("winChoiceProfileBorrowed")
+    .Title("Danh sách hồ sơ mượn")
+    .Icon(Icon.Zoom)
+  .Height(530)
+    .Width(1000)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(0)
+    .Border(false)
+    .Center()
+    .Items(
+         Html.X().GridPanel()
+                .ID("grChoiceProfileBorrowed")
+                .MarginSpec("0 0 0 0")
+                .ColumnLines(true)
+                .Header(false)
+                .Border(true)
+                .Height(400)
+                .Store(
+                    Html.X().Store()
+                        .RemotePaging(true)
+                        .AutoLoad(true)
+                        .ID("stProfileBorrowed")
+                        .PageSize(20)
+                        .Model(
+                                Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                       Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Code").Type(ModelFieldType.String),//Ma Ho so
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),//Ten Ho so
+                                        Html.X().ModelField().Name("Borrower").Type(ModelFieldType.String),//Thoi gian tiep nhan HS
+                                        Html.X().ModelField().Name("BorrowAt").Type(ModelFieldType.Date),//Thoi gian luu tai bo phan
+                                        Html.X().ModelField().Name("LimitAt").Type(ModelFieldType.Date),//Thoi gian luu tai phong luu tru
+                                        Html.X().ModelField().Name("ReturnAt").Type(ModelFieldType.Date),//Thoi gian luu tai phong luu tru
+                                        Html.X().ModelField().Name("Security").Type(ModelFieldType.String),//Nguoi luu tru
+                                        Html.X().ModelField().Name("Receiver").Type(ModelFieldType.String),//Hinh thuc luu tru
+                                        Html.X().ModelField().Name("Color").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),//Thoi gian luu tai phong luu tru
+                                        Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)//Thoi gian luu tai phong luu tru
+                                    )
+                                )
+                        .Proxy(
+                            Html.X().AjaxProxy()
+                                .Url(Url.Action("LoadProfileBorrowByCate"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("cateID", Model.ID.ToString(), ParameterMode.Raw));
+                    }
+                                )
+                    )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .Align(Alignment.Center)
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(33),
+                    Html.X().Column()
+                        .DataIndex("Code")
+                        .Text("Mã hồ sơ")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(90)
+                        .Align(Alignment.Center),
+                    Html.X().Column()
+                        .DataIndex("Name")
+                        .Text("Tên hồ sơ")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Flex(1),
+                    Html.X().Column()
+                        .Text("Người mượn")
+                        .DataIndex("Borrower")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(120),
+                    Html.X().DateColumnExtend()
+                        .Text("Ngày mượn")
+                        .DataIndex("BorrowAt")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(90)
+                        .Format("dd/MM/yyyy")
+                        .Align(Alignment.Center),
+                    Html.X().DateColumnExtend()
+                        .DataIndex("LimitAt")
+                        .Text("Ngày hẹn trả")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(90)
+                        .Format("dd/MM/yyyy")
+                        .Align(Alignment.Center),
+                      Html.X().DateColumnExtend()
+                        .DataIndex("ReturnAt")
+                        .Text("Ngày trả")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(90)
+                        .Format("dd/MM/yyyy")
+                        .Align(Alignment.Center),
+                    Html.X().Column()
+                        .Text("Mức độ bảo mật")
+                        .DataIndex("Security")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                        .Width(100)
+                        .Align(Alignment.Center),
+                    Html.X().Column()
+                        .Text("Người lưu trữ")
+                        .DataIndex("Receiver")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(120),
+                    Html.X().DateColumnExtend()
+                        .DataIndex("UpdateAt")
+                        .Text("Thời gian sửa")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(110)
+                        .Format("dd/MM/yyyy H:mm")
+                        .Align(Alignment.Center)
+
+                )
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                        .ShowHeaderCheckbox(false)
+                        .Mode(SelectionMode.Single)
+                        .Listeners(l => l.SelectionChange.Handler = "checkStatus();")
+                            )
+                .BottomBar(Html.X().CustomPagingToolbar())
+            )
+    .Buttons(
+       Html.X().ButtonExit()
+        )
+)
+<script>
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var checkStatus = function () {
+        var record = App.grChoiceProfileBorrowed.selModel.getSelection();
+        if (record.length > 0) {
+            if (record[0].get('ReturnAt') != null) {
+                App.btnPaid.setDisabled(true);
+            } else
+                App.btnPaid.setDisabled(false);
+            App.btnBorrowUpdate.setDisabled(false);
+        } else {
+            App.btnBorrowUpdate.setDisabled(true);
+            App.btnPaid.setDisabled(true);
+        }
+    };
+</script>

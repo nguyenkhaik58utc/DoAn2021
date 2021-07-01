@@ -1,0 +1,134 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@model iDAS.Items.ISOIndexFunctionItem
+@(
+ Html.X().Window()
+    .ID("winChooseFunction")
+    .Title("Chọn chức năng cho điều khoản")
+    .Icon(Icon.TableAdd)
+    .Width(700)
+    .Height(450)
+    .BodyPadding(0)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Resizable(false)
+    .Items(
+        Html.X().HiddenFor(m=>m.ISOIndexID).ID("hdfIsoIndexID"),
+        Html.X().GridPanel().ID("grMnFunction")
+            .ColumnLines(true)
+            .Border(false)
+            .ForceFit(true)
+            .TopBar(
+            Html.X().Toolbar().Items(
+        Html.X().ComboBox().ID("cboSystem")
+                        .QueryMode(DataLoadMode.Local)
+                        .TriggerAction(TriggerAction.All)
+                        .SelectOnFocus(true)
+                        .Width(308)    
+                        .LabelWidth(70)                                           
+                        .EmptyText("Chọn hệ thống ...")
+                        .DisplayField("SystemName")
+                        .ValueField("SystemCode")
+                        .FieldLabel("Hệ thống") 
+                        .LabelStyle("color: #000;font: 12px/14px tahoma,arial,verdana,sans-serif;margin-top: 4px;")
+                        .MarginSpec("0 0 0 8")
+                        .Store(
+                            Html.X().Store()
+                            .AutoLoad(true)
+                            .Model(
+                            Html.X()
+                            .Model().IDProperty("Code")
+                                .Fields(
+                                        new ModelField("SystemCode", ModelFieldType.String) { Mapping = "Code" },
+                                        new ModelField("SystemName", ModelFieldType.String) { Mapping = "Name" }
+                                        )
+                                    )
+                                    .Proxy(
+                                    Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataSystem"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                        .Listeners(ls => ls.Load.Handler = "App.cboSystem.select(App.cboSystem.store.getAt(0)); App.grMnFunction.getStore().load()")
+                                    )
+                                    .Listeners(ls =>
+                                    ls.Change.Handler = "App.StoreChooseFunctions.reload();")
+                            )
+            
+                       )
+
+            .Store(            
+                Html.X().StoreForModel()
+                    .ID("StoreChooseFunctions")
+                    .PageSize(10)
+                    .Proxy(
+                        Html.X().AjaxProxy()
+                            .Url(Url.Action("LoadFunctionClause"))
+                            .ActionMethods(actions =>
+                            {
+                                actions.Read = HttpMethod.POST;
+                            })
+                            .Reader(
+                                Html.X().JsonReader().Root("data")
+                            )
+                            )
+                        .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("IsoIndexId", "App.hdfIsoIndexID.value", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("systemCode", "App.cboSystem.getValue()", ParameterMode.Raw));
+                                })
+                    )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().Column().DataIndex(Model, m => m.CenterFunctionID).Hidden(true),
+                Html.X().Column().DataIndex(Model, m => m.FunctionName).Text("Chức năng").Align(Alignment.Left).Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+                Html.X().CheckColumn().DataIndex(Model, m => m.IsSelect).Editable(true).Text("Chọn").Width(100).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;")
+            )
+            .View(Html.X().GridView().TrackOver(false))
+            .BottomBar(
+                Html.X().PagingToolbar()
+                    .EmptyMsg("Hiện không có dữ liệu")
+                    .NextText("Trang kế tiếp")
+                    .PrevText("Trang trước")
+                    .LastText("Trang cuối cùng")
+                    .FirstText("Trang đầu tiên")
+                    .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                    .BeforePageText("Trang")
+                    .AfterPageText("của {0}")
+                    .RefreshText("Tải lại Dữ liệu")
+                    .Items(
+                        Html.X().Label("Số bản ghi trên 1 trang"),
+                        Html.X().ToolbarSpacer(10),
+                        Html.X().ComboBox()
+                            .Width(50)
+                            .Items("10", "20", "30", "50", "100")
+                            .SelectedItems("10")
+                            .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                    )
+                    .Plugins(Html.X().ProgressBarPager())
+            )
+            .Plugins(
+                Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditFunction")
+            )
+    )
+    .Buttons(
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Đóng")
+                    .Handler("App.winChooseFunction.close();")
+        )
+)
+<script>
+    var onEditFunction = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@Url.Action("EditFunction")',
+                params: {
+                    data: e.record.data,
+                    IsoIndexId: App.hdfIsoIndexID.value
+                }
+            });
+        }
+    };
+</script>

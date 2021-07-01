@@ -1,0 +1,102 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var strId = ViewData["id"].ToString();
+    var maxValue =(int) ViewData["MaxValue"];
+    var name = ViewData["EmployeeName"].ToString();
+}
+@(Html.X().Window()
+.BodyPadding(0)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Maximized(true)
+.Height(1)
+.Title("Biểu đồ thống kê kinh doanh")
+.Icon(Icon.ChartBar)
+.Items(
+     Html.X().Chart()
+            .ID("ChartTaskPerson")
+            .Shadow(true)
+            .StandardTheme(StandardChartTheme.Category1)
+            .Background(new DrawBackground() { Fill = "White" })
+            .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Top).LabelFont("11px Tahoma").BoxStroke("#084594"))
+            .Animate(true)
+            .Store(Html.X().Store().Data(Model)
+                            .Model(Html.X().Model()
+                                        .Fields(
+                                                    Html.X().ModelField().Name("TimeFix"),
+                                                    Html.X().ModelField().Name("CustomerNormal"),
+                                                    Html.X().ModelField().Name("CustomerNormalNeed"),
+                                                    Html.X().ModelField().Name("NumberContract"),
+                                                    Html.X().ModelField().Name("NumberContractSucess")
+                                            )
+                                    ) 
+                    )
+            .Axes(
+                    Html.X().NumericAxis()
+                                .Grid(true)
+                                .Minimum(0)
+                                .Maximum(maxValue)
+                                .Label(Html.X().AxisLabel()
+                                .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                                ),
+                    Html.X().CategoryAxis().Position(Position.Bottom).AxisID("TimeFixID")
+                                .Fields("TimeFix")
+                                .Title("Biểu đồ thống kê kinh doanh của " + name + " năm " + DateTime.Now.Year)
+                )
+            .Series(   
+                        Html.X().ColumnSeries()
+                                .Axis(Position.Bottom)
+                                .Highlight(true)
+                                .XField("TimeFix")
+                                .YField(new string[] { "CustomerNormal" })
+                                .Title("Khách hàng tiếp cận")
+                                .Tips(Html.X().ChartTip()
+                                                .TrackMouse(true)
+                                                .Width(210)
+                                                .Height(28)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('CustomerNormal') + ' khách hàng tiếp cận');")
+                                        ),
+                        Html.X().LineSeries()
+                                .XField("TimeFix")
+                                .YField("CustomerNormalNeed")
+                                .Title("Nhu cầu")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                .Tips(Html.X().ChartTip()
+                                                .Width(210)
+                                                .Height(28)
+                                                .TrackMouse(true)
+                                                .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('CustomerNormalNeed') + ' Nhu cầu');")
+                                        )
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Arrow, Size = 5, Radius = 5, StrokeWidth = 0 })
+                               ,
+                        Html.X().LineSeries()
+                                .XField("TimeFix")
+                                .YField("NumberContract")
+                                .Title("Hợp đồng")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                .Tips(Html.X().ChartTip()
+                                        .Width(210)
+                                        .Height(28)
+                                        .TrackMouse(true)
+                                        .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('NumberContract') + ' hợp đồng');")
+                                    )
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Circle, Size = 5, Radius = 5, StrokeWidth = 0 })
+                                ,
+                        Html.X().LineSeries()
+                                .XField("TimeFix")
+                                .YField("NumberContractSucess")
+                                .Title("Hợp đồng hoàn thành")
+                                .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7})
+                                .Tips(Html.X().ChartTip()
+                                            .Width(210)
+                                            .Height(28)
+                                            .TrackMouse(true)
+                                            .Renderer(r => r.Handler = "this.setTitle(storeItem.get('TimeFix') + ': ' + storeItem.get('NumberContractSucess') + ' hợp đồng hoàn thành');")
+                                    )
+                                .MarkerConfig(new SpriteAttributes { Type = SpriteType.Cross, Size = 5, Radius = 5, StrokeWidth = 0 })
+                        )                 
+        )
+)

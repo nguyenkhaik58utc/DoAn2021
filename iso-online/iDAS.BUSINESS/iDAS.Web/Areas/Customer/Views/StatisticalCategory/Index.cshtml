@@ -1,0 +1,393 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(
+ Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+.Items(
+    Html.X().Hidden().ID("hdfStartTime").Value(DateTime.Now.ToShortDateString()),
+    Html.X().Hidden().ID("hdfEndTime").Value(DateTime.Now.ToShortDateString()),
+    Html.X().Panel().Border(false).Layout(LayoutType.Fit).ID("PanelCategoryCustomerStatistical")
+            .TopBar(Html.X().Toolbar().Layout(LayoutType.HBox)
+                                    .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Middle, Pack = BoxPack.Start })
+                                    .Items(
+                                            Html.X().Button().ID("btnChart").Icon(Icon.ChartBar).Text("Biểu đồ thống kê").Disabled(true)
+                                            .Handler("showChart();"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().SplitButton()
+                                                    .Text("Thời gian thống kê")
+                                                    .Margins("0 10 0 0")
+                                                    .StyleHtmlCls("background-image:none")
+                                                    .Icon(Icon.Calendar)
+                                                    .MenuItem(
+                                                       Html.X().Panel()
+                                                            .Height(30)
+                                                            .Width(560)
+                                                            .MarginSpec("0 0 0 0")
+                                                            .TopBar(
+                                                                Html.X().Toolbar().Layout(LayoutType.HBox)
+                                                                        .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Middle, Pack = BoxPack.Start })
+                                                                        .Items(
+                                                                                Html.X().DateField().MarginSpec("0 0 0 5").ID("dateFieldStartTime").Icon(Icon.DateGo).LabelWidth(70).FieldLabel("Từ ngày").Value(DateTime.Today),
+                                                                                Html.X().ToolbarSeparator().MarginSpec("0 0 0 5"),
+                                                                                Html.X().DateField().MarginSpec("0 0 0 5").Icon(Icon.DateGo).ID("dateFieldEndTime").LabelWidth(70).FieldLabel("Đến ngày").Value(DateTime.Today),
+                                                                                Html.X().ToolbarSeparator(),
+                                                                                Html.X().Button().MarginSpec("0 0 0 5").Icon(Icon.Zoom).Text("Thống kê").Flat(false).Handler("Statistical();")
+                                                                            )
+                                                            )
+                                                ),
+                                            Html.X().Checkbox().BoxLabel("Thống kê tất cả").Listeners(ls => ls.Change.Handler = "StatisticalAll(this)"),
+                                            Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonExportExcelFile().GridIDGetFile("CategoryCustomerStatistical").isTree(true),
+                                            Html.X().ToolbarFill(),
+                                            Html.X().Label().ID("lblResult").Text("Kết quả thống kê hôm nay").StyleSpec("font-weight: bold;").MarginSpec("0 5 0 0"),
+                                            Html.X().ButtonTutorial()
+                                        )
+                                )
+            .Items(
+                    Html.X().TreePanel()
+                                .Layout(LayoutType.Fit)
+                                .Split(true)
+                                .Region(Region.West).Width(300)
+                                .ID("CategoryCustomerStatistical")
+                                .TitleAlign(TitleAlign.Center)
+                                .Border(false)
+                                .AutoScroll(true)
+                                .RootVisible(false)
+                                .ColumnLines(true)
+                                .RowLines(true)
+                                    .Listeners(ls =>
+                                    {
+                                        ls.Load.Handler = "expandCustomerCategory(records);";
+                                        ls.SelectionChange.Handler = "CheckCustomerCategory()";
+                                    })
+                                .Store(
+                                            Html.X().TreeStore().ID("StoreCategoryCustomerStatistical")
+                                                .AutoLoad(false)
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData"))
+                                                .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("startTime", "App.hdfStartTime.getValue()", ParameterMode.Raw));
+                                                        ps.Add(new StoreParameter("endTime", "App.hdfEndTime.getValue()", ParameterMode.Raw));
+                                                    })
+                                                .Model(
+                                                    Html.X().Model()
+                                                            .Fields(
+                                                                        Html.X().ModelField().Name("id"),
+                                                                        Html.X().ModelField().Name("text"),
+                                                                        Html.X().ModelField().Name("ParentID"),
+                                                                        Html.X().ModelField().Name("CateParent"),
+                                                                        Html.X().ModelField().Name("CategoryName"),
+                                                                        Html.X().ModelField().Name("SumCustomer"),
+                                                                        Html.X().ModelField().Name("CustomerNormal"),
+                                                                        Html.X().ModelField().Name("CustomerNormalContacts"),
+                                                                        Html.X().ModelField().Name("CustomerNormalNeed"),
+                                                                        Html.X().ModelField().Name("CustomerPotential"),
+                                                                        Html.X().ModelField().Name("CustomerPotentialSendPrice"),
+                                                                        Html.X().ModelField().Name("CustomerPotentialSignContract"),
+                                                                        Html.X().ModelField().Name("CustomerNotContract"),
+                                                                        Html.X().ModelField().Name("CustomerPotentialRateSuccess"),
+                                                                        Html.X().ModelField().Name("CustomerOfficial"),
+                                                                        Html.X().ModelField().Name("CustomerOfficialContacts"),
+                                                                        Html.X().ModelField().Name("CustomerOfficialHasPotential"),
+                                                                        Html.X().ModelField().Name("CustomerOfficialContract"),
+                                                                        Html.X().ModelField().Name("NumberContract"),
+                                                                        Html.X().ModelField().Name("TotalContract"),
+                                                                        Html.X().ModelField().Name("NumberContractSucess"),
+                                                                        Html.X().ModelField().Name("TotalContractSucess")
+
+                                                                        )
+                                                )
+                                        )
+                                .ColumnModel(
+                                                Html.X().TreeColumn()
+                                                        .Text("Nhóm khách hàng")
+                                                        .Width(300)
+                                                            .DataIndex("text").Lockable(true), 
+                                                            Html.X().Column().DataIndex("CateParent").Text("Mục").Hidden(true),
+                                                        Html.X().Column().DataIndex("CategoryName").Text("Nhóm khách hàng").Hidden(true),
+                                                                
+                                                Html.X().Column().DataIndex("SumCustomer")
+                                                        .Renderer("SumCustomerRenderer")
+                                                        .Text("Tổng số khách hàng").Width(120).Align(Alignment.Right),        
+                                                Html.X().Column().Text("Khách hàng tiếp cận")
+                                                        .Columns(
+                                                            Html.X().Column().DataIndex("CustomerNormal")
+                                                                    .Renderer("CustomerNormalRenderer")
+                                                                    .Text("Số lượng").Width(80).Align(Alignment.Right),
+                                                            Html.X().Column().DataIndex("CustomerNormalContacts").Text("Đã liên hệ").Renderer("CustomerNormalContactRenderer")
+                                                                    .Width(80).Align(Alignment.Right),
+                                                            Html.X().Column().DataIndex("CustomerNormalNeed").Text("Có nhu cầu").Renderer("CustomerNormalNeedRenderer")
+                                                                    .Width(90).Align(Alignment.Right)
+                                                        ),
+                                                Html.X().Column().Text("Khách hàng tiềm năng")
+                                                    .Columns(
+                                                                Html.X().Column().DataIndex("CustomerPotential")
+                                                                        .Renderer("CustomerPotentialRenderer")
+                                                                        .Text("Số lượng").Width(80).Align(Alignment.Right),
+                                                                Html.X().Column().DataIndex("CustomerPotentialSendPrice").Text("Đã báo giá").Renderer("CustomerPotentialSendPriceRenderer")
+                                                                        .Width(80).Align(Alignment.Right),
+                                                                Html.X().Column().DataIndex("CustomerNotContract").Renderer("CustomerNotContractRenderer")
+                                                                        .Text("Không ký")
+                                                                        .Width(90).Align(Alignment.Right),         
+                                                                Html.X().Column().DataIndex("CustomerPotentialSignContract").Text("Có hợp đồng").Renderer("CustomerPotentialSignContractRenderer")
+                                                                        .Width(80).Align(Alignment.Right)
+                                                    ),
+                                                Html.X().Column().Text("Khách hàng thực tế")
+                                                    .Columns(
+                                                                Html.X().Column().DataIndex("CustomerOfficial")
+                                                                        .Renderer("CustomerOfficialRenderer")
+                                                                        .Text("Số lượng").Width(80).Align(Alignment.Right),
+                                                                Html.X().Column().DataIndex("CustomerOfficialContacts").Renderer("CustomerOfficialContactsRenderer")
+                                                                        .Text("Đã liên hệ").Width(80).Align(Alignment.Right),
+                                                                Html.X().Column().DataIndex("CustomerOfficialHasPotential").Renderer("CustomerOfficialHasPotentialRenderer")
+                                                                        .Text("Có tiềm năng")
+                                                                        .Width(90).Align(Alignment.Right),        
+                                                                Html.X().Column().DataIndex("CustomerOfficialContract").Text("Có hợp đồng").Renderer("CustomerOfficialContractRenderer")
+                                                                        .Width(80).Align(Alignment.Right)        
+                                                    ),
+                                                Html.X().ComponentColumn().Text("Hợp đồng")
+                                                    .Columns(
+                                                                Html.X().Column().DataIndex("NumberContract").Text("Số lượng").Renderer("NumberContractRenderer").Width(80).Align(Alignment.Right),
+                                                                Html.X().Column().DataIndex("TotalContract").Text("Doanh số").Width(100).Align(Alignment.Right)
+                                                            ),
+                                                 Html.X().ComponentColumn().Text("Hợp đồng hoàn thành")
+                                                    .Columns(
+                                                        Html.X().Column().DataIndex("NumberContractSucess").Text("Số lượng").Renderer("NumberContractSucessRenderer").Width(80).Align(Alignment.Right),
+                                                        Html.X().Column().DataIndex("TotalContractSucess").Text("Doanh số").Width(100).Align(Alignment.Right)
+                                                    )
+                                    )
+                        )
+       )
+)
+<script>
+    var SumCustomerRenderer = function (value) {
+        var storeUrl = "SumCustomer";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerNormalRenderer = function (value) {
+        var storeUrl = "CustomerNormal";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerNormalContactRenderer = function (value) {
+        var storeUrl = "CustomerNormalContact";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerNormalNeedRenderer = function (value) {
+        var storeUrl = "CustomerNormalNeed";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerPotentialRenderer = function (value) {
+        var storeUrl = "CustomerPotential";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerPotentialSendPriceRenderer = function (value) {
+        var storeUrl = "CustomerPotentialSendPrice";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerPotentialSignContractRenderer = function (value) {
+        var storeUrl = "CustomerPotentialSignContract";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerPotentialRateSuccessRenderer = function (value) {
+        var storeUrl = "CustomerPotentialSignContract";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerOfficialRenderer = function (value) {
+        var storeUrl = "CustomerOfficial";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerOfficialContactsRenderer = function (value) {
+        var storeUrl = "CustomerOfficialContacts";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerOfficialHasPotentialRenderer = function (value) {
+        var storeUrl = "CustomerOfficialHasPotential";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerNotContractRenderer = function (value) {
+        var storeUrl = "CustomerNotContract";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var CustomerOfficialContractRenderer = function (value) {
+        var storeUrl = "CustomerOfficialContract";
+        return "<a class='a-grid-cell' onclick =\"showCustomer(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var showCustomer = function (value) {
+        var records = App.CategoryCustomerStatistical.selModel.getSelection();
+        if (records.length > 0) {
+            var record = records[0];
+            var startTime = App.hdfStartTime.value;
+            var endTime = App.hdfEndTime.value;
+            var url = '@(Url.Action("Customer", "StatisticalCategory", new { Area = "Customer" }))';
+            var params = {
+                id: record.data.id,
+                startTime: startTime,
+                endTime: endTime,
+                storeUrl: value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.CategoryCustomerStatistical.columns.length; i++) {
+            if (App.CategoryCustomerStatistical.columns[i].dataIndex == 'ID')
+                arr.push({ dataIndex: 'ID', text: 'ID', hidden: App.CategoryCustomerStatistical.columns[i].hidden, position: i + 1 });
+            else
+                arr.push({ dataIndex: App.CategoryCustomerStatistical.columns[i].dataIndex, text: App.CategoryCustomerStatistical.columns[i].text, hidden: App.CategoryCustomerStatistical.columns[i].hidden, position: i + 1 });
+        }
+        return arr;
+    };
+    var ShowFrmExport = function () {
+        var url = '@(Url.Action("ShowFrmExport", "StatisticalCategory", new { Area = "Customer" }, null))';
+        var records = App.CategoryCustomerStatistical.selModel.getSelection();
+        var params = {            
+            arrObject: JSON.stringify(getObjectPartial()),
+            node: records[0].data.id,
+            startTime: App.hdfStartTime.getValue(),
+            endTime: App.hdfEndTime.getValue()
+        };
+
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: params
+        });
+    };
+    var NumberContractRenderer = function (value) {
+        var storeUrl = "NumberContract";
+        return "<a class='a-grid-cell' onclick =\"showContract(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var NumberContractSucessRenderer = function (value) {
+        var storeUrl = "NumberContractSucess";
+        return "<a class='a-grid-cell' onclick =\"showContract(\'" + storeUrl.toString() + "\')\">" + value + "</a>";
+    };
+    var showContract = function (value) {
+        var records = App.CategoryCustomerStatistical.selModel.getSelection();
+        if (records.length > 0) {
+            var record = records[0];
+            var startTime = App.hdfStartTime.value;
+            var endTime = App.hdfEndTime.value;
+            var url = '@(Url.Action("Contract", "StatisticalCategory", new { Area = "Customer" }))';
+            var params = {
+                id: record.data.id,
+                startTime: startTime,
+                endTime: endTime,
+                storeUrl: value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var expandCustomerCategory = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+    };
+    var CheckCustomerCategory = function () {
+        var records = App.CategoryCustomerStatistical.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnChart.setDisabled(false); 
+            App.btnGetFile.setDisabled(false);
+        }
+        else {
+            App.btnChart.setDisabled(true);
+            App.btnGetFile.setDisabled(true);
+        }
+    };
+    function textSearch(startTime, endTime) {
+        var result = "Kết quả thống kê";
+        if (startTime != "") {
+            result += " từ ngày " + startTime;
+        }
+        if (endTime != "") {
+            result += " đến ngày " + endTime;
+            if (endTime == startTime) {
+                if (endTime == '@DateTime.Now.ToShortDateString()') {
+                    result = "Kết quả thống kê hôm nay";
+                }
+                else {
+                    if (endTime != "") {
+                        result = "Kết quả thống kê ngày " + endTime;
+                    }
+                };
+            };
+        };
+        return result;
+    };
+    var Statistical = function () {
+        if (App.dateFieldStartTime.inputEl.dom.value) {
+            App.hdfStartTime.setValue(App.dateFieldStartTime.inputEl.dom.value);
+        }
+        else {
+            App.hdfStartTime.setValue("");
+        }
+
+        if (App.dateFieldEndTime.inputEl.dom.value) {
+            App.hdfEndTime.setValue(App.dateFieldEndTime.inputEl.dom.value);
+        }
+        else {
+            App.hdfEndTime.setValue("");
+        }
+        var startTime = App.hdfStartTime.value;
+        var endTime = App.hdfEndTime.value;
+        var result = textSearch(startTime, endTime);
+        App.lblResult.setText(result);
+        App.CategoryCustomerStatistical.getRootNode().reload();
+    };
+    var showChart = function () {
+        var records = App.CategoryCustomerStatistical.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Chart", "StatisticalCategory", new { Area = "Customer" }))';
+            var params = {
+                id: records[0].get('id'),
+                name: records[0].get('text')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var StatisticalAll = function (obj) {
+        if (obj.checked)
+        {
+            App.hdfStartTime.setValue("");
+            App.hdfEndTime.setValue("");
+            var startTime = App.hdfStartTime.value;
+            var endTime = App.hdfEndTime.value;
+            var result = textSearch(startTime, endTime);
+            App.lblResult.setText(result);
+            App.CategoryCustomerStatistical.getRootNode().reload();
+        }
+        else
+        {
+            if (App.dateFieldStartTime.inputEl) {
+                Statistical();
+            }
+            else {
+                var dateNow = '@(DateTime.Now.ToShortDateString())';
+                App.hdfStartTime.setValue(dateNow);
+                App.hdfEndTime.setValue(dateNow);
+                var startTime = App.hdfStartTime.value;
+                var endTime = App.hdfEndTime.value;
+                var result = textSearch(startTime, endTime);
+                App.lblResult.setText(result);
+                App.CategoryCustomerStatistical.getRootNode().reload();
+            };
+        }
+    };
+</script>

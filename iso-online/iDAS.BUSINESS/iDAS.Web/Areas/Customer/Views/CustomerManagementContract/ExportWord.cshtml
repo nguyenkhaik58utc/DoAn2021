@@ -1,0 +1,176 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SuppliersOrderItem
+@(Html.X().Window()
+.ID("winRequirementList")
+.Title("Chọn mẫu ....")
+.Layout(LayoutType.Fit)
+    .Width(600)
+    .Height(400)
+    .Icon(Icon.PageWord)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+                Html.X().HiddenFor(m => m.ID).ID("hdfTempID"),
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrTempExport")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(                                
+                                Html.X().ButtonCreate().Handler("AddNewPartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonUpdate().ID("btnUpdatePartial").Handler("UpdatePartial();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete().ID("btnDeletePartial").Handler("DeleteRecords();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView().ID("btnDetailPartial").Handler("ViewDetailPartial();")
+                                //Html.X().FormPanel().Frame(true).Layout(LayoutType.Fit).StyleSpec("border: none;").ID("frmSelectImportFile")
+                                //                    .Items(
+                                //                        Html.X().FileUploadField().Icon(Icon.PageWord).ID("FileImportField")
+                                //                                .ButtonText("Chọn tệp ...").ButtonOnly(true)
+                                //                                .DirectEvents(de =>
+                                //                                    {
+                                //                                        de.Change.Before = @"if (!App.frmSelectImportFile.getForm().isValid()) { return false; }; ";
+                                //                                        de.Change.Url = Url.Action("SelectImportFile");
+                                //                                        de.Change.FormID = "frmSelectImportFile";
+                                //                                        de.Change.Success = "AddTempToFile(result.result);";
+                                //                                    })
+                                //            )
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("stTempExport")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetListTemp")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("id", "App.hdfTempID.value", ParameterMode.Raw));
+                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                                        new ModelField("ID", ModelFieldType.Int),
+                                                            new ModelField("Name", ModelFieldType.String),
+                                                            new ModelField("Font", ModelFieldType.String),
+                                                                new ModelField("FontSize", ModelFieldType.Int)
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("Name").Text("Tên mẫu").Width(250),
+                                            Html.X().Column().DataIndex("Font").Text("Font").Wrap(true).Width(100),
+                                                Html.X().Column().DataIndex("FontSize").Text("Font Size").Wrap(true).Width(100)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+            )
+.Buttons(
+                Html.X().Button().Text("Xuất hợp đồng").Icon(Icon.PageWord).Handler("GetFileWord();"),
+                Html.X().ButtonExit()                
+                //.Handler("App.GrOrder.getStore().reload();this.up('window').close();")
+    )
+)
+<script>
+    var GetFileWord = function () {
+        var records = App.GrTempExport.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ExportFile", "CustomerManagementContract", new { Area = "Customer" }, null))';
+            var params = {
+                tempID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+
+    };
+    function CheckStatus() {
+        var records = App.GrTempExport.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetailPartial, App.btnDeletePartial, App.btnUpdatePartial);
+            if (records[0].get('Status'))
+                SetDisabled(App.btnDeletePartial, App.btnUpdatePartial);
+        }
+        else {
+            SetDisabled(App.btnDetailPartial, App.btnDeletePartial, App.btnUpdatePartial);
+        };
+    };
+    var ViewDetailPartial = function () {
+        var records = App.GrTempExport.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetailTemp", "CustomerManagementContract", new { Area = "Customer" }, null))';
+                var params = {
+                    ID: records[0].get('ID')
+                };
+                onDirectMethod(url, params);
+            }
+            else {
+                MessageBox();
+            };
+    };
+        var UpdatePartial = function () {
+            var records = App.GrTempExport.selModel.getSelection();
+            if (records.length > 0) {
+                var url = '@(Url.Action("ShowFrmUpdateTemp", "CustomerManagementContract", new { Area = "Customer" }, null))';
+                var params = {
+                    ID: records[0].get('ID'),
+                    ActionForm: '@(iDAS.Utilities.Form.Edit)'
+                };
+                onDirectMethod(url, params);
+            }
+            else {
+                MessageBox();
+            };
+        };
+        var AddNewPartial = function () {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAddTemp", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                
+            });
+        }; 
+        var AddTempToFile = function (value) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAddTemp", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    path: value
+                }
+            });
+        };
+        var DeleteRecords = function () {
+            var records = App.GrTempExport.selModel.getSelection();
+            if (records.length > 0) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var url = '@(Url.Action("DeleteTemplate", "CustomerManagementContract", new { Area = "Customer" }, null))';
+                            var params = {
+                                ID: records[0].get('ID'),
+                            };
+                            onDirectMethod(url, params);
+                        }
+                    }
+                });
+            }
+        };
+
+</script>

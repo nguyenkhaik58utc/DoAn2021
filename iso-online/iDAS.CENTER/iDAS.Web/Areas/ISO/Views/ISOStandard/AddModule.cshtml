@@ -1,0 +1,165 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+
+@model iDAS.Items.ISONaceCodeItem
+@{
+    SelectedRowCollection select = ViewData["Selected"] != null ? (SelectedRowCollection)ViewData["Selected"] : null;
+    }
+
+@(
+ Html.X().Window()
+    .ID("winAddModule")
+    .Title("Chọn Module")
+    .Icon(Icon.Tick)
+    .Width(700)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmAddModule")
+        .Layout(LayoutType.Form)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => df.LabelWidth = 120)
+        .DefaultAnchor("100%")
+        .Items(
+            Html.X().FieldSet()
+                .FieldDefaults(f => f.ReadOnly = true)
+                .Title("Thông tin cơ bản")
+                .DefaultAnchor("100%")
+                .Layout(LayoutType.Form)
+                .Items(
+
+                   Html.X().TextFieldFor( m => m.IsoName).ID("txtName")
+                                .FieldLabel("Tiêu chuẩn")
+                               
+                                ,
+                        Html.X().TextFieldFor(m => m.NaceCode)
+                        .ID("txtNaceCode")
+                        .FieldLabel("Lĩnh vực hoạt động")                     
+                       
+                        ),
+            //
+            Html.X().FieldSet()
+                .Title("Chọn Module ")
+                .DefaultAnchor("100%")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().Container().MarginSpec("5 0 0 0").Layout(LayoutType.Fit).Height(215)
+                        .Items(
+
+                            Html.X().GridPanel()
+                                .ID("grModuleIsoNace")
+        //.Title("Danh sách các Lĩnh vực hoạt động")
+                                .Border(true)
+                                    .Store(
+                                        Html.X().Store()
+                                            .RemotePaging(true)
+                                            .AutoLoad(true)
+                                                .ID("stModuleIsoNace")
+                                            .PageSize(10)
+                                            .Model(
+                                                        Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                        new ModelField("ID"),
+                                                        new ModelField("Code"),
+                                                        new ModelField("Module"),
+                                                        //new ModelField("IsShow"),
+                                                        //new ModelField("IsActive"),
+                                                        new ModelField("Description")
+                                                        ))
+                                                    .Proxy(
+                                                        Html.X().AjaxProxy()
+                                                            .Url(Url.Action("GetDataModuleByIsoNace")).Reader(Html.X().JsonReader().Root("data"))
+                                                        )
+                                                .Parameters(ps =>
+                                                            ps.Add(new StoreParameter("IsoNaceID", Model.IsoNaceID.ToString(), ParameterMode.Raw))
+                                                )
+                                    )
+                                .ColumnModel(
+                                    Html.X().RowNumbererColumn()
+                                        .Text("STT")
+                                        .Align(Alignment.Center)
+                                        .StyleSpec("font-weight: bold; text-align: center;")
+                                        .Width(30),
+                                    Html.X().Column()
+                                        .DataIndex("ID").ID("ID")
+                                        .Hidden(true),
+                                    Html.X().Column()
+                                        .Text("Mã Module")
+                                        .Flex(1)
+                                        .DataIndex("Code")
+                                        .StyleSpec("font-weight: bold;text-align: center; ").Width(100),
+                                     Html.X().Column()
+                                            .Text("Tên Module")
+                                            .Flex(1)
+                                            .DataIndex("Module")
+                                            .StyleSpec("font-weight: bold;text-align: center; ").Flex(1),
+                                        //Html.X().CheckColumn()
+                                        //    .Text("Kích hoạt")
+                                        //    .DataIndex("IsActive")
+                                        //    .StyleSpec("font-weight: bold;text-align: center; ").Width(80)
+
+                                        //    ,
+                                        //Html.X().CheckColumn()
+                                        //    .Text("Hiển thị")
+                                        //    .DataIndex("IsShow")
+                                        //    .StyleSpec("font-weight: bold;text-align: center; ").Width(80)
+                                        //    .Editable(true)
+                                        //,
+                                    Html.X().Column()
+                                        .Text("Mô tả")
+                                        .Flex(2)
+                                        .DataIndex("Description")
+                                        .StyleSpec("font-weight: bold;text-align: center; ")
+                                  
+                                        //
+                                )        //
+                        .SelectionModel(
+                            Html.X().CheckboxSelectionModel().Mode(SelectionMode.Multi)
+                                 .SelectedRows(rows => rows.AddRange(select)) 
+                            )
+
+                        //
+        //end grid
+                    )
+        //end
+                  )  //end field
+
+                //
+        ))
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(6)
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frmAddModule";
+                        //  de.Click.ExtraParams.Add(new { exit = false });
+                        de.Click.ExtraParams.Add(new Parameter()
+                        {
+                            Name = "selection",
+                            Value = "App.grModuleIsoNace.getSelectionSubmit().getSelectionModelField().getValue()",
+                            Mode = ParameterMode.Raw
+                        });
+                        de.Click.Url = Url.Action("InsertIsoModule");
+                        de.Click.Before = @"if (!#{frmAddModule}.getForm().isValid()) { return false; }";
+                        de.Click.EventMask.ShowMask = true;
+                        de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                    })
+                ,
+
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Hủy")
+                .TabIndex(8)
+                .Handler("App.frmAddModule.reset(); App.winAddModule.close();")
+        )
+)

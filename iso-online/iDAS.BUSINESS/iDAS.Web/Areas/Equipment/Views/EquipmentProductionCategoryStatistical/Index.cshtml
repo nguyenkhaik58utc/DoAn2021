@@ -1,0 +1,440 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+          .Layout(LayoutType.Border)
+            .StyleSpec("border: none;")
+            .Items(
+        Html.X().Panel()
+                .MarginSpec("1 0 1 1")
+                .Region(Region.West)
+                .Title("XEM THỐNG KÊ DƯỚI DẠNG DỮ LIỆU")
+                .TitleAlign(TitleAlign.Center)
+                .Icon(Icon.ApplicationViewDetail)
+                .Collapsible(true)
+                .Split(true)
+                .Header(false)
+                .Border(true)
+                .Layout(LayoutType.Fit)
+                .Width(700)
+                .Items(
+        Html.X().TreePanel()
+                    .Split(true)
+                    .ID("gpDepartmentStatistical")
+                    .TitleAlign(TitleAlign.Center)
+                    .Border(false)
+                    .AutoScroll(true)
+                    .RootVisible(false)
+                    .ColumnLines(true)
+                    .RowLines(true)
+                    .Listeners(ls =>
+                    {
+                        ls.Load.Handler = "expandCate(records);";
+                    })
+                    .TopBar(
+            Html.X().Toolbar()
+                    .ID("tbgpDepartmentStatisticalProfile")
+                    .Items(
+                            Html.X().SearchByDate("App.StorePlanIndex.load();onSelect();")
+                                    .FromDateID("dfFromDate")
+                                    .ToDateID("dfToDate"),
+                                        Html.X().ToolbarSeparator(),
+                                                    Html.X().ButtonExportExcelFile().GridIDGetFile("gpDepartmentStatistical").isTree(true)
+                                        )
+                                        )
+                                     .Store(
+                                    Html.X().TreeStore().ID("StorePlanIndex")
+                                        .AutoLoad(false)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData"))
+                                        .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                            })
+                                                .Model(
+                                                    Html.X().Model()
+                                                            .Fields(
+                                                                Html.X().ModelField().Name("id"),
+                                                                Html.X().ModelField().Name("text"),
+                                                                Html.X().ModelField().Name("ParentID"),
+                                                                Html.X().ModelField().Name("Data1"),
+                                                                Html.X().ModelField().Name("Data2"),
+                                                                Html.X().ModelField().Name("Data3"),
+                                                                Html.X().ModelField().Name("Data4"),
+                                                                Html.X().ModelField().Name("Data5"),
+                                                                Html.X().ModelField().Name("Data6"),
+                                                                Html.X().ModelField().Name("Data7"),
+                                                                Html.X().ModelField().Name("Data21"),
+                                                                Html.X().ModelField().Name("Data31"),
+                                                                Html.X().ModelField().Name("Data41"),
+                                                                Html.X().ModelField().Name("Data51"),
+                                                                Html.X().ModelField().Name("Data61"),
+                                                                Html.X().ModelField().Name("Data71")
+                                                                )
+                                                )
+                                        )
+                                .ColumnModel(
+                                        Html.X().TreeColumn()
+                                                .Text("Nhóm thiết bị")
+                                                .Width(300)
+                                                .DataIndex("text"),
+                                                 X.Column().DataIndex("Data1").Text("Tổng số thiết bị").Width(100)
+                                                .Renderer("renderTotal"),                                    
+                                         Html.X().ComponentColumn()
+                                                .Text("Thiết bị phân phối")
+                                                .Columns(
+                                                X.Column().DataIndex("Data2").Text("Tổng số").Width(70).Renderer("renderTotalUse"),
+                                            Html.X().ComponentColumn().Text("Sự cố")
+                                                .Columns(
+                                                X.Column().DataIndex("Data3").Text("Chưa khắc phục").Width(100).Renderer("renderUseCKP"),
+                                                X.Column().DataIndex("Data5").Text("Đã khắc phục").Width(100).Renderer("renderUseDKP")
+                                                ),
+                                            Html.X().ComponentColumn().Text("Bảo dưỡng")
+                                                .Columns(
+                                                X.Column().DataIndex("Data6").Text("Đạt").Width(70).Renderer("renderUsePass"),
+                                                X.Column().DataIndex("Data7").Text("Không đạt").Width(70).Renderer("renderUseNotPass")
+                                                )
+                                                ),
+                                            Html.X().ComponentColumn()
+                                                .Text("Thiết bị chưa phân phối")
+                                                .Columns(
+                                                X.Column().DataIndex("Data21").Text("Tổng số").Width(70).Renderer("renderTotalNotUse"),
+                                            Html.X().ComponentColumn().Text("Sự cố")
+                                                .Columns(
+                                                X.Column().DataIndex("Data31").Text("Chưa khắc phục").Width(100).Renderer("renderNoteUseCKP"),
+                                                X.Column().DataIndex("Data51").Text("Đã khắc phục").Width(100).Renderer("renderNoteUseDKP")
+                                                ),
+                                            Html.X().ComponentColumn().Text("Bảo dưỡng")
+                                                .Columns(
+                                                X.Column().DataIndex("Data61").Text("Đạt").Width(70).Renderer("renderNotUsePass"),
+                                                X.Column().DataIndex("Data71").Text("Không đạt").Width(70).Renderer("renderNotUseNotPass")
+                                                )
+                                    )
+                        )
+                        .SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "onSelect();";
+                            })
+                            )
+                    ),
+                     Html.X().Panel()
+                            .Layout(LayoutType.Fit)
+                            .MarginSpec("1 1 1 0")
+                            .Region(Region.Center)
+                            .AutoScroll(false)
+                            .Header(false)
+                            .Border(true)
+                            .TopBar(
+                        Html.X().Toolbar()
+                            .Items(
+                        Html.X().ComboBox()
+                            .FieldLabel("Biểu đồ")
+                            .Width(300)
+                            .MarginSpec("0 0 0 5")
+                            .LabelWidth(50)
+                            .SelectedItems("0")
+                            .ID("cbSelectChart")
+                                .Items(
+                                    new ListItem() { Value = "0", Text = "Biểu đồ cột(SL)" }
+                                    )
+                                .Listeners(ls => ls.Select.Handler = "onSelectCombobox(this);"),
+                            Html.X().ToolbarFill(),
+                            Html.X().ButtonTutorial()
+                            )
+                            )
+                        .Items (
+                        Html.X().Panel()
+                            .Layout(LayoutType.Fit)
+                            .ID("pChart0")
+                            .Title("<b>Biểu đồ cột(SL)</b>")
+                            .Border(false)
+                            .Header(false)
+                            .TopBar(Html.X().Toolbar()
+                            .Items(
+                        Html.X().Button()
+                            .Text("Tải lại")
+                            .Icon(Icon.ArrowRefresh)
+                            .Handler("#{Chart0}.getStore().reload()"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Lưu biểu đồ")
+                            .Icon(Icon.Disk)
+                            .Handler("saveChart")
+                                 )
+                            )
+                            .Items(
+                        Html.X().Chart()
+                            .ID("Chart0")
+                               .Shadow(true)
+                               .InsetPadding(30)
+                        .StandardTheme(StandardChartTheme.Category1)
+                                .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Right)
+                            .LabelFont("9px Tahoma")
+                            .BoxStroke("#084594")
+                                )
+                        .Animate(true)
+                            .Store(Html.X().Store()
+                                 .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("id", "App.gpDepartmentStatistical.getSelectionModel().getLastSelected().get('id')", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                                })
+                                .Model(Html.X().Model()
+                                .Fields(
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Data1"),
+                                        Html.X().ModelField().Name("Data2"),
+                                        Html.X().ModelField().Name("Data3"),
+                                        Html.X().ModelField().Name("Data4"),
+                                        Html.X().ModelField().Name("Data5"),
+                                        Html.X().ModelField().Name("Data6"),
+                                        Html.X().ModelField().Name("Data7"),
+                                        Html.X().ModelField().Name("Data8"),
+                                        Html.X().ModelField().Name("Data9")
+                                )
+                            )
+                                .Proxy(Html.X().AjaxProxy()
+                                .Url(Url.Action("GetDataColumn"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        )
+                        .Axes(
+                                Html.X().NumericAxis()
+                                .Fields(new string[] { "Data1", "Data2", "Data3", "Data4", "Data5", "Data6", "Data7", "Data8", "Data9" })
+                                .Grid(true)
+                                .Title("Đơn vị: Thiết bị")
+                                .Minimum(0)
+                                    .Label(Html.X().AxisLabel()
+                                    .Renderer(r => r.Handler = "return Ext.util.Format.number(value, '0,0');")
+                                ),
+                               Html.X().CategoryAxis()
+                                .Position(Position.Bottom)
+                                    .Fields("Name")
+                                    .Width(400)
+                                          .Label(Html.X().AxisLabel()
+                                        .Font("9px Arial")
+                                        //.Rotate(Html.X().RotateAttribute().Degrees(270))
+                                        //.Renderer(r => r.Handler = "return Ext.String.ellipsis(value, 15, false);")
+                                    )
+                                    .Title("Biểu đồ thống kê thiết bị")
+                        )
+                            .Series(
+                            Html.X().ColumnSeries()
+                                .ShowInLegend(true)
+                                .Axis(Position.Bottom)
+                                .Highlight(true)
+                                .XField("Name")
+                                .YField(new string[] { "Data2", "Data8", "Data9" })
+                                .Titles(new string[] { "Tổng số thiết bị", "Sự cố", "Bảo dưỡng" })
+                                .Tips(Html.X().ChartTip()
+                                .TrackMouse(true)
+                                .Width(200)
+                                .Height(80)
+                                .Renderer(r => r.Handler = "this.setTitle('Tổng thiết bị: ' + storeItem.get('Data2') + '<br/> Sự cố chưa xử lý: '+storeItem.get('Data3')+ '<br/>Sự cố đã xử lý: '+storeItem.get('Data5')+'<br/>Bảo dưỡng đạt: '+storeItem.get('Data6')+'<br/>Bảo dưỡng không đạt: '+storeItem.get('Data7'));")
+                                 ),
+                                     Html.X().LineSeries()
+                                            .Axis(Position.Left)
+                                            .Smooth(3)
+                                            .Fill(true)
+                                            .XField("Name")
+                                            .YField("Data5")
+                                            .Title("Sự cố đã khắc phục")
+                                            .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                            .Tips(Html.X().ChartTip()
+                                            .Width(280)
+                                            .Height(28)
+                                            .TrackMouse(true)
+                                                  .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data5') + ' Thiết bị');")
+                                             )
+                                            .MarkerConfig(new SpriteAttributes { Type = SpriteType.Diamond, Size = 3, Radius = 3, StrokeWidth = 0 }),
+                                    Html.X().LineSeries()
+                                            .Axis(Position.Left)
+                                            .Smooth(3)
+                                            .Fill(true)
+                                            .XField("Name")
+                                            .YField("Data6")
+                                            .Title("Bảo dưỡng đạt")
+                                            .HighlightConfig(new SpriteAttributes { Size = 7, Radius = 7 })
+                                            .Tips(Html.X().ChartTip()
+                                            .Width(280)
+                                            .Height(28)
+                                            .TrackMouse(true)
+                                                    .Renderer(r => r.Handler = "this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Data6') + ' Thiết bị');")
+                                                )
+                                            .MarkerConfig(new SpriteAttributes { Type = SpriteType.Diamond, Size = 3, Radius = 3, StrokeWidth = 0 })
+
+                                         )
+                                    )
+                             )
+                    )
+)
+<script>
+    var onSelect = function () {
+        var charId = "Chart" + App.cbSelectChart.getValue();
+        Ext.getCmp(charId).getStore().reload();
+    };
+    var onSelectCombobox = function (obj) {
+        var records = obj.store.getAllRange();
+        for (var i = 0; i < records.length; i++) {
+            var pcharId = "pChart" + records[i].data.field1;
+            Ext.getCmp(pcharId).hide();
+        };
+        Ext.getCmp("pChart" + obj.value).show();
+        Ext.getCmp("Chart" + obj.value).getStore().reload();
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var showDetailStatiscal = function (storeUrl) {
+        var records = App.gpDepartmentStatistical.selModel.getSelection();
+        var cateId = 0;
+        if (records.length > 0) {
+            cateId = records[0].get('id');
+        }
+        var url = '@(Url.Action("ViewDetailStatistical", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        var params = {
+            urlStore: storeUrl,
+            Name: 'cateId',
+            Value: cateId,
+            Mode: '@(ParameterMode.Value)',
+            fromDate: Ext.Date.format(App.dfFromDate.getValue(), 'd/m/Y g:i A'),
+            toDate: Ext.Date.format(App.dfToDate.getValue(), 'd/m/Y g:i A'),
+        };
+        onDirectMethod(url, params);
+    };
+    var renderTotal = function (value) {
+        var urlStoreProfile = '@(Url.Action("LoadTotalEq", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalUse = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalUse", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderUseCKP = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderUseCKP", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderUseDKP = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderUseDKP", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderUsePass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderUsePass", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderUseNotPass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderUseNotPass", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderTotalNotUse = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderTotalNotUse", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderNoteUseCKP = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderNoteUseCKP", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderNoteUseDKP = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderNoteUseDKP", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderNotUsePass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderNotUsePass", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var renderNotUseNotPass = function (value) {
+        var urlStoreProfile = '@(Url.Action("renderNotUseNotPass", "EquipmentProductionCategoryStatistical", new { Area = "Equipment" }))';
+        return "<a class='a-grid-cell' title='Click xem chi tiết' onclick =\"showDetailStatiscal(\'" + urlStoreProfile.toString() + "\')\">" + value + "</a>";
+    };
+    var recordCates = null;
+    var expandCate = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                var node = records[i];
+                if (recordCates != null && checkExpandCate(node)) {
+                    node.expand();
+                }
+                else if (node.getDepth() < 2 && !node.data.leaf && !node.data.expanded) {
+                    node.expand();
+                }
+            }
+        }
+        if (App.gpDepartmentStatistical.selModel.getCount() <= 0) {
+            setCateSelection(0);
+            
+        }
+    };
+    var checkExpandCate = function (record) {
+        var check = false;
+        recordCates.forEach(function (obj) {
+            if (!check && obj.id == record.data.id) {
+                check = obj.expanded;
+                if (obj.selected) {
+                    setCateSelection(record);
+                }
+            }
+        })
+        return check;
+    };
+    var getCateRecords = function () {
+        var records = App.gpDepartmentStatistical.getView().store.getRange();
+        var node = getCateSelection();
+        var data = [];
+        records.forEach(function (obj) {
+            var selected = obj.data.id == node.data.id;
+            var item = {
+                id: obj.data.id,
+                expanded: obj.data.expanded,
+                selected: selected
+            };
+            data.push(item);
+        });
+        return data;
+    };
+    var setCateSelection = function (record) {
+        if (record != null) {
+            App.gpDepartmentStatistical.selModel.select(record);
+        }
+    };
+    var getCateSelection = function () {
+        return App.gpDepartmentStatistical.getSelectionModel().getLastSelected();
+    };
+    var reloadCate = function () {
+        recordCates = getCateRecords();
+        var node = getCateSelection();
+        App.gpDepartmentStatistical.store.reload({ node: node.parentNode });
+    };
+    var reloadCateNode = function () {
+        recordCates = getCateRecords();
+        var node = getCateSelection();
+        App.gpDepartmentStatistical.store.reload({ node: node });
+        node.data.leaf = false;
+        node.data.expanded = true;
+        node.expand();
+    };
+    var refreshCate = function () {
+        recordCates = getCateRecords();
+        App.gpDepartmentStatistical.selModel.deselectAll()
+        App.gpDepartmentStatistical.getRootNode().reload();
+    };
+</script>

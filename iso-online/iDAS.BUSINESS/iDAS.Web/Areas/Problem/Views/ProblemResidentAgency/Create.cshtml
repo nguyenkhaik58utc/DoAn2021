@@ -1,0 +1,91 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Web.Areas.Problem.Models.ProblemResidentAgencyDTO
+@(Html.X().Window()
+    .ID("CreateResidentAgencyWindow")
+    .Title("Thêm mới thông tin cơ quan thường trú")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreateResidentAgencyForm")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Items(
+                Html.X().TabPanel().ID("TabMainResidentAgency").ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Frame(true)
+                            .BodyPadding(5)
+                            .ID("tabResidentAgency")
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin cơ quan thường trú")
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên cơ quan thường trú" + Html.Required())
+                                    .EmptyText("Nhập tên cơ quan thường trú")
+                                    .BlankText("Bạn phải nhập tên cơ quan thường trú!")
+                                    .AllowBlank(false).AllowOnlyWhitespace(false),
+                                Html.X().ComboBoxFor(m => m.ResidentAgencyGroupID).EmptyText("Chọn nhóm cơ quan thường trú").FieldLabel("Nhóm cơ quan thường trú" + Html.Required()).Editable(false).BlankText("Bạn hãy chọn cấp quản lý").AllowBlank(true).AllowOnlyWhitespace(false)
+                                .Store(
+                                        Html.X().Store()
+                                        .AutoLoad(true)
+                                        .ID("stResidentAgencyGroup")
+                                        .Proxy(
+                                            Html.X().AjaxProxy()
+                                                .Url(Url.Action("LoadData", "ProblemResidentAgencyGroup", new { area = "Problem" }))
+                                                .Reader(
+                                                    Html.X().JsonReader().Root("data")
+                                                )
+                                        )
+                                        .Model(
+                                            Html.X().Model()
+                                                .Fields(
+                                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.String),
+                                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String)
+                                                )
+                                        )
+                                    )
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+                            )
+                    )
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createResidentAgencySubmit(false)"),
+        Html.X().ButtonSaveAndExit().Handler("createResidentAgencySubmit(true)"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var createResidentAgencySubmit = function (exit) {
+        App.CreateResidentAgencyForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadProblemResidentAgency();
+                    if (exit) {
+                        App.CreateResidentAgencyWindow.close();
+                    }
+                    else {
+                        App.CreateResidentAgencyForm.reset();
+                        App.TabMainResidentAgency.setActiveTab('tabResidentAgency');
+                    }
+                }
+            }
+        });
+    };
+</script>

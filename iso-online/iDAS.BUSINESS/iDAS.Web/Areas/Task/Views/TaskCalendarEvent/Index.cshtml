@@ -1,0 +1,351 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Menu()
+        .ID("cmMenu")
+        .Width(150)
+        .Items(
+            new MenuItem
+                {
+                    Text = "Thêm mới",
+                    ID = "cmAdd",
+                    Icon = Icon.Add,
+                    Handler = "addRecord(App.GridTaskCalendarEvent);"
+                },
+            new MenuItem
+                {
+                    Text = "Xóa",
+                    ID = "cmDelete",
+                    Icon = Icon.Delete,
+                    Handler = "deleteRecord();"
+                }
+        )
+)
+@(Html.X().Viewport()
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().GridPanel()
+                .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                .ID("GridTaskCalendarEvent")
+                .Height(400)
+                .Border(false)
+                .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonCreate()
+                                .ID("btnAdd")
+                                .Handler("addRecord(this.up('grid'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                .ID("butDelete")
+                                .Handler("deleteRecord();"),
+                                 Html.X().ToolbarFill(),
+                                 Html.X().ButtonTutorial()
+                        )
+                )
+                .Store(
+                    Html.X().Store()
+                            .ID("stTaskCalendarEvent")
+                        .Proxy(
+                            Html.X().AjaxProxy()
+                                .Url(Url.Action("getListData"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .RemoteSort(false)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("Color").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                                          Html.X().ModelField().Name("IsWorking").Type(ModelFieldType.Boolean),
+                                        Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("CreateName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("UpdateName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("UpdateByTime").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("UpdateByName").Type(ModelFieldType.String)
+                                )
+                        )
+
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                        .Text("STT")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(33)
+                        .Align(Alignment.Center),
+                    Html.X().Column()
+                        .Text("Tên lịch")
+                        .DataIndex("Name")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(150)
+                        .Wrap(true)
+                        .Editor(
+                        Html.X().TextField()
+                                .MaxLength(100)
+                                .AllowBlank(false)
+                                .AllowOnlyWhitespace(false)
+                                .BlankText("Nhóm lịch làm việc không được để trống")
+                        ),
+            Html.X().Column()
+                    .Text("Màu sắc")
+                    .DataIndex("Color")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                    .Align(Alignment.Center)
+                    .Width(140)
+                    .Editor(
+                        Html.X().ComboBox()
+                            .ID("cbColor")
+                            .TabIndex(3)
+                            .QueryMode(DataLoadMode.Local)
+                            .ForceSelection(true)
+                            .TriggerAction(TriggerAction.All)
+                            .DisplayField("Name")
+                            .Editable(false)
+                            .ValueField("Id")
+                            .Store(
+                                Html.X().Store()
+                                    .AutoLoad(true)
+                                    .Model(
+                                        Html.X().Model()
+                                            .IDProperty("Id")
+                                            .Fields(
+                                                new ModelField("Id", ModelFieldType.String) { Mapping = "Id" },
+                                                new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                            )
+                                    )
+                                    .Proxy(
+                                        Html.X().AjaxProxy()
+                                            .Url(Url.Action("FillColor"))
+                                            .Reader(Html.X().JsonReader().Root("data")
+                                            )
+                                    )
+                            )
+                            .Tpl(
+                            @<text>
+                                <tpl for=".">
+                                    <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                        <div style="width: 20px; height: 20px; float: left; background-color: {Id}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left; font-size: 0.9em;">&nbsp;{Name}</div>
+                                    </div>
+                                </tpl>
+                            </text>)
+                                ),
+                                    Html.X().CheckColumn().Text("Nghỉ làm").Editable(true).Width(100).DataIndex("IsWorking").StyleSpec("font-weight: bold; text-align: center;"),
+                        Html.X().Column()
+                            .Text("Mô tả")
+                                .DataIndex("Note")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Flex(1)
+                            .Wrap(true)
+                            .Editor(
+                                Html.X().TextField()
+                                    .TabIndex(4)
+                                    .MaxLength(300)
+                            ),
+
+                        Html.X().Column()
+                            .Text("Tình trạng")
+                            .DataIndex("IsActive")
+                            .Align(Alignment.Center)
+                            .Width(100)
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Renderer("GetBooleanChar")
+                            .Editor(
+                                Html.X().ComboBox()
+                                    .TabIndex(5)
+                                    .Items(
+                                        new ListItem("Sử dụng", true),
+                                        new ListItem("Không sử dụng", false)
+                                    )
+                            ),
+                        Html.X().CommandColumn()
+                            .ID("commandCol")
+                            .Text("Chức năng")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(70)
+                            .Commands(
+                                Html.X().GridCommand()
+                                    .CommandName("save")
+                                    .Icon(Icon.Disk)
+                                    .ToolTip(tt => tt.Text = "Lưu")
+                                    ,
+                                Html.X().GridCommand()
+                                    .CommandName("reject")
+                                    .Icon(Icon.ArrowUndo)
+                                    .ToolTip(tt => tt.Text = "Hủy")
+                            )
+                            .Listeners(ls => ls.Command.Handler = "handlecmd(command,this.up('grid') );")
+                    )
+                    .SelectionModel(
+                   Html.X().RowSelectionModel()
+                               .Mode(SelectionMode.Multi).Listeners(ls => ls.SelectionChange.Handler = "checkStatus();")
+                    )
+                    .Plugins(Html.X().CellEditing())
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar())
+                    )
+)
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var GetBooleanChar = function (value, p, record) {
+        var sUse = "Sử dụng";
+        var sNot = "<font style='color:red'>Không sử dụng</font>";
+        if (value == "1") {
+            return sUse;
+        } else {
+            return sNot;
+        }
+    };
+    var checkStatus = function () {
+        var records = App.GridTaskCalendarEvent.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.cmDelete.setDisabled(true);
+                App.butDelete.setDisabled(true);
+                break;
+            case 1:
+                if (records[0].get('IsActive')) {
+                    App.cmDelete.setDisabled(true);
+                    App.butDelete.setDisabled(true);
+                } else {
+                    App.cmDelete.setDisabled(false);
+                    App.butDelete.setDisabled(false);
+                }
+                break;
+            default:
+                App.cmDelete.setDisabled(false);
+                App.butDelete.setDisabled(false);
+                break;
+        }
+    };
+    function addRecord(grid) {
+        grid.store.insert(0, { Name: '', IsWorking:true, IsActive: true });
+        grid.editingPlugin.startEditByPosition({ row: 0, column: 0 });
+    }
+    var deleteRecord = function () {
+        var records = App.GridTaskCalendarEvent.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo',
+                    msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) {
+                    label = ' các ';
+                } else {
+                    label = ' ';
+                }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "TaskCalendarEvent", new { Area = "Task" }, null))', params: { stringId: strId },
+                                success: function (result) {
+                                    if (result == 'Error') {
+                                        Ext.MessageBox.show({
+                                            title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa dữ liệu phát sinh lỗi do Dữ liệu này có thể đã được sử dụng. Đề nghị kiểm tra lại!',
+                                            buttons: { yes: 'Đồng ý' },
+                                            iconCls: '#Cancel',
+                                            fn: function (btn) {
+                                                records[0].reject();
+                                                return false;
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var handlecmd = function (cmd, grid) {
+        var records = App.GridTaskCalendarEvent.selModel.getSelection();
+        if (cmd == 'save') {
+            var id = records[0].get('ID'), name = records[0].get('Name'), des = records[0].get('Note'), isworking = records[0].get('IsWorking'),inused = records[0].get('IsActive'), color = records[0].get('Color');
+            if (name == '') {
+                Ext.MessageBox.show({
+                    title: 'Thông báo', msg: 'Tên nhóm lịch không được để trống!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                return;
+            }
+            if (id != null && id > 0 && name != '') {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("Update", "TaskCalendarEvent", new { Area = "Task" }, null))',
+                    params: { id: id, name: name, color: color, isworking: isworking, inused: inused, des: des },
+                    success: function (result) {
+                        if (result == 'Error') {
+                            Ext.MessageBox.show({
+                                title: 'Thông báo', msg: 'Nhóm lịch đã tồn tại. Vui lòng nhập tên khác!',
+                                buttons: { yes: 'Đồng ý' },
+                                iconCls: '#Exclamation',
+                                fn: function (btn) {
+                                    records[0].reject();
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            else {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("Insert", "TaskCalendarEvent", new { Area = "Task" }, null))',
+                    params: { name: name, color: color,isworking:isworking, inused: inused, des: des },
+                    success: function (result) {
+                        if (result == 'ErrorExisted') {
+                            Ext.MessageBox.show({
+                                title: 'Thông báo', msg: 'Nhóm lịch đã tồn tại. Vui lòng nhập tên khác!',
+                                buttons: { yes: 'Đồng ý' },
+                                iconCls: '#Exclamation',
+                                fn: function (btn) {
+                                    records[0].reject();
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+        }
+        if (cmd == 'reject') {
+            records[0].reject();
+        }
+    };
+</script>              

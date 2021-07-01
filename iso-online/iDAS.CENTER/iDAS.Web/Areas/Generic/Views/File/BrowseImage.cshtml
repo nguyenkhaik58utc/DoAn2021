@@ -1,0 +1,49 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ImageItem
+@(Html.X().Window()
+    .ID("winBrowseImg")
+    .Title("Chọn ảnh vào bài viết")
+    .Icon(Icon.Add)
+    .Height(280)
+    .Width(400)
+    .BodyPadding(0)
+    .Modal(false)
+    .Items(
+        Html.X()
+        .FormPanel()
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border:none;")
+        .ID("frmUploadImg")
+        .Layout(LayoutType.Form)
+        .Items(
+            Html.X().ImageUploadFieldFor(m => m.BrowseImage).ImagePreviewHeight(160).ButtonOnly(true)
+            
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Chèn ảnh")
+        .Icon(Icon.ArrowDown)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmUploadImg";
+            de.Click.Before = @"if (!App.frmUploadImg.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("UploadImg");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "this.up('window').close(); insertImg(result.result);";
+        }),
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .Handler("this.up('window').close();")
+    )
+)
+<script type="text/javascript">
+    var insertImg = function (urlImg) {
+        var content = "<div style='text-align:center'><img src='" + urlImg + "' style='border: none; width: 180px; height: 180px;'></div>";
+        App.txtHtml.insertAtCursor(content);
+    };
+</script>

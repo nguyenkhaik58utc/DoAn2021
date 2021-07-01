@@ -1,0 +1,264 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditGradationCriteriaItem
+@(Html.X().Window()
+                .ID("winEditCriteria")
+                .Title("Sửa thông tin tiêu chí đánh giá")
+                .Icon(Icon.Pencil)
+                .Width(650)
+                .BodyPadding(6)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                Html.X().FormPanel()
+                .ID("frCriteria")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                Html.X().HiddenFor(m => m.ID),
+                Html.X().HiddenFor(m => m.HumanAuditGradationRoleID),
+               Html.X().ComboBoxFor(m => m.HumanAuditCriteriaCategoryName)
+                                    .FieldLabel("Bộ tiêu chí" + Html.Required())
+                                    .Editable(false)
+                                    .MarginSpec("0 0 5 0")
+                                    .ID("cbCategoryQuestion")
+                                    .BlankText("Bộ tiêu chí đánh giá không được để trống!")
+                                    .AllowBlank(false)
+                                    .QueryMode(DataLoadMode.Local)
+                                    .ForceSelection(true)
+                                    .TriggerAction(TriggerAction.All)
+                                    .DisplayField("Name")
+                                    .Editable(false)
+                                    .ValueField("Name")
+                                    .Store(
+                                        Html.X().Store()
+                                            .ID("stQuestion")
+                                            .AutoLoad(true)
+                                            .Model(
+                                                Html.X().Model()
+                                                    .IDProperty("ID")
+                                                    .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                    )
+                                            )
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                        .Url(Url.Action("GetDataQuestion", "AuditGradation", new { area = "Human" }))
+                                                    .Reader(Html.X().JsonReader().Root("data")
+                                                    )
+                                            )
+                                    ),
+                Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên tiêu chí" + Html.Required())
+                            .BlankText("Tên tiêu chí không được trống!").AllowOnlyWhitespace(false),
+                Html.X().NumberFieldFor(m => m.Factory).FieldLabel("Hệ số" + Html.Required()).MinValue(1),
+                Html.X().TextAreaFor(m => m.Note).FieldLabel("Diễn giải").MaxLength(500).Flex(1),
+                Html.X().Panel().Title("Gợi ý chấm điểm").Height(250).Icon(Icon.ApplicationViewDetail).Layout(LayoutType.Fit).Items(
+                Html.X().GridPanel()
+                            .ID("GridPointEdit")
+                    .Height(400)
+                    .Border(false)
+                    .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonCreate()
+                                        .ID("btnAddPointEdit")
+                                        .Handler("addRecordPointEdit(this.up('grid'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete()
+                                        .ID("butDeletePointEdit")
+                                        .Handler("deleteRecordPointEdit();"),
+                                Html.X().ToolbarFill()
+                        )
+                    )
+                    .Store(
+                        Html.X().Store()
+                                    .ID("stPointEdit")
+                            .Proxy(
+                                Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetDataPoint"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("criteriaId", Model.ID.ToString(), ParameterMode.Value));
+                            })
+                            .RemoteSort(false)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                                Html.X().Model()
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Point").Type(ModelFieldType.Float)
+                                    )
+                            )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                            .Text("STT")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(33)
+                            .Align(Alignment.Center),
+                        Html.X().Column()
+                            .Text("Tên điểm")
+                            .DataIndex("Name")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(250)
+                            .Wrap(true)
+                            .Editor(
+                        Html.X().TextField()
+                                .MaxLength(200)
+                                .AllowOnlyWhitespace(false)
+                                .AllowBlank(false)
+                                .BlankText("Tên nhóm dịch vụ không được để trống")
+                                ),
+                        Html.X().Column()
+                                .Text("Điểm")
+                                .DataIndex("Point")
+                                .Align(Alignment.Right)
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(100)
+                                .Wrap(true)
+                                .Editor(
+                            Html.X().NumberField()
+                                    .AllowOnlyWhitespace(false)
+                                    .AllowBlank(false)
+                                    .MinValue(0)
+                                    .AllowDecimals(true)
+                                ),
+                        Html.X().Column()
+                            .Text("Mô tả")
+                            .DataIndex("Note")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Flex(1)
+                            .Wrap(true)
+                            .Editor(
+                                Html.X().TextField()
+                                    .TabIndex(4)
+                                    .MaxLength(100)
+                                    .MaxLength(300)
+                            )
+                    )
+                    .SelectionModel(
+                   Html.X().RowSelectionModel()
+                                       .Mode(SelectionMode.Multi).Listeners(ls => ls.SelectionChange.Handler = "checkPointEditStatus();")
+                    )
+                    .Plugins(Html.X().CellEditing())
+                    .BottomBar(
+                         Html.X().CustomPagingToolbar())
+                     )
+                )
+            )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnSaves")
+            .Text("Lưu lại")
+            .Icon(Icon.Disk)
+            .TabIndex(18)
+            .DirectEvents(de =>
+            {
+                de.Click.Before = @"if (!App.frCriteria.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "UpdateCriteria";
+                de.Click.ExtraParams.Add(new { strPoint = new JRawValue("getPointEdit()") });
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frCriteria";
+                de.Click.Success = "if(result.result){this.up('window').close();App.stPointEdit.reload();}App.stCategoryCriteria.reload();";
+            }),
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+            .Handler("App.frCriteria.reset(); this.up('window').close();")
+            )
+)
+<script type="text/javascript">
+    var getPointEdit = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.stPointEdit.data.length; i++) {
+            arr.push(App.stPointEdit.data.items[i].data);
+        }
+        return JSON.stringify(arr);
+    };
+    function addRecordPointEdit(grid) {
+        grid.store.insert(0, { Name: '', Point: 0 });
+        grid.editingPlugin.startEditByPosition({ row: 0, column: 0 });
+    };
+    var checkPointEditStatus = function () {
+        var records = App.GridPointEdit.selModel.getSelection();
+        if (records.length > 0) {
+            App.butDeletePointEdit.setDisabled(false);
+        }
+        else {
+            App.butDeletePointEdit.setDisabled(true);
+        };
+    };
+    var deleteRecordPointEdit = function () {
+        var records = App.GridPointEdit.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Thông báo',
+                    msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) {
+                    label = ' các ';
+                } else {
+                    label = ' ';
+                }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận',
+                    msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("DeletePoint", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))', params: { stringId: strId },
+                                success: function (result) {
+                                    if (result == 'Error') {
+                                        Ext.MessageBox.show({
+                                            title: 'Cảnh báo', msg: 'Quá trình thực hiện xóa Dữ liệu phát sinh lỗi do Dữ liệu này có thể đã được sử dụng. Đề nghị kiểm tra lại!',
+                                            buttons: { yes: 'Đồng ý' },
+                                            iconCls: '#Cancel',
+                                            fn: function (btn) {
+                                                records[0].reject();
+                                                return false;
+                                            }
+                                        });
+                                    }
+                                    App.stPointEdit.reload();
+                                }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+
+    };
+</script>

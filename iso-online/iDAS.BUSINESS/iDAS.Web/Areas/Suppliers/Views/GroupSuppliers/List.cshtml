@@ -1,0 +1,190 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+
+<style>
+    .NotAllow {
+        opacity: 0.5;
+    }
+
+    .ForEmployee {
+        font-weight: bold;
+    }
+</style>
+@(
+ Html.X().TreePanel().Margin(0).Padding(0)
+         .TopBar(Html.X().Toolbar()
+                                .Items(
+                                    Html.X().ButtonCreate()
+                                            .ID("btnInsertNode")
+                                                    .Handler("ShowFrmAddNode();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate()
+                                            .ID("btnEditNode")
+                                                .Handler("showFrmEditNode();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete()
+                                            .ID("btnDeleteNode")
+                                            .Handler("deleteNode();"),
+                                            
+                                   Html.X().ToolbarSeparator(),
+                                            Html.X().ButtonView().ID("btnDetailNode")
+                                                        .Handler("viewNode();")
+
+                                )
+                                )
+                .Tools(
+                        Html.X().Tool().Type(ToolType.Plus).Handler("App.treeGroupSupplierID.expandAll();").ToolTip("Mở rộng"),
+                        Html.X().Tool().Type(ToolType.Minus).Handler("App.treeGroupSupplierID.collapseAll();").ToolTip("Thu gọn"),
+                        Html.X().Tool().Type(ToolType.Refresh).Handler("App.treeGroupSupplierID.store.reload();").ToolTip("Tải lại")
+                       )
+                       
+                .Title("NHÓM NHÀ CUNG CẤP")
+                .ID("treeGroupSupplierID")
+                .TitleAlign(TitleAlign.Center)
+                .Border(false)
+                .AutoScroll(true)
+                .Expand(true)
+                .Region(Region.West)
+                .HideHeaders(true)
+                .RootVisible(false)
+                .Listeners(ls =>
+                {
+                    ls.AfterLayout.Handler = "this.selModel.doSelect(0);";
+                })
+                .Store(
+                        Html.X().TreeStore().ID("StoreGroupCustomer")
+                            .AutoDataBind(true)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadTreeData", "GroupSuppliers", new { Area = "Suppliers" }))
+                            .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Model(
+                                    Html.X().Model().Fields(Html.X().ModelField().Name("id"),
+                                                            Html.X().ModelField().Name("text"),
+                                                            Html.X().ModelField().Name("ParentID")
+                                                            //,Html.X().ModelField().Name("IsParent")
+                                                            ))
+                    )
+                 .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "CategoryCustomerSelectChange();";
+                    })
+)
+<script type="text/javascript">
+    var CategoryCustomerSelectChange = function () {
+        var component = App.treeGroupSupplierID;
+        var records = component.selModel.getSelection();
+        if (records.length == 1) {
+            checkStatusTree(true);
+            OnSelectChangeGroupCustomer(records, true);
+
+        } else {
+            checkStatusTree(false);
+        };
+    };
+    var checkStatusTree = function (value) {
+        if (value) {
+            App.btnDeleteNode.setDisabled(false);
+            App.btnDetailNode.setDisabled(false);
+            App.btnEditNode.setDisabled(false);
+        }
+        else {
+            App.btnDeleteNode.setDisabled(true);
+            App.btnDetailNode.setDisabled(true);
+            App.btnEditNode.setDisabled(true);
+
+        }
+
+    };
+    var viewNode = function () {
+        var component = App.treeGroupSupplierID;
+        var records = component.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('id');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "GroupSuppliers", new { Area = "Suppliers" }, null))',
+                params: { id: id }
+            });
+        }
+    }; 
+
+    function ShowFrmAddNode() {
+        var component = App.treeGroupSupplierID;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+            
+            var url = '@(Url.Action("InsertForm", "GroupSuppliers", new { Area = "Suppliers" }, null))';
+            var params = {
+                parentID: records[0].get('id')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function showFrmEditNode() {
+        var component = App.treeGroupSupplierID;
+        var records = component.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "GroupSuppliers", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('id')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    //Xóa bản ghi khỏi CSDL
+    var deleteNode = function () {
+        var component = App.treeGroupSupplierID;
+        var records = component.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {                        
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            //var aId = new Array();
+                            var strId = records[0].get('id');
+                            //for (var i = 0, r; r = records[i]; i++) {
+                            //    aId[i] = records[i].get('ID');
+                            //}
+                            //strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "GroupSuppliers", new { Area = "Suppliers" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+</script>

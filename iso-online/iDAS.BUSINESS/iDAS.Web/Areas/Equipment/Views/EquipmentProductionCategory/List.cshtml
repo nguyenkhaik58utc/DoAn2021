@@ -1,0 +1,39 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+<script type="text/javascript">
+    var EquipmentCategorySelectchange = function () {
+        var component = App.TreePanelEquipmentCategory;
+        var records = component.selModel.getSelection();
+        if (records.length == 1) {
+            OnSelectChangeEquipementCategory(records)
+        };
+    };
+</script>
+@(
+ Html.X().TreePanel().Margin(0).Padding(0).Tools(Html.X().Tool().Type(ToolType.Refresh).Handler("App.TreePanelEquipmentCategory.store.reload();"))
+                .Title("NHÓM THIẾT BỊ SẢN XUẤT")
+                .ID("TreePanelEquipmentCategory")
+                .TitleAlign(TitleAlign.Center)
+                .Border(false)
+                .AutoScroll(true)
+                .Expand(false)
+                .Region(Region.West)
+                .HideHeaders(true)
+                .RootVisible(false)
+                .Store(
+                            Html.X().TreeStore().ID("StoreEquipementCategory")
+                                .AutoDataBind(true)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "EquipmentProductionCategory", new { Area = "Equipment" }))
+                                .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                .Model(
+                                            Html.X().Model().Fields(Html.X().ModelField().Name("id"),
+                                            Html.X().ModelField().Name("text"),
+                                            Html.X().ModelField().Name("ParentID")
+                                ))
+                    )
+                 .Listeners(ls =>
+                    {
+                        ls.ItemClick.Fn = "EquipmentCategorySelectchange";
+                    })
+)

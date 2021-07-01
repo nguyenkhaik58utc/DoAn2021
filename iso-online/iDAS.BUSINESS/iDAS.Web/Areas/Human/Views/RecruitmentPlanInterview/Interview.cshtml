@@ -1,0 +1,111 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentPlanInterviewItem
+@{
+    var X = Html.X();
+}
+@(Html.X().Window()
+.Title("Thiết lập vòng thi tuyển")
+.Icon(Icon.BookTabs)
+.Width(840)
+.Height(300)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Items(
+                    X.HiddenFor(m => m.ID), X.HiddenFor(m => m.PlanID).ID("hdfPlanID"),
+                    X.GridPanel()
+                        .ID("grPlanForInterview")
+                        .Header(false)
+                        .ForceFit(true)
+                        .Border(false)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("UpdateInterviewItem('add');"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateForInterview").Handler("UpdateInterviewItem('edit');"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteForInterview").Handler("onDelete(App.grPlanForInterview.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailForInterview").Handler("UpdateInterviewItem('view');"),
+                                    Html.X().ToolbarFill()
+                                )
+                        )
+                        .Store(
+                                Html.X().Store()
+                                    .ID("PlanInterviewStore")
+                                    .RemotePaging(true)
+                                    .PageSize(5)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlanInterview", "RecruitmentPlanInterview")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                    .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("ID", "App.hdfPlanID.getValue()", ParameterMode.Raw));
+                                                    })
+                                        .Model(
+                                            X.Model().Fields(
+                                                X.ModelField().Name("ID"),
+                                                X.ModelField().Name("Name"),
+                                                X.ModelField().Name("StartTime"),
+                                                X.ModelField().Name("EndTime"),
+                                                X.ModelField().Name("Content")
+                                        )
+                                    )
+                            )
+                            .ColumnModel(
+                                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                            X.Column().DataIndex("Name").Flex(1).Text("Vòng thi tuyển"),
+                                            X.DateColumnExtend().DataIndex("StartTime").Format("dd/MM/yyy").Width(100).Text("Ngày bắt đầu"),
+                                            X.DateColumnExtend().DataIndex("EndTime").Format("dd/MM/yyy").Width(100).Text("Ngày kết thúc")
+                                        )
+                            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusInterviewItem"))
+                            .BottomBar(Html.X().CustomPagingToolbar("5", "10", "20", "50", "100"))
+
+                )
+    .Buttons(Html.X().ButtonExit())
+)
+<script>
+    function CheckStatusInterviewItem() {
+        var records = App.grPlanForInterview.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDetailForInterview, App.btnDeleteForInterview, App.btnUpdateForInterview);
+        }
+        else {
+            SetDisabled(App.btnDetailForInterview, App.btnDeleteForInterview, App.btnUpdateForInterview);
+        };
+    };
+    var UpdateInterviewItem = function (e) {
+        if (e == 'add') {
+            var url = '@(Url.Action("InterviewUpdateForm", "RecruitmentPlanInterview", new { Area = "Human" }, null))';
+            var params = {
+                ID: 0,
+                action: e,
+                PlanID: App.hdfPlanID.value
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            var records = App.grPlanForInterview.selModel.getSelection();
+            if (records.length == 1) {
+                if (e != 'add') {
+                    var url = '@(Url.Action("InterviewUpdateForm", "RecruitmentPlanInterview", new { Area = "Human" }, null))';
+                    var params = {
+                        ID: records[0].get('ID'),
+                        action: e.toString(),
+                        PlanID: App.hdfPlanID.value
+                    };
+                    onDirectMethod(url, params);
+                };
+            }
+            else {
+                MessageBox();
+            };
+        };
+    };
+    var deleteUrl = '@(Url.Action("DeletePlanInterview"))';
+</script>

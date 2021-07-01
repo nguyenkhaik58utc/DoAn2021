@@ -1,0 +1,147 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.QualityCAPARequireItem
+
+@( Html.X().Window()
+    .Title("Yêu cầu khắc phục phòng ngừa")
+    .ID("WindowCAPARequire")
+    .Icon(Icon.PictureEdit)
+    .Layout(LayoutType.Fit)
+    .Maximized(true)
+    .Height(1)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Border(true)
+    .BodyPadding(0)
+    .Center()
+    .Items(
+            Html.X().HiddenFor(m => m.NCID).ID("hdfNCID"),
+            Html.X().GridPanel()
+                .Layout(LayoutType.Fit)
+                .ID("grCAPARequire")
+                .Header(false)
+                .Border(false)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                        Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                                Html.X().ButtonCreate().Handler("CAPARequireInsert(this.up('gridpanel'));"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonUpdate().ItemID("btnUpdateCAPA").Handler("CAPARequireUpdate(this.up('gridpanel'));"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete().ItemID("btnDeleteCAPA").Handler("deleteCAPARequire(this.up('gridpanel'));"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView().ItemID("btnDetailCAPA")
+                                        .Handler("CAPARequireDetail(this.up('gridpanel'));"),
+                                Html.X().ToolbarSeparator()
+                        )
+                )
+            .Store(
+                Html.X().Store()
+                    .ID("StoreRequireCAPA")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCAPARequire")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(new StoreParameter("id", "App.hdfNCID.value", ParameterMode.Raw))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Code"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("CompleteTime"),
+                            Html.X().ModelField().Name("Department.Name"),
+                            Html.X().ModelField().Name("Status")
+                        )
+                        )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Code").Text("Mã Yêu cầu").Width(150),
+                Html.X().Column().DataIndex("Name").Text("Yêu cầu").Width(300).Flex(1),
+                Html.X().DateColumnExtend().DataIndex("CompleteTime").Text("Thời gian hoàn thành").Width(150).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Department.Name").Text("Đơn vị").Width(150)
+            )
+            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusCAPA(this)")
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single))
+            .BottomBar(
+                    Html.X().CustomPagingToolbar())
+    )
+    .Buttons(
+            Html.X().ButtonExit()
+            )
+)
+<script>
+    var CAPARequireInsert = function (grid) {
+        CAPAReuireGridPanel = grid;
+        var url = '@(Url.Action("UpdateCAPARequireForm", "NC", new { Area = "Quality" }, null))';
+        var params = {
+            id: 0,
+            NCId: App.hdfNCID.getValue()
+        };
+        onDirectMethod(url, params);
+    };
+    var CAPARequireUpdate = function (grid) {
+        CAPAReuireGridPanel = grid;
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateCAPARequireForm", "NC", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID'),
+                NCId: App.hdfNCID.getValue()
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var CAPARequireDetail = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DeltailCAPARequireForm", "NC", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID'),
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteCAPARequire = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var url = '@(Url.Action("DeleteCAPARequire", "NC", new { Area = "Quality" }, null))';
+                    var params = {
+                        id: records[0].get('ID')
+                    };
+                    onDirectMethod(url, params);
+                    grid.store.reload();
+                };
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function CheckStatusCAPA(grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length == 1) {
+            grid.queryById('btnDetailCAPA').setDisabled(false);
+            grid.queryById('btnUpdateCAPA').setDisabled(false);
+            grid.queryById('btnDeleteCAPA').setDisabled(false);
+        }
+        else {
+            grid.queryById('btnDetailCAPA').setDisabled(true);
+            grid.queryById('btnUpdateCAPA').setDisabled(true);
+            grid.queryById('btnDeleteCAPA').setDisabled(true);
+        };
+    };
+</script>

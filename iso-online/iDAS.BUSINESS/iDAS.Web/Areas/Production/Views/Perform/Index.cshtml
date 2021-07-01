@@ -1,0 +1,219 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatusPerform() {
+        var records = App.GrPerform.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdatePerform, App.btnDeletePerform, App.btnDetailPerform);
+        }
+        else {
+            SetDisabled(App.btnUpdatePerform, App.btnDeletePerform, App.btnDetailPerform);
+        };
+    };
+    var ShowAdd = function () {
+        var records = App.GrCommand.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = {
+                commandId: records[0].data.ID,
+                commandCode:records[0].data.Code,
+                departmentId: records[0].data.HumanDepartmentID,
+                departmentName: records[0].data.HumanDepartmentName
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ShowUpdate = function () {
+        var records = App.GrPerform.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowDelete = function () {
+        var records = App.GrPerform.selModel.getSelection();
+        if (records.length > 0) {
+            onDelete(records[0].get('ID'));
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowView = function () {
+        var records = App.GrPerform.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowMonitor = function () {
+        var records = App.GrPerform.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("MonitorForm"))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var onCommandSelectChange = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var record = records[0];
+            App.hdfCommandId.setValue(record.data.ID);
+            App.GrPerform.store.reload();
+            App.btnAddPerform.setDisabled(false);
+        } else {
+            App.btnAddPerform.setDisabled(true);
+        };
+    }
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Border).Margin(0).Frame(false).StyleSpec("border: none;").Padding(2)
+            .Items(
+                        Html.X().Hidden().ID("hdfCommandId"),
+                        Html.X().GridPanel().Region(Region.West).ID("GrCommand").Width(450)
+                                    .Collapsible(true).Split(true)
+                                    .Header(false)
+                                    .ColumnLines(true)
+                                    .ForceFit(true)
+                                    .Listeners(ls => ls.SelectionChange.Handler = "onCommandSelectChange(this);")
+                                    .Store(
+                                            Html.X().Store().ID("StoreCommand")
+                                                    .RemotePaging(true)
+                                                    .PageSize(20)
+                                                    .GroupField("ProductName")
+                                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetAll", "Command", new { Area = "Production" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                    .Model(
+                                                        Html.X().Model().Fields(
+                                                            Html.X().ModelField().Name("ID"),
+                                                            Html.X().ModelField().Name("Code"),
+                                                            Html.X().ModelField().Name("BatchCode"),
+                                                            Html.X().ModelField().Name("StartTime"),
+                                                            Html.X().ModelField().Name("EndTime"),
+                                                            Html.X().ModelField().Name("Quantity"), Html.X().ModelField().Name("Quantity"),
+                                                            Html.X().ModelField().Name("HumanDepartmentID").Mapping("HumanDepartment.ID"),
+                                                            Html.X().ModelField().Name("HumanDepartmentName").Mapping("HumanDepartment.Name"),
+                                                            Html.X().ModelField().Name("Status")
+                                                        )
+                                                    )
+                                            )
+                                            .ColumnModel(
+                                                        Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                                        Html.X().Column().DataIndex("Code").Text("Mã lệnh").Width(80).Locked(true),
+                                                        Html.X().Column().DataIndex("BatchCode").Text("Mã lô").Width(80).Locked(true),
+                                                        Html.X().Column().DataIndex("Quantity").Text("Số lượng").Width(80).Align(Alignment.Right).Locked(true),
+                                                        Html.X().Column().Text("Thời gian")
+                                                        .Columns(
+                                                                    Html.X().DateColumnExtend().DataIndex("StartTime").Text("Bắt đầu").Align(Alignment.Center).Width(100),
+                                                                    Html.X().DateColumnExtend().DataIndex("EndTime").Text("Kết thúc").Align(Alignment.Center).Width(100)
+                                                        ),
+                                                        Html.X().Column().DataIndex("Status").Text("Trạng thái").Width(120).Align(Alignment.Center)
+                                                )
+                                            .Features(
+                                                    Html.X().GridFilters()
+                                                        .MenuFilterText("Tìm kiếm")
+                                                        .Filters(
+                                                            Html.X().StringFilter().DataIndex("Name"),
+                                                            Html.X().BooleanFilter().DataIndex("IsUse").YesText("Có").NoText("Không")
+                                                        )
+                                                )
+                                            .BottomBar(Html.X().CustomPagingToolbar()),
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrPerform")
+                            .Region(Region.Center)
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                        Html.X().ButtonCreate().ID("btnAddPerform").Handler("ShowAdd").Disabled(true),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonUpdate().ID("btnUpdatePerform").Handler("ShowUpdate"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonDelete().ID("btnDeletePerform").Handler("ShowDelete"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonView().ID("btnDetailPerform").Handler("ShowView"),
+                                        //Html.X().ToolbarSeparator(),
+                                        Html.X().Button().Icon(Icon.CartFull).Text("Nguyên liệu sản xuất").Handler("ShowAdd();").Hidden(true),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button().Icon(Icon.BookRed).Text("Giám sát sản xuất").Handler("ShowMonitor();"),
+                                       // Html.X().ToolbarSeparator(),
+                                        Html.X().Button().Icon(Icon.BookAdd).Text("Nhật ký sản xuất").Handler("ShowAdd();").Hidden(true),
+                                        Html.X().ToolbarFill(),
+                                        Html.X().ButtonTutorial()
+                                    )
+                                )
+                            .Store(
+                                Html.X().Store().ID("StorePerform")
+                                        .RemotePaging(true)
+                                        .AutoLoad(false)
+                                        .PageSize(20)
+                                        .GroupField("HumanDepartment.Name")
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("commandId", "App.hdfCommandId.value", ParameterMode.Raw));
+                                            })
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("HumanEmployee.Name"),
+                                                Html.X().ModelField().Name("HumanDepartment.Name"),
+                                                Html.X().ModelField().Name("ShiftName"),
+                                                Html.X().ModelField().Name("Date")
+                                            )
+                                      )
+                        )
+                        .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("HumanDepartment.Name").Text("Phòng ban").Align(Alignment.Center).Width(100),
+                                    Html.X().Column().DataIndex("HumanEmployee.Name").Text("Nhân sự giám sát").Flex(1),
+                                    Html.X().DateColumnExtend().DataIndex("Date").Text("Ngày sản xuất").Align(Alignment.Center).Width(120),
+                                    Html.X().Column().DataIndex("ShiftName").Text("Ca sản xuất").Align(Alignment.Center).Width(120)
+                            )
+                        .Features(
+                                Html.X().GridFilters()
+                                    .MenuFilterText("Tìm kiếm")
+                                    .Filters(
+                                        Html.X().StringFilter().DataIndex("Name"),
+                                        Html.X().BooleanFilter().DataIndex("IsUse").YesText("Có").NoText("Không")
+                                        ),
+                                    Html.X().GroupingSummary()
+                                        .ID("GroupingSummaryPerform")
+                                        .GroupHeaderTplString("{name}")
+                                        .HideGroupedHeader(true)
+                                        .EnableGroupingMenu(false)
+                                        .ShowSummaryRow(false)
+                            )
+                        .SelectionModel(
+                                        Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                                .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusPerform")
+                                        )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+

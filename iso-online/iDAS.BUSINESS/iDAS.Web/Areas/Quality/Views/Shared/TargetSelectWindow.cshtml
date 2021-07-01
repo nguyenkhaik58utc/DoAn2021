@@ -1,0 +1,123 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+<script type="text/javascript">
+    function onDepartmentReadyForTarget(records) {
+        App.hdfTargetPartialViewDepartmentID.setValue(records[0].get('id'));
+        App.gpTargetPartialView.getStore().reload();
+    };
+</script>
+@(Html.X().Hidden().ID("hdfTargetPartialViewDepartmentID"))
+@(Html.X().Window().ID("WinTarget")
+.Title("Danh sách mục tiêu")
+.Icon(Icon.ApplicationSideList)
+.Layout(LayoutType.Border)
+.Width(900)
+.Height(470)
+.Constrain(true)
+.Modal(true)
+.Resizable(false)
+.BodyPadding(0)
+.Center()
+.Border(true)
+.Items(
+        Html.X().DepartmentPanel().Handler("onDepartmentReadyForTarget").MarginSpec("1 0 1 1"),
+            Html.X().GridPanel()
+                .ID("gpTargetPartialView")
+                .Region(Region.Center)
+                .Border(true)
+                .MarginSpec("-1 -1 -1 0")
+                .TitleAlign(TitleAlign.Center)
+                .Layout(LayoutType.Fit)
+                .Collapsible(true)
+                .Header(false)
+                    .Store(
+                        Html.X().Store()
+                        .ID("stTargetChoice")
+                        .AutoLoad(true)
+                        .Proxy(
+                                Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetDataIsAccept", "Target"))
+                                    .Reader(Html.X().JsonReader().Root("data")
+                                    )
+
+                        )
+                        .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("departmentId", "App.hdfTargetPartialViewDepartmentID.getValue()", ParameterMode.Raw));
+                                }
+                            )
+            .RemoteSort(false)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model().IDProperty("ID")
+                .Fields(
+                    new ModelField("ID"),
+                    new ModelField("TargetName", ModelFieldType.String),
+                    new ModelField("Content", ModelFieldType.String),
+                    new ModelField("Status", ModelFieldType.String),
+                    new ModelField("Date", ModelFieldType.Date),
+                    new ModelField("IsFinish", ModelFieldType.Boolean),
+                    new ModelField("IsSuccess", ModelFieldType.Boolean),
+                    new ModelField("ApprovalAt", ModelFieldType.Date),
+                    new ModelField("ApprovalBy", ModelFieldType.Int),
+                    new ModelField("DepartmentID", ModelFieldType.Int),
+                    new ModelField("ParentName", ModelFieldType.String),
+                    new ModelField("Note", ModelFieldType.String),
+                    new ModelField("IsAccept", ModelFieldType.Boolean),
+                    new ModelField("IsApproval", ModelFieldType.Boolean),
+                    new ModelField("IsDelete", ModelFieldType.Boolean),
+                    new ModelField("IsEdit", ModelFieldType.Boolean),
+                    new ModelField("ParentID", ModelFieldType.Int),
+                    new ModelField("Type", ModelFieldType.Boolean)
+                    )
+                )
+            )
+                    .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                        .Text("STT.")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(33)
+                        .Align(Alignment.Center),
+                              Html.X().Column()
+                            .Text("Tên mục tiêu")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                                .DataIndex("TargetName")
+                            .Flex(1)
+                            .Wrap(true)
+                            .Width(300),
+                      Html.X().Column()
+                            .Width(100)
+                            .Text("Trạng thái")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .DataIndex("Status"),
+                    Html.X().Column()
+                            .Width(100)
+                            .Text("Loại mục tiêu")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .Renderer(new Renderer { Fn = "function(value, meta, record) { if(value){return 'Tổ chức'}else{return 'Cá nhân'} }" })
+                            .DataIndex("Type")
+                )
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                        .Mode(SelectionMode.Single)
+                )
+              .BottomBar(Html.X().CustomPagingToolbar())
+                )
+    .Buttons(
+            Html.X().Button()
+                    .TabIndex(17)
+                    .Icon(Icon.Accept)
+                    .Text("Chọn")
+                    .Handler("onSelectTarget(App.gpTargetPartialView.selModel.getSelection().length>0? App.gpTargetPartialView.selModel.getSelection()[0].get('ID'):0);"),
+            Html.X().Button()
+                    .TabIndex(18)
+                    .Icon(Icon.Cancel)
+                    .Text("Thoát")
+                    .Handler("this.up('window').close();")
+        )
+
+)

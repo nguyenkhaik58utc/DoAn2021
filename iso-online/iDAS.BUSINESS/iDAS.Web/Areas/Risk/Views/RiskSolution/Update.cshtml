@@ -1,0 +1,50 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.RiskLibrarySolutionItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thêm mới danh mục kiểm soát kỹ thuật";
+    }
+    else
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật danh mục kiểm soát kỹ thuật";
+    }
+}
+@(
+ Html.X().CustomWindow().Width(600)
+    .ID("winRiskSolution")
+    .Title(title)
+    .Icon(IconView)
+    .Items(
+            X.CustomFormPanel().ID("frmUpdate")
+                .Items(
+                        X.HiddenFor(m => m.ID),
+                        X.HiddenFor(m => m.RiskTempControlID),
+                        X.TextAreaFor(m => m.Description).FieldLabel("Mô tả" + Html.Required()).Height(50)
+                                .AllowBlank(false),
+                        X.TextAreaFor(m => m.Content).FieldLabel("Nội dung")
+                                .EmptyText("Nhập nội dung...").Height(150).Flex(1)
+                    )
+            )  
+    .Buttons(
+            Html.X().ButtonSave()
+                    .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                            de.Click.Url = Url.Action("Update");
+                            de.Click.FormID = "frmUpdate";
+                            de.Click.Success = "this.up('window').close();";
+                        }), 
+           Html.X().ButtonExit()
+    )
+)

@@ -1,0 +1,122 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerFeedbackItem
+@{
+    var X = Html.X();
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatus() {
+        var records = App.GrCustomerFeedback.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnUpdateOrder.setDisabled(false);
+            App.btnDeleteOrder.setDisabled(false);
+            App.btnDetailOrder.setDisabled(false);
+        }
+        else {
+            App.btnUpdateOrder.setDisabled(true);
+            App.btnDeleteOrder.setDisabled(true);
+            App.btnDetailOrder.setDisabled(true);
+        };
+    };
+    var AddNewOrder = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "CustomerFeedback", new { Area = "Customer" }, null))',
+            params: {
+                customerID: App.hdfCustomerID.getValue()
+            }
+        });
+    };
+    var UpdateOrderItem = function () {
+        var records = App.GrCustomerFeedback.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "CustomerFeedback", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ViewDetailOrder = function () {
+        var records = App.GrCustomerFeedback.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "CustomerFeedback", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>
+@(Html.X().Window()
+.ID("winCustomerFeedback")
+.Title("Phản hồi của khách hàng")
+.Icon(Icon.Email)
+//.Width(800)
+.Maximized(true)
+.Height(400)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+        X.HiddenFor(i => i.CustomerID).ID("hdfCustomerID"),
+            Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerFeedback")
+                    .Header(false)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Border(false)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                        Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                            Html.X().ButtonCreate().ToolTip("Thêm mới khách hàng").Handler("AddNewOrder();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonUpdate().ID("btnUpdateOrder").ToolTip("Cập nhật khách hàng").Handler("UpdateOrderItem();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().ToolTip("Xóa khách hàng").ID("btnDeleteOrder").Handler("onDelete(App.GrCustomerFeedback.selModel.getSelection()[0].get('ID'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView().ID("btnDetailOrder").Handler("ViewDetailOrder();")
+                    ))
+                    .Store(
+                    Html.X().Store().ID("StoreCustomerFeedback")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerFeedback", "CustomerFeedback", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("customerID", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                    })
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Content"),
+                                Html.X().ModelField().Name("Time")
+                            )
+                        )
+                )
+                .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.DateColumnExtend().DataIndex("Time").Format("dd/MM/yyyy").Text("Thời gian").Width(150).Locked(true).Align(Alignment.Center),
+                        X.Column().DataIndex("Content").Text("Nội dung").Flex(1)
+                    )
+                .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                            .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                .BottomBar(Html.X().CustomPagingToolbar())
+    )
+.Buttons(Html.X().ButtonExit())
+)
+

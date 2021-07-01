@@ -1,0 +1,203 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCancelItem
+@(
+ Html.X().Window()
+    .ID("winChoseCancel")
+    .Title("Chọn hồ sơ cần hủy")
+    .Icon(Icon.ApplicationSideList)
+    .Width(950)
+    .Height(550)
+    .Constrain(true)
+    .Layout(LayoutType.Border)
+    .Modal(true)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().DepartmentPanel().Handler("onDepartmentReady"),
+        Html.X().Hidden().ID("hdDepart").Value(0),
+        Html.X().GridPanel()
+            .ID("grProfileInfos")
+            .Region(Region.Center)
+            .Height(290)
+            .MarginSpec("0 0 0 0")
+            .ColumnLines(true)
+            .Header(false)
+            .Border(true)
+            .Store(
+                Html.X().Store()
+                    .RemotePaging(true)
+                    .AutoLoad(true)
+                    .ID("stModuleActive")
+                    .PageSize(20)
+                    .Model(
+                            Html.X().Model()
+                            .IDProperty("ID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("ReceivedAt").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("ReceivedName").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StoragePartTime").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("StoreRoomTime").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("FormH").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("FormS").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("Security").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Color").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Status").Type(ModelFieldType.String)
+                                )
+                                )
+                                .Proxy(
+                                    Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetDataChoseProfileCancel"))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("id", Model.CancelID.ToString(), ParameterMode.Raw));
+                                    ps.Add(new StoreParameter("departmentID", "App.hdDepart.value", ParameterMode.Raw));
+                                }
+                            )
+                )
+            .ColumnModel(
+                Html.X().RowNumbererColumn()
+                    .Text("STT")
+                    .Align(Alignment.Center)
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(33),
+                Html.X().Column()
+                    .DataIndex("Code")
+                    .Text("Mã hồ sơ")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Width(100)
+                    .Align(Alignment.Center),
+                Html.X().Column()
+                    .DataIndex("Name")
+                    .Text("Tên hồ sơ")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Flex(1),
+                Html.X().ComponentColumn().Text("Thời gian lưu trữ tại (tháng)").Columns(
+                    Html.X().Column()
+                        .Text("Bộ phận")
+                        .DataIndex("StoragePartTime")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(90)
+                        .Align(Alignment.Right),
+                    Html.X().Column()
+                        .Text("Phòng lưu trữ")
+                        .DataIndex("StoreRoomTime")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(90)
+                        .Align(Alignment.Right)
+                        ),
+                Html.X().Column()
+                    .Text("Mức độ bảo mật")
+                    .DataIndex("Security")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                    .Width(100)
+                    .Align(Alignment.Center)
+
+            )
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                        .ShowHeaderCheckbox(false)
+                                .Mode(SelectionMode.Single)
+                                .Listeners(l => l.SelectionChange.Handler = "loadForm();")
+                            )
+                  .BottomBar(Html.X().CustomPagingToolbar()),
+             Html.X().FormPanel()
+                .Border(false)
+                .ID("frChosseProfileCancel")
+                .Layout(LayoutType.Form)
+                .Header(false)
+                .BodyStyle("border:none")
+                .Region(Region.South)
+                .Frame(true)
+                .MarginSpec("2 0 0 0")
+                .Items(
+                     Html.X().FieldSet()
+                        .Title("Thông tin Hủy hồ sơ")
+                        .Layout(LayoutType.Form)
+                        .FieldDefaults(f => f.LabelWidth = 70)
+                        .Items(
+                            Html.X().HiddenFor(m => m.CancelID).ID("hrCancelID"),
+                            Html.X().HiddenFor(m => m.ID).ID("hrID"),
+                            Html.X().HiddenFor(m => m.ProfileID).ID("hrDocID").Hidden(false),
+                            Html.X().Container().Layout(LayoutType.Column).Items(
+                                Html.X().TextFieldFor(m => m.Code)
+                                    .ID("txtCode").FieldLabel("Mã Hồ sơ").Name("Code")
+                                    .ColumnWidth(0.3).ReadOnly(true),
+                            Html.X().TextFieldFor(m => m.Name)
+                                    .ID("txtName")
+                                    .FieldLabel("Hồ sơ hủy")
+                                    .ReadOnly(true)
+                                    .Name("Name")
+                                    .ColumnWidth(0.7)
+                                    .MarginSpec("0 0 0 5")
+                                    .AllowBlank(false).BlankText("Hồ sơ hủy bắt buộc chọn!")
+                                    .LabelWidth(90)
+                                ),
+                           Html.X().Container().Layout(LayoutType.Column).Items(
+                            Html.X().DateFieldFor(m => m.CancelAt).Format("dd/MM/yyyy")
+                                .ID("dtCancelDate")
+                                .FieldLabel("Ngày hủy")
+                                .ColumnWidth(0.3),
+                            Html.X().TextFieldFor(m => m.StrStorageTime)
+                                .ID("txtStrStorageTime")
+                                .FieldLabel("Thời gian đã lưu")
+                                .LabelWidth(90)
+                                .ReadOnly(true)
+                                .ColumnWidth(0.3)
+                                .MarginSpec("0 0 0 5"),
+                            Html.X().Label()
+                                .Text(" (ngày) |")
+                                .ColumnWidth(0.07)
+                                .MarginSpec("2 10 0 5"),
+                            Html.X().NumberFieldFor(m => m.TotalPage)
+                                .ID("txtNumber")
+                                .FieldLabel("Tổng số trang hủy" + Html.Required())
+                                .Value(1)
+                                .AllowBlank(false).BlankText("Tổng số trang hủy bắt buộc nhập!")
+                                .MinValue(1).MinText("Tổng số trang hủy phải lớn hơn 0!")
+                                .ColumnWidth(0.28)
+                                .LabelWidth(110)
+                                .MarginSpec("0 0 0 5"),
+                            Html.X().Label()
+                                .Text(" (trang)")
+                                .ColumnWidth(0.05)
+                                .MarginSpec("2 0 0 5")
+                                 ),
+                            Html.X().TextAreaFor(m => m.Reason)
+                                .ID("txtReason").FieldLabel("Lý do hủy" + Html.Required())
+                                .AllowBlank(false).BlankText("Lý do hủy hồ sơ bắt buộc nhập!")
+                                .Height(50)
+                            )
+                )
+            ).Buttons(
+                Html.X().Button()
+                    .ID("btnSaves")
+                    .Icon(Icon.Disk)
+                    .Text("Lưu lại")
+                    .TabIndex(20)
+                        .DirectEvents(de =>
+                        {
+                            de.Click.FormID = "frChosseProfileCancel";
+                            de.Click.ExtraParams.Add(new { isExit = false });
+                            de.Click.Url = Url.Action("InsertCancel");
+                            de.Click.Before = @"if (!#{frChosseProfileCancel}.getForm().isValid()) { return false; }";
+                            de.Click.EventMask.ShowMask = true;
+                            de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                        }),
+                    Html.X().ButtonExit()
+                    )
+)
+<script type="text/javascript">
+    function onDepartmentReady(records) {
+        App.hdDepart.setValue(records[0].get('id'));
+        Ext.getCmp('grProfileInfos').getStore().reload();
+    };
+</script>

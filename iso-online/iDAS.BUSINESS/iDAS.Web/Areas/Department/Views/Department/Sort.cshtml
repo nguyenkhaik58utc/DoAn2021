@@ -1,0 +1,138 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@(Html.X().Hidden().ID("SortDepartmentNode").Value(true))
+@(Html.X().Window()
+    .Title("Sắp xếp cơ cấu tổ chức")
+    .Icon(Icon.ArrowNsew)
+    .Height(500)
+    .Width(750)
+    .BodyPadding(0)
+    .Border(false)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .Items(
+        Html.X().TreePanel()
+            .ID("DepartmentSortPanel")
+            .Header(false)
+            .Border(true)
+            .RowLines(true)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)
+            .SingleExpand(false)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                        Html.X().Button().Text("Chuyển lên").Icon(Icon.ArrowUp)
+                            .Handler("sortDepartment(true);"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Chuyển xuống").Icon(Icon.ArrowDown)
+                            .Handler("sortDepartment(false);"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonRefresh().Handler("App.DepartmentPanel.store.reload();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Mở rộng").Icon(Icon.ControlAddBlue)
+                            .Handler("this.up('treepanel').expandAll();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Thu gọn").Icon(Icon.ControlRemoveBlue)
+                                .Handler("this.up('treepanel').collapseAll();")
+                        )
+            )
+            .BottomBar(
+                Html.X().Toolbar()
+                    .Items(
+                        Html.X().Checkbox().BoxLabel("Dừng hoạt động").BoxLabelCls("DepartmentDeactive").MarginSpec("0 5 0 10")
+                            .Listeners(ls => ls.AfterRender.Handler = "this.setValue(App.ViewDeactive.value)")
+                            .Listeners(ls => ls.Change.Handler = "App.ViewDeactive.setValue(this.value)"),
+                        Html.X().ToolbarSeparator().MarginSpec("0 5 0 0"),
+                        Html.X().Checkbox().BoxLabel("Giải thể").BoxLabelCls("DepartmentCancel").MarginSpec("0 5 0 0")
+                            .Listeners(ls => ls.AfterRender.Handler = "this.setValue(App.ViewCancel.value)")
+                            .Listeners(ls => ls.Change.Handler = "App.ViewCancel.setValue(this.value)"),
+                        Html.X().ToolbarSeparator().MarginSpec("0 5 0 0"),
+                        Html.X().Checkbox().BoxLabel("Sát nhập").BoxLabelCls("DepartmentMerge").MarginSpec("0 5 0 0")
+                            .Listeners(ls => ls.AfterRender.Handler = "this.setValue(App.ViewMerge.value)")
+                            .Listeners(ls => ls.Change.Handler = "App.ViewMerge.setValue(this.value)"),
+                        Html.X().ToolbarSeparator().MarginSpec("0 5 0 0"),
+                        Html.X().Checkbox().BoxLabel("Đã xóa").BoxLabelCls("DepartmentDelete")
+                            .Listeners(ls => ls.AfterRender.Handler = "this.setValue(App.ViewDelete.value)")
+                            .Listeners(ls => ls.Change.Handler = "App.ViewDelete.setValue(this.value)")
+                    )
+            )
+            .StoreID("StoreDepartments")
+            .ColumnModel(
+                Html.X().TreeColumn().Text("Cơ cấu tổ chức").StyleSpec("font-weight: bold;text-align: center")
+                    .DataIndex("text").Flex(1).Filterable(false).Sortable(false)
+            )
+            .Listeners(ls => ls.Select.Handler = "setDepartmentSelection(record)")
+            .Listeners(ls => ls.Load.Handler = "setSortDepartmentSelection()")
+            .Listeners(ls => ls.ViewReady.Handler = "setSortDepartmentSelection()")
+            .Listeners(ls => ls.NodeDragOver.Handler = "return checkDepartmentAppend(dragData,targetNode)")
+            .Mode(TreePanelMode.Remote)
+            .RemoteMoveUrl(Url.Action("Move"))
+            .View(
+                Html.X().TreeView().Plugins(
+                    Html.X().TreeViewDragDrop().AllowLeafDrop(true).AppendOnly(true).ContainerScroll(true)
+                )
+            )
+    )
+)
+<script>
+    var sortDepartmentIndex = null;
+    var sortDepartment = function (sort) {
+        var url = urlSortDepartment;
+        var record = getDepartmentSelection();
+        var departmentId = record == null ? 0 : record.data.id;
+        var parentId = record == null ? 0 : record.data.ParentID;
+        var viewDeactive = App.ViewDeactive.getValue();
+        var viewCancel = App.ViewCancel.getValue();
+        var viewMerge = App.ViewMerge.getValue();
+        var viewDelete = App.ViewDelete.getValue();
+        var params = {
+            departmentId: departmentId, parentId: parentId, sort: sort,
+            viewDeactive: viewDeactive,
+            viewCancel: viewCancel,
+            viewMerge: viewMerge,
+            viewDelete: viewDelete,
+        };
+        var node = App.DepartmentSortPanel.view.getNodeById(departmentId);
+        sortDepartmentIndex = sort ? node.sectionRowIndex - 1 : node.sectionRowIndex + 1;
+        var sortSuccess = function () { if (App.SortDepartmentNode.getValue() == 'true') reloadDepartment();};
+        onDirectMethod(url, params, 'post', sortSuccess);
+    };
+    var setSortDepartmentSelection = function () {
+        if (sortDepartmentIndex != null) {
+            App.DepartmentSortPanel.selModel.select(sortDepartmentIndex);
+        }
+        var count = App.DepartmentSortPanel.selModel.getCount();
+        if (count <= 0) {
+            var node = getDepartmentSelection();
+            if (node != null) {
+                App.DepartmentSortPanel.selModel.select(node);
+            }
+        }
+    };
+    var checkDepartmentAppend = function (source, target) {
+        var record = source.records[0];
+        if (target.data.IsActive && !target.data.IsCancel && !target.data.IsMerge && !target.data.IsDelete) {
+            return true;
+        }
+        if (record.data.IsActive != target.data.IsActive) {
+            return false;
+        }
+        if (record.data.IsCancel != target.data.IsCancel) {
+            return false;
+        }
+        if (record.data.IsMerge != target.data.IsMerge) {
+            return false;
+        }
+        if (record.data.IsDelete != target.data.IsDelete) {
+            return false;
+        }
+        return true;
+    };
+</script>

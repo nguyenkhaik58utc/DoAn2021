@@ -1,0 +1,124 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CustomerRegisterDatasizeItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+        Html.X().GridPanel()
+        .ID("CustomerRegisterDatasizePanel")
+        .Border(false).ColumnLines(true)
+        .TopBar(
+            Html.X().Toolbar()
+            .Items(
+                Html.X().Button().Text("Thêm").ID("btnCreateCustomerRegisterDatasize").Icon(Icon.Add).Handler("showCreateCustomerRegisterDatasize();"),
+                Html.X().Button().Text("Sửa").ID("btnUpdateCustomerRegisterDatasize").Icon(Icon.Pencil).Handler("showUpdateCustomerRegisterDatasize();").Disabled(true),
+                Html.X().Button().Text("Xóa").ID("btnDeleteCustomerRegisterDatasize").Icon(Icon.Delete).Handler("showDeleteCustomerRegisterDatasize();").Disabled(true),
+                Html.X().Button().Text("Xem chi tiết").ID("btnDetailCustomerRegisterDatasize").Icon(Icon.Zoom).Handler("showDetailCustomerRegisterDatasize();").Disabled(true)
+            )
+        )
+        .Store(
+            Html.X().Store()
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+            .RemoteSort(true)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model()
+                .Fields(
+                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                    Html.X().ModelField().Name("CustomerFileId").Type(ModelFieldType.Object),
+                    Html.X().ModelField().Name("CustomerName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("DataSizeName").Type(ModelFieldType.String),
+                    Html.X().ModelField().Name("IsNew").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsContact").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsAccept").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("RequireAt").Type(ModelFieldType.Date)
+                )
+            )
+            .Listeners(ls => ls.Refresh.Handler = "deSelectCustomerRegisterDatasize()")
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeCustomerRegisterDatasize();")
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Align(Alignment.Center).Width(35).StyleSpec("font-weight: bold; text-align: center;"),
+            Html.X().Column().Text("ID").DataIndex(Model, m => m.ID).Hidden(true),
+            Html.X().ImageColumn().DataIndex(Model, m => m.CustomerFileId),
+            Html.X().Column().Text("Khách hàng").DataIndex(Model, m => m.CustomerName).StyleSpec("font-weight: bold;text-align: center").Flex(1).Align(Alignment.Left),
+            Html.X().Column().Text("Dung lượng").DataIndex(Model, m => m.DataSizeName).StyleSpec("font-weight: bold;text-align: center").Width(240).Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Mới").DataIndex(Model, m => m.IsNew).Width(80).StyleSpec("font-weight: bold; text-align: center").Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Liên hệ").DataIndex(Model, m => m.IsContact).Width(80).StyleSpec("font-weight: bold; text-align: center").Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Xác nhận").DataIndex(Model, m => m.IsAccept).Width(80).StyleSpec("font-weight: bold; text-align: center").Align(Alignment.Center),
+            Html.X().CheckColumn().Text("Kích hoạt").DataIndex(Model, m => m.IsActive).Width(80).StyleSpec("font-weight: bold; text-align: center").Align(Alignment.Center),
+            Html.X().DateColumn().Text("Ngày yêu cầu").DataIndex(Model, m => m.RequireAt).Width(100).StyleSpec("font-weight: bold; text-align: center").Format("dd/MM/yyyy").Align(Alignment.Center)
+        )
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script type="text/javascript">
+    var urlCreateCustomerRegisterDatasize = '@Url.Action("Create", "CustomerRegisterDatasize", new { area = "Customer" })';
+    var urlUpdateCustomerRegisterDatasize = '@Url.Action("Update", "CustomerRegisterDatasize", new { area = "Customer" })';
+    var urlDeleteCustomerRegisterDatasize = '@Url.Action("Delete", "CustomerRegisterDatasize", new { area = "Customer" })';
+    var urlDetailCustomerRegisterDatasize = '@Url.Action("Detail", "CustomerRegisterDatasize", new { area = "Customer" })';
+
+    var getCustomerRegisterDatasizeSelection = function () {
+        return App.CustomerRegisterDatasizePanel.getSelectionModel().getLastSelected();
+    };
+    var reloadCustomerRegisterDatasize = function () {
+        App.CustomerRegisterDatasizePanel.getStore().reload();
+        deSelectCustomerRegisterDatasize();
+    }
+    var deSelectCustomerRegisterDatasize = function () {
+        App.CustomerRegisterDatasizePanel.selModel.lastSelected = null;
+        selectionChangeCustomerRegisterDatasize();
+    }
+    var showCreateCustomerRegisterDatasize = function () {
+        var url = urlCreateCustomerRegisterDatasize;
+        onDirectMethod(url, null, 'get');
+    };
+    var showUpdateCustomerRegisterDatasize = function () {
+        var url = urlUpdateCustomerRegisterDatasize;
+        var record = getCustomerRegisterDatasizeSelection();
+        var CustomerRegisterDatasizeId = record == null ? 0 : record.data.ID;
+        var params = { CustomerRegisterDatasizeId: CustomerRegisterDatasizeId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showDeleteCustomerRegisterDatasize = function () {
+        var url = urlDeleteCustomerRegisterDatasize;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ bản ghi này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getCustomerRegisterDatasizeSelection();
+                            var CustomerRegisterDatasizeId = record == null ? 0 : record.data.ID;
+                            var params = { CustomerRegisterDatasizeId: CustomerRegisterDatasizeId };
+                            onDirectMethod(url, params, 'post', reloadCustomerRegisterDatasize);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailCustomerRegisterDatasize = function () {
+        var url = urlDetailCustomerRegisterDatasize;
+        var record = getCustomerRegisterDatasizeSelection();
+        var CustomerRegisterDatasizeId = record == null ? 0 : record.data.ID;
+        var params = { CustomerRegisterDatasizeId: CustomerRegisterDatasizeId };
+        onDirectMethod(url, params, 'get');
+    };
+    var selectionChangeCustomerRegisterDatasize = function () {
+        var record = getCustomerRegisterDatasizeSelection();
+        App.btnUpdateCustomerRegisterDatasize.setDisabled(record == null);
+        App.btnDeleteCustomerRegisterDatasize.setDisabled(record == null);
+        App.btnDetailCustomerRegisterDatasize.setDisabled(record == null);
+    };
+</script>

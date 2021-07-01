@@ -1,0 +1,115 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.SupplierItem
+@{
+    var X = Html.X();
+}
+
+@(Html.X().Window()
+            .ID("frmAuditResult")
+            .Title("Lịch sử giao dịch của nhà cung cấp")
+                    .Layout(LayoutType.Fit).Maximized(true).Height(600)                
+        .Icon(Icon.Zoom)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+            Html.X().HiddenFor(m => m.ID).ID("txtID"),
+            Html.X().GridPanel()
+                        .ID("GrOrder")
+                        .ColumnLines(true)
+                            .Border(false).ForceFit(true)
+                        .Icon(Icon.TextListBullets).Header(false)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(                                
+                                Html.X().ButtonView().ID("btnDetailOrder").Handler("ViewDetail();"),                                  
+                                Html.X().ToolbarFill()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreOrder")
+                            .RemotePaging(true)                            
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadOrder")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                    {
+                                       ps.Add(new StoreParameter("supplierID", "App.txtID.getValue()", ParameterMode.Raw));
+                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("CODE"),
+                                                    Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("StatusDisp"),
+                                                Html.X().ModelField().Name("Status"),
+                                                Html.X().ModelField().Name("OrderDate"),
+                                                Html.X().ModelField().Name("ShipDate"),
+                                                Html.X().ModelField().Name("ReciepDate"),
+                                                Html.X().ModelField().Name("SupplierName"),
+                                                    Html.X().ModelField().Name("ReciepDateDisp")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                            Html.X().Column().DataIndex("CODE").Text("Mã ĐH").Width(100),
+                                    Html.X().Column().DataIndex("Name").Text("Tên đơn hàng").Flex(1),
+                                        Html.X().ComponentColumn().Text("Thời gian thực hiện")
+                                             .Columns(
+                                                        Html.X().DateColumnExtend().DataIndex("OrderDate").Text("Ngày tạo").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                            Html.X().DateColumnExtend().DataIndex("ShipDate").Text("Ngày nhận").Width(80).Format("dd/MM/yyyy").Align(Alignment.Center),
+                                                                    Html.X().Column().DataIndex("ReciepDateDisp").Text("Thực tế").Width(80).Align(Alignment.Center)
+                                                ),
+                                        Html.X().Column().DataIndex("StatusDisp").Text("Trạng thái").Width(120).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("Status").Text("Trạng thái").Hidden(true)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))                           
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+
+                ).Buttons(
+
+    X.ButtonExit()
+        )
+           
+             )
+
+<script>
+
+    function CheckStatus() {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailOrder.setDisabled(false);
+            App.btnAudit.setDisabled(false);
+            if (records[0].get('Status') < 8)
+                App.btnAudit.setDisabled(true);
+        }
+        else {
+            App.btnDetailOrder.setDisabled(true);
+            App.btnAudit.setDisabled(true);
+        }
+
+    };
+
+    var ViewDetail = function () {
+        var records = App.GrOrder.selModel.getSelection();
+        if (records.length > 0) {
+            var url ='@(Url.Action("DetailRecive", "SuppliersOrderList", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    </script>

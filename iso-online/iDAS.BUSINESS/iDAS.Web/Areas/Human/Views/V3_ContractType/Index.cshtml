@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateContractType = '@(Url.Action("Create", "V3_ContractType", new { area = "Human" }))';
+    var urlUpdateContractType = '@(Url.Action("Update", "V3_ContractType", new { area = "Human" }))';
+    var urlDeleteContractType = '@(Url.Action("Delete", "V3_ContractType", new { Area = "Human" }))';
+    var urlDetailContractType = '@(Url.Action("ShowFrmDetail", "V3_ContractType", new { Area = "Human" }))';
+    var sortContractTypeIndex = null;
+    var showCreateContractType = function () {
+        var url = urlCreateContractType;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateContractType = function () {
+        var url = urlUpdateContractType;
+        var record = getContractTypeSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getContractTypeSelection = function () {
+        var records = App.ContractTypePanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setContractTypeSelection = function () {
+        if (sortContractTypeIndex != null) {
+            App.ContractTypePanel.selModel.select(sortContractTypeIndex);
+        }
+    };
+
+    var showDeleteContractType = function () {
+        var url = urlDeleteContractType;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ loại hợp đồng này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getContractTypeSelection();
+                            var ContractTypeId = record == null ? 0 : record.data.ID;
+                            var params = { ContractTypeId: ContractTypeId };
+                            onDirectMethod(url, params, 'post', reloadContractType);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailContractType = function () {
+        var url = urlDetailContractType;
+        var record = getContractTypeSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadContractType = function () {
+        App.ContractTypePanel.store.reload();
+    };
+
+    var selectionChangeContractType = function () {
+        var record = getContractTypeSelection();
+        var isDisabled = record == null;
+        App.btnUpdateContractType.setDisabled(isDisabled);
+        App.btnDeleteContractType.setDisabled(isDisabled);
+        App.btnDetailContractType.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý loại hợp đồng").Header(false)
+                    .ID("ContractTypePanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateContractType").ID("btnCreateContractType()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateContractType").Handler("showUpdateContractType();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteContractType").Handler("showDeleteContractType()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailContractType").Handler("showDetailContractType();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreContractType")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setContractTypeSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên loại hợp đồng").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeContractType();")
+    )
+    )

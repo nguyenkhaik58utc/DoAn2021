@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateGovermentManagement = '@(Url.Action("Create", "v3_GovermentManagement", new { area = "Human" }))';
+    var urlUpdateGovermentManagement = '@(Url.Action("Update", "v3_GovermentManagement", new { area = "Human" }))';
+    var urlDeleteGovermentManagement = '@(Url.Action("Delete", "v3_GovermentManagement", new { Area = "Human" }))';
+    var urlDetailGovermentManagement = '@(Url.Action("ShowFrmDetail", "v3_GovermentManagement", new { Area = "Human" }))';
+    var sortGovermentManagementIndex = null;
+    var showCreateGovermentManagement = function () {
+        var url = urlCreateGovermentManagement;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateGovermentManagement = function () {
+        var url = urlUpdateGovermentManagement;
+        var record = getGovermentManagementSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getGovermentManagementSelection = function () {
+        var records = App.GovermentManagementPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setGovermentManagementSelection = function () {
+        if (sortGovermentManagementIndex != null) {
+            App.GovermentManagementPanel.selModel.select(sortGovermentManagementIndex);
+        }
+    };
+
+    var showDeleteGovermentManagement = function () {
+        var url = urlDeleteGovermentManagement;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ trình độ quản lý này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getGovermentManagementSelection();
+                            var GovermentManagementId = record == null ? 0 : record.data.ID;
+                            var params = { ID: GovermentManagementId };
+                            onDirectMethod(url, params, 'post', reloadGovermentManagement);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailGovermentManagement = function () {
+        var url = urlDetailGovermentManagement;
+        var record = getGovermentManagementSelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadGovermentManagement = function () {
+        App.GovermentManagementPanel.store.reload();
+    };
+
+    var selectionChangeGovermentManagement = function () {
+        var record = getGovermentManagementSelection();
+        var isDisabled = record == null;
+        App.btnUpdateGovermentManagement.setDisabled(isDisabled);
+        App.btnDeleteGovermentManagement.setDisabled(isDisabled);
+        App.btnDetailGovermentManagement.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý trình độ quản lý").Header(false)
+                    .ID("GovermentManagementPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateGovermentManagement").ID("btnCreateGovermentManagement()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateGovermentManagement").Handler("showUpdateGovermentManagement();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteGovermentManagement").Handler("showDeleteGovermentManagement()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailGovermentManagement").Handler("showDetailGovermentManagement();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StoreGovermentManagement")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setGovermentManagementSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên trình độ quản lý").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeGovermentManagement();")
+    )
+    )

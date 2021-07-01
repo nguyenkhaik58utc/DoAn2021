@@ -1,0 +1,90 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@(Html.X().Window()
+            .ID("frmAuditResult")
+            .Title("Chi tiết điểm cộng/trừ ")
+                    .Layout(LayoutType.Fit).Height(400).Width(600)
+        .Icon(Icon.Zoom)
+        .BodyPadding(0)
+        .Margin(0)
+        .Constrain(true)
+        .Modal(true)
+        .Resizable(false)
+        .Items(
+           Html.X().Panel().Title("Điểm cộng/trừ").Height(250).Icon(Icon.ApplicationViewDetail).Layout(LayoutType.Fit).Items(
+                    Html.X().GridPanel()
+                        .ID("GridPoint")
+                        .Height(400)
+                        .Border(false)
+                        .Store(
+                            Html.X().Store()
+                                .ID("stPoint")
+                                .Proxy(
+                                    Html.X().AjaxProxy()
+                                        .Url(Url.Action("GetDataPoint"))
+                                        .Reader(Html.X().JsonReader().Root("data"))
+                                )
+                                .Parameters(ps =>
+                                {
+                                    ps.Add(new { TickResultId = ViewData["id"] });
+                                })
+                                .RemoteSort(false)
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Model(
+                                    Html.X().Model()
+                                        .Fields(
+                                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("CT").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                            Html.X().ModelField().Name("Point").Type(ModelFieldType.Float)
+                                        )
+                                )
+                        )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn()
+                                .Text("STT").DataIndex("ID")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(33)
+                                .Align(Alignment.Center),
+                            Html.X().Column()
+                                .Text("Cộng/trừ")
+                                .DataIndex("CT")
+                                .Align(Alignment.Right)
+                                .Renderer("if(value == '+'){return '<span style=\"color:green;\">+</span>'} else{return '<span style=\"color:red;\">-</span>'};")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Width(100)
+                                .Wrap(true)
+                                ,
+                            Html.X().Column()
+                                    .Text("Điểm")                                    
+                                    .DataIndex("Point")                                    
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Width(100)
+                                    .Wrap(true)
+                                    ,
+                            Html.X().Column()
+                                .Text("Lý do")
+                                .DataIndex("Note")                                
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Flex(1)
+                                .Wrap(true)
+                                
+                                   
+                        )
+                        .SelectionModel(
+                       Html.X().RowSelectionModel()
+                                   .Mode(SelectionMode.Multi)
+                        )
+                        .BottomBar(
+                             Html.X().CustomPagingToolbar())
+                     ) 
+
+                ).Buttons(
+
+        Html.X().ButtonExit()
+        )
+
+)

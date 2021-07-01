@@ -1,0 +1,133 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreatePositionParty = '@(Url.Action("Create", "V3_PositionParty", new { area = "Human" }))';
+    var urlUpdatePositionParty = '@(Url.Action("Update", "V3_PositionParty", new { area = "Human" }))';
+    var urlDeletePositionParty = '@(Url.Action("Delete", "V3_PositionParty", new { Area = "Human" }))';
+    var urlDetailPositionParty = '@(Url.Action("ShowFrmDetail", "V3_PositionParty", new { Area = "Human" }))';
+    var sortPositionPartyIndex = null;
+    var showCreatePositionParty = function () {
+        var url = urlCreatePositionParty;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdatePositionParty = function () {
+        var url = urlUpdatePositionParty;
+        var record = getPositionPartySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var getPositionPartySelection = function () {
+        var records = App.PositionPartyPanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setPositionPartySelection = function () {
+        if (sortPositionPartyIndex != null) {
+            App.PositionPartyPanel.selModel.select(sortPositionPartyIndex);
+        }
+    };
+
+    var showDeletePositionParty = function () {
+        var url = urlDeletePositionParty;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ chức vụ này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getPositionPartySelection();
+                            var PositionPartyId = record == null ? 0 : record.data.ID;
+                            var params = { ID: PositionPartyId };
+                            onDirectMethod(url, params, 'post', reloadPositionParty);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailPositionParty = function () {
+        var url = urlDetailPositionParty;
+        var record = getPositionPartySelection();
+        var ID = record == null ? 0 : record.data.ID;
+        var params = { ID: ID };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadPositionParty = function () {
+        App.PositionPartyPanel.store.reload();
+    };
+
+    var selectionChangePositionParty = function () {
+        var record = getPositionPartySelection();
+        var isDisabled = record == null;
+        App.btnUpdatePositionParty.setDisabled(isDisabled);
+        App.btnDeletePositionParty.setDisabled(isDisabled);
+        App.btnDetailPositionParty.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý chức vụ Đảng").Header(false)
+                    .ID("PositionPartyPanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreatePositionParty").ID("btnCreatePositionParty()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdatePositionParty").Handler("showUpdatePositionParty();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeletePositionParty").Handler("showDeletePositionParty()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailPositionParty").Handler("showDetailPositionParty();").Disabled(true),
+                        Html.X().ToolbarFill()
+                        ))
+
+                    .Store(Html.X().Store()
+                .ID("StorePositionParty")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("CreatedAt").Type(ModelFieldType.Date),
+                            Html.X().ModelField().Name("UpdatedAt").Type(ModelFieldType.Date)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setPositionPartySelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("Name").Text("Tên chức vụ").Flex(1).MenuDisabled(true),
+                Html.X().DateColumn().DataIndex("CreatedAt").Text("Ngày tạo").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center),
+                Html.X().DateColumn().DataIndex("UpdatedAt").Text("Ngày cập nhật").MenuDisabled(true).Format("dd/MM/yyyy").Align(Alignment.Center))
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangePositionParty();")
+    )
+    )

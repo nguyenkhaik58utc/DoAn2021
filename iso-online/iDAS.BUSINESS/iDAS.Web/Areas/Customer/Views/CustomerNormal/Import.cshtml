@@ -1,0 +1,95 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    var groupId = ViewData["GroupCustomerID"] as string;
+    var groupName = ViewData["GroupName"] as string;
+}
+<script>
+    var CustomerImportSetting = function () {
+        var url = '@(Url.Action("SettingImport"))';
+        var params = {
+            groupCustomerID: App.hdfGroupId.value,
+            groupName: App.hdfGroupName.value,
+            direction: App.hdfDirection.value
+        };
+        onDirectMethod(url, params, 'get');
+    };
+    var viewFileImport = function (value) {
+        var direction = value.result;
+        if (direction) {
+            App.hdfDirection.setValue(direction);
+            App.StoreCustomerImport.reload();
+        };
+    };
+</script>
+@(Html.X().Window().ID("winCustomerImport").Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;").Height(1).Maximized(true)
+    .Title("Import dữ liệu khách hàng").Icon(Icon.PackageDown)
+    .Items(
+            Html.X().Hidden().ID("hdfDirection"),
+            Html.X().Hidden().ID("hdfGroupId").Value(groupId), Html.X().Hidden().ID("hdfGroupName").Value(groupName),
+            Html.X().GridPanel()
+                    .Header(false)
+                    .ID("GrCustomerImport")
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .TopBar(
+                            Html.X().Toolbar()
+                                .Items(
+                                        Html.X().FormPanel().Frame(true).Layout(LayoutType.Fit).StyleSpec("border: none;").ID("frmSelectImportFile")
+                                                .Items(
+                                                    Html.X().FileUploadField().Icon(Icon.PageExcel).ID("FileImportField")
+                                                            .ButtonText("Chọn tệp ...").ButtonOnly(true)
+                                                            .DirectEvents(de =>
+                                                                {
+                                                                    de.Change.Before = @"if (!App.frmSelectImportFile.getForm().isValid()) { return false; }; ";
+                                                                    de.Change.Url = Url.Action("SelectImportFile");
+                                                                    de.Change.FormID = "frmSelectImportFile";
+                                                                    de.Change.Success = "viewFileImport(result);";
+                                                                })
+                                        ),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button().Icon(Icon.UserAdd).Text("Import khách hàng")
+                                            .Handler("CustomerImportSetting();")
+                                       )
+                             )
+                    .Store(
+                        Html.X().Store()
+                           .ID("StoreCustomerImport")
+                            .PageSize(20)
+                            .AutoLoad(false)
+                            .RemotePaging(false)
+                            .Proxy(
+                                    Html.X().AjaxProxy().Url(Url.Action("DataCustomerImport"))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                 )
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("direction", "App.hdfDirection.value", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("A"),
+                                        Html.X().ModelField().Name("B"),
+                                        Html.X().ModelField().Name("C"),
+                                        Html.X().ModelField().Name("D"),
+                                        Html.X().ModelField().Name("E"),
+                                        Html.X().ModelField().Name("F"),
+                                        Html.X().ModelField().Name("G")
+                                )
+                          )
+                    ).MultiSelect(true)
+                    .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    X.Column().DataIndex("A").Text("A").Width(120).Flex(1),
+                                    X.Column().DataIndex("B").Text("B").Width(120),
+                                    X.Column().DataIndex("C").Text("C").Width(120),
+                                    X.Column().DataIndex("D").Text("D").Width(120),
+                                    X.Column().DataIndex("E").Text("E").Width(100),
+                                    X.Column().DataIndex("F").Text("F").Width(120),
+                                    X.Column().DataIndex("G").Text("G").Width(120)
+                                )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)

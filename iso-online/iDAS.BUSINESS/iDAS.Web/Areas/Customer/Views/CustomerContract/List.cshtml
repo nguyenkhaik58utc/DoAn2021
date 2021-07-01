@@ -1,0 +1,144 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerContractItem
+@{
+    var X = Html.X();
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete"))';
+    function CheckStatus() {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdateContract, App.btnDeleteContract, App.btnDetailContract, App.btnOrderContract);
+        }
+        else {
+            SetDisabled(App.btnUpdateContract, App.btnDeleteContract, App.btnDetailContract, App.btnOrderContract);
+        };
+    };
+    var AddNewContract = function () {
+        var url = '@(Url.Action("UpdateForm", "CustomerContract", new { Area = "Customer" }, null))';
+        var params = {
+            customerID: App.hdfCustomerID.getValue()
+        };
+        onDirectMethod(url, params);
+    };
+    var UpdateContractItem = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "CustomerContract", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetailContract = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "CustomerContract", new { Area = "Customer" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var OrderContractItem = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("OrderForm", "CustomerContract", new { Area = "Customer" }, null))';
+            var params = {
+                contractId: records[0].get('ID'),
+                customerId: App.hdfCustomerID.getValue()
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>
+@(Html.X().Window()
+.Title("Hợp đồng của khách hàng")
+.Icon(Icon.PageWhiteStack)
+.Maximized(true)
+        //.Width(800)
+.Height(400)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+                X.HiddenFor(i => i.CustomerID).ID("hdfCustomerID"),
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerContract")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().ToolTip("Thêm mới hợp đồng").Handler("AddNewContract();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateContract").ToolTip("Cập nhật hợp đồng")
+                                            .Handler("UpdateContractItem();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ToolTip("Xóa hợp đồng")
+                                            .ID("btnDeleteContract").Handler("onDelete(App.GrCustomerContract.selModel.getSelection()[0].get('ID'));"),
+                                         Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView()
+                                        .ToolTip("Xem chi tiết").ID("btnDetailContract").Handler("ViewDetailContract();"),
+                                    Html.X().Button().ID("btnOrderContract").Text("Cập nhật đơn hàng").Text("Đơn hàng")
+                                        .Handler("OrderContractItem();").Icon(Icon.PageWhiteText).Disabled(true)
+                            ))
+                            .Store(
+                            Html.X().Store().ID("StoreCustomerContract")
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerContract", "CustomerContract", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("customerID", "App.hdfCustomerID.getValue()", ParameterMode.Raw));
+                                            })
+                                .Model(
+                                    Html.X().Model().Fields(
+                                            Html.X().ModelField().Name("ID"),
+                                            Html.X().ModelField().Name("Name"),
+                                            Html.X().ModelField().Name("Code"),
+                                            Html.X().ModelField().Name("CustomerID"),
+                                            Html.X().ModelField().Name("CustomerName"),
+                                            Html.X().ModelField().Name("Status"),
+                                            Html.X().ModelField().Name("Total"),
+                                            Html.X().ModelField().Name("FinishDate"),
+                                            Html.X().ModelField().Name("IsSignCustomer").Type(ModelFieldType.Boolean),
+                                            Html.X().ModelField().Name("IsSend").Type(ModelFieldType.Boolean)
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    X.Column().DataIndex("Code").Text("Mã hợp đồng").Width(150),
+                                    X.Column().DataIndex("Name").Text("Tên hợp đồng").Flex(1),
+                                    X.DateColumnExtend().DataIndex("FinishDate").Text("Thời hạn").Width(120).Align(Alignment.Center),
+                                    X.NumberColumn().DataIndex("Total").Text("Tổng giá trị").Width(120).Align(Alignment.Right),
+                                    X.Column().DataIndex("Status").Text("Trạng thái").Wrap(true).Width(100).Align(Alignment.Left)
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                        .BottomBar(
+                                Html.X().CustomPagingToolbar()
+            )
+    )
+.Buttons(Html.X().ButtonExit())
+)
+

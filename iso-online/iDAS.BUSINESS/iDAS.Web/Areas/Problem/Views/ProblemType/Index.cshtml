@@ -1,0 +1,254 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web.Areas.Department.Controllers;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+
+<script type="text/javascript">
+    var urlCreateProblemType = '@(Url.Action("Create", "ProblemType", new { area = "Problem" }))';
+    var urlUpdateProblemType = '@(Url.Action("Update", "ProblemType", new { area = "Problem" }))';
+    var urlDeleteProblemType = '@(Url.Action("Delete", "ProblemType", new { Area = "Problem" }))';
+    var urlDetailProblemType = '@(Url.Action("Detail", "ProblemType", new { Area = "Problem" }))';
+    var urlDefaultProblemType = '@(Url.Action("Default", "ProblemType", new { Area = "Problem" }))';
+    var sortProblemTypeIndex = null;
+    var showCreateProblemType = function () {
+        var url = urlCreateProblemType;
+        var params = {};
+        onDirectMethod(url, params, 'get');
+    };
+
+    var showUpdateProblemType = function () {
+        var url = urlUpdateProblemType;
+        var record = getProblemTypeSelection();
+        var ProblemTypeId = record == null ? 0 : record.data.ID;
+        var params = { ProblemTypeId: ProblemTypeId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var setProblemTypeSelection = function () {
+        if (sortProblemTypeIndex != null) {
+            App.ProblemTypePanel.selModel.select(sortProblemTypeIndex);
+        }
+    };
+
+
+    var getProblemTypeSelection = function () {
+        var records = App.ProblemTypePanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setDefaultProblemType = function () {
+        var url = urlDefaultProblemType;
+        var defaultSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn đặt loại sự cố này làm sự cố mặc định hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemTypeSelection();
+                            var ProblemTypeId = record == null ? 0 : record.data.ID;
+                            var params = { ProblemTypeId: ProblemTypeId };
+                            onDirectMethod(url, params, 'post', reloadProblemType);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', defaultSuccess);
+    };
+
+    var ShowForm = function () {
+        $('.popup-booking').addClass('open');
+        console.log('show');
+    };
+
+    var showDeleteProblemType = function () {
+        var url = urlDeleteProblemType;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ loại sự cố này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getProblemTypeSelection();
+                            var ProblemTypeId = record == null ? 0 : record.data.ID;
+                            var params = { ProblemTypeId: ProblemTypeId };
+                            onDirectMethod(url, params, 'post', reloadProblemType);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailProblemType = function () {
+        var url = urlDetailProblemType;
+        var record = getProblemTypeSelection();
+        var ProblemTypeId = record == null ? 0 : record.data.ID;
+        var params = { ProblemTypeId: ProblemTypeId };
+        onDirectMethod(url, params, 'get');
+    };
+
+    var reloadProblemType = function () {
+        App.ProblemTypePanel.store.reload();
+    };
+
+    var selectionChangeProblemType = function () {
+        var record = getProblemTypeSelection();
+        var isDisabled = record == null;
+        App.btnUpdateProblemType.setDisabled(isDisabled);
+        App.btnDeleteProblemType.setDisabled(isDisabled);
+        App.btnDetailProblemType.setDisabled(isDisabled);
+        App.btnDefaultProblemType.setDisabled(isDisabled);
+    };
+</script>
+
+@(X.Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(2)
+    .Items(
+        X.GridPanel()
+                    .Title("Danh mục quản lý loại sự cố").Header(false)
+                    .ID("ProblemTypePanel")
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .ForceFit(true)
+                    .Icon(Icon.TextListBullets)
+                    .TopBar(
+                    X.Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        X.ButtonCreate().Handler("showCreateProblemType").ID("btnCreateProblemType()"),
+                        X.ToolbarSeparator(),
+                        X.ButtonUpdate().ID("btnUpdateProblemType").Handler("showUpdateProblemType();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonDelete().ID("btnDeleteProblemType").Handler("showDeleteProblemType()").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.ButtonView().ID("btnDetailProblemType").Handler("showDetailProblemType();").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.Button().ID("btnDefaultProblemType").Handler("setDefaultProblemType();").Icon(Icon.TextFontDefault).Text("Mặc định").Disabled(true),
+                        X.ToolbarSeparator(),
+                        X.Button().ID("btnDefaultProblemType1").Handler("ShowForm();").Icon(Icon.TextFontDefault).Text("Show"),
+                        X.ToolbarFill()
+                        ))
+
+                    .Store(X.Store()
+                .ID("StoreProblemType")
+                .Proxy(X.AjaxProxy().Url(Url.Action("LoadData")).Reader(X.JsonReader().Root("data")))
+                .Model(
+                    X.Model()
+                        .Fields(
+                            X.ModelField().Name("ID").Type(ModelFieldType.Int),
+                            X.ModelField().Name("Code").Type(ModelFieldType.String),
+                            X.ModelField().Name("ProblemTypeName").Type(ModelFieldType.String),
+                            X.ModelField().Name("Description").Type(ModelFieldType.String),
+                            X.ModelField().Name("textDefault").Type(ModelFieldType.String)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setProblemTypeSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                X.RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                X.Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                X.Column().DataIndex("Code").Text("Mã loại sự cố").Flex(1).MenuDisabled(true),
+                X.Column().DataIndex("ProblemTypeName").Text("Tên loại sự cố").Flex(1).MenuDisabled(true),
+                X.Column().DataIndex("Description").Text("Mô tả loại sự cố").Flex(1).MenuDisabled(true),
+                X.Column().DataIndex("textDefault").Text("Mặc định").Flex(1).MenuDisabled(true)
+             )
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeProblemType();")
+    )
+    )
+@*popup*@
+<div class="popup-booking">
+    <div class="popup-overlay">
+
+    </div>
+    <div class="popup-content">
+        <span class="icon-icon-close"></span>
+        <div class="info-box">
+            <div class="title">
+                Đặt trước sản phẩm
+            </div>
+            <div class="popup-top">
+                <div class="product-box">
+                    <div class="name-box">
+                        <div class="name preorder-name">
+                        </div>
+                        <div class="price ct-mb">
+                            <div>Giá chính thức</div>
+                            <p class="pre-price"></p>
+                        </div>
+                    </div>
+                    <div class="color-dropdown">
+                        <span>Đen</span>
+                        <ul class="list">
+                            <li data-value="1" class="color1 active">
+                                Đen
+                            </li>
+                            <li data-value="2" class="color2">
+                                Xanh
+                            </li>
+                        </ul>
+                    </div>
+                    <ul class="promo" hidden>
+                        <li>Thu cũ đổi mới lên tới 14 triệu</li>
+                        <li>Tặng suất mua Đồng hồ thời trang tặng đến 40%</li>
+                    </ul>
+                </div>
+                <div class="product-price ct-desk">
+                    <div>Giá chính thức</div>
+                    <p class="pre-price"></p>
+                </div>
+            </div>
+
+            <div class="deposit">
+                <p>Đặt cọc trước:</p> <span class="pre-datcoc">500.000đ</span>
+            </div>
+            <!-- <div class="desc">
+                Bằng cách đăng ký thông tin, bạn được ưu tiên nhận khuyến mãi & thông báo khi chương trình chính
+                thức diễn ra hoặc thay đổi khuyến mãi.
+            </div> -->
+            <ul class="gender">
+                <li class="gender1 active" data-gender="Anh">Anh</li>
+                <li class="gender2" data-gender="Chị">Chị</li>
+            </ul>
+            <form id="checkValidate">
+                <input type="hidden" name="ProID" id="ProID">
+                <input type="hidden" name="ProPrice" id="ProPrice">
+                <input type="hidden" name="VarID" id="VarID">
+                <div class="input-box">
+                    <div class="name-box">
+                        <input class='customer-name' id="name"
+                               name="name" type="text" placeholder="Nhập họ và tên*">
+                    </div>
+                    <div class="phone-box">
+                        <input class='customer-phone' id="phone"
+                               name="phone" type="text" placeholder="Nhập số điện thoại*">
+                    </div>
+                    <div class="email-box">
+                        <input class='customer-email' id="email" name="email" type="text" placeholder="Nhập email">
+                    </div>
+                </div>
+                <div class="installment">
+                    <input class="checkbox" type="checkbox" id='checkbox'>
+                    <label for="checkbox"> <span>Sử dụng trả góp 0% khi thanh toán</span></label>
+                </div>
+                <div class="btn-box">
+                    <a class="btn-booking pd-ftbtn" style="cursor:pointer">ĐẶT TRƯỚC NGAY</a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>

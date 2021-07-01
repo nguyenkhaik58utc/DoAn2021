@@ -1,0 +1,353 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport()
+            .Layout(LayoutType.Border)
+            .Padding(2)
+            .Items(
+        Html.X().Hidden().ID("hdfLsCateId"),
+        Html.X().GridPanel()
+                .Header(false)
+                .Title("Bộ tiêu chí đánh giá KPIs")
+                .Region(Region.West)
+                .ID("trCategoryCriteria")
+                .Width(500)
+                .TitleAlign(TitleAlign.Center)
+                .Collapsible(true)
+                .Split(true)
+                .Border(true)
+                .RowLines(true)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                            .Items(
+                                Html.X().Button().ID("btnInsertNews").Icon(Icon.Add).Text("Thêm").ToolTip("Thêm mới bộ tiêu chí đánh giá")
+                                        .Handler("AddCategoryCriteria();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().ID("btnEdit").Icon(Icon.Pencil).ToolTip("Sửa bộ tiêu chí đánh giá").Text("Sửa").Disabled(true)
+                                        .Handler("updateCategoryCriteria();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().ID("btnDelete").Icon(Icon.Delete).ToolTip("Xóa bộ tiêu chí đánh giá").Text("Xóa")
+                                        .Handler("deleteRecord();")
+                                        .Disabled(true),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().ID("btnDetail").Disabled(true).ToolTip("Xem chi tiết").Icon(Icon.Zoom).Text("Xem")
+                                            .Handler("showFormDetail();"),
+                                Html.X().ToolbarFill(),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().Text("Sử dụng dữ liệu iDAS").Icon(Icon.PackageDown).Handler("UseDataIDAS();")
+                            )
+                         )
+                    .Store(Html.X().Store().ID("stCategoryCriteria")
+                        .AutoLoad(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("GetData", "AuditCriteriaCategoryKPI", new { area = "Human" }))
+                                       .Reader(Html.X().JsonReader()
+                                       .Root("data")
+                                       )
+                        )
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean)
+                             )
+                         )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column()
+                        .Text("Bộ tiêu chí")
+                        .Align(Alignment.Left)
+                        .DataIndex("Name")
+                        .Flex(1),
+                Html.X().CheckColumn()
+                        .Text("Sử dụng")
+                        .DataIndex("IsUse")
+                        .Width(80)
+                        .Align(Alignment.Center)
+                    )
+                .Listeners(ls =>
+                {
+                    ls.SelectionChange.Handler = "categoryCriteriaSelect()";
+                    ls.CellDblClick.Handler = "showFormDetail();";
+                })
+                .Plugins(
+                    Html.X().CellEditing()
+                        .ClicksToEdit(1)
+                        .Listeners(ls =>
+                        {
+                        })
+                    )
+                .BottomBar(Html.X().CustomPagingToolbar().DisplayInfo(false))
+
+            .Listeners(ls => { ls.SelectionChange.Handler = "categoryCriteriaSelect();"; }),
+            Html.X().GridPanel()
+            .Region(Region.Center)
+            .ID("grCriteria")
+            .Border(true)
+            .RowLines(true)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .TopBar(
+                        Html.X().Toolbar()
+                                .Items(
+                                        Html.X().ButtonCreate()
+                                                .Handler("showFormAddCriteria(true);"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonUpdate()
+                                                .ID("btnEditCriteria")
+                                                .Handler("updateFormCriteria();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonDelete()
+                                                .ID("btnDeleteCriteria")
+                                                .Handler("deleteCriteria();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonView()
+                                                .ID("btnDetailCriteria")
+                                                .Handler("showDetailCriteria();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().Button().ID("btnCoppy").Disabled(true).ToolTip("Sử dụng lại tiêu chí đánh giá của bộ tiêu chí").Icon(Icon.DatabaseCopy).Text("Sử dụng lại dữ liệu")
+                                                    .Handler("showFormCoppy();"),
+                                        Html.X().ToolbarFill(),
+                                        Html.X().ButtonTutorial()
+                                      )
+                                  )
+                .Store(Html.X().Store().ID("stCriteria")
+                        .AutoLoad(false)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("GetCriteria", "AuditCriteriaCategoryKPI", new { area = "Human" }))
+                                       .Reader(Html.X().JsonReader()
+                                       .Root("data")
+                                       )
+                        )
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("cateId", "App.hdfLsCateId.value", ParameterMode.Raw));
+                            })
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("Factory")
+                             )
+                         )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column()
+                        .Text("Tên tiêu chí đánh giá")
+                        .Align(Alignment.Left)
+                        .DataIndex("Name")
+                        .Flex(1),
+                Html.X().Column()
+                        .Text("Hệ số")
+                        .Align(Alignment.Right)
+                        .DataIndex("Factory")
+                        .Width(80)
+                    )
+                .Listeners(ls =>
+                    {
+                        ls.SelectionChange.Handler = "checkStatusCriteria()";
+                        ls.CellDblClick.Handler = "showDetailCriteria();";
+                    })
+                .Plugins(
+                    Html.X().CellEditing()
+                        .ClicksToEdit(1)
+                        .Listeners(ls =>
+                        {
+                        })
+                    )
+                .BottomBar(Html.X().CustomPagingToolbar())
+         )
+)
+<script type="text/javascript">
+    var categoryCriteriaSelect = function () {
+        var records = App.trCategoryCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            App.hdfLsCateId.setValue(records[0].get('ID'));
+            App.btnEdit.setDisabled(false);
+            App.btnDelete.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+            App.btnCoppy.setDisabled(false);
+        }
+        else {
+            App.btnEdit.setDisabled(true);
+            App.btnDelete.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnCoppy.setDisabled(true);
+        };
+        App.grCriteria.getStore().reload();
+    };
+    var AddCategoryCriteria = function () {
+        var url = '@(Url.Action("FormAdd", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+        var records = App.trCategoryCriteria.selModel.getSelection();
+        if (records.length == 1) {
+            var parentId = records[0].get('ID');
+            var params = {
+                parentId: parentId
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            var params = {
+                parentId: 0
+            };
+            onDirectMethod(url, params);
+        };
+    };
+    function showFormCoppy() {
+        var records = App.trCategoryCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowCoppy", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function updateCategoryCriteria() {
+        var records = App.trCategoryCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowUpdate", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function showAnswers() {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowAnswer", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+            var params = {
+                CriteriaId: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteRecord = function () {
+        var records = App.trCategoryCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+                    mask.show();
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))',
+                        params: {
+                            id: records[0].get('ID'),
+                        },
+                        success: function (result) {
+                            mask.hide();
+                            if (handle) handle(result);
+                        },
+                    });
+                };
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showFormDetail = function () {
+        var records = App.trCategoryCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetail", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var checkStatusCriteria = function () {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnEditCriteria.setDisabled(false);
+            App.btnDeleteCriteria.setDisabled(false);
+            App.btnDetailCriteria.setDisabled(false);
+        }
+        else {
+            App.btnEditCriteria.setDisabled(true);
+            App.btnDeleteCriteria.setDisabled(true);
+            App.btnDetailCriteria.setDisabled(true);
+        };
+    };
+    var showFormAddCriteria = function () {
+        var records = App.trCategoryCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("FormAddCriteria", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+            var params = {
+                cateId: records[0].get('ID'),
+                cateName: records[0].get('Name')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function updateFormCriteria() {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowUpdateCriteria", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteUrl = '@(Url.Action("DeleteCriteria", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+    var deleteCriteria = function () {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            onDelete(records[0].get('ID'));
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var showDetailCriteria = function () {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ShowDetailCriteria", "AuditCriteriaCategoryKPI", new { Area = "Human" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var UseDataIDAS = function () {
+        var url = '@(Url.Action("iDASDataForm"))';
+        onDirectMethod(url, null);
+    };
+</script>

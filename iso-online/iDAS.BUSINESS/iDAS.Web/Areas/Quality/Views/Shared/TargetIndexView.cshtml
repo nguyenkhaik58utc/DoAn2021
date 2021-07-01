@@ -1,0 +1,50 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@( Html.X().GridPanel()
+                .Border(false)
+                .Store(
+                        Html.X().Store()
+                        .AutoLoad(true)
+                        .Proxy(Html.X().AjaxProxy().Url(ViewData["UrlStore"].ToString()).Reader(Html.X().JsonReader().Root("data")))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("paramId", ViewData["ParamID"].ToString(), ParameterMode.Value));
+                            })
+                        .RemoteSort(false)
+                        .RemotePaging(true)
+                        .PageSize(15)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                new ModelField("ID"),
+                                new ModelField("TargetName", ModelFieldType.String),
+                                new ModelField("Content", ModelFieldType.String),
+                                new ModelField("Status", ModelFieldType.String),
+                                new ModelField("Date", ModelFieldType.Date),
+                                new ModelField("IsFinish", ModelFieldType.Boolean),
+                                new ModelField("IsSuccess", ModelFieldType.Boolean),
+                                new ModelField("ApprovalAt", ModelFieldType.Date),
+                                new ModelField("ApprovalBy", ModelFieldType.Int),
+                                new ModelField("DepartmentID", ModelFieldType.Int),
+                                new ModelField("ParentName", ModelFieldType.String),
+                                new ModelField("Note", ModelFieldType.String),
+                                new ModelField("IsAccept", ModelFieldType.Boolean),
+                                new ModelField("IsApproval", ModelFieldType.Boolean),
+                                new ModelField("IsDelete", ModelFieldType.Boolean),
+                                new ModelField("IsEdit", ModelFieldType.Boolean),
+                                new ModelField("ParentID", ModelFieldType.Int),
+                                new ModelField("Type", ModelFieldType.Boolean)
+                                )
+                            )
+                        )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT.").Width(33).Align(Alignment.Center),
+                            Html.X().Column().Text("Tên mục tiêu").DataIndex("TargetName").Flex(1).Wrap(true).Width(300),
+                        Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime).DataIndex("Date").Format("dd/MM/yyyy HH:mm A").Width(120).Text("Ngày hoàn thành").Align(Alignment.Center),
+                        Html.X().Column().DataIndex("ParentName").Width(120).Text("Mục tiêu cha").Align(Alignment.Center),
+                        Html.X().Column().DataIndex("Status").Width(100).Text("Trạng thái").Align(Alignment.Center),
+                        Html.X().Column().DataIndex("Type").Width(100).Text("Loại mục tiêu").Align(Alignment.Center).Renderer(new Renderer { Fn = "function(value, meta, record) { if(value){return 'Tổ chức'}else{return 'Cá nhân'} }" })
+                                )
+                    .BottomBar(Html.X().CustomPagingToolbar())
+)

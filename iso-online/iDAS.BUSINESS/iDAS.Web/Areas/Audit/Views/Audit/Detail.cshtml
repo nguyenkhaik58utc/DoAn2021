@@ -1,0 +1,88 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@model iDAS.Items.AuditItem
+@(Html.X().FormPanel()
+    .Layout(LayoutType.Form)
+    .Border(false)
+    .ID("frAudit")
+    .Padding(0)
+    .Title("KẾT QUẢ ĐÁNH GIÁ")
+    .Header(false)
+    .TitleAlign(TitleAlign.Center)
+    .Margin(0)
+    .BodyBorder(0)
+    .FieldDefaults(fs => fs.LabelWidth = 90)
+    .StyleSpec("border: none;")
+    .Frame(true)
+    .Items(
+        Html.X().Container()
+        .Padding(10)
+        .Layout(LayoutType.Form)
+        .Items(
+            Html.X().HiddenFor(m => m.ID)
+                .ID("hdfAuditId").ReadOnly(true),
+                Html.X().ComboBoxFor(m => m.CriteriaCategoryID)
+            .FieldLabel("Bộ tiêu chí" )
+            .EmptyText("Chọn bộ tiêu chí đánh giá")  
+            .ReadOnly(true)         
+            .AllowBlank(false)
+                .ID("cbCriteriaCategoryID")
+            .Editable(false)
+            .DisplayField("Name")
+            .ValueField("ID")
+            .Store(
+            Html.X().Store()
+                .ID("StoreCriteriaCategory")
+                .AutoLoad(true)          
+                     .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("LoadData", "CriteriaCategory", new { area = "Quality" }))
+                        .Reader(Html.X().JsonReader().Root("data")
+                        )
+                        )
+                .Model(Html.X().Model()
+                    .Fields(
+                        new ModelField("Name"),
+                        new ModelField("ID")
+                    )
+                )
+            )
+                .Listeners(ls => ls.Change.Handler = "refreshB(null);"),
+            Html.X().Container()
+            .Layout(LayoutType.Column)
+            .Items(
+                Html.X().DateFieldFor(m => m.AuditAt)
+                    .ColumnWidth(0.7).ReadOnly(true)  
+                .FieldLabel("Thời gian" )               
+                .Format("dd/MM/yyyy")
+            ),
+            Html.X().Container().Layout(LayoutType.Column).Items(
+                Html.X().ComboBoxFor(m => m.IsPass).ColumnWidth(0.7).ReadOnly(true).FieldLabel("Kết quả" ).Editable(false)
+                .Items(
+                    new ListItem("Đạt", true),
+                    new ListItem("Không đạt", false)
+                )                
+             ),
+                Html.X().TextAreaFor(m => m.Note).Height(120).ReadOnly(true).FieldLabel("Nội dung").EmptyText("Chi tiết nội dung đánh giá"),
+                Html.X().TextAreaFor(m => m.Content).Height(120).ReadOnly(true).FieldLabel("Nhận xét").EmptyText("Nhận xét đánh giá chung")
+        )
+    )
+    .BottomBar(
+        Html.X().Toolbar().Items(
+        Html.X().ToolbarFill(),     
+        Html.X().Button()
+            .ID("btnExit")
+            .TabIndex(9)
+            .Icon(Icon.Cancel)
+            .Text("Thoát")
+           .Handler("this.up('window').close();")
+        )
+    )
+)
+<script type="text/javascript">
+    var refreshB = function (nodeID) {      
+        nodeID = 'root';
+        var node = App.grResult.getStore().getNodeById(nodeID);
+        node.reload({ params: { node: nodeID } });        
+    };
+</script>

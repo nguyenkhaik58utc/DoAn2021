@@ -1,0 +1,322 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using System.Web.Mvc;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css' rel='stylesheet' />
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css" type="text/css">
+    <!-- Promise polyfill script required to use Mapbox GL Geocoder in IE 11 -->
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.min.js"></script>
+}
+<div id='map' style='width: 100%; height: 100%;' hidden></div>
+@(Html.X().Hidden()
+    .ID("hdfType")
+    .Value(0)
+    .Hidden(true)
+)
+@(Html.X().Hidden()
+    .ID("hdfGroup")
+    .Value(0)
+    .Hidden(true)
+)
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Padding(1)
+    .Items(
+         Html.X().GridPanel()
+            .ID("grdProblem")
+            .Border(true)
+            .Header(false)
+            .MarginSpec("0 1 0 0")
+            .TitleAlign(TitleAlign.Center)
+            .Region(Region.Center)
+            .TopBarItem(
+              Html.X().Container().Flex(1)
+                            .Items(
+                Html.X().Toolbar()
+                    .MarginSpec("0 0 1 0")
+                    .ID("tbaSearchProblem")
+                    .Items(
+                        Html.X().ComboBox()
+                            .MarginSpec("0 0 0 5")
+                            .FieldLabel("Loại")
+                            .EmptyText("Chọn phân loại sự cố")
+                            .AllowBlank(true)
+                            .ID("cboTypeSearch")
+                            .Listeners(ls => ls.Select.Handler = "App.hdfType.setValue(this.value); App.stProblem.load();")
+                            .Editable(false)
+                            .LabelWidth(30)
+                            .Width(200)
+                            .Items(new ListItem("Tất cả", 0))
+                            .SelectedItems(new ListItem("Tất cả", 0))
+                            .DisplayField("ProblemTypeName")
+                            .ValueField("ID")
+                            .Store(
+                                Html.X().Store()
+                                    .AutoLoad(true)
+                                    .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetTypeCbo"))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    .Model(Html.X().Model()
+                                        .Fields(
+                                            new ModelField("ID"),
+                                            new ModelField("ProblemTypeName")
+                                        )
+                                    )
+                            ),
+                        Html.X().ComboBox()
+                            .MarginSpec("0 0 0 5")
+                            .FieldLabel("Nhóm")
+                            .EmptyText("Chọn nhóm sự cố")
+                            .AllowBlank(true)
+                            .ID("cboGroupSearch")
+                            .Listeners(ls => ls.Select.Handler = "App.hdfGroup.setValue(this.value); App.stProblem.load();")
+                            .Editable(false)
+                            .LabelWidth(30)
+                            .Width(200)
+                            .Items(new ListItem("Tất cả", 0))
+                            .SelectedItems(new ListItem("Tất cả", 0))
+                            .DisplayField("ProblemGroupName")
+                            .ValueField("ID")
+                            .Store(
+                                Html.X().Store()
+                                    .AutoLoad(true)
+                                    .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetGroupCbo"))
+                                            .Reader(Html.X().JsonReader().Root("data"))
+                                    )
+                                    .Model(Html.X().Model()
+                                        .Fields(
+                                            new ModelField("ID"),
+                                            new ModelField("ProblemGroupName")
+                                        )
+                                    )
+                            ),
+                        Html.X().ToolbarFill()
+                ),
+                Html.X().Toolbar()
+                    .Items(
+                        Html.X().ButtonCreate()
+                            .ID("btnAddDetail")
+                            .Handler("showFormAdd();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate()
+                                .ID("btnUpdateDetail")
+                                .Disabled(true)
+                                .Handler("showFormEdit();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView()
+                                .ID("btnViewDetail")
+                                .Disabled(true)
+                                .Icon(Icon.Zoom)
+                                .Handler("showDetail();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete()
+                                .ID("btnDeleteDetail")
+                                .Disabled(true)
+                                .Handler("deleteRecord();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                                .ID("btnCreateProblemEvent")
+                                .Disabled(true)
+                                .Icon(Icon.WrenchOrange)
+                                .Text("Tạo sự cố")
+                                .Handler("showFormProblemEvent();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                        )
+                    )
+            )
+                    .Store(Html.X().Store()
+                            .ID("stProblem")
+                            .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("GetData"))
+                                    .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                            .Parameters(a =>
+                            {
+                                a.Add(new StoreParameter("type", "App.hdfType.getValue()", ParameterMode.Raw));
+                                a.Add(new StoreParameter("group", "App.hdfGroup.getValue()", ParameterMode.Raw));
+                            })
+                            .RemoteSort(true)
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                    .Fields(
+                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                        Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("ProblemGroupName").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("ProblemTypeName").Type(ModelFieldType.String)
+                                    )
+                                  )
+                              )
+                        .ColumnModel(
+                            Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Align(Alignment.Center).Width(33),
+                            Html.X().Column().Text("ID").DataIndex("ID").Hidden(true),
+                            Html.X().Column().Text("Mã").StyleSpec("font-weight: bold;text-align: center").DataIndex("Code").Width(250).Wrap(true),
+                            Html.X().Column().Text("Tên").Flex(1).StyleSpec("font-weight: bold;text-align: center").DataIndex("Name").Wrap(true),
+                            Html.X().Column().Text("Nhóm").DataIndex("ProblemGroupName").Width(200).Wrap(true),
+                            Html.X().Column().Text("Loại").DataIndex("ProblemTypeName").Width(200).Wrap(true)
+                            )
+                        .SelectionModel(
+                            Html.X().RowSelectionModel()
+                                .Mode(SelectionMode.Multi)
+                                .Listeners(l =>
+                                {
+                                    l.Select.Handler = "checkStatus();";
+                                })
+                            )
+                        .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+                        .Plugins(Html.X().CellEditing())
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar()
+                            )
+     )
+)
+<script type="text/javascript">
+    var checkStatus = function () {
+        var records = App.grdProblem.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                App.btnCreateProblemEvent.setDisabled(true);
+                break;
+            case 1:
+                App.btnUpdateDetail.setDisabled(false);
+                App.btnDeleteDetail.setDisabled(false);
+                App.btnViewDetail.setDisabled(false);
+                App.btnCreateProblemEvent.setDisabled(false);
+                break;
+            default:
+
+                App.btnUpdateDetail.setDisabled(true);
+                App.btnDeleteDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                App.btnCreateProblemEvent.setDisabled(true);
+        }
+    };
+
+    var onSpecialKey = function (field, e) {
+        if (e.getKey() === e.ENTER) {
+            App.stProblem.reload();
+            e.stopEvent();
+        }
+    };
+
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+
+    var deleteRecord = function () {
+        var record = App.grdProblem.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.MessageBox.show({
+                title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa dữ liệu đã chọn?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Information',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("Delete", "ProblemEventTemp", new { Area = "Problem" }, null))',
+                            params: { id: id },
+                            success: function () {
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    };
+
+    var showFormAdd = function () {
+        //var records = App.grdProblem.selModel.getSelection();
+        //var parentId = 0;
+        //if (records.length > 0) {
+        //    parentId = records[0].get('id');
+        //}
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("InsertWindow", "ProblemEventTemp", new { Area = "Problem" }))'//,
+            //params: { id: parentId, }
+        });
+    };
+
+    var showFormEdit = function () {
+        var records = App.grdProblem.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateWindow", "ProblemEventTemp", new { Area = "Problem" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+    var showDetail = function () {
+        var records = App.grdProblem.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailWindow", "ProblemEventTemp", new { Area = "Problem" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+    var showFormProblemEvent = function () {
+        var records = App.grdProblem.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("InsertWindowFromTemp", "ProblemEvent", new { Area = "Problem" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+            MessageBox();
+        }
+    };
+
+</script>

@@ -1,0 +1,242 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int add = (int)iDAS.Items.ProfileForm.Insert;
+    int edit = (int)iDAS.Items.ProfileForm.Edit;
+    int stnew = (int)iDAS.Items.ProfileStatus.New;
+    int stpaid = (int)iDAS.Items.ProfileStatus.Paid;
+    int detail = (int)iDAS.Items.ProfileForm.Detail;
+}
+@(
+ Html.X().Viewport()
+        .Layout(LayoutType.Fit).SetAutoScroll(false)
+        .Items(
+            Html.X().Menu()
+                .ID("cmMenu")
+                .Items(
+                    new MenuItem { Text = "Xem chi tiết", ID = "cmViewDetail", Icon = Icon.Zoom, Handler = "ShowFrm(" + detail + ");" },
+                    Html.X().MenuSeparator(),
+                    new MenuItem { Text = "Thêm", ID = "cmInsert", Icon = Icon.Add, Handler = "ShowFrm(" + add + ");" },
+                    new MenuItem { Text = "Sửa", ID = "cmUpdate", Icon = Icon.Pencil, Disabled = true, Handler = "ShowFrm(" + edit + ");" }
+                ),
+            Html.X().GridPanel()
+                .ID("grProfileInfo")
+                .ColumnLines(true)
+                .Border(false)
+                .TopBar(
+                    Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                        Html.X().ButtonCreate()
+                            .ID("btnInsert")
+                            .Handler("ShowFrm(" + add + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate()
+                            .Disabled(true)
+                            .ID("btnUpdate")
+                            .Handler("ShowFrm(" + edit + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView()
+                            .Disabled(true)
+                            .ID("btnDetail")
+                            .Handler("ShowFrm(" + detail + ");"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                       )
+                    )
+                .Store(
+                    Html.X().Store()
+                        .ID("stProfileInfo")
+                        .Proxy(
+                            Html.X().AjaxProxy()
+                                .Url(Url.Action("GetDataProfileInfo"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        .RemoteSort(true)
+                        .PageSize(20)
+                        .Model(
+                            Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Code").Type(ModelFieldType.String),//Ma Ho so
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),//Ten Ho so
+                                    Html.X().ModelField().Name("ReceivedAt").Type(ModelFieldType.Date),//Thoi gian tiep nhan HS
+                                    Html.X().ModelField().Name("StoragePartTime").Type(ModelFieldType.String),//Thoi gian luu tai bo phan
+                                    Html.X().ModelField().Name("StoreRoomTime").Type(ModelFieldType.String),//Thoi gian luu tai phong luu tru
+                                    Html.X().ModelField().Name("StorageRoomPosition").Type(ModelFieldType.String),//Vi tri luu tai
+                                    Html.X().ModelField().Name("ReceivedName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("ReceivedBy").Type(ModelFieldType.Int),//Nguoi luu tru
+                                    Html.X().ModelField().Name("Avatar"),
+                                    Html.X().ModelField().Name("Status").Type(ModelFieldType.String),//Trang thai
+                                    Html.X().ModelField().Name("StatusCode").Type(ModelFieldType.Int),//Trang thai
+                                    Html.X().ModelField().Name("FormH").Type(ModelFieldType.Boolean),//Hinh thuc luu tru
+                                    Html.X().ModelField().Name("FormS").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("Security").Type(ModelFieldType.String),//Muc do mat
+                                    Html.X().ModelField().Name("Color").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("AttachmentFileIDs")
+                                )
+                            )
+                         )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Width(30).Align(Alignment.Center),
+                    Html.X().Column()
+                            .DataIndex("Code")
+                            .Text("Mã hồ sơ")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(110),
+                    Html.X().Column()
+                            .DataIndex("Name")
+                            .Text("Tên hồ sơ")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Flex(2),
+                    Html.X().ComponentColumn().Text("Thời gian lưu trữ tại (tháng)").Columns(
+                    Html.X().Column()
+                            .Text("Bộ phận")
+                            .DataIndex("StoragePartTime")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(90)
+                            .Align(Alignment.Right),
+                        Html.X().Column()
+                            .Text("Phòng lưu trữ")
+                            .DataIndex("StoreRoomTime")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(90)
+                            .Align(Alignment.Right)
+                            ),
+                        Html.X().ComponentColumn().Text("Loại hồ sơ")
+                            .Filterable(false)
+                            .Columns(
+                        Html.X().CheckColumn()
+                            .DataIndex("FormH")
+                            .Text("Bản cứng")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(90)
+                            .Align(Alignment.Center),
+                        Html.X().CheckColumn()
+                            .DataIndex("FormS")
+                            .Text("Bản mềm")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(90)
+                            .Align(Alignment.Center)
+                        ),
+                        Html.X().Column()
+                            .Text("Mức độ bảo mật")
+                            .Filterable(false)
+                            .DataIndex("Security")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('Color') + ';'; return value; }" })
+                            .Width(100)
+                            .Align(Alignment.Center),
+                        @*Html.X().TemplateColumn()
+                            .DataIndex("ID")
+                            .Width(30).TdCls("AvatarColumn").Tpl(
+                        Html.X().XTemplate().Html(@<text>
+                                <img src='{Avatar}' style='width:30px;height:40px;' />
+                                                                </text>)
+                                                                )
+                            .Filterable(false),*@
+                        Html.X().Column()
+                            .Text("Người lưu trữ")
+                            .DataIndex("ReceivedName")
+                            .Filterable(false)
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(120),
+                        Html.X().Column()
+                            .Text("Trạng thái")
+                            .Filterable(false)
+                            .DataIndex("Status")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(100)
+                            .Align(Alignment.Center),
+                        Html.X().ColumnFileExtend("AttachmentFileIDs")
+                    )
+            .SelectionModel(
+                Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                    .Listeners(ls => ls.SelectionChange.Handler = "checkStatus();")
+              )
+            .Plugins(
+                Html.X().FilterHeader().Remote(true)
+                )
+            .Plugins(Html.X().CellEditing())
+            .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+            .View(Html.X().GridView().StripeRows(true))
+        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+<script type="text/javascript">
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var onSpecialKey = function (field, e) {
+        if (e.getKey() === e.ENTER) {
+            qualitySearchFieldTriggerClick(field, null, 1);
+            e.stopEvent();
+        }
+    };
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var ShowFrm = function (cmd) {
+        if (cmd == 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAdd", "Profile", new { Area = "Profile" }, null))'
+            });
+        } else {
+            var record = App.grProfileInfo.selModel.getSelection();
+            if (record.length > 0) {
+                var id = record[0].get('ID');
+                if (cmd == 1) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmUpdate", "Profile", new { Area = "Profile" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 6) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmDetail", "Profile", new { Area = "Profile" }, null))', params: { id: id }
+                    });
+                }
+            }
+        }
+    };
+    var deleteRecord = function () {
+        var records = App.grProfileInfo.selModel.getSelection();
+        var urlDelete = '@(Url.Action("Delete", "Profile", new { Area = "Profile" }, null))';
+        qualityDeleteRecord(urlDelete, records);
+    };
+    var checkStatus = function () {
+        var record = App.grProfileInfo.selModel.getSelection();
+        if (record.length > 0) {
+            App.cmViewDetail.setDisabled(false);
+            App.btnDetail.setDisabled(false);
+            if (record[0].get('StatusCode') == '@stnew' || record[0].get('StatusCode') == '@stpaid') {
+                App.btnUpdate.setDisabled(false);
+                App.cmUpdate.setDisabled(false);
+            }
+            else {
+                App.btnUpdate.setDisabled(true);
+                App.cmUpdate.setDisabled(true);
+            }
+        } else {
+            App.cmViewDetail.setDisabled(true);
+            App.btnDetail.setDisabled(true);
+            App.btnUpdate.setDisabled(true);
+            App.cmUpdate.setDisabled(true);
+        }
+    };
+    var ShowFrmDocCate = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmDocCate", "Profile", new { Area = "Profile" }, null))'
+        });
+    };
+</script>

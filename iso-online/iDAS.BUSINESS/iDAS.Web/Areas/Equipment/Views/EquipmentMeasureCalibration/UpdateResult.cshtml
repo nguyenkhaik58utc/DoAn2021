@@ -1,0 +1,166 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.EquipmentMeasureCalibrationItem
+@(Html.X().Window()
+    .ID("WinCalibrationResult")
+    .Title("Kết quả hiệu chỉnh thiết bị")
+    .Icon(Icon.AwardStarGold3)
+    .Height(500)
+    .Maximized(true)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Border(false)
+    .Modal(true)
+    .Resizable(false)
+    .AutoScroll(true)
+    .Items(
+            Html.X().HiddenFor(m => m.ID).ID("hdfEquipmentCalibrationMeasureID"),
+            Html.X().GridPanel()
+                .Header(false)
+                .ID("GrCalibrationResult")
+                .ColumnLines(true)
+                .Layout(LayoutType.Fit)
+                .ForceFit(true)
+                .StyleSpec("border: none;")
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().ToolTip("Thêm mới kết quả hiệu chỉnh")
+                                .ID("btnAddCalibrationResult").Icon(Icon.Add).Disabled(false).Handler("AddCalibrationResult();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ID("btnUpdateCalibrationResult").ToolTip("Cập nhật kết quả hiệu chỉnh")
+                                .Handler("UpdateCalibrationResult();").Icon(Icon.Pencil).Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                            Html.X().Button().ToolTip("Xóa kết quả hiệu chỉnh").Icon(Icon.Delete).ID("btnDeleteCalibrationResult")
+                                .Handler("DeleteCalibrationResult();").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().ToolTip("Xem chi tiết").ID("btnDetailCalibrationResult").Icon(Icon.Zoom)
+                                .Handler("DetailCalibrationResult();").Disabled(true)
+                    )
+            )
+                    .Store(
+                        Html.X().Store()
+                                .ID("StoreCalibrationResult")
+                            .AutoLoad(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCalibrationResult", "EquipmentMeasureCalibrationResult")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("id", "App.hdfEquipmentCalibrationMeasureID.value", ParameterMode.Raw));
+                                                    })
+                            .Model(
+                                Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Time"),
+                                        Html.X().ModelField().Name("Note"),
+                                        Html.X().ModelField().Name("IsPass").Type(ModelFieldType.Boolean)
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().DateColumnExtend().DataIndex("Time").Format("dd/MM/yyyy").Align(Alignment.Center).Text("Thời gian hiệu chỉnh").Width(200).Locked(true),
+                                    Html.X().Column().DataIndex("Note").Text("Ghi chú").Flex(1).Wrap(true),
+                                    Html.X().Column().DataIndex("IsPass").Renderer("StatusRenderer").Text("Kết quả").Width(100).Align(Alignment.Center)
+                        )
+                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Handler = "CheckStusMeasureCalibrationResult()"))
+                    .BottomBar(Html.X().CustomPagingToolbar())
+
+    )
+    .Buttons(
+            Html.X().Button()
+                    .ID("btnCalibrationCancel")
+                    .Text("Đóng")
+                    .Icon(Icon.Cancel)
+                    .Handler("this.up('window').close();")
+                )
+)
+<script>
+    function StatusRenderer(value) {
+        return value == true ? "Đạt" : "Không đạt";
+    };
+    function CheckStusMeasureCalibrationResult() {
+        var records = App.GrCalibrationResult.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnUpdateCalibrationResult.setDisabled(false);
+            App.btnDetailCalibrationResult.setDisabled(false);
+            App.btnDeleteCalibrationResult.setDisabled(false);
+        }
+        else {
+            App.btnUpdateCalibrationResult.setDisabled(true);
+            App.btnDetailCalibrationResult.setDisabled(true);
+            App.btnDeleteCalibrationResult.setDisabled(true);
+        };
+    };
+    var AddCalibrationResult = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "EquipmentMeasureCalibrationResult", new { Area = "Equipment" }))',
+            params: {
+                calibrationId: App.hdfEquipmentCalibrationMeasureID.value
+            }
+        });
+    };
+    var UpdateCalibrationResult = function () {
+        var records = App.GrCalibrationResult.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "EquipmentMeasureCalibrationResult", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DetailCalibrationResult = function () {
+        var records = App.GrCalibrationResult.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "EquipmentMeasureCalibrationResult", new { Area = "Equipment" }, null))',
+                params: {
+                    id: records[0].get('ID')
+                }
+            });
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+    var DeleteCalibrationResult = function () {
+        var records = App.GrCalibrationResult.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var id = records[0].get('ID');
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "EquipmentMeasureCalibrationResult", new { Area = "Equipment" }, null))',
+                        params: {
+                            id: id,
+                        }
+                    });
+                }
+            })
+        }
+        else {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn chưa lựa chọn bản ghi nào!',
+                buttons: { yes: 'Đồng ý' }, iconCls: '#Exclamation'
+            });
+        };
+    };
+</script>

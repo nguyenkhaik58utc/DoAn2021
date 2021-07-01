@@ -1,0 +1,123 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.TaskItem
+@( Html.X().Window()
+    .Title("Chi tiết thông tin công việc")
+    .Icon(Icon.Zoom)
+    .Width(780)
+    .Layout(LayoutType.Fit)
+    .BodyPadding(6)
+    .Maximizable(true)
+    .Constrain(true)
+    .Modal(true)
+    .Border(true)
+    .Items(
+Html.X().FormPanel()
+        .Layout(LayoutType.VBox)
+        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+        .Frame(true)
+        .StyleSpec("border: none;")
+        .FieldDefaults(lb => lb.LabelWidth = 110)
+        .Items(
+                Html.X().ComboBoxFor(m => m.ParentID)
+                        .FieldLabel("Phát sinh từ công việc")
+                        .EmptyText("Chọn công việc cha ...")
+                        .ID("cbParentID")
+                        .QueryMode(DataLoadMode.Local)
+                        .Editable(false)
+                        .ForceSelection(true)
+                        .AllowBlank(true)
+                        .HideBaseTrigger(true)
+                        .ReadOnly(true)
+                        .DisplayField("Name")
+                        .ValueField("ID")
+                        .Store(Html.X().Store()
+                                    .AutoLoad(true)
+                                    .Model(Html.X().Model()
+                                    .IDProperty("ID")
+                                    .Fields(
+                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }))
+                                    .Proxy(Html.X().AjaxProxy()
+                                    .Url(Url.Action("LoadComboTask", "Task", new { area = "Task" }))
+                                    .Reader(Html.X().JsonReader().Root("data"))))
+                                    .Triggers(Html.X().FieldTrigger().Icon(TriggerIcon.SimpleEdit)
+                                    ),
+                    Html.X().TextFieldFor(m => m.Name)
+                            .FieldLabel("Tên công việc")
+                            .ReadOnly(true),
+                    Html.X().TextFieldFor(m => m.CategoryName)
+                            .FieldLabel("Nhóm công việc")
+                            .ReadOnly(true),
+                    Html.X().TextFieldFor(m => m.DepartmentName)
+                            .FieldLabel("Thuộc phòng ban")
+                            .ReadOnly(true),
+                    Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 0 0").Items(
+                    Html.X().DateTimeFieldFor(m => m.StartTime)
+                            .ReadOnly(true)
+                            .FieldLabel("Bắt đầu")
+                            .ColumnWidth(0.5).MarginSpec("0 5 5 0"),
+                    Html.X().DateTimeFieldFor(m => m.EndTime)
+                            .ReadOnly(true)
+                            .FieldLabel("Kết thúc")
+                            .ColumnWidth(0.5)
+                            .MarginSpec("0 0 5 0")
+                            ),
+                    Html.X().Container().Layout(LayoutType.Column).ColSpan(2).MarginSpec("0 0 5 0").Items(
+                    Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 5 0 0").ColumnWidth(0.5).Items(
+                    Html.X().NumberFieldFor(m => m.Cost)
+                            .MinValue(0)
+                            .AllowDecimals(true)
+                            .ReadOnly(true)
+                            .Icon(Icon.Coins)
+                            .FieldLabel("Chi phí dự tính")
+                            .MarginSpec("0 5 0 0")
+                            .ColumnWidth(0.7),
+                    Html.X().TextField().Text("VNĐ")
+                            .Icon(Icon.MoneyDollar)
+                            .ColumnWidth(0.3)
+                            .ReadOnly(true)
+                        ),
+                    Html.X().TextFieldFor(m => m.LevelName)
+                            .FieldLabel("Mức độ công việc")
+                            .FieldStyle("background:" + Model.LevelColor)
+                            .ColumnWidth(0.5)
+                            .ReadOnly(true)
+                            .MarginSpec("0 0 0 0")
+                            ),
+                    Html.X().FileUploadFieldFor(m => m.AttachmentFiles)
+                            .ReadOnly(true),
+                    Html.X().TextAreaFor(m => m.Content)
+                            .ID("txtContent")
+                            .FieldLabel("Nội dung công việc")
+                            .Flex(1)
+                            .ReadOnly(true),
+                    Html.X().Container().Layout(LayoutType.Column)
+                            .ColSpan(2)
+                            .Items(
+                    Html.X().Container()
+                            .ColumnWidth(0.5)    
+                            .MarginSpec("0 5 0 0")
+                            .Items(
+                    Html.X().EmployeeFieldFor(m => m.Perform)
+                            .ReadOnly(true)
+                            .Title("Người thực hiện")
+                            .ID("txtPerform")
+                            ),
+                    Html.X().Container()
+                            .ColumnWidth(0.5)
+                            .Items(
+                    Html.X().EmployeeFieldFor(m => m.Create)
+                            .ReadOnly(true)
+                            .Title("Người giao việc")
+                            .ID("txtCreate")
+                        )
+                    )
+           )
+    )
+    .Buttons(
+        Html.X().ButtonExit()
+    )
+)
+

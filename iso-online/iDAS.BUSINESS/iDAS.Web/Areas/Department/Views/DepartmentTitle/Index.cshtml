@@ -1,0 +1,262 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@(Html.X().Window()
+    .Title("Danh sách chức danh")
+    .Icon(Icon.Star)
+    .Modal(true)
+    .Width(645)
+    .Height(350)
+    .Constrain(true)
+    .Resizable(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Items(
+        Html.X().Hidden().ID("ViewDeleteRole").Value(false),
+        Html.X().Hidden().ID("SortRole").Value(true),
+        Html.X().GridPanel()
+            .ID("RolePanel")
+            .Header(false)
+            .ColumnLines(true)
+            .Border(false)
+            .ForceFit(true)
+            .Collapsible(true)
+            .Split(true)
+            .Icon(Icon.TextListBullets)
+            .TopBarItem(
+                Html.X().ButtonCreate().Handler("showCreateRole").ID("btnCreateRole"),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonDelete().Handler("showDeleteRole").ID("btnDeleteRole").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonView().Handler("showDetailRole").ID("btnDetailRole").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Handler("showMoveRole").ID("btnMoveRole").Disabled(true).Text("Chuyển tổ chức").Icon(Icon.HouseStar),
+                Html.X().ToolbarFill(),
+                Html.X().ButtonList().Handler("showListRole").ID("btnListRole").Hidden(true),
+                Html.X().ButtonRecycle().Handler("showRecycleRole").ID("btnRecycleRole"),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonRestore().Handler("showRestoreRole").ID("btnRestoreRole").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().ButtonDestroy().Handler("showDestroyRole").ID("btnDestroyRole").Disabled(true),
+                Html.X().ToolbarFill(),
+                Html.X().ButtonTutorial()
+            )
+            .BottomBarItem(
+                Html.X().Button().Text("Chuyển lên").Icon(Icon.ArrowUp).Handler("showSortRole(true);").ID("btnSortUpRole").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Text("Chuyển xuống").Icon(Icon.ArrowDown).Handler("showSortRole(false);").ID("btnSortDownRole").Disabled(true)
+            )
+            .Store(Html.X().Store()
+                .ID("StoreRoles")
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")))
+                .Parameters(ps => {
+                    ps.Add(new StoreParameter("departmentID", ViewData["DepartmentID"].ToString(), ParameterMode.Value));
+                    ps.Add(new StoreParameter("viewDelete", "App.ViewDeleteRole.value", ParameterMode.Raw));
+                })
+                .Model(
+                    Html.X().Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                            Html.X().ModelField().Name("TitleName").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("UpdateAtView").Type(ModelFieldType.String)
+                        )
+                )
+                .Listeners(ls => ls.Load.Handler = "setRoleSelection()")
+            )
+            .SortableColumns(false)
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                Html.X().Column().DataIndex("TitleName").Text("Tên chức danh").Flex(1).MenuDisabled(true),
+                Html.X().CheckColumn().DataIndex("IsActive").Width(80).Text("Sử dụng").MenuDisabled(true),
+                Html.X().Column().Text("Ngày cập nhật").DataIndex("UpdateAtView").Width(100).Align(Alignment.Center).MenuDisabled(true)
+            )
+            .Listeners(ls => ls.SelectionChange.Handler = "selectionChangeRole();")
+    )
+)
+<script type="text/javascript">
+    var urlCreateRole = '@(Url.Action("Create", "DepartmentTitle", new { area = "Department" }))';
+    var urlDeleteRole = '@(Url.Action("Delete", "Role", new { Area = "Department" }))';
+    var urlDetailRole = '@(Url.Action("Detail", "Role", new { Area = "Department" }))';
+    var urlMoveRole = '@(Url.Action("Move", "Role", new { Area = "Department" }))';
+    var urlRestoreRole = '@(Url.Action("Restore", "Role", new { Area = "Department" }))';
+    var urlDestroyRole = '@(Url.Action("Destroy", "Role", new { Area = "Department" }))';
+    var urlSortRole = '@(Url.Action("Sort", "Role", new { Area = "Department" }))';
+    var sortRoleIndex = null;
+    var getRoleSelection = function () {
+        var records = App.RolePanel.selModel.getSelection();
+        if (records != null || records.length > 0)
+            return records[0];
+        else
+            return null;
+    };
+    var setRoleSelection = function () {
+        if (sortRoleIndex != null) {
+            App.RolePanel.selModel.select(sortRoleIndex);
+        }
+    };
+    var reloadRole = function () {
+        App.RolePanel.store.reload();
+    };
+    var moveRole = function (records) {
+        Ext.MessageBox.show({
+            title: 'Xác nhận', msg: 'Bạn có muốn chuyển chức danh này đến phòng ban mới hay không?',
+            buttons: { yes: 'Đồng ý', no: 'Không' },
+            iconCls: '#Information',
+            fn: function (btn) {
+                if (btn == 'yes') {
+                    var record = getRoleSelection();
+                    var roleId = record == null ? 0 : record.data.ID;
+                    var params = { roleId: roleId, departmentId: records[0].data.id };
+                    var url = urlMoveRole;
+                    onDirectMethod(url, params, 'post', reloadRole);
+                }
+            }
+        });
+    };
+    var showCreateRole = function () {
+        var departmentID = App.DepartmentPanel.getSelectionModel().getLastSelected().data.id;
+        var url = urlCreateRole;
+        var params = { departmentID: departmentID };
+        onDirectMethod(url, params, 'get');
+    };
+    
+    var showDeleteRole = function () {
+        var url = urlDeleteRole;
+        var deleteSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn xóa bỏ chức danh này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getRoleSelection();
+                            var roleId = record == null ? 0 : record.data.ID;
+                            var params = { roleId: roleId };
+                            onDirectMethod(url, params, 'post', reloadRole);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', deleteSuccess);
+    };
+    var showDetailRole = function () {
+        var url = urlDetailRole;
+        var record = getRoleSelection();
+        var roleId = record == null ? 0 : record.data.ID;
+        var params = { roleId: roleId };
+        onDirectMethod(url, params, 'get');
+    };
+    var showMoveRole = function () {
+        var url = urlMoveRole;
+        var moveSuccess = function (result) {
+            if (result) {
+                OpenDepartmentWindow('moveRole', false);
+            }
+        };
+        onDirectMethod(url, null, 'get', moveSuccess);
+    };
+    var showRecycleRole = function () {
+        App.btnRecycleRole.hide();
+        App.btnListRole.show();
+        App.ViewDeleteRole.setValue(true);
+        selectionChangeRole();
+        reloadRole();
+    };
+    var showListRole = function () {
+        App.btnRecycleRole.show();
+        App.btnListRole.hide();
+        App.ViewDeleteRole.setValue(false);
+        selectionChangeRole();
+        reloadRole();
+    };
+    var showRestoreRole = function () {
+        var url = urlRestoreRole;
+        var restoreSuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn khôi phục chức danh này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getRoleSelection();
+                            var roleId = record == null ? 0 : record.data.ID;
+                            var params = { roleId: roleId };
+                            onDirectMethod(url, params, 'post', reloadRole);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', restoreSuccess);
+    };
+    var showDestroyRole = function () {
+        var url = urlDestroyRole;
+        var destroySuccess = function (result) {
+            if (result) {
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có muốn hủy bỏ chức danh này hay không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var record = getRoleSelection();
+                            var roleId = record == null ? 0 : record.data.ID;
+                            var params = { roleId: roleId };
+                            onDirectMethod(url, params, 'post', reloadRole);
+                        }
+                    }
+                });
+            }
+        };
+        onDirectMethod(url, null, 'get', destroySuccess);
+    };
+    var showSortRole = function (sort) {
+        var url = urlSortRole;
+        var sortSuccess = function (result) {
+            if (result) {
+                var departmentId = App.DepartmentPanel.getSelectionModel().getLastSelected().data.id;
+                var record = getRoleSelection();
+                var roleId = record == null ? 0 : record.data.ID;
+                var params = {
+                    departmentId: departmentId, roleId: roleId, sort: sort,
+                };
+                sortRoleIndex = sort ? record.index - 1 : record.index + 1;
+                var success = function () {
+                    if (App.SortRole.getValue() == 'true') {
+                        reloadRole();
+                    }
+                };
+                onDirectMethod(url, params, 'post', success);
+            }
+        };
+        onDirectMethod(url, null, 'get', sortSuccess);
+    };
+    var selectionChangeRole = function () {
+        var record = getRoleSelection();
+        var isDisabled = record == null;
+        App.btnDeleteRole.setDisabled(isDisabled);
+        App.btnDetailRole.setDisabled(isDisabled);
+        App.btnMoveRole.setDisabled(isDisabled);
+        App.btnRestoreRole.setDisabled(isDisabled);
+        App.btnDestroyRole.setDisabled(isDisabled);
+        App.btnSortUpRole.setDisabled(isDisabled);
+        App.btnSortDownRole.setDisabled(isDisabled);
+        if (record != null) {
+            App.btnDeleteRole.setDisabled(record.data.IsDelete);
+            App.btnMoveRole.setDisabled(record.data.IsDelete);
+            App.btnSortUpRole.setDisabled(record.data.IsDelete);
+            App.btnSortDownRole.setDisabled(record.data.IsDelete);
+            App.btnRestoreRole.setDisabled(!record.data.IsDelete);
+            App.btnDestroyRole.setDisabled(!record.data.IsDelete);
+            App.btnSortUpRole.setDisabled(record.data.IsDelete);
+            App.btnSortDownRole.setDisabled(record.data.IsDelete);
+        }
+    };
+</script>

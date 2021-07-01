@@ -1,0 +1,118 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.CalendarOverrideItem
+@{
+    var id = ViewData["id"].ToString();
+    var name = ViewData["DepartmentName"].ToString();
+    var startDate = ViewData["StartDate"].ToString();
+    var endDate = ViewData["EndDate"].ToString();
+}
+@(Html.X().Window()
+.ID("winChartPie")
+.Title("Biểu đồ thống kê tỉ lệ % hồ sơ của ["+name+" ] từ ngày: "+startDate+" đến ngày: "+endDate)
+.Icon(Icon.ChartPie)
+.Width(720)
+.BodyPadding(6)
+.Constrain(true)
+.Modal(true)
+.Layout(LayoutType.Fit)
+.Items(
+    Html.X().Panel()
+        .Title("Semester Chart")
+        .Header(false)
+        .Layout(LayoutType.Fit)
+          .Width(720)
+        .Height(450)
+            .TopBar(Html.X().Toolbar()
+            .Items(
+                    Html.X().Button()
+                    .Text("Tải lại dữ liệu")
+                    .Icon(Icon.ArrowRefresh)
+                    .Handler("#{Chart1}.getStore().reload()"),
+                    Html.X().ToolbarSeparator(),
+                     Html.X().Button()
+                     .Icon(Icon.Style)
+                    .Text("Kiểu vành khăn")
+                    .EnableToggle(true)
+                    .Listeners(l => l.Toggle.Handler = "#{Chart1}.series.first().donut = pressed ? 35 : false;#{Chart1}.refresh();"),
+                               Html.X().ToolbarSeparator(),
+                    Html.X().Button()
+                    .Text("Lưu biểu đồ")
+                    .Icon(Icon.Disk)
+                    .Handler("saveChart")
+            )
+        )
+        .Items(
+                Html.X().Chart()
+                .ID("Chart1")
+                .Animate(true)               
+                .Shadow(true)
+                .InsetPadding(30)
+                .Theme("Base:gradients")
+                .StandardTheme(StandardChartTheme.Base)
+                .LegendConfig(Html.X().ChartLegend().Position(LegendPosition.Bottom))
+                .StyleSpec("background:#fff;")
+                    .Store(Html.X().Store()
+                    .Data(Model)
+                        .Parameters(ps =>
+                        {
+                                ps.Add(new StoreParameter("id", id, ParameterMode.Raw));
+                                ps.Add(new StoreParameter("fromDate", "App.dfFromDate.getValue()", ParameterMode.Raw));
+                                ps.Add(new StoreParameter("toDate", "App.dfToDate.getValue()", ParameterMode.Raw));
+                          })
+                        .Model(Html.X().Model()
+                        .Fields(
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("Data1")
+                        )
+                    )
+                        .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetDataPie"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                )
+                    .Series(
+                    Html.X().PieSeries()
+                    .AngleField("Data1")
+                    .ShowInLegend(true)
+                    .Donut(0)
+                    .Highlight(true)
+                    .HighlightSegmentMargin(20)
+                        .Label(Html.X().SeriesLabel()
+                        .Display(SeriesLabelDisplay.Rotate)
+                        .Field(new [] { "Name" })
+                        .Contrast(true)
+                            .Font("12px Helvetica,sans-serif")
+                        .Orientation(Orientation.Horizontal)
+                    )
+                        .Tips(Html.X().ChartTip()
+                        .TrackMouse(true)
+                        .Width(170)
+                        .Height(28)
+                        .Renderer(r => r.Fn = "tipRenderer")
+                    )
+                )
+        
+    )
+
+)
+.Buttons(
+    Html.X().ButtonExit()
+    )
+)
+<script>
+    var tipRenderer = function (storeItem, item) {
+        this.setTitle(storeItem.get('Name'));
+    };
+    var saveChart = function (btn) {
+        Ext.MessageBox.confirm('Lưu biểu đồ', 'Bạn có muốn lưu biểu đồ dưới dạng ảnh không?', function (choice) {
+            if (choice == 'yes') {
+                btn.up('panel').down('chart').save({
+                    type: 'image/png'
+                });
+            }
+        });
+    };
+</script>

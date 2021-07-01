@@ -1,0 +1,222 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerContractItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    function CheckStatus() {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailContract.setDisabled(false);
+            App.btnPlanPerform.setDisabled(false);
+            App.btnEndContract.setDisabled(false);
+            var IsEdit = records[0].get('IsEdit');
+            if (IsEdit == true) {
+                App.btnSendApproval.setDisabled(false);
+                App.btnAccountingPayment.setDisabled(false);
+                App.btnApproval.setDisabled(true);
+
+            }
+            else {
+                App.btnSendApproval.setDisabled(true);
+                App.btnAccountingPayment.setDisabled(true);
+                App.btnApproval.setDisabled(false);
+            };
+            if (records[0].get('IsStart') == true) {
+                App.btnPlanAccounting.setDisabled(false);
+            }
+            else {
+                App.btnPlanAccounting.setDisabled(true);
+            };
+        }
+        else {
+            App.btnEndContract.setDisabled(true);
+            App.btnDetailContract.setDisabled(true);
+            App.btnPlanPerform.setDisabled(true);
+            App.btnApproval.setDisabled(true);
+            App.btnSendApproval.setDisabled(true);
+            App.btnAccountingPayment.setDisabled(true);
+            App.btnPlanAccounting.setDisabled(true);
+        };
+    };
+    var ViewDetailContract = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "CustomerManagementContract", new { Area = "Customer" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var AccountingPayment = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AccountingPaymentForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var SendApproval = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("SendApproveForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ApprovalAccountingPayment = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ApproveForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var AccountingPlanForm = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AccountingPlanForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var PlanPerForm = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("PlanPerform", "PerformPlan", new { Area = "Service" }, null))',
+                params: {
+                    contractId: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var EndContract = function () {
+        var records = App.GrCustomerContract.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("EndContractform", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false)
+.Items(
+        Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrCustomerContract")
+                .Header(false)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .Border(false)
+                .Icon(Icon.TextListBullets)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().Text("Xem chi tiết").ToolTip("Xem chi tiết").ID("btnDetailContract")
+                            .Icon(Icon.Zoom).Handler("ViewDetailContract();").Disabled(true),
+                        Html.X().Button().ID("btnAccountingPayment").Text("Đề xuất thanh toán")
+                            .Handler("AccountingPayment();").Icon(Icon.Money).Disabled(true),
+                        Html.X().Button().ID("btnSendApproval").Text("Gửi duyệt")
+                            .Handler("SendApproval();").Icon(Icon.ArrowRight).Disabled(true),
+                        Html.X().Button().ID("btnApproval").Text("Phê duyệt")
+                            .Handler("ApprovalAccountingPayment();").Icon(Icon.Accept).Disabled(true),
+                        Html.X().Button().ID("btnPlanPerform").Text("Xem kế hoạch thực hiện")
+                            .Handler("PlanPerForm();").Icon(Icon.ChartBar).Disabled(true),    
+                        Html.X().Button().ID("btnPlanAccounting").Text("Kế hoạch thu hồi công nợ")
+                            .Handler("AccountingPlanForm();").Icon(Icon.PlayBlue).Disabled(true),
+                        Html.X().Button().ID("btnEndContract").Icon(Icon.StopGreen).Text("Kết thúc")
+                                    .Handler("EndContract();").Disabled(true),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                ))
+                .Store(
+                Html.X().Store().ID("StoreCustomerContract")
+                    .GroupField("CustomerName")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadContractAccounting", "Contract", new { Area = "Accounting" }))
+                    .Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("Code"),
+                            Html.X().ModelField().Name("CustomerID"),
+                            Html.X().ModelField().Name("CustomerName"),
+                            Html.X().ModelField().Name("Total"),
+                            Html.X().ModelField().Name("FinishDate"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("AttachmentFileIDs"),
+                            Html.X().ModelField().Name("IsStart").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("DeptType"),
+                            Html.X().ModelField().Name("IsSignCustomer").Type(ModelFieldType.Boolean),
+                            Html.X().ModelField().Name("IsEdit").Type(ModelFieldType.Boolean)
+                        )
+                    )
+            )
+            .ColumnModel(
+                    X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                    X.Column().DataIndex("Code").Text("Mã hợp đồng").Width(150),
+                    X.Column().DataIndex("Name").Text("Hợp đồng").Flex(1),
+                    X.NumberColumn().DataIndex("Total").Text("Giá trị hợp đồng").Width(120).Align(Alignment.Right),
+                    X.DateColumnExtend().DataIndex("FinishDate").Text("Ngày kết thúc").Width(120).Align(Alignment.Center),
+                    X.Column().DataIndex("DeptType").Text("Phân loại nợ").Width(120).Align(Alignment.Center),
+                    X.Column().DataIndex("Status").Text("Trạng thái").Width(120).Align(Alignment.Center),
+                    Html.X().ColumnFileExtend("AttachmentFileIDs")
+                )
+            .Features(
+                            Html.X().GroupingSummary()
+                            .ID("GroupingSummaryContract")
+                            .GroupHeaderTplString("{name}")
+                            .HideGroupedHeader(true)
+                            .EnableGroupingMenu(false).ShowSummaryRow(false)
+                    )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+

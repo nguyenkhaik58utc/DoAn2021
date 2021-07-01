@@ -1,0 +1,80 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.NewsItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin tin tức")
+    .Icon(Icon.Add)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().HiddenFor(m => m.NewsCategoryID).Value(ViewData["NewsCategoryID"]),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Title).ID("Title").AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Chủ đề *"),
+                            Html.X().TextAreaFor(m => m.Description).ID("Description").FieldLabel("Mô tả").Height(80),
+                            Html.X().TextFieldFor(m => m.Author).FieldLabel("Nguồn tin")
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true)
+                        )
+                    ),
+                    Html.X().TextFieldFor(m => m.Tags).FieldLabel("Tags"),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().DateFieldFor(m => m.RefreshAt).ColumnWidth(0.5).FieldLabel("Ngày đăng").Value(DateTime.Now)
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().CheckboxFor(m => m.IsImportal).ColumnWidth(0.4).FieldLabel("Hiển thị").BoxLabel("Tin tiêu điểm"),
+                        Html.X().CheckboxFor(m => m.IsFirst).ColumnWidth(0.3).HideLabel(true).BoxLabel("Luôn ở trang đầu"),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.3).HideLabel(true).Value(true).BoxLabel("Kích hoạt")
+                    )
+                ),
+                Html.X().Panel().Title("Nội dung").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Fit)
+                .Items(
+                    Html.X().HtmlEditorFieldFor(m => m.Html)
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if(result.result){this.up('window').close(); reloadNews();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+

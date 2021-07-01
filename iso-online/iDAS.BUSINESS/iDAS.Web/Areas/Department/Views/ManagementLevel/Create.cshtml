@@ -1,0 +1,73 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.Position.ManagementLevelItem
+@(Html.X().Window()
+    .ID("CreateManagementLevelWindow")
+    .Title("Thêm mới thông tin cấp quản lý")
+    .Icon(Icon.Add)
+    .BodyPadding(0)
+    .Width(550)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Maximizable(true)
+    .Border(false)
+    .Items(
+        Html.X().FormPanel()
+            .ID("CreateManagementLevelForm")
+            .Url(Url.Action("Create"))
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Items(
+                Html.X().TabPanel().ID("tabMainManageLevel").ActiveTabIndex(0).Border(true)
+                    .Items(
+                        Html.X().FormPanel()
+                            .Frame(true)
+                            .BodyPadding(5)
+                            .ID("tabManageLevel")
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin cấp quản lý")
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().TextFieldFor(m => m.ManagementLevelName).FieldLabel("Tên cấp quản lý" + Html.Required())
+                                    .EmptyText("Nhập tên cấp quản lý")
+                                    .BlankText("Bạn phải nhập tên cấp quản lý!")
+                                    .AllowBlank(false).AllowOnlyWhitespace(false),
+                                Html.X().TextAreaFor(m => m.ManagementLevelCode).FieldLabel("Mã cấp quản lý" + Html.Required())
+                                    .EmptyText("Code").BlankText("Bạn phải nhập mã cấp quản lý").AllowBlank(true).AllowOnlyWhitespace(false),
+                                Html.X().TextAreaFor(m => m.Rank).FieldLabel("Rank" + Html.Required())
+                                    .EmptyText("Rank").BlankText("Bạn phải mức độ của cấp quản lý").AllowBlank(true).AllowOnlyWhitespace(false)
+                            )
+                    )
+            )
+    )
+    .Buttons(
+        Html.X().ButtonSave().Handler("createManagementLevelSubmit(false)"),
+        Html.X().ButtonSaveAndExit().Handler("createManagementLevelSubmit(true)"),
+        Html.X().ButtonExit().Handler("this.up('window').close();")
+    )
+)
+<script>
+    var createManagementLevelSubmit = function (exit) {
+        App.CreateManagementLevelForm.submit({
+            waitMsg: "Đang thực hiện ....",
+            success: function (result) {
+                if (result) {
+                    reloadManagementLevel();
+                    if (exit) {
+                        App.CreateManagementLevelWindow.close();
+                    }
+                    else {
+                        App.CreateManagementLevelForm.reset();
+                        App.TabMain.setActiveTab('tabManageLevel');
+                    }
+                }
+            }
+        });
+    };
+</script>

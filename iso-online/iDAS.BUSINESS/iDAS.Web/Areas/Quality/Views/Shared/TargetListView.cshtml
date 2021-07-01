@@ -1,0 +1,253 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+
+@(Html.X().Menu().ID("cmMenu")
+            .Items(
+                new MenuItem { Text = "Xem chi tiết mục tiêu", ID = "cmView", Icon = Icon.Zoom, Handler = "DetailTarget();" },
+                Html.X().MenuSeparator(),
+                new MenuItem { Text = "Phê duyệt", ID = "cmApprove", Disabled = true, Icon = Icon.Tick, Handler = "showApproveForTargetPartialView();" })
+)
+@(Html.X().GridPanel()
+                .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                .ID("grTargetIndexView")
+                .Border(false)
+                .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                            Html.X().Button().ID("btnAddTarget").ToolTip("Thêm mới").Icon(Icon.Add).Handler("AddTarget();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnTargetEdit").ToolTip("Sửa").Disabled(true).Icon(Icon.Pencil).Handler("UpdateTarget();"),
+                            Html.X().ToolbarSeparator(),
+                                Html.X().Button().ToolTip("Xóa").Icon(Icon.Delete).ID("btnDeleteTarget").Handler("onDeleteTargetPartialView();").Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnTargetView").ToolTip("Xem chi tiết").Icon(Icon.Zoom).Disabled(true).Handler("DetailTarget();"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().ID("btnTargetApprove").Text("Phê duyệt").Icon(Icon.Tick).Disabled(true).Handler("showApproveForTargetPartialView();")
+                            )
+                        )
+                .Store(
+                        Html.X().Store()
+                        .ID("stTarget")
+                        .AutoLoad(true)
+                        .Proxy(Html.X().AjaxProxy().Url(ViewData["UrlStore"].ToString()).Reader(Html.X().JsonReader().Root("data")))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("paramId", ViewData["ParamID"].ToString(), ParameterMode.Value));
+                            })
+                        .RemoteSort(false)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                            Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                    new ModelField("ID"),
+                        new ModelField("AuditID"),
+                        new ModelField("Number", ModelFieldType.Float),
+                        new ModelField("Name", ModelFieldType.String),
+                        new ModelField("Unit", ModelFieldType.String),
+                        new ModelField("Content", ModelFieldType.String),
+                        new ModelField("Status", ModelFieldType.String),
+                            new ModelField("CompleteAt", ModelFieldType.Date),
+                        new ModelField("IsFinish", ModelFieldType.Boolean),
+                        new ModelField("IsSuccess", ModelFieldType.Boolean),
+                        new ModelField("ApprovalAt", ModelFieldType.Date),
+                        new ModelField("ApprovalBy", ModelFieldType.Int),
+                        new ModelField("DepartmentID", ModelFieldType.Int),
+                        new ModelField("ParentName", ModelFieldType.String),
+                        new ModelField("Note", ModelFieldType.String),
+                        new ModelField("IsAccept", ModelFieldType.Boolean),
+                        new ModelField("IsApproval", ModelFieldType.Boolean),
+                        new ModelField("IsDelete", ModelFieldType.Boolean),
+                        new ModelField("IsEdit", ModelFieldType.Boolean),
+                        new ModelField("ParentID", ModelFieldType.Int),
+                        new ModelField("Type", ModelFieldType.Boolean)
+                                )
+                            )
+                        )
+                            .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                            .Text("STT.")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Width(33)
+                            .Align(Alignment.Center),
+                              Html.X().Column()
+                                    .Text("AuditID")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .DataIndex("AuditID")
+                                    .Hidden(true),
+                               Html.X().DateColumnExtend(iDAS.Utilities.DateFormat.DateTime)
+                                    .Width(120)
+                                    .Text("Ngày")
+                                    .StyleSpec("font-weight: bold; text-align: center;")
+                                    .Align(Alignment.Center)
+                                        .DataIndex("CompleteAt")
+                                   .Format("dd/MM/yyyy HH:mm"),
+                                  Html.X().Column()
+                                .Text("Mục tiêu")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                        .DataIndex("Name")
+                                .Wrap(true)
+                                .Width(100)
+                                ,
+                                Html.X().Column()
+                                .Width(120)
+                                .Flex(1)
+                                .Text("Mục tiêu cha")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Left)
+                               .DataIndex("ParentName")
+                             ,
+                      Html.X().Column()
+                            .Width(100)
+                            .Text("Trạng thái")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                                .DataIndex("Status")
+                            ,
+                    Html.X().Column()
+                            .Width(100)
+                            .Text("Kiểu mục tiêu")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .Renderer(new Renderer { Fn = "function(value, meta, record) { if(value){return 'Tổ chức'}else{return 'Cá nhân'} }" })
+                            .DataIndex("Type")
+                            )               
+                    .SelectionModel(
+                        Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(ls =>
+                                        ls.Select.Handler = "checkTargetListStatus();"
+                            ))
+                   .BottomBar(Html.X().CustomPagingToolbar())
+)
+
+<script type="text/javascript">
+    var showAssesForTargetPartialView = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("AssessView", "Audit", new { Area = "Quality" }, null))',
+            params: {
+                taskCode: "Document"
+            }
+        });
+    };
+    var onDeleteTargetPartialView = function (id) {
+        var records = App.grTargetIndexView.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes')
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("DeleteTarget"))',
+                        params: {
+                            id: records[0].get('ID')
+                        }
+                    });
+            })
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var checkTargetListStatus = function () {
+        var records = App.grTargetIndexView.selModel.getSelection();
+        if (records.length > 0) {
+            if (records[0].get('IsEdit')) {
+                App.btnTargetEdit.setDisabled(false);
+                App.btnDeleteTarget.setDisabled(false);
+                App.btnTargetApprove.setDisabled(true);
+            }
+            else {
+                App.btnTargetEdit.setDisabled(true);
+                App.btnDeleteTarget.setDisabled(true);
+                App.btnTargetApprove.setDisabled(false);
+            }
+            App.btnTargetView.setDisabled(false);
+        }
+        else {
+            App.btnTargetEdit.setDisabled(true);
+            App.btnTargetApprove.setDisabled(true);
+            App.btnTargetView.setDisabled(true);
+        }
+    };
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var AddTarget = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("TargetAddView", "Target", new { Area = "Quality" }, null))',
+            params: {
+                urlStore: '@(ViewData["UrlStore"].ToString())',
+                paramID: '@(ViewData["ParamID"].ToString())',
+            },
+            success: function (result) {
+                mask.hide();
+            },
+        });
+    };
+    var DetailTarget = function () {
+        var records = App.grTargetIndexView.selModel.getSelection();
+        if (records.length == 1) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetail", "Target", new { Area = "Quality" }, null))',
+                params: { id: records[0].get('ID') },
+                success: function (result) {
+                    mask.hide();
+                },
+            });
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có mục tiêu nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+    var UpdateTarget = function () {
+        var records = App.grTargetIndexView.selModel.getSelection();
+        if (records.length == 1) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("TargetUpdateView", "Target", new { Area = "Quality" }, null))',
+                params: {
+                    urlStore: '@(ViewData["UrlStore"].ToString())',
+                    paramID: '@(ViewData["ParamID"].ToString())',
+                    id: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                },
+            });
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có mục tiêu nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+    var showApproveForTargetPartialView = function () {
+        var records = App.grTargetIndexView.selModel.getSelection();
+        if (records.length == 1) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmApproval", "Target", new { Area = "Quality" }, null))',
+                params: { id: records[0].get('ID') },
+                success: function (result) {
+                    mask.hide();
+                },
+            });
+        } else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có mục tiêu nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+    };
+    var getTargetId = function () {
+        var targetId = 0;
+        var records = App.grTargetIndexView.selModel.getSelection();
+        if (records.length > 0) {
+            targetId = records[0].get('ID');
+        }
+        else {
+            Ext.MessageBox.show({ title: 'Thông báo', msg: 'Chưa có Công việc nào được chọn!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information' });
+        }
+        return targetId;
+    };
+</script>

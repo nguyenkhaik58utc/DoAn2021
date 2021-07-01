@@ -1,0 +1,35 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerItem
+@{
+    var X = Html.X();
+    bool readOnly =(bool) ViewData["ReadOnly"];
+}
+@(Html.X().CustomWindow().Width(400)
+.ID("WinNotContract")
+.Title("Khách hàng không ký hợp đồng")
+.Icon(Icon.PageWhiteDelete)
+.Items(
+        X.CustomFormPanel().ID("frmNotContract")
+            .PaddingSpec("0 5 5 5")
+            .Items(
+                   Html.X().HiddenFor(m => m.ID),
+                   Html.X().CheckboxFor(m => m.IsNotContract).FieldLabel("Xác nhận").BoxLabel("Không ký hợp đồng").ReadOnly(readOnly),
+                    Html.X().TextAreaFor(m => m.ReasonNotContract).MinHeight(150).Flex(1).FieldLabel("Lý do")
+                            .LabelAlign(LabelAlign.Top).ReadOnly(readOnly)
+                )
+)
+.Buttons(
+    Html.X().ButtonSave().Hidden(readOnly)
+            .DirectEvents(de =>
+                        {
+                            de.Click.Before = @"if (!App.frmNotContract.getForm().isValid()) { return false; }; ";
+                            de.Click.Url = Url.Action("NotContract");
+                            de.Click.FormID = "frmNotContract";
+                            de.Click.Success = "this.up('window').close(); App.GrCustomer.store.reload();";
+                        })
+    , Html.X().ButtonExit())
+)

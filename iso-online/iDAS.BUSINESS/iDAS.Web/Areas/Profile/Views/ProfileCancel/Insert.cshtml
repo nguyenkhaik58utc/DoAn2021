@@ -1,0 +1,80 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.ProfileCancelItem
+@(Html.X().Window()
+    .ID("winNewCancelProfile")
+    .Title("Thêm mới biên bản hủy hồ sơ")
+    .Icon(Icon.Add)
+    .Width(500)
+    .BodyPadding(5)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .Frame(true)
+            .ID("frmNewCancelProfile")
+            .FieldDefaults(f => f.LabelWidth = 110)
+            .Items(
+                Html.X().TextFieldFor(m => m.Name)
+                    .FieldLabel("Tên biên bản" + Html.Required())
+                    .AllowOnlyWhitespace(false)
+                    .TabIndex(1)
+                    .MaxLength(200).MaxLengthText("Tên biên bản không quá 200 ký tự!")
+                    .AllowBlank(false).BlankText("Tên biên bản hủy bắt buộc nhập!"),
+                Html.X().ComboBoxFor(m => m.MethodID)
+                    .ID("cbMethod")
+                    .FieldLabel("Phương thức hủy" + Html.Required())
+                    .TabIndex(2)
+                    .AllowBlank(false).BlankText("Phương thức hủy hồ sơ bắt buộc chọn!")
+                    .EmptyText("Chọn phương thức hủy hồ sơ...")
+                    .QueryMode(DataLoadMode.Local)
+                    .ForceSelection(true)
+                    .TriggerAction(TriggerAction.All)
+                    .DisplayField("Name")
+                    .ValueField("ID")
+                    .Store(
+                        Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                            .Fields(
+                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                    )
+                                    )
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetDataMethod"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        ),
+                    Html.X().DateFieldFor(m => m.CancelAt)
+                            .MinDate(DateTime.Now)
+                            .FieldLabel("Thời gian hủy" + Html.Required())
+                            .Format("dd/MM/yyyy")
+                            .Value(DateTime.Now)
+                            .TabIndex(3),
+                    Html.X().TextAreaFor(m => m.Note)
+                            .ID("txtContent")
+                            .FieldLabel("Ghi chú")
+                            .TabIndex(4).Height(100)
+                            .MaxLength(1000)
+                        )
+        )
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(5)
+                .DirectEvents(de =>
+                {
+                    de.Click.FormID = "frmNewCancelProfile";
+                    de.Click.Url = Url.Action("Insert");
+                    de.Click.Before = @"if (!#{frmNewCancelProfile}.getForm().isValid()) { return false; }";
+                    de.Click.EventMask.ShowMask = true;
+                    de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                }),
+            Html.X().ButtonExit()
+        )
+)

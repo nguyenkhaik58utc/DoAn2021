@@ -1,0 +1,127 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@{
+    var detailId = ViewData["detailId"] != null ? ViewData["detailId"].ToString() : "0";
+    var isoId = ViewData["isoId"] != null ? ViewData["isoId"].ToString() : "0";
+}
+
+@( Html.X().Window()
+    .Title("Danh sách yêu cầu tiêu chuẩn")
+    .Icon(Icon.ApplicationViewDetail)
+    .Height(420)
+    .Width(720)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(0)
+    .Border(true)
+    .Center()
+    .Items(
+        Html.X().GridPanel()
+                    .ID("grMnDetailResult")
+                    .Border(false)
+                .Store(Html.X().Store()
+                        .ID("stMnDetailResult")
+                        .Proxy(Html.X().AjaxProxy()
+                                            .Url(Url.Action("GetListStandard", "Audit"))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("isoId", isoId, ParameterMode.Value));
+                                ps.Add(new StoreParameter("detailId", detailId, ParameterMode.Value));
+                               
+
+                            })
+                        .RemoteSort(true)
+                        .AutoLoad(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                        Html.X().Model()
+                                .Fields(
+
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Index").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean)
+
+                                )
+                              )
+                          )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                        Html.X().Column()
+                                .Text("ID")
+                                .DataIndex("ID")
+                                .Hidden(true),
+                                 Html.X().Column()
+                                .Text("Điều")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Index")
+                               .Width(80),
+                        Html.X().Column()
+                                .Text("Yêu cầu tiêu chuẩn")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Name")
+                               .Flex(1)
+                                .Wrap(true),
+                                          Html.X().CheckColumn().DataIndex("IsSelected")
+                                           .Text("Chọn").Align(Alignment.Center).Editable(true)
+                                           .Editor(
+                                                   Html.X().Checkbox()
+                                                       ).Width(60)
+
+                ).SelectionModel(
+                    Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "checkStatus()";
+                            })
+                            )
+                              .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+
+                            .Plugins(
+                                                Html.X().RowEditing()
+                                                .SaveBtnText("Cập nhật")
+                                                .CancelBtnText("Hủy bỏ")
+                                                    .Listeners(l =>
+                                                    {
+                                                        l.Edit.Fn = "onEditSelected";
+                                                        l.CancelEdit.Handler = "if(e.record.phantom){e.store.remove(e.record);}";
+                                                    })
+                                            )
+                            .BottomBar
+                            (
+                                         Html.X().CustomPagingToolbar()
+            )
+
+
+       )
+        .Buttons(
+            Html.X().ButtonExit()
+        )
+)
+<script type="text/javascript">
+    var onEditSelected = function (editor, e) {
+        var detailId = '@(detailId)';
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateStandardSelected", "Audit"))',
+                params: {
+                    data: e.record.data,
+                    detailId: detailId
+                }
+            });
+        }
+    };
+</script>

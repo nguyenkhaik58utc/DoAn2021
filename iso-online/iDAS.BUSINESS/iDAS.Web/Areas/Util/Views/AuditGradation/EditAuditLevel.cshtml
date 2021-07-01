@@ -1,0 +1,55 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.HumanAuditLevelItem
+    @(Html.X().Window()
+                .ID("winEditAuditLevel")
+                .Title("Sửa thông tin ")
+                .Icon(Icon.Pencil)
+                .Width(450)
+                .BodyPadding(6)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                Html.X().FormPanel()
+                .ID("frAuditLevel")
+                .Layout(LayoutType.VBox)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                Html.X().HiddenFor(m => m.ID),
+                        Html.X().HiddenFor(m => m.HumanAuditGradationRoleID),
+                  Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên xếp loại" + Html.Required())
+                                    .BlankText("Tên xếp loại không được trống!").AllowOnlyWhitespace(false),
+                    Html.X().NumberFieldFor(m => m.MinPoint).FieldLabel("Điểm bé nhất" + Html.Required()).MinValue(1).AllowBlank(false),
+                    Html.X().NumberFieldFor(m => m.MaxPoint).FieldLabel("Điểm lớn nhất" + Html.Required()).MinValue(1).AllowBlank(false),
+                    Html.X().TextAreaFor(m => m.Note).FieldLabel("Diễn giải").Flex(1)
+                )
+            )
+            .Buttons(
+            Html.X().Button()
+            .ID("btnSaves")
+            .Text("Lưu lại")
+            .Icon(Icon.Disk)
+            .TabIndex(18)
+            .DirectEvents(de =>
+            {
+                de.Click.Before = @"if (!App.frAuditLevel.getForm().isValid()) { return false; } ";
+                de.Click.EventMask.ShowMask = true;
+                de.Click.Action = "UpdateAuditLevel";
+                de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                de.Click.FormID = "frAuditLevel";
+                de.Click.Success = " this.up('window').close();";
+            }),
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Hủy")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+            .Handler("App.frAuditLevel.reset(); this.up('window').close();")
+            )
+    )

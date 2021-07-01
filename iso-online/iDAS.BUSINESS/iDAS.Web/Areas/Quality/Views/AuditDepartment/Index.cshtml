@@ -1,0 +1,109 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.Areas.Human.Controllers;
+@using iDAS.Web.ExtExtend;
+@{
+    var X = Html.X();
+    var auditPlanId = ViewData["auditPlanId"] != null ? ViewData["auditPlanId"].ToString() : "0";
+}
+@(
+Html.X().Window().Title("Lựa chọn phòng ban đánh giá")
+.Layout(LayoutType.Fit)
+.Frame(true)
+.Width(360).Height(500).Items(
+Html.X().TreePanel()
+            .Title("SƠ ĐỒ TỔ CHỨC")
+            .Header(false)
+            .TitleAlign(TitleAlign.Center)
+            .Layout(LayoutType.Fit)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)
+            .RowLines(true)
+            .SingleExpand(false)
+            .Border(false)
+            .Region(Region.West)
+            .SelectionModel(
+                    Html.X().RowSelectionModel()               
+                    .Mode(SelectionMode.Multi)
+            )           
+            .Store(
+                Html.X().TreeStore()
+                .ID("stDepartmetChoice")
+                     .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("auditPlanId", auditPlanId, ParameterMode.Value));
+                            }
+                        )
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDepartments", "AuditDepartment", new { Area = "Quality" }, null)).Reader(Html.X().JsonReader().Root("data")))
+                .Model(
+                    Html.X().Model().Fields(
+                    Html.X().ModelField().Name("id"),
+                    Html.X().ModelField().Name("text"),
+                    Html.X().ModelField().Name("ParentID"),
+                    Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsDeleted").Type(ModelFieldType.Boolean),
+                         Html.X().ModelField().Name("IsSelected").Type(ModelFieldType.Boolean),
+                    Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                    )
+                   
+                )
+            )
+            .ColumnModel(
+                Html.X().TreeColumn()
+                    .Text("SƠ ĐỒ TỔ CHỨC")
+                    .StyleSpec("font-weight: bold; text-align: center;")
+                    .Align(Alignment.Left)
+                    .DataIndex("text")
+                    .Flex(1),
+                        Html.X().CheckColumn().DataIndex("IsSelected")
+                                               .Text("Chọn").Align(Alignment.Center).Editable(true)
+                                               .Editor(
+                                                       Html.X().Checkbox()
+                                                           ).Width(60)
+                )
+                    .Plugins(
+                                                    Html.X().RowEditing()
+                                                    .SaveBtnText("Cập nhật")
+                                                    .CancelBtnText("Hủy bỏ")
+                                                        .Listeners(l =>
+                                                        {
+                                                            l.Edit.Fn = "onEditSelected";
+                                                            l.CancelEdit.Handler = "if(e.record.phantom){e.store.remove(e.record);}";
+                                                        })
+                                                )
+                .HideHeaders(true)
+            .BottomBar(
+                Html.X().Toolbar().Items(
+                    Html.X().Checkbox().BoxLabel("Hoạt động").MarginSpec("0 5 0 10").Checked(true).ReadOnly(true),
+                    Html.X().ToolbarSeparator().MarginSpec("0 5 0 0"),
+                        Html.X().Checkbox().BoxLabel("Giải thể").BoxLabelStyle("color:#b200ff").MarginSpec("0 5 0 0").Checked(false)
+                                .Listeners(ls => ls.Change.Handler = "this.up('treepanel').getStore().reload({ params: { viewCancel:  this.getValue(), viewDeleted: this.next().next().getValue()}});"),
+                    Html.X().ToolbarSeparator().MarginSpec("0 5 0 0"),
+                    Html.X().Checkbox().BoxLabel("Đã xóa").BoxLabelStyle("color:#a9a5a5").Checked(false)
+                                .Listeners(ls => ls.Change.Handler = "this.up('treepanel').getStore().reload({ params: { viewCancel:  this.prev().prev().getValue(),viewDeleted:  this.getValue()}});")
+                )
+            )
+            
+)
+      .Buttons(
+                    Html.X().ButtonExit()
+                )
+
+)
+<script type="text/javascript">
+    var onEditSelected = function (editor, e) {
+        var auditPlanId = '@(auditPlanId)';
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateDepartmentSelected", "AuditDepartment"))',
+                params: {
+                    data: e.record.data,
+                    auditPlanId: auditPlanId
+
+                }
+            });
+        }
+    };
+</script>

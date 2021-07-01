@@ -1,0 +1,170 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.QualityCAPAItem
+@{
+    var urlSubmitTask = Url.Action("Insert", "CAPATask", new { area = "Quality" });
+    var urlStoreTask = Url.Action("LoadTasks", "CAPATask", new { area = "Quality" });
+    var paramStoreTask = Html.X().StoreParameter().Name("CAPAId").Value("getCAPAId()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Hidden().ID("hdfCAPARequire").Value(ViewData["id"].ToString()))
+@(Html.X().Window()
+    .Title("Hành động khắc phục phòng ngừa")
+    .Icon(Icon.PictureEdit)
+    .Layout(LayoutType.Fit)
+    .Height(1)
+    .Maximized(true)
+    .Constrain(true)
+    .Modal(true)
+    .Resizable(false)
+    .Border(true)
+    .Center()
+    .Items(
+        Html.X().GridPanel()
+            .Region(Region.Center)
+            .Layout(LayoutType.Fit)
+                .ID("grCAPA")
+            .Header(false)
+            .Border(false)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .TopBar(
+                Html.X().Toolbar()
+                .Layout(LayoutType.HBox)
+                .Items(
+                    Html.X().ButtonCreate().Handler("showCAPAInsert(this.up('gridpanel'));"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonUpdate().ItemID("btnUpdateCAPA").Handler("showCAPAUpdate(this.up('gridpanel'));"),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().Button().Icon(Icon.Delete).ItemID("btnDeleteCAPA").Handler("deleteCAPA(this.up('gridpanel'));").Disabled(true),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().Button().ToolTip("Xem chi tiết").ItemID("btnDetailCAPA").Icon(Icon.Zoom).Handler("showCAPADetail(this.up('gridpanel'));").Disabled(true),
+                    Html.X().ToolbarSeparator(),
+                    Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask().ItemID("btnTaskCAPA"),
+                    Html.X().ToolbarFill()
+                )
+        )
+        .Store(
+            Html.X().Store()
+                .ID("StoreCAPA")
+                .RemotePaging(true)
+                .PageSize(20)
+                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCAPAs")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                .Parameters(new StoreParameter("NCId", "App.hdfNCID.value", ParameterMode.Raw))
+                .Model(
+                    Html.X().Model().Fields(
+                        Html.X().ModelField().Name("ID"),
+                        Html.X().ModelField().Name("Name"),
+                        Html.X().ModelField().Name("CompleteTime"),
+                        Html.X().ModelField().Name("EndTime"),
+                        Html.X().ModelField().Name("Cost"),
+                        Html.X().ModelField().Name("IsEdit"),
+                        Html.X().ModelField().Name("Status")
+                    )
+                    )
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+            Html.X().Column().DataIndex(Model, m => m.Name).Text("Hành động khắc phục phòng ngừa").Width(300).Flex(1),
+            Html.X().DateColumnExtend().DataIndex(Model, m => m.CompleteTime).Text("Ngày hoàn thành").Width(150).Align(Alignment.Center),
+            //Html.X().DateColumnExtend().DataIndex(Model, m => m.AuditTime).Text("Thời hạn đánh giá").Width(150).Align(Alignment.Center),
+            Html.X().Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(120),
+            Html.X().Column().DataIndex("Status").Text("Kết quả").Align(Alignment.Center).Width(120)
+        )
+        .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusListCAPA(this)")
+        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single))
+        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+
+<script>
+    var getCAPAId = function () {
+        var CAPAId = 0;
+        var records = App.grCAPA.selModel.getSelection();
+        if (records.length > 0) {
+            CAPAId = records[0].get('ID');
+        }
+        return CAPAId;
+    };
+    function CheckStatusListCAPA(grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length == 1) {
+            grid.queryById('btnDetailCAPA').setDisabled(false);
+            grid.queryById('btnUpdateCAPA').setDisabled(false);
+            grid.queryById('btnDeleteCAPA').setDisabled(false);
+            grid.queryById('btnTaskCAPA').setDisabled(false);
+        }
+        else {
+            grid.queryById('btnUpdateCAPA').setDisabled(true);
+            grid.queryById('btnDeleteCAPA').setDisabled(true);
+            grid.queryById('btnDetailCAPA').setDisabled(true);
+            grid.queryById('btnTaskCAPA').setDisabled(true);
+        };
+    };
+    var showCAPAInsert = function (grid) {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("InsertView", "CAPA", new { Area = "Quality" }, null))',
+            success: function (result) {
+                mask.hide();
+            },
+        });
+    };
+    var showCAPAUpdate = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateView", "CAPA", new { Area = "Quality" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                },
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var showCAPADetail = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailView", "CAPA", new { Area = "Quality" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                },
+                success: function (result) {
+                    mask.hide();
+                },
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var deleteCAPA = function (grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes')
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete", "CAPA", new { Area = "Quality" }, null))',
+                        params: {
+                            id: records[0].get('ID'),
+                        }
+                    });
+            })
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>

@@ -1,0 +1,201 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int verify = (int)iDAS.Items.DispatchForm.Verify;
+    int detail = (int)iDAS.Items.DispatchForm.Detail;
+    //Khai báo action thuộc Công việc
+    var urlSubmitTask = Url.Action("InsertTask", "DispatchToInSide", new { area = "Dispatch" });
+    var urlStoreTask = Url.Action("LoadTasks", "DispatchToInSide", new { area = "Dispatch" });
+    var paramStoreTask = Html.X().StoreParameter().Name("dispatchID").Value("getPlanId()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Hidden().ID("refID"))
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+        Html.X().GridPanel()
+            .ID("GrDispatchGoInSide")
+            .Title("Danh sách Công văn đến Nội bộ của cá nhân")
+            .Header(false)
+            .Region(Region.Center)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Border(false)
+            .Icon(Icon.TextListBullets)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().Button().Text("Xác nhận").Icon(Icon.Accept).ID("btnVerify").Disabled(true).Handler("ShowFrmInside(" + verify + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask().ID("btnTask").Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView()
+                            .ID("btnDetailDispachInside")
+                            .Handler("ShowFrmInside(" + detail + ");")
+                            .Disabled(true),
+                        Html.X().ToolbarSeparator(),
+                    Html.X().Button()
+                        .Text("Người theo dõi")
+                        .Icon(Icon.UserKey)
+                        .ID("btnDispatchToInsideCC")
+                        .Disabled(true)
+                        .Handler("ShowFrmInsideCC();"),
+                        Html.X().ToolbarFill()
+                     )
+                   )
+            .Store(
+                Html.X().Store()
+                    .AutoLoad(true)
+                    .ID("StDispatchGoInSide")
+                    .RemotePaging(true)
+                  .PageSize(20)
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDispatchGo", "DispatchToInSide")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                         .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                            })
+
+                          .Model(
+                               Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("Code"),
+                            Html.X().ModelField().Name("FormH"),//IssuedDate
+                            Html.X().ModelField().Name("FormS"),
+                            Html.X().ModelField().Name("Date"),
+                            Html.X().ModelField().Name("FormH"),
+                            Html.X().ModelField().Name("FormS"),
+                            Html.X().ModelField().Name("DestinationAddress"),
+                            Html.X().ModelField().Name("Security"),
+                            Html.X().ModelField().Name("SecurityColor"),
+                            Html.X().ModelField().Name("Status"),
+                            Html.X().ModelField().Name("IsSend"),
+                            Html.X().ModelField().Name("FlagVerify"),
+                            Html.X().ModelField().Name("FlagApprove"),
+                            Html.X().ModelField().Name("IsVerify"),
+                            Html.X().ModelField().Name("IsApproval"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("EmployeeInfo.Name"),
+                            Html.X().ModelField().Name("AttachmentFileIDs")
+                            )
+                        )
+                )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold; text-align: center;"),
+                    Html.X().Column().DataIndex("Code").Text("Số, ký hiệu").Width(110).Align(Alignment.Center),
+                        Html.X().DateColumnExtend().DataIndex("Date").Text("Ngày tháng CV").Width(100).Format("dd/MM/yyyy").Align(Alignment.Center).Filterable(false),
+                        Html.X().Column().DataIndex("Name").Text("Tên công văn").MinWidth(300).Wrap(true).Flex(1),
+                        Html.X().Column().DataIndex("DestinationAddress").Text("Nơi nhận").MinWidth(300).Wrap(true).Flex(1),
+                    Html.X().Column().DataIndex("EmployeeInfo.Name").Text("Người ký").Width(150),
+                        Html.X().ComponentColumn().Text("Hình thức lưu").Filterable(false).Columns(
+                    Html.X().CheckColumn().DataIndex("FormH").Text("Bản cứng").Width(80),
+                    Html.X().CheckColumn().DataIndex("FormS").Text("Bản mềm").Width(80)
+                           ),
+                    Html.X().Column().DataIndex("Security").Text("Mức độ mật").Width(100).Align(Alignment.Center)
+                                .Renderer(new Renderer { Fn = "function(value, meta, record) { meta.style = 'background-color:' + record.get('SecurityColor') + ';'; return value; }" }).Filterable(false),
+                    Html.X().Column().DataIndex("Status").Text("Trạng thái").Width(100).Align(Alignment.Center).Filterable(false),
+                    Html.X().ColumnFileExtend("AttachmentFileIDs")
+                    )
+            .SelectionModel(
+                Html.X().CheckboxSelectionModel()
+                    .ShowHeaderCheckbox(false)
+                    .Mode(SelectionMode.Single)
+                    .Listeners(l => l.SelectionChange.Handler = "checkStatus();")
+                        )
+                        .Plugins(
+                            Html.X().FilterHeader().Remote(true)
+                                )
+                        .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+                        .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script>
+    var ShowFrmInsideCC = function () {
+        var records = App.GrDispatchGoInSide.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnDispatchToInsideCC.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("ShowEmployeeCC", "DispatchToInSide", new { Area = "Dispatch" }, null))',
+                    params: { dispatchGoId: records[0].get('ID') }
+                });
+                break;
+        }
+    };
+    var getColor = function (obj, store) {
+        var id = obj.getValue();
+        var record = store.getById(id);
+        var color = record.get('Color');
+        obj.setFieldStyle('background-image: none; background-color: ' + color + ';');
+    };
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var getPlanId = function () {
+        var planId = App.refID.getValue();
+        return planId;
+    };
+    var ShowFrmInside = function (cmd) {
+        var record = App.GrDispatchGoInSide.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            if (cmd == 4) {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("ShowFrmVerify", "DispatchToInSide", new { Area = "Dispatch" }, null))', params: { id: id }
+                });
+            }
+            else if (cmd == 5) {
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("ShowFrmDetail", "DispatchToInSide", new { Area = "Dispatch" }, null))', params: { id: id, type: cmd }
+                });
+            }
+        }
+    };
+    var ShowFrm = function (cmd) {
+        var record = App.GrDispatchGoInSide.selModel.getSelection();
+        var id = record[0].get('ID');
+
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("ShowFrmAdd", "DispatchToInSide", new { Area = "Dispatch" }, null))', params: { id: id, type: cmd }
+        });
+    };
+    var checkStatus = function () {
+        var record = App.GrDispatchGoInSide.selModel.getSelection();
+        if (record.length > 0) {
+            App.refID.setValue(record[0].get('ID'));
+            App.btnDetailDispachInside.setDisabled(false);
+            App.btnDispatchToInsideCC.setDisabled(false);
+            App.btnTask.setDisabled(false);
+
+            if (!record[0].get('FlagVerify'))
+                App.btnVerify.setDisabled(false);
+            else
+                App.btnVerify.setDisabled(true);
+        } else {
+            App.btnDetailDispachInside.setDisabled(true);
+            App.btnVerify.setDisabled(true);
+            App.btnDispatchToInsideCC.setDisabled(true);
+            App.btnTask.setDisabled(true);
+        }
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+</script>

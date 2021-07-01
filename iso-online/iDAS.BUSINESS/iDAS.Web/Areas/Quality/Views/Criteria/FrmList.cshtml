@@ -1,0 +1,274 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend;
+@{
+    var cateId = ViewData["cateId"].ToString();
+}
+@(Html.X().Menu()
+          .ID("cmMenuCriteria")
+          .Items(
+            new MenuItem { Text = "Xem chi tiết", ID = "cmDetailCriteria", Icon = Icon.Zoom, Handler = "showFormDetailCriteria();" },
+             Html.X().MenuSeparator(),
+            new MenuItem { Text = "Thêm mới", ID = "cmInsertCriteria", Icon = Icon.Add, DirectClickAction = "FormAdd" },
+            new MenuItem { Text = "Sửa", ID = "cmEditCriteria", Icon = Icon.Pencil, Handler = "updateFormCriteria();" },
+                new MenuItem { Text = "Xóa", ID = "cmDeleteCriteria", Icon = Icon.Delete, Handler = "deleteRecordCriteria();" }
+                    )
+  )
+@(Html.X().Window()
+                .ID("winFrmList")
+                .Title("Danh sách tiêu chí đánh giá theo bộ tiêu chí")
+                .Icon(Icon.TextListBullets)
+                .Height(500)
+                .Width(800)
+                .BodyPadding(0)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items (
+                  Html.X().GridPanel()
+                .AnchorHorizontal("100%")
+                .AnchorVertical("100%")
+                .ID("grMnCriteria").Border(false)
+                    .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenuCriteria")
+                .TopBar(
+                Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonCreate().ID("btnInsertNewsCriteria").DirectClickAction("FormAdd"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                    .Text("Sửa")
+                                        .ID("btnEditCriteria")
+                                    .Icon(Icon.Pencil)
+                                        .Handler("updateFormCriteria();")
+                                    .Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button()
+                                    .Text("Xóa")
+                                        .ID("btnDeleteCriteria")
+                                    .Icon(Icon.Delete)
+                                            .Handler("deleteRecordCriteria();")
+                                    .Disabled(true),
+                           Html.X().ToolbarSeparator(),
+                                Html.X().Button()
+                                        .Text("Xem chi tiết")
+                                            .ID("btnDetailCriteria")
+                                        .Disabled(true)
+                                        .Icon(Icon.Zoom)
+                                            .Handler("showFormDetailCriteria();")
+                                        .Disabled(true),
+                                Html.X().ToolbarFill()
+                              
+                     )
+                     )
+            .Store(Html.X().Store()
+                    .ID("stMnCriteria")
+                    .Proxy(Html.X().AjaxProxy()                    
+                    .Url(Url.Action("GetData"))                    
+                    .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .AutoLoad(true)
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("cateId", cateId.ToString(), ParameterMode.Value));
+                        }
+                    )
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)
+                    .Model(
+                    Html.X().Model()
+                            .Fields(
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                        Html.X().ModelField().Name("Factory").Type(ModelFieldType.Float),
+                                        Html.X().ModelField().Name("MinPoint").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("MaxPoint").Type(ModelFieldType.Int),                                
+                                Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                                Html.X().ModelField().Name("CategoryName").Type(ModelFieldType.String),                               
+                                Html.X().ModelField().Name("CreateAt").Type(ModelFieldType.Date),
+                                Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date)
+                            )
+                          )
+                      )
+                      
+                .ColumnModel(
+                    Html.X().RowNumbererColumn()
+                            .Text("STT")
+                            .StyleSpec("font-weight: bold; text-align: center;")
+                            .Align(Alignment.Center)
+                            .Width(33),
+                    Html.X().Column()
+                            .Text("ID")
+                            .DataIndex("ID")
+                            .Hidden(true),                    
+                    Html.X().Column()
+                            .Text("Tên tiêu chí")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("Name")
+                           .Flex(1)
+                            .Wrap(true),
+                                  Html.X().Column()
+                                .Text("Hệ số")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Factory")
+                                   .Width(70)
+                                   .Align(Alignment.Right)
+                                .Wrap(true),
+                                      Html.X().Column()
+                                .Text("Điểm tối thiểu")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                .DataIndex("MinPoint")
+                                .Width(90)
+                                     .Align(Alignment.Right)
+                                .Wrap(true),
+                                      Html.X().Column()
+                                .Text("Điểm tối đa")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                .DataIndex("MaxPoint")
+                                     .Align(Alignment.Right)
+                              .Width(90)
+                                .Wrap(true),                                                                     
+                    Html.X().CheckColumn()
+                            .Text("Kích hoạt")
+                            .StyleSpec("font-weight: bold;text-align: center")
+                            .DataIndex("IsActive")
+                            //.Renderer("renderActive")                            
+                            .Width(100)
+                            .Wrap(true)
+                            .Align(Alignment.Center)
+                           
+            )             .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                            l.Select.Handler = "checkStatusCriteria()";
+                        })
+                        )
+
+                          .View(
+                        Html.X().GridView().MarkDirty(false)
+                        )                       
+                        .Plugins(Html.X().CellEditing())
+                        .BottomBar(Html.X().CustomPagingToolbar()) 
+   
+    )
+            .Buttons(           
+            Html.X().Button()
+            .ID("btnCancel")
+            .Text("Thoát")
+            .Icon(Icon.Cancel)
+            .TabIndex(20)
+            .Handler("this.up('window').close();")
+            )
+)
+
+<script type="text/javascript">
+    var itemcontextmenuCriteria = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenuCriteria.showAt(e.getXY());
+    };
+    var showFormDetailCriteria = function () {
+        var records = App.grMnCriteria.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    App.btnEditCriteria.setDisabled(true);
+                    App.btnDeleteCriteria.setDisabled(true);
+                    App.btnDetailCriteria.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowDetail", "Criteria", new { Area = "Quality" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var checkStatusCriteria = function () {
+        var records = App.grMnCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnEditCriteria.setDisabled(false);
+            App.btnDeleteCriteria.setDisabled(false);
+            App.btnDetailCriteria.setDisabled(false);
+        }
+        else {
+            App.btnEditCriteria.setDisabled(true);
+            App.btnDeleteCriteria.setDisabled(true);
+            App.btnDetailCriteria.setDisabled(true);
+        }
+    };
+    function updateFormCriteria() {
+        var records = App.grMnCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var postUrl = '/Quality/Criteria/ShowUpdate/';
+            if (records.length > 0) {
+                postUrl += records[0].get('ID');
+            }
+            Ext.net.DirectMethod.request({
+                url: postUrl
+            });
+        } else {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEditCriteria.setDisabled(true);
+                    App.btnDeleteCriteria.setDisabled(true);
+                    App.btnDetailCriteria.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        };
+    var deleteRecordCriteria = function () {
+        var records = App.grMnCriteria.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        App.btnEditCriteria.setDisabled(true);
+                        App.btnDeleteCriteria.setDisabled(true);
+                        App.btnDetailCriteria.setDisabled(true);
+                        App.cmEditCriteria.setDisabled(true);
+                        App.cmDeleteCriteria.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "Criteria", new { Area = "Quality" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+</script>

@@ -1,0 +1,71 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerSurveyQuestionItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+
+        IconView = Icon.Add;
+        title = "Thêm mới nội dung khảo sát";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Cập nhật nội dung khảo sát";
+    }
+}
+@(Html.X().Window()
+.ID("winSurveyQuestion")
+.Title(title)
+.Icon(IconView)
+.Width(800)
+.BodyPadding(0)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+    .ID("frmUpdate")
+    .Layout(LayoutType.Column)
+    .Frame(true)
+    .Border(false)
+    .MarginSpec("0 -4 -3 -4")
+    .StyleSpec("border: none;")
+    .FieldDefaults(df => { df.LabelWidth = 110; })
+    .Items(
+            X.HiddenFor(m => m.ID),  X.HiddenFor(m=>m.ParentID),X.HiddenFor(m=>m.SurveyID),
+            X.HiddenFor(m=>m.IsCategory).Value(true),
+            X.TextFieldFor(m => m.Name)
+                .FieldLabel("Câu hỏi" + Html.Required())
+                .EmptyText("Nhập tên Nội dung khảo sát...")
+                .AllowBlank(false)
+                .ColumnWidth(1)
+                .MarginSpec("5 8 0 8"),
+            X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú").ColumnWidth(1).MarginSpec("5 8 0 8").Height(150).EmptyText("Nhập ghi chú cho Nội dung khảo sát.."),
+            X.ComboBoxFor(m => m.IsMulti).Items(new ListItem("Nhiều lựa chọn", true), new ListItem("Một lựa chọn", false))
+                                                .FieldLabel("Loại câu hỏi").PaddingSpec("5 8 4 8").ColumnWidth(0.5),
+            X.CheckboxFor(m => m.IsUse).FieldLabel("Sử dụng").BoxLabel("có").ColumnWidth(1).MarginSpec("5 8 0 8")
+
+                   )
+    )
+    .Buttons(
+        Html.X().ButtonSave()
+                        .DirectEvents(de =>
+                                    {
+                                        de.Click.Before = @"if (!App.frmUpdate.getForm().isValid()) { return false; }; ";
+                                        de.Click.ExtraParams.Add(new { exit = true });
+                                        de.Click.Url = Url.Action("QuestionUpdateItem");
+                                        de.Click.FormID = "frmUpdate";
+                                        de.Click.Success = "refresh();";
+                                    })
+        , Html.X().ButtonExit())
+)

@@ -1,0 +1,106 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanRecruitmentProfileItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+.Items(
+        Html.X().GridPanel()
+                .Header(false)
+                .ID("GrProfile")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .Border(false)
+                .Icon(Icon.TextListBullets)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+                        Html.X().ButtonCreate().Handler("AddNew();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate().ID("btnUpdate").Handler("UpdateItem();"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonDelete().ID("btnDelete").Handler("onDelete(App.GrProfile.selModel.getSelection()[0].get('ID'));"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView().ID("btnDetail").Handler("ViewDetail();"),
+                        Html.X().ToolbarFill(),
+                        Html.X().ButtonTutorial()
+                    )
+            )
+            .Store(
+                    Html.X().StoreForModel()
+                        .ID("StoreProfile")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadProfile")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+            )
+               .ColumnModel(
+                            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                            Html.X().ImageColumn().DataIndex(Model, m => m.Avatar),
+                            Html.X().Column().DataIndex(Model, m => m.Name).Flex(1).Text("Họ Tên"),
+                            Html.X().Column().DataIndex(Model, m => m.Gender).Renderer("SexRenderer").Width(100).Text("Giới tính").Align(Alignment.Center),
+                            Html.X().DateColumnExtend().DataIndex(Model, m => m.Birthday).Text("Ngày sinh").Align(Alignment.Center).Format("dd/MM/yyyy").Width(150),
+                            Html.X().Column().DataIndex(Model, m => m.Email).Text("Email").Width(150).Align(Alignment.Right),
+                            Html.X().Column().DataIndex(Model, m => m.Phone).Text("Số điện thoại").Width(150).Align(Alignment.Right),
+                            Html.X().CheckColumn().DataIndex(Model, m => m.IsEmployee).Text("Nhân sự").Width(100)
+                    )
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                        .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)
+<script>
+    var SexRenderer = function (value) {
+        return value == true ? "Nam" : "Nữ";
+    };
+    function CheckStatus() {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnUpdate, App.btnDelete, App.btnDetail);
+        }
+        else {
+            SetDisabled(App.btnUpdate, App.btnDelete, App.btnDetail);
+        };
+    };
+    var AddNew = function () {
+        var url = '@(Url.Action("UpdateForm", "RecruitmentProfile", new { Area = "Human" }, null))';
+        onDirectMethod(url, null);
+    };
+    var UpdateItem = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "RecruitmentProfile", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        }
+    };
+    var ViewDetail = function () {
+        var records = App.GrProfile.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "RecruitmentProfile", new { Area = "Human" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var deleteUrl = '@(Url.Action("DeleteProfile"))';
+    var reDelete = function (id) {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("reDeleteProfile"))',
+            params: {
+                id: id,
+            }
+        });
+    };
+</script>

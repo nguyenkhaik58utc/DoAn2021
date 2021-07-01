@@ -1,0 +1,235 @@
+﻿
+@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Web.Areas.Human.Model.V3_HumanEmployeeResponse
+@{
+    var X = Html.X();
+    var documentId = ViewData["documentId"];
+   
+}
+@(X.Window().Modal(true).Icon(Icon.PencilAdd)
+        .Width(1100)
+        .Title("Lựa chọn nhân sự")
+       .Height(560)
+        .Layout(LayoutType.HBox)
+        .LayoutConfig(new HBoxLayoutConfig { Align = HBoxAlign.Stretch }
+        )
+         .Buttons(
+        X.Button().ID("btnChose").Icon(Icon.Accept).Text("Chọn").Handler("onChose"),
+        X.Button().ID("btnRemove").Icon(Icon.Delete).Text("Xóa").Handler("onRemoveEmployee"),
+        X.Button().Text("Thoát").Icon(Icon.DoorOut).Handler("onExit")//OnClientClick("this.up('window').doDestroy();")
+    )
+        .Items(
+                Html.X().TreePanel()
+                  .ID("DepartmentPanel")
+                  .Region(Region.West)
+                  .Width(330)
+                  .Header(false)
+                  .Border(true)
+                  .RowLines(true)
+                  .Icon(Icon.TextListBullets)
+                  .ForceFit(true)
+                  .RootVisible(false)
+                  .SingleExpand(false)
+                  .Split(true)
+                  .Collapsible(true)
+                  .MarginSpec("1 0 1 1")
+                  .Listeners(ls =>
+                  {
+                      ls.Load.Handler = "expandDepartment(records);";
+                      ls.Select.Handler = "reloadPermissionStore();";
+                  })
+                  .Store(
+                      Html.X().TreeStore()
+                          .ID("StoreDepartments")
+                          .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "Department", new { area = "Department" })).Reader(Html.X().JsonReader().Root("data")))
+                          .Model(
+                              Html.X().Model().Fields(
+                                  Html.X().ModelField().Name("id"),
+                                  Html.X().ModelField().Name("text"),
+                                  Html.X().ModelField().Name("ParentID"),
+                                  Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean),
+                                  Html.X().ModelField().Name("IsDelete").Type(ModelFieldType.Boolean),
+                                  Html.X().ModelField().Name("IsMerge").Type(ModelFieldType.Boolean),
+                                  Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                              )
+                          )
+                  )
+                  .ColumnModel(
+                      Html.X().TreeColumn().Text("Cơ cấu tổ chức").StyleSpec("font-weight: bold;text-align: center")
+                          .DataIndex("text").Flex(1).Filterable(false).Sortable(false)
+                  ),
+            X.Panel()
+                .ID("Panel2")
+                .Title("Danh sách nhân sự")
+                .Flex(1)
+                .Items(
+                    X.GridPanel().ID("grdAllEmp").AutoScroll(true).Layout(LayoutType.Fit).Height(473)
+                    .Flex(1)
+                    .Region(Region.Center)
+                    .ColumnLines(true)
+                    .Border(false)
+
+                .Store(
+                    X.StoreForModel()
+                        .ID("stEmployees")
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Proxy(X.AjaxProxy().Url(Url.Action("LoadUserForDocument")).Reader(X.JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(pr =>
+                        {
+                            pr.Add(new StoreParameter("departmentId", "getDepartmentSelection().data.id", ParameterMode.Raw));
+                        })
+                    )
+                .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center).StyleSpec("font-weight: bold;text-align: center"),
+
+                X.Column().DataIndex(Model, m => m.Name).Flex(1).Text("Họ tên").Width(120).StyleSpec("font-weight: bold;text-align: center"),
+                X.DateColumnExtend().DataIndex(Model, m => m.BirthDay).Text("Ngày sinh").Align(Alignment.Right).Width(100).StyleSpec("font-weight: bold;text-align: center"))
+                .SelectionModel(
+                    X.CheckboxSelectionModel()
+                    .Mode(SelectionMode.Multi)
+                    .SelectedRows(rows => rows.AddRange(new SelectedRowCollection()))
+                    )
+                     .BottomBar(X.CustomPagingToolbar())
+                    ),
+                X.Panel().Width(50)
+                .Layout(LayoutType.VBox)
+                .BodyPadding(3)
+                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Center, Pack = BoxPack.Center })
+                .Border(false)
+                .Items(
+                    X.Button().ID("btnAddToRight")
+                    .Icon(Icon.ArrowRight)
+                    .IconAlign(IconAlign.Left)
+                    .Handler("onSelectEmployee();")
+                ),
+            X.Panel()
+                .ID("Panel3")
+                .Title("Danh sách nhân sự đã chọn")
+                .Flex(1)
+                    .Items(
+        X.GridPanel().Layout(LayoutType.Fit).Height(473)
+            .ID("grdEmpPerformed")
+             .Flex(1)
+             .Region(Region.Center)
+             .ColumnLines(true)
+             .Border(false)
+             .Store(
+                 X.Store()
+                    .AutoLoad(true)
+                    .Proxy(X.AjaxProxy().Url(Url.Action("GetEmployeePerformedDocument", "V3_Employee", new { Area = "Human" }))
+                    .Reader(X.JsonReader().Root("data")))
+                    .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("documentId", documentId != null ? documentId.ToString() : "", ParameterMode.Value));
+                    })
+                    .Model(X.Model()
+                        .Fields(
+                            Html.X().ModelField().Name("ID").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                            Html.X().ModelField().Name("BirthDay").Type(ModelFieldType.String)
+                            )
+                        )
+                 )
+             .ColumnModel(
+                 X.RowNumbererColumnFormat(),
+                 X.Column().DataIndex("Name").Text("Họ tên").Flex(1),
+                  X.DateColumnExtend().DataIndex("BirthDay").Text("Ngày sinh").Align(Alignment.Right).Width(100).StyleSpec("font-weight: bold;text-align: center")
+                )
+                 .SelectionModel(
+                    X.CheckboxSelectionModel()
+                    .Mode(SelectionMode.Multi)
+                    .SelectedRows(rows => rows.AddRange(new SelectedRowCollection()))
+                    )
+            )
+        )
+    )
+
+<script>
+
+    var renderRoleComlumn = function (value, meta, record) {
+        var image = '';
+        var name = '';
+        image = '<img src="' + record.data.AvatarUrl + '" style="margin-top: 2px; width: 30px; height: 30px; border-radius: 50%; position: absolute;border: 1px solid">';
+        name = '<span style="margin-left: 42px;">' + Ext.htmlEncode(record.data.Name) + '</span><br/>';
+        var titleNames = '<span style="margin-left: 42px;font-size:10px;"><b>Chức danh</b>: ' + record.data.RoleNames + '</span>';
+        result = '<span>' + image + name + titleNames + '</span>';
+        return result;
+    };
+
+    var onSelectEmployee = function () {
+        var ids = '';
+        var records = App.grdAllEmp.selModel.getSelection();
+        Ext.each(records, function (record) {
+            ids += record.data.ID+',';
+        });
+        if (ids == '')
+            return;
+
+        var url = '@Url.Action("AddEmployeePerformDocument", "V3_Employee", new { Area = "Human"})';
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: { empIds: ids},
+            success: function (result) {
+                if (result != "false") {
+                    var store = App.grdEmpPerformed.getStore();
+                    store.reload();
+                }
+            }
+        });
+    };
+
+    var onRemoveEmployee = function () {
+
+        var ids = '';
+        var records = App.grdEmpPerformed.selModel.getSelection();
+        Ext.each(records, function (record) {
+            ids += record.data.ID+',';
+        });
+        console.log(ids);
+        if (ids == '')
+            return;
+        ids = ids.substring(0, ids.length - 1);
+      var url = '@Url.Action("RemoveEmployeePerformDocument", "V3_Employee", new { Area = "Human"})';
+        Ext.net.DirectMethod.request({
+            url: url,
+            params: { empIds: ids },
+            success: function (result) {
+                App.grdEmpPerformed.getStore().reload();
+            }
+        });
+    };
+
+    var onChose = function () {
+        var grid = this.up('window').down('grid');
+        var records = grid.selModel.getSelection();
+        this.up('window').close();
+        App.grdEmp.getStore().reload();
+    };
+
+    var expandDepartment = function (records) {
+        if (records.length > 0) {
+            for (var i = 0; i < records.length; i++) {
+                if (records[i].getDepth() < 2 && !records[i].data.leaf && !records[i].data.expanded) {
+                    records[i].expand();
+                }
+            }
+        }
+        var count = App.DepartmentPanel.selModel.getCount();
+        if (count <= 0) {
+            App.DepartmentPanel.selModel.select(0);
+        }
+    };
+    var reloadPermissionStore = function () {
+        App.grdAllEmp.store.reload();
+    };
+    function getDepartmentSelection() {
+        return App.DepartmentPanel.getSelectionModel().getLastSelected();
+    }
+
+    var onExit = function () {
+        this.up('window').close();
+    }
+</script>

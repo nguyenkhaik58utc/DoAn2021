@@ -1,0 +1,201 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.SupplierItem
+@{
+    var X = Html.X();
+    Icon ic = Icon.Add;
+    string _title = "Thêm mới thông tin nhà cung cấp";
+    if (Model.ID > 0)
+    {
+        ic = Icon.Pencil;
+        _title = "Cập nhật thông tin nhà cung cấp";
+        
+    }
+        
+}
+
+@(Html.X().Window()
+.ID("winUpdateSupplier")
+.Title(_title)
+    .Icon(ic)
+    .Height(470)
+    .Maximizable(true)
+    .Width(670)
+    .Padding(6)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+.ID("frUpdateSupplier")
+.Layout(LayoutType.Anchor)
+.Frame(true)
+.StyleSpec("border: none;")
+.FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+.Items(
+Html.X().Container()
+        .Layout(LayoutType.Form)
+        .Items(
+        Html.X().HiddenFor(m => m.ID).ID("hdfId"),
+                   Html.X().TextFieldFor(m => m.Code).ColumnWidth(0.4).FieldLabel("Mã NCC"+ Html.Required()).MarginSpec("0 5 0 0").AllowOnlyWhitespace(false).BlankText("Bắt buộc nhập"),
+            Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên NCC" + Html.Required()).AllowBlank(false).AllowOnlyWhitespace(false).BlankText("Bắt buộc nhập"),
+            Html.X().ComboBoxFor(m => m.SuppliersGroupId)
+            .FieldLabel("Nhóm NCC" + Html.Required()).AllowOnlyWhitespace(false).BlankText("Bắt buộc nhập")
+    .ColumnWidth(0.5)
+    .AllowBlank(false)
+    .MarginSpec("0 5 0 0")
+    .QueryMode(DataLoadMode.Local)
+    .ForceSelection(true)
+    .DisplayField("Name")
+    .ValueField("ID")
+    .Store(Html.X().Store()
+    .AutoLoad(true)
+    .Model(Html.X().Model()
+    .IDProperty("ID")
+    .Fields(
+        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+    )
+    )
+    .Proxy(Html.X().AjaxProxy()
+    .Url(Url.Action("GetGroup"))
+    .Reader(Html.X().JsonReader().Root("data")
+    )
+        )
+        ),
+Html.X().Container().Layout(LayoutType.Column).Items(
+Html.X().Container().Layout(LayoutType.Form).ColumnWidth(0.7).Items(
+Html.X().TextFieldFor(m=>m.BrandName).FieldLabel("Thương hiệu"),
+Html.X().TextFieldFor(m => m.Email).FieldLabel("Email").StandardVtype(ValidationType.Email).RegexText("Email không đúng định dạng!"),
+Html.X().TextFieldFor(m => m.Website).FieldLabel("Website").EmptyText("dasvietnam.com.vn"),
+    Html.X().TextFieldFor(m => m.Phone).FieldLabel("Điện thoại" + Html.Required()).AllowBlank(false).AllowOnlyWhitespace(false).BlankText("Bắt buộc nhập"),
+Html.X().TextFieldFor(m => m.Fax).FieldLabel("Fax")
+
+),
+Html.X().Container().Layout(LayoutType.Fit).ColumnWidth(0.3).MarginSpec("3 0 0 10").Items(
+
+        Html.X().ImageButton().ID("ImageAvatar").Height(100).Text("Logo").ImageUrl(Model.ImageUrl)
+                                            .ToolTip("Logo").StyleSpec("border: 0.5px solid #b5b8c8; width:98%;"),
+                                        Html.X().FileUploadField().ID("FileUploadFieldId").ButtonText("").Icon(Icon.ImageAdd)
+                                            .Listeners(ls => ls.AfterRender.Fn = "function(cmp){cmp.fileInputEl.set({ accept:'image/*' });}")
+                                            .Listeners(ls => ls.Change.Handler = "AvatarChange(this);")
+
+)
+),
+     Html.X().TextFieldFor(m => m.Address).FieldLabel("Địa chỉ" + Html.Required()).AllowBlank(false).AllowOnlyWhitespace(false).BlankText("Bắt buộc nhập"),
+         Html.X().TextFieldFor(m => m.Commodity).FieldLabel("Mặt hàng CC" + Html.Required()).AllowBlank(false).AllowOnlyWhitespace(false).BlankText("Bắt buộc nhập"),
+Html.X().Container().Layout(LayoutType.Column).Items(
+Html.X().ComboBoxFor(m=>m.CountryId)
+    .FieldLabel("Quốc gia"+ Html.Required()).AllowOnlyWhitespace(false).BlankText("Bắt buộc chọn").Editable(false)
+.ColumnWidth(0.5)
+.ID("cbCountry")
+.AllowBlank(false)
+.MarginSpec("0 5 0 0")
+.QueryMode(DataLoadMode.Local)
+.ForceSelection(true)
+.DisplayField("Name")
+.ValueField("ID")
+.Store(Html.X().Store()
+.AutoLoad(true)
+.Model(Html.X().Model()
+.IDProperty("ID")
+.Fields(
+    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+)
+)
+.Proxy(Html.X().AjaxProxy()
+.Url(Url.Action("GetCountry"))
+.Reader(Html.X().JsonReader().Root("data")
+)
+    )
+    ).Listeners(ls =>
+            ls.Change.Handler = "App.cbProvince.clearValue(); App.cbProvince.getStore().load()"
+            
+            ),
+            Html.X().ComboBoxFor(m => m.ProvinceId)
+            .ID("cbProvince")
+                    .FieldLabel("Tỉnh thành").Editable(false)
+            .AllowBlank(false)
+            .ColumnWidth(0.5)
+            .TypeAhead(true)
+            .QueryMode(DataLoadMode.Local)
+            .ForceSelection(true)
+            .TriggerAction(TriggerAction.All)
+            .DisplayField("Name")
+            .ValueField("ID")
+            .EmptyText("Loading...")
+            .ValueNotFoundText("Loading...")
+            .Store(Html.X().Store().ID("stLoadProvi")
+            .AutoLoad(false)
+            .Model(Html.X().Model()
+                .IDProperty("ID")
+                .Fields(
+                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                )
+            )
+            .Proxy(Html.X().AjaxProxy()
+                .Url(Url.Action("GetProvine"))
+                .Reader(Html.X().JsonReader().Root("data"))
+            )
+            .Parameters(ps =>
+                    ps.Add(new StoreParameter("countryid", "App.cbCountry.getValue()", ParameterMode.Raw))
+            )
+            )
+    ),
+        Html.X().TextFieldFor(m => m.Representative).FieldLabel("Người đại diện"+Html.Required()).AllowOnlyWhitespace(false).BlankText("Bắt buộc nhập"),
+        Html.X().Container().Layout(LayoutType.Column).Items(
+        Html.X().TextFieldFor(m=>m.Position).FieldLabel("Chức vụ").ColumnWidth(0.5).MarginSpec("0 5 0 0"),
+        Html.X().CheckboxFor(m => m.IsCustomer).BoxLabel("Là khách hàng").MarginSpec("0 0 0 105").ColumnWidth(0.5).HideLabel(true)
+    ),
+        Html.X().TextAreaFor(m => m.Description).Height(100).FieldLabel("Diễn giải")
+    
+    
+    ))
+
+)
+
+        .Buttons(
+        
+        Html.X().ButtonSave()
+        .ID("btnSave").Hidden(Model.ID>0)
+        .DirectEvents(de =>
+        {
+            de.Click.ExtraParams.Add(new { val = false });
+            de.Click.Before = @"if (!App.frUpdateSupplier.getForm().isValid()) { return false; } ";
+            de.Click.Action = "Update";
+            de.Click.FormID = "frUpdateSupplier";
+            de.Click.Success = "App.frUpdateSupplier.reset()";
+        }),
+       
+        Html.X().ButtonSaveAndExit()
+        .ID("btnSaves")
+        .DirectEvents(de =>
+        {
+            de.Click.ExtraParams.Add(new { val = true });
+            de.Click.Before = @"if (!App.frUpdateSupplier.getForm().isValid()) { return false; } ";
+            de.Click.Action = "Update";
+            de.Click.FormID = "frUpdateSupplier";
+        }),
+            Html.X().ButtonReset().Hidden(Model.ID > 0)
+        .Handler("App.frUpdateSupplier.reset();"),
+        Html.X().ButtonExit()
+        )
+)
+<script>
+    var AvatarChange = function (obj) {
+        var file = obj.fileInputEl.dom.files[0];
+        var url = URL.createObjectURL(file);
+        App.ImageAvatar.setImageUrl(url);
+    };
+
+
+    var checkStatus = function () {
+        App.btnSave.setDisabled(true);
+        App.btnReset.setDisabled(true);      
+
+        };
+</script>

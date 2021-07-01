@@ -1,0 +1,230 @@
+﻿@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SuppliersOrderItem
+@(Html.X().Window()
+        .Maximized(true)
+        .Constrain(true)
+            .Layout(LayoutType.Anchor)
+        .Modal(true).Title("Cập nhật giao hàng")
+        .Resizable(false)
+        .BodyPadding(0)
+        .Border(true)
+          .ID("vpfrOrderDetail")
+          .Items(
+          Html.X().FormPanel().ID("frOrderDetail").Layout(LayoutType.Fit).Border(false).Region(Region.North)
+                                .Items
+                                (
+                                Html.X().Panel()
+                                .ID("Tab1")
+                                .Border(false)
+                                .StyleSpec("border:none")
+                                .Frame(true)
+                                .Layout(LayoutType.Fit)
+                                .AutoScroll(true)
+                                .Items(
+                                Html.X().FieldSet()
+                                .Title("Thông tin đơn hàng")
+                                .Layout(LayoutType.Column)
+                                .Items(
+                                Html.X().Container()
+                                .ColumnWidth(0.4)
+                                .Layout(LayoutType.Form)
+                                .MarginSpec("0 5 0 0")
+                                .Items(
+                                Html.X().HiddenFor(m => m.ID),
+                                    Html.X().TextFieldFor(m => m.CODE)
+                                    .AllowBlank(false)
+                                    .MaxLength(255)
+                                    .MaxLengthText("Trường không vượt quá 255 ký tự")
+                                        .FieldLabel("Mã đơn hàng").ReadOnly(true)
+                                    .ID("txt_Title")
+                                    .TabIndex(2)
+                                    .LabelWidth(100)
+                                    .MarginSpec("3 0 2 0"),
+                                    Html.X().TextFieldFor(m => m.SupplierName)
+                                    .ReadOnly(true)
+                                    .FieldLabel("Tên NCC")
+                                    .ID("txt_Address")
+                                    .TabIndex(2)
+                                    .LabelWidth(100)
+                                    .MarginSpec("0 0 2 0"),
+                                            Html.X().DateFieldFor(m => m.ReciepDate)
+                                                .SelectedDate(DateTime.Now).LabelWidth(100)
+                                            .FieldLabel("Ngày giao hàng" + Html.Required())
+                                        .ID("txtDateRecive").ReadOnly(Model.Status>8)
+
+                                ),
+                                Html.X().Container()
+                                .ColumnWidth(0.6)
+                                .Layout(LayoutType.Form)
+                                    .MarginSpec("0 5 0 0").Items(
+                                        Html.X().TextFieldFor(m => m.Name)
+                                                .AllowBlank(false).LabelWidth(140)
+                                            .MaxLength(255).MarginSpec("3 0 2 0")
+                                            .MaxLengthText("Trường không vượt quá 255 ký tự")
+                                            .FieldLabel("Tên đơn hàng").ReadOnly(true),
+                                        Html.X().TextFieldFor(m => m.ReciepPlace)
+                                            .AllowBlank(false)
+                                            .MaxLength(500).LabelWidth(140)
+                                            .MaxLengthText("Trường không vượt quá 500 ký tự")
+                                                .FieldLabel("Địa điểm giao hàng" + Html.Required()).ReadOnly(Model.Status > 8),
+                                        Html.X().Container().Layout(LayoutType.Column).Items(
+                                                    Html.X().DateFieldFor(m => m.OrderDate).ReadOnly(true)
+                                       .ColumnWidth(0.5).LabelWidth(140)
+                                        .FieldLabel("Ngày Tạo")
+                                    .ID("txtDateCreate"),
+                                           Html.X().DateFieldFor(m => m.ShipDate).
+                                            ColumnWidth(0.5).LabelWidth(140).ReadOnly(true)
+                                            .FieldLabel("Ngày nhận hàng").MarginSpec("0 0 0 10")
+                                    .ID("txtDateShip")
+                                            )
+
+                                )))
+                                .AnchorHorizontal("100%").AnchorVertical("28%")),
+               Html.X().GridPanel()
+                   .ID("gpProductOder")
+                        .Region(Region.South)
+                        .ColumnLines(true)
+                        .Title("DANH SÁCH VẬT TƯ HÀNG HÓA ")
+                        .TitleAlign(TitleAlign.Center)
+                        .Icon(Icon.TextListBullets)
+                        .MarginSpec("0 1 0 1")
+                        .AnchorHorizontal("100%")
+                        .AnchorVertical("70%")
+                        .Border(false)
+            .Store(Html.X().Store().
+                ID("stProductOrder")
+                       .Proxy(Html.X().AjaxProxy()
+                            .Url(Url.Action("GetData"))
+                            .Reader(Html.X().JsonReader().Root("data"))
+                        )
+                        .RemoteSort(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(Html.X().Model()
+                            .IDProperty("ID")
+                            .Fields(
+                             new ModelField("ID", ModelFieldType.Int),
+                             new ModelField("ProductCode", ModelFieldType.String),
+                             new ModelField("ProductName"),
+                             new ModelField("ProductUnitName", ModelFieldType.String),
+                             new ModelField("Quantity", ModelFieldType.Auto),
+                                 new ModelField("ReciveQuantity", ModelFieldType.Int),
+                                     new ModelField("ReciveQuality", ModelFieldType.Int),
+                                 new ModelField("Note", ModelFieldType.Auto)
+                    )
+                )
+
+            )
+            .ColumnModel(
+                Html.X().Column().Text("ID").DataIndex("ID").Width(35).Hidden(true),
+                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column()
+                    .Text("Mã")
+                        .DataIndex("ProductCode"),
+                Html.X().SummaryColumn()
+                        .Text("Tên hàng hóa")
+                        .SummaryType(SummaryType.Count)
+                        .SummaryRenderer("return 'Tổng : ' + ((value === 0 || value > 1) ? '(' + value +' Vật tư hàng hóa)' : '(0 Vật tư hàng hóa)');")
+                        .DataIndex("ProductName")
+                        .Flex(1),                        
+                        Html.X().ComponentColumn().Text("Đặt Hàng").Columns(
+                            Html.X().Column()
+                                    .Text("ĐVT")
+                                    .DataIndex("ProductUnitName"),
+                            Html.X().SummaryColumn()
+                                        .Text("Số lượng").Renderer("RenderNumber")
+                                        .Align(Alignment.Right)
+                                        .Wrap(true)
+                                        .DataIndex("Quantity")),
+                   Html.X().ComponentColumn().Text("Kết quả giao hàng").Columns(
+                                Html.X().SummaryColumn().Text("Số lượng").Renderer("RenderNumber")
+                                            .Align(Alignment.Right)
+                                            .Wrap(true)
+                                                    .DataIndex("ReciveQuantity").Editor(
+                            Html.X().NumberField().MinValue(0.001).MaxValue(9999999)
+                            ),
+                                Html.X().Column()
+                                        .Text("Chất lượng")
+                                                .DataIndex("ReciveQuality").Editor(
+                            Html.X().NumberField().MinValue(0.001).MaxValue(10)
+                            )
+                                ),
+                        Html.X().Column().Text("Ghi chú").Align(Alignment.Left).DataIndex("Note").Width(200).Editor(
+                            Html.X().TextField()
+                            )
+
+            )
+                .SelectionModel(Html.X().RowSelectionModel()
+                            .Mode(SelectionMode.Multi)
+                            .Listeners(l =>
+                            {
+                               // l.Select.Handler = "checkStatus()";
+                            }))
+            .Features(
+
+                                        Html.X().Summary().Dock(SummaryDock.Bottom)
+                                        )
+    .Plugins(
+                                    Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "edit")
+                                )
+       .BottomBar(Html.X().CustomPagingToolbar())
+       ).Buttons(
+           Html.X().ButtonSave()
+                            .ID("btnSave")
+                            .DirectEvents(de =>
+                            {
+                                de.Click.ExtraParams.Add(new { val = false });
+                                de.Click.Before = @"if (!App.frOrderDetail.getForm().isValid() ) { return false; } ";
+                                de.Click.Action = "Update";                                
+                                de.Click.FormID = "frOrderDetail";
+                                de.Click.Success = "this.up('window').close();";
+
+                            }).Hidden(Model.Status==9),   
+                Html.X().ButtonExit()
+            ))
+
+
+
+<script type="text/javascript">
+
+    var checkPrice = function () {
+        var records = App.stProductOrder.getCount();
+        var total = 0;
+        if (records >= 1) {
+            for (var ii = 0; ii < records; ii++) {
+                var rec = App.gpProductOder.getStore().getAt(ii);
+                total = rec.get('Quantity') * rec.get('Price');
+                if (total == 0) {
+                    Ext.MessageBox.show({
+                        title: 'Bạn phải nhập đầy đủ thông tin sản phẩm?',
+                        buttons: { yes: 'Đồng ý' },
+                        iconCls: '#Information'
+                    });
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    var edit = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("HandleChanges"))',
+                params: {
+                    id: e.record.data.ID,
+                    field: e.field,
+                    oldValue: e.originalValue,
+                    newValue: e.value,
+                    ReciveQuality: e.record.data.ReciveQuality,
+                    ReciveQuantity: e.record.data.ReciveQuantity,
+                    note: e.record.data.Note,
+                    product: e.record.data
+                }
+            });
+        }
+    };
+</script>

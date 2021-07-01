@@ -1,0 +1,119 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.AccountingDebtTypeItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var deleteUrl = '@(Url.Action("Delete", "DebtType"))';
+    function CheckStatusDebtType() {
+        var records = App.GrDebtType.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnUpdateDebtType.setDisabled(false);
+            App.btnDeleteDebtType.setDisabled(false);
+            App.btnDetailOrder.setDisabled(false);
+        }
+        else {
+            App.btnUpdateDebtType.setDisabled(true);
+            App.btnDeleteDebtType.setDisabled(true);
+            App.btnDetailOrder.setDisabled(true);
+        };
+    };
+    var AddNewDebtType = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("UpdateForm", "DebtType", new { Area = "Accounting" }, null))'
+        });
+    };
+    var UpdateDebtTypeItem = function () {
+        var records = App.GrDebtType.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateForm", "DebtType", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ViewDetailOrder = function () {
+        var records = App.GrDebtType.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DetailForm", "DebtType", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID')
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Fit).Border(false).Margin(0).Frame(false).StyleSpec("border: none;")
+            .Items(
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrDebtType")
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(false)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().Button().ToolTip("Thêm mới xếp loại nợ")
+                                        //.Text("Thêm mới")
+                                        .ID("btnAddDebtType").Icon(Icon.Add).Handler("AddNewDebtType();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().ID("btnUpdateDebtType").ToolTip("Cập nhật xếp loại nợ")
+                                        //.Text("Cập nhật")
+                                        .Handler("UpdateDebtTypeItem();").Icon(Icon.Pencil).Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().ToolTip("Xóa xếp loại nợ")
+                                        //.Text("Xóa")
+                                            .Icon(Icon.Delete).ID("btnDeleteDebtType").Handler("onDelete(App.GrDebtType.selModel.getSelection()[0].get('ID'));").Disabled(true),
+                                         Html.X().ToolbarSeparator(),
+                                    Html.X().Button()
+                                        //.Text("Xem chi tiết")
+                                        .ToolTip("Xem chi tiết").ID("btnDetailOrder").Icon(Icon.Zoom).Handler("ViewDetailOrder();").Disabled(true),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()   
+                            ))
+                            .Store(
+                            Html.X().Store().ID("StoreDebtType")
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadDebtType", "DebtType", new { Area = "Accounting" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Model(
+                                    Html.X().Model().Fields(
+                                        Html.X().ModelField().Name("ID"),
+                                        Html.X().ModelField().Name("Name"),
+                                        Html.X().ModelField().Name("Value"),
+                                        Html.X().ModelField().Name("Day"),
+                                        Html.X().ModelField().Name("IsActive")
+                                    )
+                              )
+                        )
+                        .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                X.Column().DataIndex("Name").Text("Phân loại nợ").Flex(1),
+                                X.Column().DataIndex("Day").Text("Số ngày quá hạn").Width(150).Align(Alignment.Center),
+                                X.NumberColumn().DataIndex("Value").Text("Định mức").Width(150).Align(Alignment.Right),
+                                X.CheckColumn().DataIndex("IsActive").Text("Kích hoạt").Width(80).Align(Alignment.Center)
+                            )
+                        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                    .Listeners(ls => ls.SelectionChange.Fn = "CheckStatusDebtType"))
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar()
+            )
+    )
+)
+

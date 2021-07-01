@@ -1,0 +1,158 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.QualityMeetingItem
+@{
+    var urlStore = Url.Action("LoadTasks", "PlanTask", new { area = "Quality" });
+}
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_LayoutApproval.cshtml";
+}
+@section SectionApproval{
+ @(X.TabPanel()
+    .ID("TabPanel1")
+    .ActiveTabIndex(0)
+    .Region(Region.Center)
+    .Layout(LayoutType.Fit)
+    .Border(true)
+    .Items(
+            X.FormPanel()
+            .AutoScroll(true)
+            .Title("Kế hoạch cuộc họp")
+            .Layout(LayoutType.VBox)
+            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+            .Frame(true)
+            .FieldDefaults(df => { df.LabelWidth = 120; df.LabelStyle = "padding-left: 5px;"; })
+            .PaddingSpec("5 10 0 0")
+            .StyleSpec("border: none;")
+            .Items(
+        X.HiddenFor(m => m.ID).ID("hdfMeetingID"),
+        Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên cuộc họp").ReadOnly(true),
+        Html.X().Container().MarginSpec("0 -1 2 0")
+                .Layout(LayoutType.Column)
+                .Items(
+                         X.TextFieldFor(m => m.Department.Name).FieldLabel("Phòng ban")
+                                    .ColumnWidth(0.52).ReadOnly(true),
+                        X.NumberFieldFor(m => m.Cost).FieldLabel("Chi phí").LabelWidth(70)
+                                                    .PaddingSpec("0 0 0 20").ColumnWidth(0.48).ReadOnly(true)
+                        ),
+        Html.X().Container().MarginSpec("2 -1 4 0")
+                .Layout(LayoutType.Column)
+                .Items(
+                X.DateTimeFieldFor(m => m.StartTime).FieldLabel("Bắt đầu").ReadOnly(true).ColumnWidth(0.52).MarginSpec("0 -1 0 0"),
+                X.DateTimeFieldFor(m => m.EndTime).LabelWidth(70).FieldLabel("Kết thúc").ReadOnly(true).ColumnWidth(0.48).MarginSpec("0 -1 0 0").PaddingSpec("0 0 0 20")
+            ),
+    Html.X().TextFieldFor(m => m.Address).FieldLabel("Địa chỉ").ReadOnly(true),
+    Html.X().TextAreaFor(m => m.TaskPrepare).FieldLabel("Công việc chuẩn bị").Height(100).ReadOnly(true).ReadOnly(true),
+    Html.X().TextAreaFor(m => m.Content).FieldLabel("Nội dung").ReadOnly(true).MinHeight(50).ReadOnly(true).EmptyText("Nhập nội dung kế hoạch").Flex(1),
+            Html.X().FileUploadFieldFor(m => m.AttachmentFile).ReadOnly(true)
+            ),
+        X.FormPanel()
+    .Title("Vấn đề cuộc họp")
+    .Layout(LayoutType.Fit)
+    .Items(
+            X.GridPanel().Layout(LayoutType.Fit)
+    .ID("GrMeetingProblem")
+    .Header(false)
+    .ColumnLines(true)
+    .ForceFit(true)
+    .Border(false)
+    .Icon(Icon.TextListBullets)
+    .Store(
+                Html.X().Store().ID("storeMeetingProblem")
+                .RemotePaging(true)
+                .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMeetingProblem", "MeetingProblem", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                .Parameters(ps => ps.Add(new StoreParameter("meetingID", "App.hdfMeetingID.getValue()", ParameterMode.Raw)))
+                .Model(
+                    Html.X().Model().Fields(
+                                X.ModelField().Name("ID"),
+                                X.ModelField().Name("Name"),
+                                X.ModelField().Name("IsoName")
+                    )
+                )
+            )
+            .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.Column().DataIndex("Name").Width(300).Text("Tên vấn đề"),
+                        X.Column().DataIndex("IsoName").Flex(1).Text("Iso")
+                )
+            .BottomBar(
+                Html.X().CustomPagingToolbar()
+        )
+    )
+            ,
+        X.FormPanel()
+            .Title("Thành phần tham dự")
+            .Layout(LayoutType.Fit)
+            .Items(
+                X.GridPanel()
+                .ID("GrMeetingObject")
+                .Header(false)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .Border(false)
+                .Height(300)
+                .Icon(Icon.TextListBullets)
+                .Store(
+                            Html.X().Store().ID("storeMeetingObject")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadMeetingPlanObject", "MeetingPlan", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")))
+                            .Parameters(ps => ps.Add(new StoreParameter("meetingID", "App.hdfMeetingID.getValue()", ParameterMode.Raw)))
+                            .Model(
+                                Html.X().Model().Fields(
+                                            X.ModelField().Name("ID"),
+                                            X.ModelField().Name("Name"),
+                                            X.ModelField().Name("Avatar"),
+                                            X.ModelField().Name("RoleName"),
+                                            X.ModelField().Name("MeetingID"),
+                                            X.ModelField().Name("EmployeeID"),
+                                            X.ModelField().Name("Email"),
+                                            X.ModelField().Name("RoleName"),
+                                            X.ModelField().Name("Phone"),
+                                            X.ModelField().Name("IsSelect")
+                                )
+                            )
+                        )
+                        .ColumnModel(
+                                    X.RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                                Html.X().TemplateColumn().DataIndex("EmployeeID").Width(30).TdCls("AvatarColumn").Tpl(
+                                                            Html.X().XTemplate().Html(@<text>
+                                                            <img src='{Avatar}' style='width:30px;height:40px;' />
+                                                        </text>)
+                                                        ),
+                                X.Column().DataIndex("Name").Width(150).Text("Họ tên"),
+                                X.Column().DataIndex("RoleName").Flex(1).Text("Chức danh"),
+                                X.Column().DataIndex("Phone").Width(110).Text("Điện thoại"),
+                                X.Column().DataIndex("Email").Width(110).Text("Email")
+                            )
+
+                        .BottomBar( Html.X().CustomPagingToolbar()
+                        ))))
+    <script>
+        var AvatarRenderer = function (value) {
+            var tpl = "";
+            if (value == "") {
+                tpl = "<img src='/Content/images/underfind.jpg' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+            }
+            else {
+                tpl = "<img src='" + value + "' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+            };
+            return tpl;
+        };
+        function approval(form) {
+            form.submit({
+                url: '@(Url.Action("Appproved", "MeetingPlan", new { area = "Quality" }))',
+            });
+        };
+
+        function sendApproval(form) {
+            form.submit({
+                url: '@(Url.Action("SendApprove", "MeetingPlan", new { area = "Quality" }))',
+            });
+        };
+    </script>
+}

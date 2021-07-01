@@ -1,0 +1,349 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@model iDAS.Items.RoleItem
+@{
+    Layout = "~/Views/Shared/_LayoutSystem.cshtml";
+}
+
+    <script type="text/javascript">
+    var updateUrl = '@(Url.Action("UpdateRole", "Role"))';
+        var insertUrl = '@(Url.Action("InsertRole","Role"))';
+        var detailRoleUrl = '@(Url.Action("InsertRole","Role"))';
+        var onAddRoles = function () {
+            var id = App.TreePanel1.getSelectionModel().getLastSelected().data.id;            
+            this.up('window').down('form').submit({
+                url: insertUrl,
+                params: {
+                    groupId: id
+                },
+                success: function (form, action) {
+                    if (action.result.success) onClosed();
+                }
+            });
+        };
+        var showDetailRole = function () {
+            var records = App.GridPanel1.selModel.getSelection();
+            if (records.length > 0) {
+                var postUrl = '/User/Group/ShowDetailRole/';
+                if (records.length > 0) {
+                    postUrl += records[0].get('ID');
+                }
+                Ext.net.DirectMethod.request({
+                    url: postUrl
+                });
+            } else {
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {           
+                        App.btnDetailRole.setDisabled(true);
+                        return false;
+                    }
+                });
+            }
+           
+        };
+        var showDetailGroup = function () {            
+                var postUrl = '/User/Group/ShowDetailGroup/';             
+                    postUrl += App.TreePanel1.getSelectionModel().getLastSelected().data.id;               
+                Ext.net.DirectMethod.request({
+                    url: postUrl
+                }); 
+        };
+        var checkStatusRole = function () {
+            var records = App.GridPanel1.selModel.getSelection();
+            if (records.length >0) {           
+                App.btnDetailRole.setDisabled(false);
+                App.btnDeleteRole.setDisabled(false);
+            }
+            else {
+                App.btnDetailRole.setDisabled(true);
+                App.btnDeleteRole.setDisabled(true);
+            }
+        };
+        //Xóa bản ghi khỏi CSDL
+        var deleteRole = function () {
+            var records = App.GridPanel1.selModel.getSelection();
+            switch (records.length) {
+                case 0:
+                    Ext.MessageBox.show({
+                        title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                        buttons: { yes: 'Đồng ý' },
+                        iconCls: '#Exclamation',
+                        fn: function (btn) {
+                            App.btnDeleteRole.setDisabled(true);
+                            App.btnDetailRole.setDisabled(true);
+                            return false;
+                        }
+                    });
+                    break;
+                default:
+                    var label = '';
+                    if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                    Ext.MessageBox.show({
+                        title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                        buttons: { yes: 'Đồng ý', no: 'Không' },
+                        iconCls: '#Information',
+                        fn: function (btn) {
+                            if (btn == 'yes') {
+                                var aId = new Array();
+                                var strId = '';
+                                for (var i = 0, r; r = records[i]; i++) {
+                                    aId[i] = records[i].get('ID');
+                                }
+                                strId = aId.join();
+                                Ext.net.DirectMethod.request({
+                                    url: '@(Url.Action("Delete", "Role", new { Area = "User" }, null))',
+                                    params: { stringId: strId }
+                                });
+                            }
+                        }
+                    });
+                    break;
+            }
+        };
+</script>
+@(Html.X().Window()
+    .ID("WindowAdd")
+    .Title("Thêm mới chức danh")
+    .Icon(Icon.Add)
+    .Hidden(true)
+    .BodyPadding(6)
+    .Width(450)
+    .Constrain(true)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .Layout(LayoutType.Form)
+        .Frame(true)
+        .StyleSpec("border: none;")
+        .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+        .ID("FormPanel1")
+        .Items(
+        Html.X().TextFieldFor(m => m.Name).FieldLabel("Tên chức danh"),
+         Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").Height(100),
+         Html.X().CheckboxFor(m => m.IsActive).BoxLabel("Kích hoạt").MarginSpec("0 0 0 110").HideLabel(true)
+         )
+         )
+        .Buttons(
+            Html.X().Button()
+                .Text("Lưu lại")
+                .Icon(Icon.Disk)
+                    .Handler("onAddRoles"),
+
+            Html.X().Button()
+                .Text("Hủy")
+                .Icon(Icon.Cancel)
+                .Handler("onClosed")
+      )
+)
+@(Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+        Html.X().TreePanel()
+            .ID("TreePanel1")
+            .Title("Danh sách tổ chức")
+            .Header(false)
+            .MarginSpec("1 1 1 1")
+            .Region(Region.Center)
+            .Icon(Icon.TextListBullets)
+            .ForceFit(true)
+            .RootVisible(false)
+            .ColumnLines(true)
+            .RowLines(true)                
+            .SingleExpand(false)
+            .SelectionModel(sm => sm.Add(Html.X().RowSelectionModel().SelectedIndex(0)))
+            .Mode(TreePanelMode.Remote)
+            .RemoteEditUrl(Url.Action("RemoteEdit"))
+            .RemoteRemoveUrl(Url.Action("RemoteRemove"))
+            .RemoteAppendUrl(Url.Action("RemoteAppend"))
+            .RemoteMoveUrl(Url.Action("RemoteMove"))
+                 .TopBar(
+                    Html.X().Toolbar()
+                            .Items(
+                                    Html.X().Button()
+                                            .Text("Xem chi tiết")
+                                            .ID("btnDetail")
+                                            .Icon(Icon.Zoom)
+                                            .Handler("showDetailGroup()")
+                                            .Disabled(false),
+                                                 Html.X().ToolbarSeparator(),                            
+                                Html.X().Button()
+                                        .Text("Thêm chức danh")
+                                        .ID("btnAddPosition")
+                                        .Icon(Icon.UserKey)
+                                            .Handler("onOpen();")
+                                        .Disabled(false),
+                                Html.X().ToolbarSeparator(),
+                                       Html.X().Button()
+                                            .Text("Coppy chức danh")
+                                            .ID("btnCoppyRole")
+                                            .Icon(Icon.DatabaseCopy)
+                                                .DirectClickAction("ShowCoppyRole")
+                                            .Disabled(false)
+                            )
+                         )
+            .Store(
+                Html.X().TreeStore()
+                    .ID("StoreGroups")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadGroups"))
+                    .Reader(Html.X().JsonReader().Root("data")))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("id"),
+                            Html.X().ModelField().Name("text"),
+                            Html.X().ModelField().Name("IsActive").Type(ModelFieldType.Boolean)
+                        )
+                    )
+            )
+            .ColumnModel(
+                Html.X().TreeColumn()
+                        .Text("Sơ đồ tổ chức")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Align(Alignment.Left)                       
+                        .DataIndex("text")
+                        .Flex(1)
+                        .Editor(
+                        Html.X().TextField()
+                        ),
+                Html.X().CheckColumn()
+                        .Text("Kích hoạt")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .DataIndex("IsActive")
+                        .Width(100)
+                        .Editable(true)
+                        .Align(Alignment.Center)
+                        .Listeners(
+                        ls=>ls.BeforeCheckChange.Handler="if(record.data.id==null){return false;};"
+                        ),
+                Html.X().CommandColumn()
+                .Width(33)
+                .Align(Alignment.Center)          
+                .Sortable(false)
+                .Resizable(false)
+                .Commands(
+                Html.X().GridCommand()                
+                        .CommandName("Insert")                        
+                        .Icon(Icon.Add)                 
+                        .ToolTip(tt => tt.Text = "Thêm tổ chức con")
+                        )
+                    .Listeners(ls => ls.Command.Handler = "App.TreePanel1.appendChild(record,'');"),
+                Html.X().CommandColumn()
+                        .Width(33)
+                        .Align(Alignment.Center)
+                        .Sortable(false)
+                        .Resizable(false)
+                        .Commands(
+                        Html.X().GridCommand()
+                        .CommandName("Delete")
+                        .Icon(Icon.Delete).ToolTip(tt => tt.Text = "Xóa tổ chức")
+                        )
+                        .Listeners(ls => ls.Command.Handler = "App.TreePanel1.removeNode(record);")           
+                        )
+                        .Listeners(ls =>
+                        {
+                            ls.SelectionChange.Handler = "if (selected.length<=0) return;  App.GridPanel1.setTitle('DANH SÁCH CHỨC DANH CỦA '+ selected[0].data.text); App.GridPanel1.getStore().load();";
+                        })
+                        .View(
+                        Html.X().TreeView().TrackOver(false)
+                        .Plugins(
+                            Html.X().TreeViewDragDrop()
+                                    .AllowLeafDrop(true)
+                                    .AppendOnly(true)
+                                    .ContainerScroll(true)
+                             )               
+                        )
+                        .Plugins(
+                                    Html.X().CellEditing()                                  
+                            ),
+                               
+        Html.X().GridPanel()
+            .ID("GridPanel1")
+            .Title("DANH SÁCH CHỨC DANH")
+            .Width(655)
+            .TitleAlign(TitleAlign.Center)      
+            .MarginSpec("1 1 1 1")
+            .Region(Region.East)
+            .ColumnLines(true)
+            .ForceFit(true)
+            .Header(false)
+            .Collapsible(true)
+            .Split(true)
+            .Icon(Icon.TextListBullets)
+                 .TopBar(
+                        Html.X().Toolbar()
+                                .Items(   
+                                   Html.X().Button()
+                                                .Text("Xóa")
+                                                .ID("btnDeleteRole")
+                                                .Disabled(true)
+                                                .Icon(Icon.Delete)
+                                                .Handler("deleteRole()"),
+                                                Html.X().ToolbarSeparator(),
+                                        Html.X().Button()
+                                                .Text("Xem chi tiết")
+                                                .ID("btnDetailRole")
+                                                .Disabled(true)
+                                                .Icon(Icon.Zoom)
+                                                        .Handler("showDetailRole()")                                                
+                                )
+                             )
+            .Store(
+                Html.X().StoreForModel()
+                    .ID("StoreRoles")
+                    .AutoLoad(false)
+                    .RemotePaging(true)
+                    .PageSize(10)
+                    .Parameters(ps =>
+                        ps.Add(new StoreParameter("groupId", "App.TreePanel1.getSelectionModel().getLastSelected().data.id", ParameterMode.Raw))
+                    )
+                        .Listeners(ls => ls.Load.Handler = "checkStatusRole()")
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRoles", "Role", new { area ="User"})).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+            )
+            .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Width(33).Align(Alignment.Center),
+                    Html.X().Column().DataIndex(Model, m => m.Name).Text("Tên chức danh").StyleSpec("font-weight: bold; text-align: center;").Editor(Html.X().TextField()).Width(150).Align(Alignment.Left),
+                         Html.X().Column().DataIndex(Model, m => m.Description).Text("Mô tả").StyleSpec("font-weight: bold; text-align: center;").Editor(Html.X().TextField()).Width(150).Align(Alignment.Left),
+                    Html.X().CheckColumn().DataIndex(Model, m => m.IsActive).Text("Kích hoạt").StyleSpec("font-weight: bold; text-align: center;").Editable(true).Width(100).Align(Alignment.Center)
+                
+            )
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Multi)                            
+                            .Listeners(l =>
+                            {
+                                l.Select.Handler = "checkStatusRole()";
+                            })
+                            )
+                           
+
+            .BottomBar(
+                    Html.X().PagingToolbar()
+                        .EmptyMsg("Hiện không có dữ liệu")
+                        .NextText("Trang kế tiếp")
+                        .PrevText("Trang trước")
+                        .LastText("Trang cuối cùng")
+                        .FirstText("Trang đầu tiên")
+                        .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                        .BeforePageText("Trang")
+                        .AfterPageText("của {0}")
+                        .RefreshText("Tải lại Dữ liệu")
+                        .Items(
+                            Html.X().Label("Số bản ghi trên 1 trang"),
+                            Html.X().ToolbarSpacer(10),
+                            Html.X().ComboBox()
+                                .Width(50)
+                                .Items("10", "20", "30", "50", "100")
+                                .SelectedItems("10")
+                                .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                        )
+                        .Plugins(Html.X().ProgressBarPager())
+                )
+            .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEdit"))
+    )
+)
+
+
+

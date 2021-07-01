@@ -1,0 +1,346 @@
+﻿@model System.Collections.IEnumerable
+@using Ext.Net.MVC;
+@using Ext.Net;
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/Content/FieldSet.css" rel="stylesheet" />
+<script type="text/javascript" src="@Url.Content("~/Areas/Stock/Content/js/jsCommon.js")"></script>
+<script type ="text/javascript">    
+    var imageMapChange = function (obj) {
+        var file = obj.fileInputEl.dom.files[0];
+        var url = URL.createObjectURL(file);
+        App.imgMap.setImageUrl(url);
+    };
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var checkStatus = function () {
+        var records = App.gpListStock.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.cmDelete.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.cmViewDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                break;
+            case 1:
+                App.cmDelete.setDisabled(false);
+                App.cmEdit.setDisabled(false);
+                App.btnDelete.setDisabled(false);
+                App.btnEdit.setDisabled(false);
+                App.cmViewDetail.setDisabled(false);
+                App.btnViewDetail.setDisabled(false);
+                break;
+            default:
+                App.cmDelete.setDisabled(true);
+                App.cmEdit.setDisabled(true);
+                App.btnDelete.setDisabled(true);
+                App.btnEdit.setDisabled(true);
+                App.cmViewDetail.setDisabled(true);
+                App.btnViewDetail.setDisabled(true);
+                break;
+        }
+    };
+    var showFormEdit = function()
+    {
+        var records = App.gpListStock.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.cmEdit.setDisabled(true);
+                    App.cmDelete.setDisabled(true);
+                    App.btnViewDetail.setDisabled(true);
+                    App.cmViewDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowWdEditStock", "Stocks", new { Area = "Stock" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showFormDetail = function () {
+        var records = App.gpListStock.selModel.getSelection();
+        if (records.length == 0) {
+            Ext.MessageBox.show({
+                title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Cancel',
+                fn: function (btn) {
+                    App.btnEdit.setDisabled(true);
+                    App.btnDelete.setDisabled(true);
+                    App.cmEdit.setDisabled(true);
+                    App.cmDelete.setDisabled(true);
+                    App.btnViewDetail.setDisabled(true);
+                    App.cmViewDetail.setDisabled(true);
+                    return false;
+                }
+            });
+        }
+        else {
+            var id = records[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowWdDetailStock", "Stocks", new { Area = "Stock" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var deleteRecord = function () {
+        var records = App.gpListStock.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Cancel',
+                    fn: function (btn) {
+                        App.btnEdit.setDisabled(true);
+                        App.btnDelete.setDisabled(true);
+                        App.cmEdit.setDisabled(true);
+                        App.cmDelete.setDisabled(true);
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            var aId = new Array();
+                            var strId = '';
+                            for (var i = 0, r; r = records[i]; i++) {
+                                aId[i] = records[i].get('ID');
+                            }
+                            strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "Stocks", new { Area = "Stock" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    }; 
+    var GetBooleanChar = function (value, p, record) {       
+        var sUse = "<span style='color:blue'>Còn quản lý</span>";
+        var sNot = "<span style='color:red'>Không quản lý</span>";
+        if (value == "1") {      
+            return sUse;
+        } else {
+            return sNot;
+        }
+    };
+</script>
+@(Html.X().Menu()
+          .ID("cmMenu")       
+          .Items(
+                new MenuItem {
+                    Text = "Thêm mới",
+                    ID = "cmAdd", Icon = Icon.Add,
+                    DirectClickAction="ShowWdAddStock"
+                },
+                    new MenuItem {
+                    Text = "Sửa",
+                    ID = "cmEdit", Icon = Icon.Pencil,
+                    Disabled = true,
+                    Handler ="showFormEdit();"
+                },
+                new MenuItem { 
+                    Text = "Xóa",
+                    ID = "cmDelete",
+                    Disabled = true,
+                    Icon = Icon.Delete,
+                    Handler = "deleteRecord();" 
+                },
+                 new MenuItem { 
+                    Text = "Xem chi tiết",
+                    ID = "cmViewDetail",
+                    Disabled = true,
+                    Icon = Icon.Zoom,
+                    Handler = "showFormView();" 
+                }
+           )
+)
+@(Html.X().Viewport()
+          .Layout(LayoutType.Fit)
+          .Items(
+            Html.X().GridPanel()
+                    .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+                    .ID("gpListStock")
+                    .ColumnLines(true)
+                    .Height(400).Border(false)
+                    .TopBar(
+                             Html.X().Toolbar().ID("tbgpListStock")
+                                     .Items(
+                                        Html.X().ButtonCreate()
+                                                .ID("btnAdd")
+                                                .DirectClickAction("ShowWdAddStock"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonUpdate()
+                                                .ID("btnEdit")
+                                                .Disabled(true)
+                                                .Handler("showFormEdit();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonDelete()
+                                                .ID("btnDelete")
+                                                .Disabled(true)
+                                                .Handler("deleteRecord();"),
+                                        Html.X().ToolbarSeparator(),
+                                        Html.X().ButtonView()
+                                                .ID("btnViewDetail")
+                                                .Disabled(true)
+                                                .Handler("showFormDetail();"),
+                                        Html.X().ToolbarFill(),
+                                        Html.X().ButtonTutorial()
+                                        )
+                                )
+            .Store(Html.X().Store()
+                    .ID("stListStock")                   
+                   .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetData"))
+                        .Reader(Html.X().JsonReader().Root("data"))
+                    )
+                    .RemoteSort(true)
+                    .RemotePaging(true)
+                    .PageSize(20)                 
+                    .Model(
+                        Html.X().Model()
+                            .Fields(               
+                                Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                Html.X().ModelField().Name("Code").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Contact").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Address").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Email").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Telephone").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Fax").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Mobi").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Manager").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Map").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Description").Type(ModelFieldType.String),
+                                Html.X().ModelField().Name("Active").Type(ModelFieldType.Boolean)                                                            
+                            )
+                    )                 
+                    
+            )
+.ColumnModel(
+Html.X().RowNumbererColumn()
+        .Text("STT")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(33)
+        .Wrap(true)
+        .Align(Alignment.Center),      
+Html.X().Column()
+        .Text("Mã kho")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .DataIndex("Code")
+        .Align(Alignment.Center)
+        .Wrap(true)
+        .Locked(true)
+        .Width(100),      
+Html.X().Column()
+        .Text("Tên kho")
+        .DataIndex("Name")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(200)
+        .Locked(true)
+        .Wrap(true),      
+Html.X().Column()
+        .Text("Sử dụng")
+        .DataIndex("Active")
+        .Width(100)
+        .Wrap(true)
+          .Locked(true)
+        .Renderer("GetBooleanChar")
+        .StyleSpec("font-weight: bold; text-align: center;"),      
+    Html.X().Column()
+        .Text("Người liên hệ")
+        .DataIndex("Contact")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(170)
+        .Wrap(true),     
+    Html.X().Column()
+        .Text("Địa chỉ")
+        .DataIndex("Address")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(200)
+        .Wrap(true),     
+    Html.X().Column()
+        .Text("Email")
+        .DataIndex("Email")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(140)
+        .Wrap(true),     
+    Html.X().Column()
+        .Text("Điện thoại")
+        .DataIndex("Telephone")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(120)
+        .Align(Alignment.Center)
+        .Wrap(true), 
+    Html.X().Column()
+        .Text("Fax")
+        .DataIndex("Fax")
+        .Align(Alignment.Center)
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(120)
+        .Wrap(true), 
+    Html.X().Column()
+        .Text("Di động")
+        .DataIndex("Mobi")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(120)
+        .Align(Alignment.Center)
+        .Wrap(true),     
+    Html.X().Column()
+        .Text("Người quản lý")
+        .DataIndex("Manager")
+        .StyleSpec("font-weight: bold; text-align: center;")
+        .Width(140)
+        .Wrap(true),     
+Html.X().Column()
+        .Text("Mục đích sử dụng")
+        .DataIndex("Description")
+        .StyleSpec("font-weight: bold; text-align: center;")        
+        .Width(200)
+        .Wrap(true)
+        )
+        .SelectionModel(
+                Html.X().RowSelectionModel()
+                        .Mode(SelectionMode.Multi)
+                        .Listeners(l =>
+                        {
+                            l.Select.Handler = "checkStatus()";
+                        })
+                        )
+                        .Plugins(
+                            Html.X().FilterHeader()
+                                    .Remote(true)
+                            )
+                        .Plugins(Html.X().CellEditing() )
+                        .BottomBar
+                        (
+                                Html.X().CustomPagingToolbar()
+        )             
+     )
+   )

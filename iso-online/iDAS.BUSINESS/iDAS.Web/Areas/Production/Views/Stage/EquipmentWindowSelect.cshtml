@@ -1,0 +1,60 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+
+@(Html.X().Window()
+    .ID("winEquipmentSelect")
+    .Title("Danh sách nhóm thiết bị")
+    .Icon(Icon.ServerWrench)
+    .Height(400)
+    .Width(350)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .BodyPadding(0)
+    .Border(false)
+    .Center()
+    .Items(
+                 Html.X().TreePanel().Margin(0).Padding(0)
+                    .ID("TreePanelEquipmentCategory")
+                    .TitleAlign(TitleAlign.Center)
+                    .Border(false)
+                    .AutoScroll(true)
+                    .Expand(false)
+                    .Region(Region.West)
+                    .HideHeaders(true)
+                    .RootVisible(false)
+                    .Store(
+                                Html.X().TreeStore().ID("StoreEquipementCategory")
+                                    .AutoDataBind(true)
+                                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData", "EquipmentProductionCategory", new { Area = "Equipment" }))
+                                    .Reader(Html.X().JsonReader().Root("data")).IDParam("id"))
+                                    .Model(
+                                                Html.X().Model().Fields(Html.X().ModelField().Name("id"),
+                                                Html.X().ModelField().Name("text"),
+                                                Html.X().ModelField().Name("ParentID")
+                                    ))
+                                )
+                                .SelectionModel(
+                                                Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                                                )
+                             .Listeners(ls =>
+                                {
+                                    ls.ItemClick.Handler = "onSelectEquipment(this)";
+                                })
+    )
+)
+<script>
+    var onSelectEquipment = function (tree)
+    {
+        var records = tree.selModel.getSelection();
+        if (records.length > 0) {
+            SelectEquipement(records);
+            App.winEquipmentSelect.close();
+        }
+        else {
+            MessageBox();
+        };
+    }
+</script>

@@ -1,0 +1,49 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.CustomerContactItem
+@{
+    var X = Html.X();
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    string ID = Model.ID.ToString();
+}
+@(
+ Html.X().Viewport().Border(false).Layout(LayoutType.Fit).Items(
+Html.X().GridPanel()
+                .Header(false)
+                .ID("GrCustomerContact")
+                .ColumnLines(true)
+                .Layout(LayoutType.Fit)
+                .ForceFit(true)
+                .Border(false)
+                .StyleSpec("border: none;")
+                .Store(
+                    Html.X().Store()
+                        .ID("StoreCustomerContact")
+                        .AutoLoad(true)
+                        .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadContactInfo", "CustomerContact")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                        .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("customerId", ID, ParameterMode.Value));
+                            })
+                        .Model(
+                            Html.X().Model().Fields(
+                                Html.X().ModelField().Name("ID"),
+                                Html.X().ModelField().Name("Image"),
+                                Html.X().ModelField().Name("Name"),
+                                Html.X().ModelField().Name("Email"),
+                                Html.X().ModelField().Name("Phone")
+                            )
+                        )
+                )
+                .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                X.ImageColumn().DataIndex("Image"),
+                                X.Column().DataIndex("Name").Text("Khách hàng").Width(250),
+                                X.Column().DataIndex("Phone").Text("Số điện thoại").Width(100).Align(Alignment.Right),
+                                X.Column().DataIndex("Email").Text("Email").Width(100)
+                    )
+            .BottomBar(Html.X().CustomPagingToolbar())
+    )
+)

@@ -1,0 +1,78 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities;
+@model iDAS.Items.DepartmentRequirmentItem
+@(Html.X().CustomWindow()
+        .Title("Quản lý nhóm yêu cầu bối cảnh tổ chức")
+        .Icon(Icon.FolderHome)
+        .Border(false)
+        .Items(
+                 Html.X().GridPanel()
+                .Height(300)
+                .TopBar(
+                    Html.X().Toolbar()
+                        .Items(
+                            Html.X().ButtonCreate().Handler("addRecord(this.up('grid'));"),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonDelete().Handler("deleteRequirementCategory(this.up('grid'));").Disabled(false)
+                        )
+                )
+                .StoreID("storeRequirementCategory")
+                .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").Width(35).Align(Alignment.Center),
+                        Html.X().Column()
+                            .Text("Loại yêu cầu")
+                            .DataIndex("Name")
+                            .Flex(1)
+                            .Wrap(true)
+                            .Editor(
+                                    Html.X().TextField()
+                                        .MaxLength(100)
+                                        .AllowBlank(false).AllowOnlyWhitespace(false)
+                                        .BlankText("Loại yêu cầu không được để trống")
+                                        .MaxLength(100).MaxLengthText("Số lượng kí tự tối đa của ô này là 100!")
+                                    )
+                )
+            .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditRequirementCategory"))
+        )
+            .Buttons(
+                        Html.X().ButtonExit()
+                    )
+)
+<script>
+    function addRecord(grid) {
+        grid.store.insert(0, {ID:0, Name: '' });
+        grid.editingPlugin.startEditByPosition({ row: 0, column: 0 });
+    };
+    var onEditRequirementCategory = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("Update"))',
+                params: {
+                    id: e.record.data.ID,
+                    name: e.record.data.Name
+                }
+            });
+        };
+    };
+    function deleteRequirementCategory(grid) {
+        var records = grid.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes')
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("Delete"))',
+                        params: {
+                            id: id,
+                        }
+                    });
+            })
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

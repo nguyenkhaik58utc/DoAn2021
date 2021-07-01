@@ -1,0 +1,86 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Utilities;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanEmployeeItem
+@{
+    var X = Html.X();
+    var urlAvatar = "/Content/images/underfind.jpg";
+}
+@(X.Window()
+    .ID("WindowAdd")
+    .Title("Thêm mới nhân sự")
+    .Icon(Icon.UserAdd).Width(800)
+    .Modal(true)
+    .Layout(LayoutType.Fit)
+    .Resizable(false)
+    .Items(
+            X.FormPanel().ID("frmAdd")
+            .Layout(LayoutType.Column)
+            .Frame(true)
+            .Border(false)
+            .StyleSpec("border: none;")
+            .AutoScroll(true)
+            .Padding(0)
+            .Margin(0)
+            .Items(
+                    X.FormPanel().Border(false)
+                        .Padding(0)
+                        .Layout(LayoutType.Column)
+                        .Frame(true)
+                        .StyleSpec("border: none;")
+                        .MarginSpec("5 10 0 0")
+                        .FieldDefaults(d => { d.LabelAlign = LabelAlign.Left; d.LabelWidth = 110; })
+                            .ColumnWidth(0.8)
+                            .Items(
+                                        X.Hidden().ID("EmployeeID"),
+                                        X.TextFieldFor(m => m.Name).AllowOnlyWhitespace(false).BlankText("Bắt buộc nhập")
+                                                .EmptyText("Nhập tên nhân sự")
+                                                .FieldLabel("Họ Tên" + Html.Required()).ColumnWidth(1).MarginSpec("5 8 0 8"),
+                                        X.TextFieldFor(m => m.Code).FieldLabel("Mã nhân sự").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                                        X.DateFieldFor(m => m.Birthday).FieldLabel("Ngày sinh").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                                        X.TextFieldFor(m => m.Phone)
+                                                .FieldLabel("Số điện thoại").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                                        X.TextFieldFor(m => m.Email).InputType(Ext.Net.InputType.Email)
+                                                .FieldLabel("Email").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                                        X.TextFieldFor(m => m.WeddingStatus).FieldLabel("Hôn nhân").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                                        X.RadioGroupFor(m => m.Gender,
+                                                    new List<Radio.Config> {
+                                                    new Radio.Config{BoxLabel = "Nam", InputValue = true.ToString(), Checked = true},
+                                                    new Radio.Config{BoxLabel = "Nữ", InputValue = false.ToString()}
+                                                }
+                                                ).FieldLabel("Giới tính").ColumnWidth(0.5).MarginSpec("5 8 0 8"),
+                                        X.TextAreaFor(m => m.Address).FieldLabel("Địa chỉ").ColumnWidth(1).MarginSpec("5 8 0 8").Height(90)
+                            ),
+                        X.FieldSet().Title("Ảnh đại diện")
+                        .Layout(LayoutType.Form)
+                        .ColumnWidth(0.186).Margin(0)
+                        .PaddingSpec("5 5 5 5")
+                        .Items(
+                                X.ImageButton().ID("ImageAvatar").Height(150).Text("Ảnh đại diện").ImageUrl(urlAvatar)
+                                        .ToolTip("Ảnh đại diện").StyleSpec("border: 0.5px solid #b5b8c8; width:98%;"),
+                                X.FileUploadField().ID("FileUploadFieldId").ButtonText("").Icon(Icon.ImageAdd)
+                                        .Listeners(ls => ls.AfterRender.Fn = "function(cmp){cmp.fileInputEl.set({ accept:'image/*' });}")
+                                        .Listeners(ls => ls.Change.Handler = "AvatarChange(this);")
+                        )
+        )
+    )
+    .Buttons(
+                X.ButtonSave()
+                    .DirectEvents(de =>
+                    {
+                        de.Click.Before = @"if (!App.frmAdd.getForm().isValid()) { return false; }; ";
+                        de.Click.Url = Url.Action("Insert");
+                        de.Click.FormID = "frmAdd";
+                        de.Click.Success = "this.up('window').close();App.StoreEmployee.reload();";
+                    }),
+                X.ButtonExit()
+             )
+)
+<script>
+    var AvatarChange = function (obj) {
+        var file = obj.fileInputEl.dom.files[0];
+        var url = URL.createObjectURL(file);
+        App.ImageAvatar.setImageUrl(url);
+    };
+</script>

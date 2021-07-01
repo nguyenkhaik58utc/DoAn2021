@@ -1,0 +1,74 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.HumanTrainingPlanItem
+@(Html.X().Window()
+.ID("winRequirement")
+.Title("Yêu cầu đào tạo")
+.Layout(LayoutType.Fit)
+    .Width(800)
+    .MinHeight(400)
+    .Icon(Icon.User)
+    .BodyPadding(0)
+    .Margin(0)
+    .Constrain(true)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+                Html.X().HiddenFor(m=>m.ID).ID("hdfPlanID"),
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrRequirement")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .Store(
+                            Html.X().Store()
+                                .ID("StoreRequirement")
+                                .RemotePaging(true)
+                                .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRequirementSelectByPlanId")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                .Parameters(ps =>
+                                    {
+                                        ps.Add(new StoreParameter("id", "App.hdfPlanID.value", ParameterMode.Raw));
+                                    })
+                                .Model(
+                                        Html.X().Model()
+                                            .Fields(
+                                                        Html.X().ModelField().Name("ID"),
+                                                        Html.X().ModelField().Name("RequireBy.Name"),
+                                                        Html.X().ModelField().Name("Content"),
+                                                        Html.X().ModelField().Name("IsSelected")
+                                            )
+                                )
+                        )
+                        .ColumnModel(
+                                        Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                                        Html.X().Column().DataIndex("RequireBy.Name").Text("Người yêu cầu").Width(200),
+                                        Html.X().Column().DataIndex("Content").Text("Nội dung").Flex(1),
+                                        Html.X().CheckColumn().DataIndex("IsSelected").Text("Chọn").Width(50).Align(Alignment.Center).Editable(true)
+                            )
+                        .Plugins(Html.X().CellEditing().Listeners(ls => ls.Edit.Fn = "onEditRequirement"))
+                        .BottomBar(
+                            Html.X().CustomPagingToolbar()
+                   ) 
+            )
+.Buttons(Html.X().ButtonExit())
+)
+<script>
+    var onEditRequirement = function (editor, e) {
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateRequirementPlan"))',
+                params: {
+                    data: e.record.data,
+                    planId: App.hdfPlanID.value
+                }
+            });
+        }
+
+    };
+</script>

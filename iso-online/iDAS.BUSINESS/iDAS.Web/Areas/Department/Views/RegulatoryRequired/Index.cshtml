@@ -1,0 +1,263 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    var departmentName = "";
+    var deleteUrl = '@(Url.Action("Delete"))';
+    var insertDataTemplateUrl = '@(Url.Action("InsertDataTemplate"))';
+    var reloadMainGrid = function () {
+        App.GrRegulatoryRequired.store.reload();
+    };
+    function NameRenderer(value) {
+        var result = "<a class='a-grid-cell' onclick ='ShowContent()'>" + value + "</a>";
+        return result;
+    };
+    function onSelectRegulatory() {
+        var records = App.GrRegulatoryRequired.selModel.getSelection();
+        if (records.length == 1) {
+            SetEnabled(App.btnDepartmentFail, App.btnUpdateRegulatory, App.btnDeleteRegulatory, App.btnDetailRegulatory);
+            if (records[0].get('IsUse') == true) {
+                SetEnabled(App.btnAudit);
+            }
+            else {
+                SetDisabled(App.btnAudit);
+            };
+            if (records[0].get('ID') != 0 && records[0].get('IsPass') == false) {
+                SetEnabled(App.btnNC);
+            }
+            else {
+                SetDisabled(App.btnNC);
+            };
+        }
+        else {
+            SetDisabled(App.btnAudit, App.btnDepartmentFail, App.btnNC);
+        };
+    };
+    var ShowAdd = function () {
+        var url = '@(Url.Action("Update"))';
+        var params = {
+            departmentId: App.hdfParentDepartmentId.value,
+            departmentName: departmentName
+        };
+        onDirectMethod(url, params, 'get');
+    };
+    var ShowUpdate = function () {
+        var records = App.GrRegulatoryRequired.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Update"))';
+            var params = {
+                ID: records[0].get('DepartmentRegulatoryID'),
+                departmentId: App.hdfParentDepartmentId.value
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowContent = function () {
+        var records = App.GrRegulatoryRequired.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Content"))';
+            var params = {
+                ID: records[0].get('DepartmentRegulatoryID')
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowAudit = function () {
+        var records = App.GrRegulatoryRequired.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Audit"))';
+            var params = {
+                id: records[0].get('ID'),
+                RegulatoryId: records[0].get('DepartmentRegulatoryID'),
+                departmentId: App.hdfParentDepartmentId.value
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowDelete = function () {
+        var records = App.GrRegulatoryRequired.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('DepartmentRegulatoryID');
+            Ext.MessageBox.confirm('Thông báo', 'Bạn có muốn xóa bản ghi này ?', function (btn) {
+                if (btn == 'yes') {
+                    var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+                    mask.show();
+                    Ext.net.DirectMethod.request({
+                        url: deleteUrl,
+                        params: {
+                            id: id,
+                            departmentId: App.hdfParentDepartmentId.value,
+                            success: function (result) {
+                                mask.hide();
+                            }
+                        }
+                    });
+                };
+            });
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowView = function () {
+        var records = App.GrRegulatoryRequired.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm"))';
+            var params = {
+                ID: records[0].get('DepartmentRegulatoryID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowDepartmentFail = function () {
+        var records = App.GrRegulatoryRequired.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("Department"))';
+            var params = {
+                RegulatoryId: records[0].get('DepartmentRegulatoryID'),
+                departmentId: App.hdfParentDepartmentId.value
+            };
+            onDirectMethod(url, params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    function OnSelectDepartment(records) {
+        if (records.length > 0) {
+            departmentName = records[0].get('text');
+            App.hdfParentDepartmentId.setValue(records[0].get('id'));
+            App.GrRegulatoryRequired.getStore().reload({ page: 1 });
+            App.btnCreateRegulatory.setDisabled(false);
+        }
+        else {
+            App.btnCreateRegulatory.setDisabled(true);
+        }
+
+    };
+    var NCGridPanel;
+    var showNCInsert = function () {
+        var records = App.GrRegulatoryRequired.selModel.getSelection();
+        if (records.length > 0) {
+            NCGridPanel = App.GrRegulatoryRequired;
+             var id = records[0].get('ID');
+            var ncId = records[0].get('QualityNCID');
+            var params = {
+                id: id,
+                ncId: ncId
+            };
+            onDirectMethod('@(Url.Action("ShowNC"))', params, 'get');
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ShowDataTemplate = function () {
+        var url = '@(Url.Action("DataTemplate", "Requirment"))';
+        onDirectMethod(url, null);
+    };
+</script>
+@(Html.X().Viewport().Layout(LayoutType.Border).Border(false).Margin(0).Frame(false).StyleSpec("border: none;").Padding(2)
+            .Items(
+                    Html.X().Hidden().ID("hdfParentDepartmentId"),
+                    Html.X().DepartmentPanel().Handler("OnSelectDepartment").ID("DepartmentPanelId"),
+                    Html.X().GridPanel().Layout(LayoutType.Fit).ID("GrRegulatoryRequired")
+                            .Region(Region.Center)
+                            .Width(650)
+                            .Header(false)
+                            .ColumnLines(true)
+                            .ForceFit(true)
+                            .Border(true)
+                            .Icon(Icon.TextListBullets)
+                            .TopBar(
+                                Html.X().Toolbar()
+                                .Layout(LayoutType.HBox)
+                                .Items(
+                                    Html.X().ButtonCreate().Handler("ShowAdd();").ID("btnCreateRegulatory").Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonUpdate().ID("btnUpdateRegulatory").Handler("ShowUpdate();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnDeleteRegulatory").Handler("ShowDelete();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonView().ID("btnDetailRegulatory").Handler("ShowView();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().Text("Đánh giá").Icon(Icon.StarGold).ID("btnAudit").Handler("ShowAudit();").Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().Text("Phòng ban không đạt").Icon(Icon.Door).ID("btnDepartmentFail").Handler("ShowDepartmentFail();").Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().Text("Sự không phù hợp").Icon(Icon.ApplicationOsxDouble).ID("btnNC").Handler("showNCInsert();").Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().Icon(Icon.PackageDown).Text("Dữ liệu mẫu")
+                                                .ID("btnUseData").Handler("ShowDataTemplate();"),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                            ))
+                            .Store(
+                                Html.X().Store().ID("StoreRegulatoryRequired")
+                                        .RemotePaging(true)
+                                        .AutoLoad(false)
+                                        .PageSize(20)
+                                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                                        .Model(
+                                            Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("QualityNCID"),
+                                                Html.X().ModelField().Name("RegulatoryName"),
+                                                Html.X().ModelField().Name("ISOName"),
+                                                Html.X().ModelField().Name("AuditAt"),
+                                                Html.X().ModelField().Name("ResultName"),
+                                                Html.X().ModelField().Name("Evidence"),
+                                                Html.X().ModelField().Name("IsObs"),
+                                                Html.X().ModelField().Name("IsMedium"),
+                                                Html.X().ModelField().Name("IsMaximum"),
+                                                Html.X().ModelField().Name("DepartmentRegulatoryID"),
+                                                Html.X().ModelField().Name("IsPass"),
+                                                Html.X().ModelField().Name("IsApplyAll"),
+                                                Html.X().ModelField().Name("IsUse")
+                                            )
+                                      )
+                                    .Parameters(ps =>
+                                        {
+                                            ps.Add(new StoreParameter("departmentId", "App.hdfParentDepartmentId.value", ParameterMode.Raw));
+                                        })
+                        )
+                        .ColumnModel(
+                                    Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("RegulatoryName").Renderer("NameRenderer").Text("Quy định").Width(250).Locked(true),
+                                    Html.X().Column().DataIndex("ISOName").Text("ISO").Width(100).Locked(true),
+                                    Html.X().CheckColumn().DataIndex("IsApplyAll").Text("Quy định chung").Width(100).Align(Alignment.Center).Locked(true),
+                                    Html.X().CheckColumn().DataIndex("IsUse").Text("Sử dụng").Width(60).Align(Alignment.Center),
+                                    Html.X().Column().DataIndex("ResultName").Align(Alignment.Center).Text("Kết quả").Width(100),
+                                    Html.X().DateColumnExtend().DataIndex("AuditAt").Text("Ngày đánh giá").Align(Alignment.Center).Width(200),
+                                    Html.X().Column().Text("Loại điểm không phù hợp")
+                                            .Columns(
+                                                        Html.X().CheckColumn().DataIndex("IsObs").Text("Obs"),
+                                                        Html.X().CheckColumn().DataIndex("IsMedium").Text("m"),
+                                                        Html.X().CheckColumn().DataIndex("IsMaximum").Text("M")
+                                            ),
+                                    Html.X().Column().DataIndex("Evidence").Text("Bằng chứng").MinWidth(200).Flex(1)
+                            )
+                        .SelectionModel(
+                                        Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                                .Listeners(ls => ls.SelectionChange.Fn = "onSelectRegulatory")
+                                        )
+                        .BottomBar(Html.X().CustomPagingToolbar())
+        )
+)
+

@@ -1,0 +1,318 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend;
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var X = Html.X();
+}
+@(
+ X.Window().ID("windowObjectSelect").Layout(LayoutType.Fit).Hidden(true)
+                    .Title("Danh sách nhân sự")
+                    .Modal(true)
+                    .Constrain(true)
+                    .Icon(Icon.ApplicationSideList)
+                    .Border(false)
+                    .Height(450)
+                    .Width(800)
+                        .ItemsFromAction("EmployeeViewMulti", "Employee", new { Area = "Human", gridEmployeeId = "grEmployeeApprove" })
+.Buttons(
+        X.Button().Icon(Icon.Accept).Listeners(ls => ls.Click.Handler = "SelectEmployee();").ToolTip("Chọn người tham gia").Text("Chọn"),
+        X.Button().Icon(Icon.DoorOut).OnClientClick("this.up('window').hide();").Text("Thoát")
+)
+)
+@( Html.X().Viewport()
+    .Layout(LayoutType.Border)
+    .Items(
+
+        Html.X().GridPanel()
+            .Header(true)
+            .Region(Region.West)
+            .Width(470)
+            .Split(true)
+            .Title("DANH SÁCH ĐỢT ĐÀO TẠO")
+            .ID("grPlanDetail")
+            .Border(true)
+            .MarginSpec("1 0 1 1")
+            .TitleAlign(TitleAlign.Center)
+            .Layout(LayoutType.Fit)
+            .Collapsible(true)
+            .ForceFit(true)
+            .ColumnLines(true)
+            .RowLines(true)
+            .TopBar(
+                Html.X().Toolbar()
+                    .Items(
+                            Html.X().ComboBox()
+                                        .FieldLabel("Kế hoạch")
+                                        .EmptyText("Chọn kế hoạch đào tạo")
+                                        .LabelWidth(50)
+                                        .AllowBlank(false)
+                                        .ID("cbPlanID")
+                                        .Width(270)
+                                        .Editable(false)
+                                        .DisplayField("Name")
+                                        .Listeners(ls => ls.Change.Handler = "App.grPlanDetail.getStore().reload();")
+                                        .ValueField("ID")
+                                        .Store(
+                                                Html.X().Store()
+                                                    .ID("StorePlanTraining")
+                                                    .AutoLoad(true)
+                                                         .Proxy(Html.X().AjaxProxy()
+                                                                .Url(Url.Action("LoadDataPlan", "Practioners", new { area = "Human" }))
+                                                            .Reader(Html.X().JsonReader().Root("data")
+                                                            )
+                                                            )
+                                                    .Model(Html.X().Model()
+                                                                .Fields(
+                                                                    new ModelField("Name"),
+                                                                    new ModelField("ID")
+                                                                )
+                                                            )
+                                                ),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().ButtonView()
+                                    .ID("btnDetailCommand")
+                                    .Handler("showDetail();")
+                                    .Disabled(true),
+                            Html.X().ToolbarSeparator(),
+                            Html.X().Button().Disabled(true).Icon(Icon.Cancel)
+                                    .Text("Hủy")
+                                    .ID("btnCancelPlanDetail")
+                                    .Handler("showFrmCancel();")
+                                    .Disabled(true)
+                    )
+                )
+                      .Store(Html.X().Store()
+                        .ID("stMnPlanDetail")
+                        .AutoLoad(false)
+                        .Proxy(Html.X().AjaxProxy()
+                        .Url(Url.Action("GetDataPlanDetail", "Practioners"))
+
+                        .Reader(Html.X().JsonReader().Root("data"))
+
+                        )
+                        .Parameters(ps =>
+                    {
+                        ps.Add(new StoreParameter("planId", "App.cbPlanID.getValue()", ParameterMode.Raw));
+                    })
+                        .RemoteSort(true)
+                        .RemotePaging(true)
+                        .PageSize(20)
+                        .Model(
+                        Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Content").Type(ModelFieldType.String),
+                                      Html.X().ModelField().Name("Number").Type(ModelFieldType.Int),
+                                            Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean)
+                                )
+                              )
+                          )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn()
+                                .Text("STT")
+                                .StyleSpec("font-weight: bold; text-align: center;")
+                                .Align(Alignment.Center)
+                                .Width(33),
+                        Html.X().Column()
+                                .Text("ID")
+                                .DataIndex("ID")
+                                .Hidden(true),
+                        Html.X().Column()
+                                .Text("Nội dung")
+                                .StyleSpec("font-weight: bold;text-align: center")
+                                    .DataIndex("Content")
+                               .Flex(1)
+                                .Wrap(true),
+                          Html.X().Column()
+                                    .Text("Số lượng học viên")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("Number")
+                              .Width(110)
+                                    .Wrap(true),
+                                            Html.X().CheckColumn()
+                                    .Text("Trạng thái hủy")
+                                    .StyleSpec("font-weight: bold;text-align: center")
+                                        .DataIndex("IsCancel")
+                              .Width(110)
+                                    .Wrap(true)
+
+                )
+
+                .SelectionModel(
+                    Html.X().CheckboxSelectionModel()
+                            .Mode(SelectionMode.Single)
+                            .Listeners(l =>
+                            {
+                                l.SelectionChange.Handler = "checkPlanDetailStatus(); App.grMnPractioners.getStore().reload();";
+                            })
+                            )
+
+                              .View(
+                            Html.X().GridView().MarkDirty(false)
+                            )
+              .BottomBar(Html.X().CustomPagingToolbar()),
+               Html.X().GridPanel()
+               .Region(Region.Center)
+                .Margin(1)
+                    .Title("DANH SÁCH HỌC VIÊN ĐĂNG KÝ")
+                .Header(true)
+                .Icon(Icon.ApplicationViewDetail)
+                        .ID("grMnPractioners")
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                        Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                    Html.X().Button().ID("btnRegister").Disabled(true).Icon(Icon.Key).Text("Đăng ký").Handler("AddNew();"),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().Button().ID("btnChoice").Handler("App.windowObjectSelect.show();").Text("Lựa chọn từ tổ chức").Icon(Icon.UserHome).Disabled(true),
+                                    Html.X().ToolbarSeparator(),
+                                    Html.X().ButtonDelete().ID("btnCancelUser").Handler("onDelete(App.grMnPractioners.selModel.getSelection()[0].get('ID'));"),
+                                    Html.X().ToolbarFill(),
+                                    Html.X().ButtonTutorial()
+                                )
+                        )
+            .Store(
+                Html.X().Store()
+                        .ID("StorePractioners")
+                    .RemotePaging(true)
+                    .AutoLoad(false)
+                    .PageSize(20)
+                        .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetData", "Practioners", new { Area = "Human" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Parameters(ps =>
+                        {
+                            ps.Add(new StoreParameter("detailId", "App.grPlanDetail.selModel.getSelection().length>0?App.grPlanDetail.selModel.getSelection()[0].get('ID'):0", ParameterMode.Raw));
+                        })
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("EmployeesName"),
+                            Html.X().ModelField().Name("Birthday"),
+                            Html.X().ModelField().Name("Address"),
+                            Html.X().ModelField().Name("sex"),
+                            Html.X().ModelField().Name("TimeRegister")
+                        )
+                     )
+            )
+            .ColumnModel(
+                        X.RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                        X.Column().DataIndex("EmployeesName").Text("Tên học viên").Width(300).Flex(1),
+                            X.DateColumnExtend().DataIndex("Birthday").Text("Ngày sinh").Format("dd/MM/yyyy").Align(Alignment.Center).Width(100),
+                        X.Column().DataIndex("sex").Text("Giới tính").Align(Alignment.Center).Width(80),
+                        X.DateColumnExtend(iDAS.Utilities.DateFormat.DateTime).DataIndex("TimeRegister").Text("Thời gian đăng ký").Format("dd/MM/yyyy HH:mm").Align(Alignment.Center).Width(120)
+                )
+            .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Handler = "CheckStatus();"))
+            .BottomBar(X.CustomPagingToolbar())
+    )
+)
+<script type="text/javascript">
+    var deleteUrl = '@(Url.Action("DeletePractioners"))';
+    var showDetail = function () {
+        var record = App.grPlanDetail.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmDetail", "PlanDetail", new { Area = "Human" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var showFrmCancel = function () {
+        var record = App.grPlanDetail.selModel.getSelection();
+        if (record.length > 0) {
+            var id = record[0].get('ID');
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmCancel", "PlanDetail", new { Area = "Human" }, null))',
+                params: { id: id }
+            });
+        }
+    };
+    var checkMnPractionersStatus = function () {
+        var records = App.grMnPractioners.selModel.getSelection();
+        switch (records.length) {
+            case 0:                
+                App.btnCancelUser.setDisabled(true);
+                break;
+            case 1:
+                App.btnCancelUser.setDisabled(false);
+                break;
+            default:
+                SetDisabled(App.btnCancelUser);
+        }
+    };
+    var checkPlanDetailStatus = function () {
+        var records = App.grPlanDetail.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                App.btnDetailCommand.setDisabled(true);
+                App.btnRegister.setDisabled(true);
+                App.btnChoice.setDisabled(true);
+                App.btnCancelPlanDetail.setDisabled(true);
+                break;
+            case 1:
+                App.btnDetailCommand.setDisabled(false);
+                if (records[0].get('IsCancel')) {
+                    App.btnRegister.setDisabled(true);
+                    App.btnChoice.setDisabled(true);
+                }
+                else {
+                    App.btnRegister.setDisabled(false);
+                    App.btnChoice.setDisabled(false);
+                }
+                App.btnCancelPlanDetail.setDisabled(false);
+                break;
+            default:
+                SetDisabled(App.btnDetailCommand, App.btnRegister, App.btnChoice, App.btnCancelPlanDetail, App.btnCancelUser);
+        }
+    };
+    function CheckStatus() {
+        var records = App.grMnPractioners.selModel.getSelection();
+        if (records.length > 0) {
+            App.btnCancelUser.setDisabled(false);
+        }
+        else {
+            App.btnCancelUser.setDisabled(true);
+        };
+    };
+    var AddNew = function () {
+        var records = App.grPlanDetail.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("AddForm", "Practioners", new { Area = "Human" }, null))';
+            var params = {
+                detailId: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var SelectEmployee = function () {
+        if (App.windowObjectSelect.hidden == true) {
+            App.windowObjectSelect.show();
+        }
+        else {
+            var records = App.grEmployeeApprove.selModel.getSelection();
+            if (records.length >= 1) {
+                var detailId = App.grPlanDetail.selModel.getSelection()[0].get('ID');
+                var aId = new Array();
+                var strId = '';
+                for (var i = 0, r; r = records[i]; i++) {
+                    aId[i] = records[i].get('ID');
+                }
+                strId = aId.join();
+                Ext.net.DirectMethod.request({
+                    url: '@(Url.Action("InsertListObject", "Practioners", new { Area = "Human" }, null))',
+                    params: { stringId: strId, detailId: detailId }
+                });
+                App.windowObjectSelect.hide();
+            }
+            else {
+                MessageBox();
+            };
+        };
+    };
+</script>

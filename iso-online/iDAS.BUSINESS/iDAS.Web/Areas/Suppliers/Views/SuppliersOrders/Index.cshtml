@@ -1,0 +1,226 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.SuppliersOrderItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@(Html.X().Viewport().Layout(LayoutType.Fit)
+    .Items(
+                Html.X().GridPanel()
+                        .Header(false)
+                        .ID("GrRequirement")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .Icon(Icon.TextListBullets)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().Hidden().Value(ViewBag.FocusId).ID("hdfFocusID"),
+                                Html.X().ButtonCreate().Handler("AddNew();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonUpdate().ID("btnUpdateRequirement").Handler("UpdateItem();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonDelete().ID("btnDeleteRequirement").Handler("onDelete();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonView().ID("btnDetailRequirement").Handler("ViewDetail();"),
+                                //Html.X().ToolbarSeparator(),
+                                //    Html.X().Button().Text("Gửi yêu cầu báo giá").ToolTip("Nhà cung cấp có khả năng đáp ứng đơn hàng").ID("btnObject").Icon(Icon.User).Handler("ObjectItem();").Disabled(true),
+                                
+                                Html.X().ToolbarSeparator(),
+                                Html.X().ButtonApproval().ID("btnApprove").Handler("Approve();"),
+                                    //Html.X().ToolbarSeparator(),
+                                    //    Html.X().ButtonExportExcel().ID("btnGetFile").Handler("GetFile();"),
+                                    Html.X().ToolbarFill(), Html.X().ButtonTutorial()
+                            )
+                    )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreRequirement")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadRequirement")).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                            {
+                                ps.Add(new StoreParameter("focusId", "App.hdfFocusID.getValue()", ParameterMode.Raw));
+                            })
+                            .Model(
+                                Html.X().Model().Fields(
+                                                Html.X().ModelField().Name("ID"),
+                                                Html.X().ModelField().Name("CreateUserName"),                                                        
+                                                Html.X().ModelField().Name("Name"),
+                                                Html.X().ModelField().Name("StatusDisp"),
+                                                Html.X().ModelField().Name("Status"),
+                                                Html.X().ModelField().Name("StatusDispExcel")
+                                )
+                            )
+                    )
+                    .ColumnModel(
+                        Html.X().RowNumbererColumn().Text("STT").DataIndex("ID").Width(30).Align(Alignment.Center),
+                        Html.X().Column().DataIndex("CreateUserName").Text("Người tạo").Width(200).Filterable(false),
+                        Html.X().Column().DataIndex("Name").Text("Tiêu đề").Flex(1),
+                        Html.X().Column().DataIndex("StatusDisp").Text("Trạng thái").Width(80).Align(Alignment.Center),
+                        Html.X().Column().DataIndex("Status").Text("Trạng thái").Hidden(true).Filterable(false)
+                        )
+                    .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single)
+                         .Listeners(ls => ls.SelectionChange.Fn = "CheckStatus"))
+                         .View(Html.X().GridView().GetRowClass(cls => cls.Fn = "getRowClass"))
+                         .Plugins(
+                                    Html.X().FilterHeader().Remote(true)
+                            )
+                    .BottomBar(
+                        Html.X().CustomPagingToolbar()
+                )
+     
+            )
+)
+<script>
+    var deleteUrl = '@(Url.Action("DeleteRequirement"))';
+    var getObjectPartial = function () {
+        var arr = new Array();
+        for (var i = 0; i < App.StoreRequirement.data.length; i++) {
+            arr.push(App.StoreRequirement.data.items[i].data);
+        }
+        return arr;
+    };
+    function CheckStatus() {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length == 1) {
+            var _status = records[0].get('Status');
+            if (_status == '1' || _status == null || _status == 2) {
+                App.btnDeleteRequirement.setDisabled(false);
+                App.btnUpdateRequirement.setDisabled(false);
+                //App.btnObject.setDisabled(true);
+                App.btnApprove.setDisabled(true);
+            }
+            else {
+                SetDisabled(App.btnDeleteRequirement, App.btnUpdateRequirement);//, App.btnObject
+                if (_status == 3 )
+                    App.btnApprove.setDisabled(false);
+                //if (_status == 4)
+                //    App.btnObject.setDisabled(false);
+            }
+            App.btnDetailRequirement.setDisabled(false);
+        }
+        else {
+            SetDisabled(App.btnDetailRequirement, App.btnDeleteRequirement, App.btnUpdateRequirement, App.btnApprove);//, App.btnObject
+        };
+    };
+    var AddNew = function () {
+        var url= '@(Url.Action("ShowFrmAdd", "SuppliersOrders", new { Area = "Suppliers" }, null))';
+        onDirectMethod(url, null);
+    };
+    var UpdateItem = function () {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("UpdateForm", "SuppliersOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                ID: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var ViewDetail = function () {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length > 0) {
+            var url ='@(Url.Action("ShowDetail", "SuppliersOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var GetFile = function () {
+        var url = '@(Url.Action("ExportExcel", "SuppliersOrders", new { Area = "Suppliers" }, null))';
+        var arrObject = JSON.stringify(getObjectPartial());
+        var params = {
+            arrObject: arrObject
+        };
+        Ext.net.DirectMethod.request({
+            url: url,
+            isUpload: true,
+            params: params
+        });
+        
+        //onDirectMethod(url, params);
+    };
+    
+    var ObjectItem = function () {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("SuppliersList", "SuppliersOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var Approve = function () {
+        var records = App.GrRequirement.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("ApproveForm", "SuppliersOrders", new { Area = "Suppliers" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+    var onDelete = function () {
+        var records = App.GrRequirement.selModel.getSelection();
+        switch (records.length) {
+            case 0:
+                Ext.MessageBox.show({
+                    title: 'Cảnh báo', msg: 'Chưa có bản ghi nào được chọn!',
+                    buttons: { yes: 'Đồng ý' },
+                    iconCls: '#Exclamation',
+                    fn: function (btn) {
+                        return false;
+                    }
+                });
+                break;
+            default:
+                var label = '';
+                if (records.length > 1) { label = ' các '; } else { label = ' '; }
+                Ext.MessageBox.show({
+                    title: 'Xác nhận', msg: 'Bạn có chắc chắn muốn xóa' + label + 'Bản ghi đã chọn không?',
+                    buttons: { yes: 'Đồng ý', no: 'Không' },
+                    iconCls: '#Information',
+                    fn: function (btn) {
+                        if (btn == 'yes') {
+                            //var aId = new Array();
+                            var strId = records[0].get('ID');
+                            //for (var i = 0, r; r = records[i]; i++) {
+                            //    aId[i] = records[i].get('ID');
+                            //}
+                            //strId = aId.join();
+                            Ext.net.DirectMethod.request({
+                                url: '@(Url.Action("Delete", "SuppliersOrders", new { Area = "Suppliers" }, null))',
+                                params: { stringId: strId }
+                            });
+                        }
+                    }
+                });
+                break;
+        }
+    };
+    var getRowClass = function (record, index, rowParams, ds) {
+        if (record.get("ID") == App.hdfFocusID.value) {
+            return 'idas-focus';
+        };
+    };
+</script>

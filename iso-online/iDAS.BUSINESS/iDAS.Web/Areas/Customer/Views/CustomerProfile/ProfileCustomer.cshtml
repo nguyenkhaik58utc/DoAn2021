@@ -1,0 +1,112 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Web;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerProfileCustomerItem
+@(Html.X().Window()
+.ID("winProfileCustomer")
+.Title("Lý lịch khách hàng")
+.Icon(Icon.User)
+.Height(1)
+.Maximized(true)
+.Layout(LayoutType.Border)
+.Border(false)
+.Items(
+            Html.X().HiddenFor(m=>m.ID).ID("hdfProfileCustomerID"),
+           Html.X().MenuPanel()
+                    .ID("frmMenuCustomerProfile")
+                .Region(Region.West)
+                .Title("LÝ LỊCH KHÁCH HÀNG")
+                .TitleAlign(TitleAlign.Center)
+                .Collapsible(true)
+                .Split(true)
+                .Width(245)
+                .Layout(LayoutType.Fit)
+                .Menu(m =>
+                {
+                    m.Add(Html.X().MenuItem()
+                            .Icon(Icon.UserBrown)
+                            .Text("Thông tin khách hàng")
+                            .OnClientClick("addTabCustomerProfile('tab0','/Customer/CustomerProfile/Info', this,'Thông tin khách hàng');")
+                            );
+                    m.Add(Html.X().MenuItem().Disabled(!Model.IsHasInfoContact)
+                            .Icon(Icon.UserBrown)
+                            .Text("Thông tin liên hệ(" + Model.InfoContactCount + ")")
+                            .OnClientClick("addTabCustomerProfile('tab5', '/Customer/CustomerProfile/Contact', this,'Thông tin liên hệ');")
+                            );
+                    m.Add(Html.X().MenuItem().Disabled(!Model.IsHasHistoryContact)
+                           .Icon(Icon.UserBrown)
+                           .Text("Lịch sử liên hệ(" + Model.HistoryContactCount + ")")
+                           .OnClientClick("addTabCustomerProfile('tab1', '/Customer/CustomerProfile/ContactHistory', this,'Lịch sử liên hệ');")
+                           );
+                    m.Add(Html.X().MenuItem().Disabled(!Model.IsHasOrder)
+                           .Icon(Icon.UserBrown)
+                           .Text("Danh sách đơn hàng(" + Model.OrderCount + ")")
+                           .OnClientClick("addTabCustomerProfile('tab2', '/Customer/CustomerProfile/Order', this,'Danh sách đơn hàng');")
+                           );
+                    m.Add(Html.X().MenuItem().Disabled(!Model.IsHasContract)
+                           .Icon(Icon.UserBrown)
+                           .Text("Danh sách hợp đồng(" + Model.ContractCount + ")")
+                           .OnClientClick("addTabCustomerProfile('tab3', '/Customer/CustomerProfile/Contract', this,'Danh sách hợp đồng');")
+                           );
+                    m.Add(Html.X().MenuItem().Disabled(true)
+                           .Icon(Icon.UserBrown)
+                           .Text("Đánh giá thỏa mãn(" + Model.AuditCount + ")")
+                           .OnClientClick("addTabCustomerProfile('tab4','/Customer/CustomerProfile/Audit', this,'Đánh giá thỏa mãn');")
+                           );
+                    }).SelectedIndex(0),
+            Html.X().TabPanel()
+            .ID("TabPanelId")
+            .Layout(LayoutType.Fit)
+            .Region(Region.Center)
+            .Items(
+                    Html.X().Panel().Border(false).Title("Thông tin khách hàng").Closable(true).ID("tab0")
+                        .Layout(LayoutType.Fit)
+                        .Loader(
+                            Html.X().ComponentLoader()
+                                    .Url(Url.Action("Info", "CustomerProfile", new { Area = "Customer" }))
+                                .Params(ps =>
+                                {
+                                    ps.Add(new StoreParameter("customerID", "App.hdfProfileCustomerID.value", ParameterMode.Raw));
+                                })
+                                .Mode(LoadMode.Frame)
+                                .LoadMask(lm => lm.ShowMask = true)
+                                )
+))
+        .Buttons(
+                   Html.X().Button().ID("ProfileCustomerExit")
+                        .Icon(Icon.DoorOut)
+                        .Text("Thoát")
+                        .Handler("App.winProfileCustomer.close();")
+                )
+)
+<script>
+    var addTabCustomerProfile = function(id, url, menuItem, titleName) {
+        var tabPanel = App.TabPanelId;
+        var tab = tabPanel.getComponent(id);
+        if (!tab) {
+            tab = tabPanel.add({
+                id: id,
+                title: titleName,
+                closable: true,
+                menuItem: menuItem,
+                loader: {
+                    url: url,
+                    params: {
+                        customerID: App.hdfProfileCustomerID.value
+                    },
+                    renderer: 'frame',
+                    loadMask: {
+                        showMask: true,
+                        msg: 'Đang tải ' + titleName + '...'
+                    }
+                }
+            });
+            tab.on('activate', function (tab) {
+                App.frmMenuCustomerProfile.setSelection(tab.menuItem);
+            });
+        };
+        tabPanel.setActiveTab(tab);
+    }
+    </script>

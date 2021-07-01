@@ -1,0 +1,264 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.AccountingPaymentItem
+@{
+    var X = Html.X();
+    var urlSubmitTask = Url.Action("Insert", "PlanTask", new { area = "Quality" });
+    var urlStoreTask = Url.Action("LoadTasks", "PlanTask", new { area = "Quality" });
+    var paramStoreTask = Html.X().StoreParameter().Name("planId").Value("getPlanId()").Mode(ParameterMode.Raw);
+}
+@(Html.X().Window()
+.ID("winAccountingPlan")
+.Title("Kế hoạch thu hồi công nợ")
+.Icon(Icon.PlayBlue)
+.Maximized(true)
+.Height(1)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+        Html.X().HiddenFor(i=>i.CustomerContractID).ID("hdfAccountingPlanContractId")
+                ,
+                 Html.X().GridPanel()
+                        .Region(Region.Center)
+                        .Layout(LayoutType.Fit)
+                        .Header(false)
+                        .ID("GrAccountingPlan")
+                        .ColumnLines(true)
+                        .ForceFit(true)
+                        .Border(false)
+                        .TopBar(
+                            Html.X().Toolbar()
+                            .Layout(LayoutType.HBox)
+                            .Items(
+                                Html.X().Button().ID("btnAddPlan").ToolTip("Thêm mới").Icon(Icon.Add).Disabled(false).Handler("AddAccountingPlanNew();"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().ID("btnUpdatePlan").ToolTip("Sửa đổi").Handler("UpdateAccountingPlan();").Icon(Icon.Pencil).Disabled(true),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().Icon(Icon.Delete).ToolTip("Xóa").ID("btnDeletePlan").Handler("DeletePlan();").Disabled(true),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().ToolTip("Xem chi tiết").ID("btnDetailPlan").Icon(Icon.Zoom).Handler("ViewAccountingPlan();").Disabled(true),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().Text("Phê duyệt").ToolTip("Phê duyệt").ID("btnApprovePlan").Icon(Icon.Tick).Handler("ApprovePlan();").Disabled(true)
+                                ,
+                                Html.X().ButtonTask().UrlSubmit(urlSubmitTask).UrlStore(urlStoreTask).ParamStore(paramStoreTask).AddWindowTask().Text("Giao việc").ID("btnTaskPlan"),
+                                Html.X().ToolbarSeparator(),
+                                Html.X().Button().Text("Thu hồi công nợ thực tế").ToolTip("Thu hồi công nợ thực tế").ID("btnRealPayment").Icon(Icon.Money)
+                                        .Handler("RealPayment();").Disabled(true)
+                                )
+                            )
+                    .Store(
+                        Html.X().Store()
+                            .ID("StoreAccountingPayment")
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPlan", "Contract", new { Area = "Accounting" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("contractId", "App.hdfAccountingPlanContractId.value", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("QualityPlanID"),
+                                    Html.X().ModelField().Name("AccountingPaymentID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("AccountingPayment"),
+                                    Html.X().ModelField().Name("TimePlan"),
+                                    Html.X().ModelField().Name("Cost"),
+                                    Html.X().ModelField().Name("RatePlan"),
+                                    Html.X().ModelField().Name("RateReal"),
+                                    Html.X().ModelField().Name("ValuePlan"),
+                                    Html.X().ModelField().Name("ValueReal"),
+                                    Html.X().ModelField().Name("TotalContract"),
+                                    Html.X().ModelField().Name("IsEdit"),
+                                    Html.X().ModelField().Name("IsAccept"),
+                                    Html.X().ModelField().Name("Status")
+                                )
+                             )
+                    )
+                    .ColumnModel(
+                                X.RowNumbererColumn().Text("STT").Width(40).Align(Alignment.Center),
+                                X.Column().DataIndex("Name").Text("Tên kế hoạch").Width(300).Locked(true),
+                                X.Column().DataIndex("AccountingPayment").Text("Đề xuất thanh toán").Width(200).Locked(true),
+                                X.DateColumnExtend().DataIndex("TimePlan").Format("dd/MM/yyyy").Text("Thời hạn").Width(120).Align(Alignment.Center),
+                                X.ComponentColumn().Text("Nợ theo kế hoạch").Columns(
+                                X.NumberColumn().DataIndex("ValuePlan").Text("Giá trị").Width(100).Align(Alignment.Right),
+                                X.Column().DataIndex("RatePlan").Text("Tỉ lệ thu hồi(%)").Width(100).Align(Alignment.Right)),
+                                X.ComponentColumn().Text("Nợ thực tế").Columns(
+                                X.NumberColumn().DataIndex("ValueReal").Text("Giá trị").Width(100).Align(Alignment.Right),
+                                X.Column().DataIndex("RateReal").Text("Tỉ lệ thu hồi(%)").Width(100).Align(Alignment.Right)),
+                                X.NumberColumn().DataIndex("TotalContract").Text("Tổng thu").Width(100).Align(Alignment.Right),
+                                X.Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(80)
+                        )
+                    .SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+                                .Listeners(ls => ls.SelectionChange.Fn = "CheckAccountingPlanStatus"))
+                    .BottomBar(
+                           X.CustomPagingToolbar()
+                )
+)
+.Buttons(Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)
+<script>
+    var getPlanId = function () {
+        var planId = 0;
+        var records = App.GrAccountingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            planId = records[0].get('QualityPlanID');
+        }
+        return planId;
+    };
+    function CheckAccountingPlanStatus() {
+        var records = App.GrAccountingPlan.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnRealPayment.setDisabled(false);
+            var IsEdit = records[0].get('IsEdit');
+            var IsAccept = records[0].get('IsAccept');
+            if (IsEdit == true) {
+                App.btnUpdatePlan.setDisabled(false);
+                App.btnDeletePlan.setDisabled(false);
+                App.btnApprovePlan.setDisabled(true);
+            }
+            else {
+                App.btnUpdatePlan.setDisabled(true);
+                App.btnDeletePlan.setDisabled(true);
+                App.btnApprovePlan.setDisabled(false);
+            }
+            if (IsAccept == true) {
+                App.btnTaskPlan.setDisabled(false);
+            }
+            else {
+                App.btnTaskPlan.setDisabled(true);
+            };
+            App.btnDetailPlan.setDisabled(false);
+        }
+        else {
+            App.btnRealPayment.setDisabled(true);
+            App.btnDetailPlan.setDisabled(true);
+            App.btnDeletePlan.setDisabled(true);
+            App.btnUpdatePlan.setDisabled(true);
+            App.btnApprovePlan.setDisabled(true);
+            App.btnTaskPlan.setDisabled(true);
+        };
+    };
+
+    var AddAccountingPlanNew = function () {
+        var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+        mask.show();
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("AccountingPlanUpdateForm", "Contract", new { Area = "Accounting" }, null))',
+            params: {
+                id: 0,
+                contractId: App.hdfAccountingPlanContractId.value
+            },
+            success: function (result) {   mask.hide();
+            }
+        });
+    };
+    var UpdateAccountingPlan = function () {
+        var records = App.GrAccountingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AccountingPlanUpdateForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                    contractId: App.hdfAccountingPlanContractId.value
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+
+    var ViewAccountingPlan = function () {
+        var records = App.GrAccountingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("AccountingPaymentPlanDetailForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                    contractId: App.hdfAccountingPlanContractId.value
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var ApprovePlan = function () {
+        var records = App.GrAccountingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ApprovePlanForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                    contractId: App.hdfAccountingPlanContractId.value
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var RealPayment = function () {
+        var records = App.GrAccountingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("RealPaymentForm", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                    contractId: App.hdfAccountingPlanContractId.value
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+    var DeletePlan = function () {
+        var records = App.GrAccountingPlan.selModel.getSelection();
+        if (records.length > 0) {
+            var mask = new Ext.LoadMask(Ext.getBody(), { msg: "Đang thực hiện ...." });
+            mask.show();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DeletePlan", "Contract", new { Area = "Accounting" }, null))',
+                params: {
+                    ID: records[0].get('ID'),
+                },
+                success: function (result) {
+                    mask.hide();
+                }
+            });
+        }
+        else {
+             MessageBox();
+        };
+    };
+</script>

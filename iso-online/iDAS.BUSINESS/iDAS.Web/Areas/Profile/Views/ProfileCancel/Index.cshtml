@@ -1,0 +1,279 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Web.ExtExtend
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int add = (int)iDAS.Items.ProfileForm.Insert;
+    int edit = (int)iDAS.Items.ProfileForm.Edit;
+    int depart = (int)iDAS.Items.ProfileForm.UpdateDepartment;
+    int lstCancel = (int)iDAS.Items.ProfileForm.ListProfileCancel;
+    int detail = (int)iDAS.Items.ProfileForm.Detail;
+}
+@(Html.X().Viewport()
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().GridPanel()
+                .ID("grProfileCancelMain")
+                .ColumnLines(true)
+                .Border(false)
+                .TopBar(
+                    Html.X().Toolbar()
+                        .Layout(LayoutType.HBox)
+                        .Items(
+                        Html.X().ButtonCreate()
+                            .ID("btnInsert")
+                            .Handler("showForm(" + add + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonUpdate()
+                            .Disabled(true)
+                            .ID("btnUpdate")
+                            .Handler("showForm(" + edit + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().ButtonView()
+                            .Disabled(true)
+                            .ID("btnDetail")
+                            .Handler("showForm(" + detail + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Thành phần tham gia")
+                            .Disabled(true)
+                            .Icon(Icon.UserAdd)
+                            .ID("btnEmployee")
+                            .Handler("showForm(" + depart + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button()
+                            .Text("Danh sách hồ sơ hủy")
+                            .Disabled(true)
+                            .Icon(Icon.TableColumnAdd)
+                            .ID("btnProfile")
+                            .Handler("showForm(" + lstCancel + ");"),
+                        Html.X().ToolbarSeparator(),
+                        Html.X().Button().Text("Xác nhận").Icon(Icon.Accept).ID("btnVerify")
+                                .Disabled(true).Handler("verifyCancel();"),
+                                        Html.X().ToolbarFill(),
+                                 Html.X().ButtonTutorial()
+                           )
+                    )
+                .Store(
+                    Html.X().Store()
+                        .ID("stProfileCancel")
+                        .Proxy(
+                            Html.X().AjaxProxy()
+                                .Url(Url.Action("GetDataProfileCancel"))
+                                .Reader(Html.X().JsonReader().Root("data"))
+                            )
+                        .RemoteSort(true)
+                        .PageSize(20)
+                        .Model(
+                            Html.X().Model()
+                                .Fields(
+                                    Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                    Html.X().ModelField().Name("Name").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("CancelAt").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("CancelMethod").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("StorageRoomTime").Type(ModelFieldType.Float),
+                                    Html.X().ModelField().Name("Note").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("UpdateByName").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("UpdateAt").Type(ModelFieldType.Date),
+                                    Html.X().ModelField().Name("Status").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("IsCancel").Type(ModelFieldType.Boolean),
+                                    Html.X().ModelField().Name("FlagCancel").Type(ModelFieldType.Boolean)
+                                    )
+                                 )
+                         )
+                .ColumnModel(
+                    Html.X().RowNumbererColumn().Text("STT").StyleSpec("font-weight: bold; text-align: center;").Width(30).Align(Alignment.Center),
+                    Html.X().Column()
+                        .DataIndex("Name")
+                        .Text("Tên biên bản")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Flex(2),
+                    Html.X().Column()
+                        .DataIndex("CancelMethod")
+                        .Text("Phương thức hủy")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Flex(1),
+                    Html.X().DateColumnExtend()
+                        .Text("Thời gian hủy")
+                        .DataIndex("CancelAt")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                            .Format("dd/MM/yyyy").Filterable(false)
+                        .Width(100)
+                        .Align(Alignment.Center),
+                    Html.X().Column()
+                        .DataIndex("Status")
+                        .Text("Trạng thái")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(80)
+                        .Align(Alignment.Center),
+                    Html.X().Column()
+                        .Text("Người sửa")
+                        .DataIndex("UpdateByName")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(150),
+                    Html.X().DateColumnExtend()
+                        .Text("Ngày sửa")
+                        .DataIndex("UpdateAt")
+                        .StyleSpec("font-weight: bold; text-align: center;")
+                        .Width(100)
+                        .Format("dd/MM/yyyy")
+                        .Align(Alignment.Center).Filterable(false)
+                    )
+            .SelectionModel(
+                Html.X().RowSelectionModel().Mode(SelectionMode.Single)
+        .Listeners(ls => ls.SelectionChange.Handler = "checkStatusProfileCancelMain();")
+            )
+                 .Plugins(
+                                    Html.X().FilterHeader().Remote(true)
+                                        )
+            .Plugins(Html.X().CellEditing())
+            .Listeners(ls => ls.BeforeItemContextMenu.Fn = "itemcontextmenu")
+            .View(Html.X().GridView().StripeRows(true))
+        .BottomBar(Html.X().CustomPagingToolbar())
+            )
+)
+<script type="text/javascript" src="@Url.Content("~/Areas/Profile/Content/js/ProfileJS.js")"></script>
+<script type="text/javascript">
+    var itemcontextmenu = function (grid, record, item, index, e, eOpts) {
+        e.stopEvent();
+        App.cmMenu.showAt(e.getXY());
+    };
+    var onComboBoxSelect = function (combo) {
+        var store = combo.up("gridpanel").getStore();
+        store.pageSize = parseInt(combo.getValue());
+        store.load();
+    };
+    var showForm = function (cmd) {
+        if (cmd == 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("ShowFrmAdd", "ProfileCancel", new { Area = "Profile" }, null))'
+            });
+        } else {
+            var record = App.grProfileCancelMain.selModel.getSelection();
+            if (record.length > 0) {
+                var id = record[0].get('ID');
+                if (cmd == 1) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmUpdate", "ProfileCancel", new { Area = "Profile" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 10) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmUpdateDepartment", "ProfileCancel", new { Area = "Profile" }, null))', params: { id: id }
+                    });
+                }
+                else if (cmd == 11) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmProfileCancel", "ProfileCancel", new { Area = "Profile" }, null))', params: { id: id }
+                    });
+                }
+
+                else if (cmd == 6) {
+                    Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("ShowFrmDetail", "ProfileCancel", new { Area = "Profile" }, null))', params: { id: id }
+                    });
+                }
+            }
+        }
+    };
+    var deleteRecord = function () {
+        var records = App.grProfileCancelMain.selModel.getSelection();
+        var urlDelete = '@(Url.Action("Delete", "Profile", new { Area = "Profile" }, null))';
+        qualityDeleteRecord(urlDelete, records);
+    };
+    var loadForm = function () {
+        var records = App.grProfileInfos.selModel.getSelection();
+        if (records.length > 0) {
+            var id = records[0].get('ID');
+            App.hrDocID.setValue(id);
+            App.txtCode.setValue(records[0].get('Code'));
+            App.txtName.setValue(records[0].get('Name'));
+            var cancelID = App.hrCancelID.getValue();
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("GetObjByCancelProfile", "ProfileCancel", new { Area = "Profile" }, null))', params: { CancelId: cancelID, profileID: id },
+                success: function (response) {
+                    App.txtStrStorageTime.setValue(response.StrStorageTime);
+                    if (response.ID == 0) {
+                        App.hrID.setValue(0);
+                        App.txtNumber.setValue(1);
+                        App.txtReason.setValue('');
+                    }
+                    else {
+                        App.txtNumber.setValue(response.TotalPage);
+                        App.txtReason.setValue(response.Reason);
+                        App.hrID.setValue(response.ID);
+                    }
+                }
+            });
+        }
+    };
+    var onEditDepartment = function (editor, e) {
+        var id = App.hdfCancelID.getValue();
+        if (!(e.value === e.originalValue || (Ext.isDate(e.value) && Ext.Date.isEqual(e.value, e.originalValue)))) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("UpdateEmployee", "ProfileCancel"))',
+                params: {
+                    cancelID: id,
+                    data: e.record.data
+                }
+            });
+        }
+    };
+    var checkStatusProfileCancelMain = function () {
+        var record = App.grProfileCancelMain.selModel.getSelection();
+        if (record.length > 0) {
+            App.btnDetail.setDisabled(false);
+            if (!record[0].get('IsCancel')) {
+                App.btnUpdate.setDisabled(false);
+                App.btnEmployee.setDisabled(false);
+                App.btnProfile.setDisabled(false);
+            } else {
+                App.btnUpdate.setDisabled(true);
+                App.btnEmployee.setDisabled(true);
+                App.btnProfile.setDisabled(true);
+            }
+            if (!record[0].get('FlagCancel'))
+                App.btnVerify.setDisabled(false);
+            else
+                App.btnVerify.setDisabled(true);
+        } else {
+            App.btnDetail.setDisabled(true);
+            App.btnUpdate.setDisabled(true);
+            App.btnEmployee.setDisabled(true);
+            App.btnProfile.setDisabled(true);
+            App.btnVerify.setDisabled(true);
+        }
+    };
+    var AvatarRenderer = function (value) {
+        var tpl = "";
+        if (value == "") {
+            tpl = "<img src='/Content/images/underfind.jpg' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        }
+        else {
+            tpl = "<img src='" + value + "' style='width:30px;height:30px;margin: -3px -6px -5.5px -6px;'/>";
+        };
+        return tpl;
+    };
+    var verifyCancel = function () {
+        var id = 0;
+        var records = App.grProfileCancelMain.selModel.getSelection();
+        if (records.length > 0) {
+            Ext.MessageBox.show({
+                title: 'Xác nhận',
+                msg: 'Bạn có chắc chắn muốn Xác nhận đã hủy hồ sơ thuộc Biên bản hủy hồ sơ đã chọn không?',
+                buttons: { yes: 'Đồng ý', no: 'Không' },
+                iconCls: '#Help',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        id = records[0].get('ID');
+                        Ext.net.DirectMethod.request({
+                            url: '@(Url.Action("UpdateVerifyCancel", "ProfileCancel", new { Area = "Profile" }, null))',
+                            params: { id: id }
+                        });
+
+                    }
+                }
+            });
+        }
+    };
+</script>

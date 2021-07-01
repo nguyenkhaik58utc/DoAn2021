@@ -1,0 +1,110 @@
+﻿@using Ext.Net
+@using Ext.Net.MVC
+@using iDAS.Base
+@using iDAS.Utilities
+@model iDAS.Items.ISONaceCodeItem
+@(
+ Html.X().Window()
+    .ID("winEditISONaceCode")
+    .Title("Sửa thông tin lĩnh vực ngành nghề")
+    .Icon(Icon.Pencil)
+              .Width(760)
+        .BodyPadding(5)
+        .Modal(true)
+        .Constrain(true)
+        .Resizable(false)
+        .Items(
+            Html.X().FormPanel()
+                .ID("frmEditISONaceCode")
+                .Layout(LayoutType.Form)
+                .Frame(true)
+                .Border(false)
+                .StyleSpec("border: none;")
+                .FieldDefaults(df => df.LabelWidth = 100)
+                .DefaultAnchor("100%")
+                .Items(
+                       Html.X().Container().Layout(LayoutType.Form).MarginSpec("0 0 0 0").Items(
+                       Html.X().HiddenFor(m=>m.ID),
+                       Html.X().TextFieldFor(m => m.Name).ID("txtName")
+                       .LabelWidth(130)
+                            .FieldLabel("Lĩnh vực ngành nghề*")
+                            .TabIndex(2)
+                            .AllowBlank(false).BlankText("Tên lĩnh vực ngành nghề bắt buộc nhập!"),
+                                                            Html.X().NumberFieldFor(m => m.Factory).LabelWidth(130).AllowDecimals(true).MinValue(0.1).FieldLabel("Hệ số tính giá"),
+                                 Html.X().HtmlEditorFor(m => m.Description).EnableFont(false)
+                            .ID("txtDescription")
+                        .FieldLabel("Mô tả")
+                        .Height(222)
+                                .LabelWidth(130)
+                        .TabIndex(5)
+                        .Listeners(
+                            ls => ls.Render.Handler = "renderEditor(this)"
+                        )
+                        ),
+
+
+
+                      Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 0 135")
+                                        .Items(
+                                                         Html.X().CheckboxFor(m => m.IsProduction).ID("IsProduction").MarginSpec("0 15 0 0")
+                                                                .BoxLabel("Thuộc sản xuất").HideLabel(true)
+                                                    .TabIndex(4),
+                                                              Html.X().CheckboxFor(m => m.IsService).ID("IsService").MarginSpec("0 15 0 0")
+                                                                    .BoxLabel("Thuộc dịch vụ").HideLabel(true)
+                                                        .TabIndex(4),
+                                                Html.X().CheckboxFor(m => m.IsShow).ID("ckvIsShow")
+                                                .BoxLabel("Hiển thị").HideLabel(true)
+                                                .TabIndex(4)
+
+                                       )
+
+                    //
+        ))
+        .Buttons(
+            Html.X().Button()
+                .ID("btnSaves")
+                .Icon(Icon.Disk)
+                .Text("Lưu lại")
+                .TabIndex(6)
+                    .DirectEvents(de =>
+                    {
+                        de.Click.FormID = "frmEditISONaceCode";
+                        de.Click.Url = Url.Action("UpdateISONaceCode");
+                        de.Click.Before = @"if (!#{frmEditISONaceCode}.getForm().isValid()) { return false; }";
+                        de.Click.EventMask.ShowMask = true;
+                        de.Click.EventMask.Msg = "Đang xử lý dữ liệu...";
+                        de.Click.Success = "App.winEditISONaceCode.close();";
+                    }),
+            Html.X().Button()
+                .Text("Nhập lại")
+                .Icon(Icon.ArrowRefresh)
+                .TabIndex(7)
+                .OnClientClick("App.frmEditISONaceCode.reset();"),
+            Html.X().Button()
+                .ID("btnCancel")
+                .Icon(Icon.Cancel)
+                .Text("Hủy")
+                .TabIndex(8)
+                .Handler("App.frmEditISONaceCode.reset(); App.winEditISONaceCode.close();")
+        )
+)
+
+<script type="text/javascript">
+    function renderEditor(htmlEditor) {
+        var toolbar = htmlEditor.getToolbar();
+        toolbar.add({ handler: function () { BrowseImage(); }, iconCls: "x-edit-image", text: "", tooltip: '<b> Insert Image</b><br>Upload a new Image</br>' });
+    };
+    function BrowseImage() {
+        Ext.net.DirectMethod.request({
+                        url: '@(Url.Action("frmBrowseImage", "News", new { Area = "Web" }, null))'
+        });
+    };
+    function insertHandler(htmlEditor) {
+        var urlImage = App.urlImage.getValue();
+        App.txtDescription.insertAtCursor(urlImage);
+    };
+    var getImageName = function () {
+        var imgUrl = document.getElementById("IconImage").getAttribute('src');
+        return imgUrl;
+    };
+</script>

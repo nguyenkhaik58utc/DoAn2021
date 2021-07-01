@@ -1,0 +1,573 @@
+﻿@using Ext.Net.MVC
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend
+@using Ext.Net
+@{
+    var X = Html.X();
+    string dept = iDAS.Items.DispatchObjectType.Department.ToString();
+}
+@model iDAS.Items.DispatchGoItem
+@(Html.X().Window()
+    .ID("winMoveDispatchGo")
+    .Title("Chuyển công văn đi trong nội bộ")
+    .Icon(Icon.PageGo)
+    .Constrain(true)
+    .Width(800)
+    .Maximizable(true)
+    .BodyPadding(0)
+    .Border(false)
+    .Layout(LayoutType.Fit)
+    .Modal(true)
+    .Resizable(false)
+    .Items(
+        Html.X().FormPanel()
+            .Layout(LayoutType.Fit)
+            .StyleSpec("border: none;")
+            .Border(false)
+            .FieldDefaults(f => f.LabelWidth = 100)
+            .ID("frmoveDispatchGoIn")
+            .Items(
+            Html.X().HiddenFor(m => m.ID).ID("hdID"),
+            Html.X().HiddenFor(m => m.ApprovalBy).ID("hdApprovalBy"),
+            Html.X().TabPanel()
+                    .ID("TabPanel1")
+                    .ActiveTabIndex(0)
+                    .Layout(LayoutType.Fit)
+                    .Border(true)
+                    .Items(
+            Html.X().FormPanel()
+                    .Title("Thông tin công văn")
+                    .Layout(LayoutType.VBox)
+                    .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                    .StyleSpec("border: none;")
+                    .Border(false)
+                    .Frame(true)
+                    .FieldDefaults(f => f.LabelWidth = 110)
+                    .ID("frDispatchGo")
+                    .Items(
+                         Html.X().HiddenFor(m => m.ID),
+                        X.Container().Layout(LayoutType.Column)
+                           .MarginSpec("0 0 5 0")
+                           .Items(
+                          X.TextFieldFor(m => m.Code)
+                                    .ID("txtCode").ReadOnly(true)
+                                    .AllowOnlyWhitespace(false)
+                                    .AllowBlank(false).BlankText("Số ký hiệu bắt buộc nhập!")
+                                    .FieldLabel("Số ký hiệu")
+                                    .MaxLength(100).MaxLengthText("Số ký tự tối đa là 100!")
+                                    .ColumnWidth(0.5),
+                            X.DateFieldFor(m => m.Date)
+                                .ID("dtDate")
+                                .LabelWidth(80).ReadOnly(true)
+                                .FieldLabel("Ngày tháng CV")
+                                .AllowBlank(false).BlankText("Ngày công văn đi bắt buộc nhập!")
+                                .Format("dd/MM/yyyy")
+                                .MarginSpec("0 0 0 5")
+                                .ColumnWidth(0.5)
+                                ),
+                                X.TextFieldFor(m => m.Name)
+                                        .ID("txtname").ReadOnly(true)
+                                    .FieldLabel("Tên công văn")
+                                    .AllowOnlyWhitespace(false)
+                                    .MaxLength(100).MaxLengthText("Số ký tự tối đa là 100!")
+                                    .AllowBlank(false).BlankText("Tên công văn bắt buộc nhập!"),
+                                    X.Container().Layout(LayoutType.Column).MarginSpec("0 0 5 0").Items(
+                                    X.ComboBoxFor(m => m.CategoryID)
+                                        .ID("cbCategory")
+                                        .FieldLabel("Nhóm công văn")
+                                        .DisplayField("Name")
+                                        .ReadOnly(true)
+                                        .ValueField("ID")
+                                        .ForceSelection(true)
+                                        .QueryMode(DataLoadMode.Local)
+                                        .SelectOnFocus(true)
+                                        .ColumnWidth(0.5)
+                                        .EmptyText("Chọn nhóm công văn ...")
+                                        .Store(
+                                            Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                                .Fields(
+                                                        new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                        new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                        )
+                                                    )
+                                                .Proxy(
+                                                    Html.X().AjaxProxy()
+                                                        .Url(Url.Action("LoadDispatchToCboCate", "DispatchToDepartment"))
+                                                        .Reader(Html.X().JsonReader().Root("data"))
+                                                        )),
+                                X.ComboBoxFor(m => m.MethodID)
+                                    .AllowBlank(false).BlankText("Phương thức gửi công văn bắt buộc nhập!")
+                                    .ID("cbMethod")
+                                    .FieldLabel("Phương thức gửi")
+                                    .DisplayField("Name")
+                                    .ValueField("ID")
+                                        .ReadOnly(true)
+                                    .ForceSelection(true)
+                                    .QueryMode(DataLoadMode.Local)
+                                    .SelectOnFocus(true)
+                                    .MarginSpec("0 0 0 5")
+                                    .ColumnWidth(0.5)
+                                    .EmptyText("Chọn phương thức gửi công văn ...")
+                                    .Store(
+                                        Html.X().Store().AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                            .Fields(
+                                                    new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                    new ModelField("Name", ModelFieldType.String) { Mapping = "Name" }
+                                                    )
+                                                    )
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                    .Url(Url.Action("LoadDispatchToCboMethod", "DispatchToDepartment"))//ham load người ký cho combobox
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                                    )
+                                                    )
+                                                    ),
+                            X.Container().Layout(LayoutType.Column).Items(
+                                X.ComboBoxFor(m => m.SecurityLevelID)
+                                        .ID("cbSecurityLevel")
+                                        .FieldLabel("Độ mật")
+                                        .DisplayField("Name")
+                                            .ReadOnly(true)
+                                        .ValueField("ID")
+                                        .ForceSelection(true)
+                                       .ColumnWidth(0.5)
+                                        .Tpl(
+                                        @<text>
+                                            <tpl for=".">
+                                                <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                                    <div style="width: 50px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left">&nbsp;{Name}</div>
+                                                </div>
+                                            </tpl>
+                                        </text>)
+                                            .Store(
+                                                Html.X().Store()
+                                                    .ID("stDispatchSecurity")
+                                                    .AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                                            new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                                            )
+                                                            )
+                                                    .Proxy(
+                                                        Html.X().AjaxProxy()
+                                                            .Url(Url.Action("LoadDispatchToCboSecurity", "DispatchToDepartment"))
+                                                            .Reader(Html.X().JsonReader().Root("data"))
+                                                )
+                                               )
+                                                    .Listeners(l => l.Change.Handler = "getColor(App.cbSecurityLevel, App.stDispatchSecurity);"),
+                                 X.ComboBoxFor(m => m.UrgencyId)
+                                        .ID("cbUrgencyId")
+                                        .FieldLabel("Độ khẩn")
+                                        .DisplayField("Name")
+                                            .ReadOnly(true)
+                                        .ForceSelection(true)
+                                        .MarginSpec("0 0 0 5")
+                                        .ColumnWidth(0.5)
+                                        .ValueField("ID")
+                                        .Tpl(
+                                        @<text>
+                                            <tpl for=".">
+                                                <div class="x-boundlist-item" style="display: inline-block; width: 100%;">
+                                                    <div style="width: 50px; height: 20px; float: left; background-color: {Color}; border: #cecece 1px solid;">&nbsp;</div><div style="width: auto; float: left">&nbsp;{Name}</div>
+                                                </div>
+                                            </tpl>
+                                        </text>)
+                                        .Store(
+                                                Html.X().Store()
+                                                    .ID("stDispatchUrgencys")
+                                                    .AutoLoad(true).Model(Html.X().Model().IDProperty("ID")
+                                                    .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int) { Mapping = "ID" },
+                                                            new ModelField("Name", ModelFieldType.String) { Mapping = "Name" },
+                                                            new ModelField("Color", ModelFieldType.String) { Mapping = "Color" }
+                                                            )
+                                                            )
+                                                    .Proxy(
+                                                        Html.X().AjaxProxy()
+                                                            .Url(Url.Action("LoadDispatchToCboUrgency", "DispatchToDepartment"))//ham load người ký cho combobox
+                                                            .Reader(Html.X().JsonReader().Root("data"))
+                                                )) //end Store
+                                                .Listeners(l => l.Change.Handler = "getColor(App.cbUrgencyId, App.stDispatchUrgencys);")
+                                                ),
+                                    Html.X().Container().Layout(LayoutType.Column).Items(
+                                        Html.X().CheckboxGroupFor(m => m.StorageFormID, new List<Checkbox.Config> {
+                                        new Checkbox.Config{BoxLabel = "Bản mềm", InputValue =iDAS.Items.StorageForm.SoftCopy.ToString() ,ReadOnly=true, TabIndex=7, Checked=true},
+                                        new Checkbox.Config{BoxLabel = "Bản cứng", InputValue =iDAS.Items.StorageForm.HardCopy.ToString(),ReadOnly=true, TabIndex=8}
+                                            }).FieldLabel("Hình thức lưu")
+                                            .ID("rabgrStore")
+                                            .ColumnWidth(0.7)
+                                            .AllowBlank(false)
+                                            .BlankText("Hình thức lưu trữ bắt buộc chọn!")
+                                                    ),
+                                    X.TextAreaFor(m => m.DestinationAddress).ReadOnly(true).ID("SendTo").FieldLabel("Nơi nhận")
+                                .AllowOnlyWhitespace(false)
+                                .MaxLength(500).MaxLengthText("Số ký tự tối đa là 500!")
+                                .EmptyText("Nhập thông tin Nơi nhận công văn..."),
+                                      Html.X().FileUploadFieldFor(m => m.AttachmentFiles).ReadOnly(true),
+                                X.TextAreaFor(m => m.Compendia).ReadOnly(true).ID("Compendia")
+                                .FieldLabel("Nội dung trích yếu")
+                                .Flex(1)
+                                .MaxLength(1000).MaxLengthText("Số ký tự tối đa là 1000!"),
+                                     X.TextFieldFor(m => m.Note).ReadOnly(true).ID("txtNote").FieldLabel("Ghi chú"),
+                                Html.X().Container().Layout(LayoutType.Column)
+                                    .ColSpan(2)
+                                    .Items(
+                                    Html.X().Container()
+                                            .ColumnWidth(0.5)
+                                            .MarginSpec("0 5 0 0")
+                                            .Items(
+                                    Html.X().EmployeeFieldFor(m => m.Create)
+                                            .ReadOnly(true)
+                                            .Title("Người soạn thảo")
+                                            .ID("txtCreate")
+                                            ),
+                                    Html.X().Container()
+                                            .ColumnWidth(0.5)
+                                            .Items(
+                                    Html.X().EmployeeFieldFor(m => m.EmployeeInfo)
+                                            .ReadOnly(true)
+                                            .Title("Người phê duyệt")
+                                            .ID("txtApproval")
+                                        )
+                                    )
+                                ),
+                            Html.X().Panel()
+                                .ID("Tab3")
+                                .Icon(Icon.ApplicationViewDetail)
+                                .Layout(LayoutType.VBox)
+                                .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                                .StyleSpec("border: none;")
+                                .Title("Thông tin chuyển công văn đi")
+                                .Frame(true)
+                                .Items(
+                                    Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 0 5 0").Items(
+                                        Html.X().DateFieldFor(m => m.MoveAt).FieldLabel("Ngày chuyển").ColumnWidth(0.3).Value(DateTime.Now).Format("dd/MM/yyyy H:mm").MarginSpec("0 5 0 0").ReadOnly(true),
+                                        Html.X().RadioGroupFor(m => m.StrType, new List<Radio.Config> {
+                                            new Radio.Config{BoxLabel = "Phòng ban", InputValue =iDAS.Items.DispatchObjectType.Department.ToString(), Checked=true, TabIndex=8 , ColumnWidth=0.4},
+                                            new Radio.Config{BoxLabel = "Cá nhân", InputValue =iDAS.Items.DispatchObjectType.Employee.ToString(), TabIndex=9,ColumnWidth=0.4}
+                                                }).FieldLabel("Chuyển đến").ColumnWidth(0.5)
+                                                .ID("rabgrStatus")
+                                                .Listeners(l => l.Change.Handler = "if(App.rabgrStatus.getChecked()[0].inputValue== '" + iDAS.Items.DispatchObjectType.Department.ToString() + "'){App.btnChoseDept.show(true); App.gpDeptDispatchGo.show(true);  App.gpEmployeeDispatchGo.hide(true);App.btnChoseEmpl.hide(true); }else {App.btnChoseDept.hide(true); App.gpDeptDispatchGo.hide(true);App.gpEmployeeDispatchGo.show(true);App.btnChoseEmpl.show(true); };")
+                                                .AllowBlank(false)
+                                                .BlankText("Đối tượng nhận Công văn đến bắt buộc phải chọn!"),
+                                                Html.X().Button().Text("Chọn phòng ban").Handler("showDepartment") .MarginSpec("0 20 0 5").ColumnWidth(0.2).Icon(Icon.GroupAdd).ID("btnChoseDept"),
+                                                Html.X().Button().Text("Chọn cá nhân")
+                                                        .Handler("onSelectEmployeeFor();").MarginSpec("0 20 0 5").ColumnWidth(0.2).Icon(Icon.UserAdd).ID("btnChoseEmpl").Hidden(true)
+                                    ),
+                                X.TextAreaFor(m => m.NoteMove).Height(50).ID("txtNoteMove").FieldLabel("Nội dung gửi"),
+                                Html.X().GridPanel()
+                                    .ID("gpDeptDispatchGo")
+                                    .Title("Danh sách phòng ban nhận công văn")
+                                    .Icon(Icon.TextListBullets)
+                                    .Height(350)
+                                    .Flex(1)
+                                    .Store(
+                                        Html.X().Store()
+                                            .ID("stDept")
+                                            .AutoLoad(true)
+                                            .Proxy(
+                                                Html.X().AjaxProxy()
+                                                    .Url(Url.Action("GetDataDepartment", "DispatchGoDepartment"))
+                                                    .Reader(Html.X().JsonReader().Root("data"))
+                                            )
+                                            .Parameters(ps =>
+                                                {
+                                                    ps.Add(new StoreParameter("id", Model.ID.ToString(), ParameterMode.Value));
+                                                }
+                                            )
+                                            .Model(
+                                                Html.X().Model()
+                                                    .Fields(
+                                                        new ModelField("ID", ModelFieldType.Int),
+                                                        new ModelField("ObjectID", ModelFieldType.Int),
+                                                        new ModelField("Name", ModelFieldType.String),
+                                                            new ModelField("IsVerify", ModelFieldType.Boolean),
+                                                        new ModelField("Note", ModelFieldType.String)
+                                                    )
+                                            )
+                                    )
+                                    .ColumnModel(
+                                        Html.X().RowNumbererColumn()
+                                            .Text("STT")
+                                            .Align(Alignment.Center)
+                                            .Width(30)
+                                            .StyleSpec("font-weight: bold; text-align: center;"),
+                                        Html.X().Column()
+                                            .DataIndex("ID")
+                                           .Hidden(true),
+                                        Html.X().Column()
+                                                .Text("ObjectID")
+                                            .DataIndex("ObjectID")
+                                            .Flex(1)
+                                          .Hidden(true),
+                                        Html.X().Column()
+                                            .DataIndex("Name")
+                                            .Text("Tên phòng ban")
+                                            .StyleSpec("text-align: center;font-weight: bold;")
+                                            .Wrap(true)
+                                            .Flex(1),
+                                        Html.X().ImageCommandColumn()
+                                            .Width(20)
+                                            .RightCommandAlign(true)
+                                            .PrepareCommand("prepareCommand")
+                                            .Commands(
+                                                Html.X().ImageCommand()
+                                                    .Icon(Icon.GroupDelete)
+                                                    .ToolTip(t =>
+                                                    {
+                                                        t.Text = "Xóa";
+
+                                                    })
+                                                    .CommandName("delete")
+                                            )
+                                            .Listeners(l =>
+                                            {
+                                                l.Command.Handler = "if(record.data.IsVerify){ Ext.MessageBox.show({ title: 'Thông báo', msg: 'Phòng ban đã nhận được công văn không cho phép xóa!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information', fn: function (btn) {return false;}});}else{deleteDept(record.data.ID,recordIndex);}";
+                                            })
+                                            )
+                                            .BottomBar(
+
+                                                Html.X().PagingToolbar()
+                                                    .EmptyMsg("Hiện không có dữ liệu")
+                                                    .NextText("Trang kế tiếp")
+                                                    .PrevText("Trang trước")
+                                                    .LastText("Trang cuối cùng")
+                                                    .FirstText("Trang đầu tiên")
+                                                    .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                                                    .BeforePageText("Trang")
+                                                    .AfterPageText("của {0}")
+                                                    .RefreshText("Tải lại dữ liệu")
+                                                    .Items(
+                                                        Html.X().Label("Số bản ghi trên 1 trang"),
+                                                        Html.X().ToolbarSpacer(10),
+                                                        Html.X().ComboBox()
+                                                            .Width(50)
+                                                            .Items("10", "20", "30", "50", "100")
+                                                            .SelectedItems("10")
+                                                            .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                                                    )
+
+                                                        .Plugins(Html.X().ProgressBarPager())
+                                                ),
+                                    Html.X().GridPanel().Hidden(true)
+                                        .ID("gpEmployeeDispatchGo")
+                                        .Title("Danh sách cá nhân nhận công văn")
+                                        .Icon(Icon.TextListBullets)
+                                        .Height(350)
+                                        .Flex(1)
+                                        .Store(
+                                            Html.X().Store()
+                                                .ID("stEmployee")
+                                                .AutoLoad(true)
+                                                .Proxy(
+                                                    Html.X().AjaxProxy()
+                                                            .Url(Url.Action("GetDataEmployee", "DispatchGoDepartment"))
+                                                        .Reader(Html.X().JsonReader().Root("data"))
+                                                )
+                                                .Parameters(ps =>
+                                                    {
+                                                        ps.Add(new StoreParameter("id", Model.ID.ToString(), ParameterMode.Value));
+                                                    }
+                                                )
+                                                .Model(
+                                                    Html.X().Model()
+                                                        .Fields(
+                                                            new ModelField("ID", ModelFieldType.Int),
+                                                            new ModelField("ObjectID", ModelFieldType.Int),
+                                                            new ModelField("Name", ModelFieldType.String),
+                                                            new ModelField("IsVerify", ModelFieldType.Boolean),
+                                                            new ModelField("Role", ModelFieldType.String),
+                                                            new ModelField("Note", ModelFieldType.String)
+                                                        )
+                                                )
+                                        )
+                                        .ColumnModel(
+                                            Html.X().RowNumbererColumn()
+                                                .Text("STT")
+                                                .Align(Alignment.Center)
+                                                .Width(30)
+                                                .StyleSpec("font-weight: bold; text-align: center;"),
+                                            Html.X().Column()
+                                                .DataIndex("ID")
+                                               .Hidden(true),
+                                            Html.X().Column()
+                                                .DataIndex("ObjectID")
+                                              .Hidden(true),
+                                            Html.X().Column()
+                                                .DataIndex("Name")
+                                                .Text("Tên người nhận")
+                                                .StyleSpec("text-align: center;font-weight: bold;")
+                                                .Wrap(true)
+                                                .Flex(1),
+                                            Html.X().Column()
+                                                .DataIndex("Role")
+                                                .Text("Chức vụ")
+                                                .StyleSpec("text-align: center;font-weight: bold;")
+                                                .Width(280),
+                                        Html.X().ImageCommandColumn()
+                                            .Width(20)
+                                            .RightCommandAlign(true)
+                                            .PrepareCommand("prepareCommand")
+                                            .Commands(
+                                                Html.X().ImageCommand()
+                                                    .Icon(Icon.UserDelete)
+                                                    .ToolTip(t =>
+                                                    {
+                                                        t.Text = "Xóa";
+                                                    })
+                                                    .CommandName("delete")
+                                            )
+                                            .Listeners(l =>
+                                            {
+                                                l.Command.Handler = "if(record.data.IsVerify){ Ext.MessageBox.show({ title: 'Thông báo', msg: 'Cá nhân đã nhận được công văn không cho phép xóa!', buttons: { yes: 'Đồng ý' }, iconCls: '#Information', fn: function (btn) {return false;}});}else{deleteEmployee(record.data.ID,recordIndex);}";
+                                            })
+                                        )
+                                        .BottomBar(
+                                            Html.X().PagingToolbar()
+                                                .EmptyMsg("Hiện không có dữ liệu")
+                                                .NextText("Trang kế tiếp")
+                                                .PrevText("Trang trước")
+                                                .LastText("Trang cuối cùng")
+                                                .FirstText("Trang đầu tiên")
+                                                .DisplayMsg("Hiển thị từ {0}-{1} của {2} bản ghi")
+                                                .BeforePageText("Trang")
+                                                .AfterPageText("của {0}")
+                                                .RefreshText("Tải lại dữ liệu")
+                                                .Items(
+                                                    Html.X().Label("Số bản ghi trên 1 trang"),
+                                                    Html.X().ToolbarSpacer(10),
+                                                    Html.X().ComboBox()
+                                                        .Width(50)
+                                                        .Items("10", "20", "30", "50", "100")
+                                                        .SelectedItems("10")
+                                                        .Listeners(l => { l.Select.Fn = "onComboBoxSelect"; })
+                                                )
+                                                    .Plugins(Html.X().ProgressBarPager())
+                                               )
+                                            )
+                                    )
+                                  )
+                            )
+                       .Buttons(
+                                Html.X().Button()
+                                .ID("btnSaveInsert")
+                                    .Text("Chuyển công văn")
+                                          .Icon(Icon.Disk)
+                                              .DirectEvents(de =>
+                                              {
+                                                  de.Click.Before = @"if (!App.frmoveDispatchGoIn.getForm().isValid()) { return false; } ";
+                                                  de.Click.ExtraParams.Add(new { data = new JRawValue("getAttachmentId()") });
+                                                  de.Click.Url = Url.Action("MoveDispatch");
+                                                  de.Click.EventMask.ShowMask = true;
+                                                  de.Click.FormID = "frmoveDispatchGoIn";
+                                              }),
+                            Html.X().ButtonExit()
+                  )
+
+)
+<script type="text/javascript">
+    var showDepartment = function () {
+        Ext.net.DirectMethod.request({
+            url: '@(Url.Action("Department", "DispatchGoEmployee", new { Area = "Dispatch" }))',
+        });
+    };
+    var fillDepartent = function (id, name) {
+        if (id == 0) {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return false;
+                    }
+                }
+            });
+        }
+        else {
+            var idD = parseInt(id);
+            App.gpDeptDispatchGo.store.insert(0, { ID: 0, ObjectID: idD, Name: name });
+            App.winChoiceDepartment.close();
+        }
+    };
+    var onSelectEmployeeFor = function () {
+        var url = '@Url.Action("EmployeeWindow", "Employee", new { Area = "Human" })';
+        var params = {
+            multi: true,
+        };
+        onDirectMethod(url, params);
+    };
+    var selectEmployee = function (records) {
+        if (records.length > 0) {
+            var arr;
+            var exits = false;
+            arr = App.stEmployee.getRange();
+            for (var j = 0; j < records.length; j++) {
+                if (arr.length > 0) {
+                    for (var i = 0; i < arr.length; i++) {
+                        if (Ext.JSON.encode(arr[i].data.ObjectID) == records[j].get('ID'))
+                            exits = true;
+                    }
+                }
+                if (!exits) {
+                    App.gpEmployeeDispatchGo.store.insert(j, { ID: 0, ObjectID: records[j].get('ID'), Name: records[j].get('Name'), Role: records[j].get('Role') });
+                }
+                exits = false;
+            }
+        }
+    
+    };
+    var getAttachmentId = function () {
+        var type = App.rabgrStatus.getValue().StrType;
+        var data = ''; var arr;
+        if (type == '@dept') {
+            arr = App.stDept.getRange();
+        } else {
+            arr = App.stEmployee.getRange();
+        }
+        if (arr.length > 0) {
+            for (var i = 0; i < arr.length; i++) {
+                data = data + Ext.JSON.encode(arr[i].data.ObjectID) + ',';
+            }
+            data = '[' + data + ']';
+        }
+        if (data == '') {
+            Ext.MessageBox.show({
+                title: 'Thông báo', msg: 'Bạn phải chọn phòng ban/ cá nhân muốn chuyển công văn?',
+                buttons: { yes: 'Đồng ý' },
+                iconCls: '#Exclamation',
+                fn: function (btn) {
+                    if (btn == 'yes') {
+                        return '';
+                    }
+                }
+            });
+        }
+        return data;
+    };
+    var deleteDept = function (id, idx) {
+        if (id > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DeleteDepartment", "DispatchGoDepartment", new { Area = "Dispatch" }, null))',
+                params: { id: id }
+            });
+        }
+        App.gpDeptDispatchGo.store.removeAt(idx);
+    };
+    var deleteEmployee = function (id, idx) {
+        if (id > 0) {
+            Ext.net.DirectMethod.request({
+                url: '@(Url.Action("DeleteEmployee", "DispatchGoDepartment", new { Area = "Dispatch" }, null))',
+                params: { id: id }
+            });
+        }
+        App.gpEmployeeDispatchGo.store.removeAt(idx);
+    };
+    var prepareCommand = function (grid, command, record, row) {
+        if (command.command == 'Delete' && record.data.IsVerify) {
+            command.hidden = true;
+            command.hideMode = 'visibility';
+        }
+    };
+</script>

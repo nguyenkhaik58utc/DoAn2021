@@ -1,0 +1,120 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model System.Collections.IEnumerable
+           @{
+               var iSOStandardId =(int)ViewData["iSOStandardId"];
+           }
+@(Html.X().Window()
+                .ID("winDetailCriteriaCategory")
+                .Title("Danh sách tiêu chí đánh giá cho điều khoản ISO")
+                .Icon(Icon.ApplicationViewDetail)
+                .Height(460)
+                .Width(830)
+                .BodyPadding(1)
+                .Margin(0)
+                .Constrain(true)
+                .Modal(true)
+                .Layout(LayoutType.Fit)
+                .Items(
+                      Html.X().Hidden().ID("hdfLsCateId").Value(iSOStandardId),        
+                Html.X().GridPanel()               
+                .ID("grCriteria")
+                .Border(false)
+                .RowLines(true)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                            Html.X().Toolbar()
+                                    .Items(                                     
+                                        Html.X().ButtonView()
+                                                .ID("btnDetailCriteria")
+                                                .Disabled(true)
+                                                .Handler("showDetailCriteria();")
+                                          )
+                                      )
+                    .Store(Html.X().Store().ID("StoreTreeCriteria")
+                            .AutoLoad(true)
+                            .RemotePaging(true)
+                            .PageSize(20)
+                            .Proxy(Html.X().AjaxProxy()
+                                                .Url(Url.Action("GetCriteria", "ISOClause", new { area = "Quality" }))
+                                           .Reader(Html.X().JsonReader()
+                                           .Root("data")
+                                           )
+                            )
+                            .Parameters(ps =>
+                                {
+                                    ps.Add(new StoreParameter("cateId", "App.hdfLsCateId.value", ParameterMode.Raw));
+                                })
+                            .Model(
+                                Html.X().Model().IDProperty("ID")
+                                .Fields(
+                                    Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Content").Type(ModelFieldType.String),
+                                    Html.X().ModelField().Name("IsUse").Type(ModelFieldType.Boolean)
+                                 )
+                             )
+                )
+                .ColumnModel(
+                       Html.X().RowNumbererColumn()
+                            .Text("STT")
+                            .Width(33)
+                            .Align(Alignment.Center)
+                            .StyleSpec("font-weight: bold; text-align: center;"),
+                    Html.X().Column()
+                            .DataIndex("ID")
+                            .Text("ID")
+                            .Hidden(true),
+                    Html.X().Column()
+                            .DataIndex("Name")
+                            .Text("Tiêu đề")
+                            .Flex(1).StyleSpec("font-weight: bold; text-align: center;"),
+                    Html.X().Column()
+                            .DataIndex("Content").Wrap(true)
+                            .Text("Ghi chú")
+                            .Flex(2)
+                            .StyleSpec("font-weight: bold; text-align: center;")                  
+                        )
+                    .Listeners(lS => lS.Select.Handler = "checkStatusCriteria()")
+                    .Plugins(
+                        Html.X().CellEditing()
+                            .ClicksToEdit(1)
+                            .Listeners(ls =>
+                            {
+                            })
+                        )
+                    .BottomBar(Html.X().CustomPagingToolbar())
+         
+            )
+            .Buttons(
+            Html.X().ButtonExit()
+            )
+)
+
+
+<script type="text/javascript">
+    var checkStatusCriteria = function () {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length == 1) {
+            App.btnDetailCriteria.setDisabled(false);
+        }
+        else {
+            App.btnDetailCriteria.setDisabled(true);
+        };
+    };
+    var showDetailCriteria = function () {
+        var records = App.grCriteria.selModel.getSelection();
+        if (records.length > 0) {
+            var url = '@(Url.Action("DetailForm", "ISOStandard", new { Area = "Quality" }, null))';
+            var params = {
+                id: records[0].get('ID')
+            };
+            onDirectMethod(url, params);
+        }
+        else {
+            MessageBox();
+        };
+    };
+</script>

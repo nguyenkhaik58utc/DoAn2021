@@ -1,0 +1,63 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.EquipmentMeasureCalibrationResultItem
+@{
+    var X = Html.X();
+    string title = "";
+    var IconView = new Icon();
+    string actionForm = Model.ActionForm;
+    if (actionForm == iDAS.Utilities.Form.Add)
+    {
+        IconView = Icon.Add;
+        title = "Thông tin hiệu chỉnh thiết bị";
+    }
+    if (actionForm == iDAS.Utilities.Form.Edit)
+    {
+        IconView = Icon.Pencil;
+        title = "Thông tin hiệu chỉnh thiết bị";
+    }
+}
+@(Html.X().Window()
+.ID("winEquipmentCalibrationResult")
+.Title(title)
+.Icon(IconView)
+.Width(400)
+.Margin(0)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Modal(true)
+.Resizable(false)
+.Items(
+    Html.X().FormPanel()
+            .ID("frmEquipmentCalibrationResult")
+        .Layout(LayoutType.Column)
+        .Frame(true)
+        .Border(false)
+        .StyleSpec("border: none;")
+        .FieldDefaults(df => { df.LabelWidth = 110; })
+        .Items(
+                    X.HiddenFor(m => m.ID),
+                    X.HiddenFor(m=>m.EquipmentMeasureCalibrationID),
+                    X.DateTimeFieldFor(m => m.Time).FieldLabel("Thời gian" + Html.Required()).AllowBlank(false).ColumnWidth(1).MarginSpec("5 8 5 8"),
+                X.CheckboxFor(m => m.IsPass).FieldLabel("Kết quả").BoxLabel("Đạt").ColumnWidth(1).MarginSpec("5 8 5 8"),
+                X.TextAreaFor(m => m.Note).FieldLabel("Ghi chú").LabelAlign(LabelAlign.Top)
+                    .ColumnWidth(1).MarginSpec("0 8 0 8").Height(200)            
+            )
+    )
+    .Buttons(
+        Html.X().Button()
+                .Text("Lưu lại")
+                .Icon(Icon.DatabaseSave)
+                .DirectEvents(de =>
+                            {
+                                de.Click.Before = @"if (!App.frmEquipmentCalibrationResult.getForm().isValid()) { return false; }; ";
+                                de.Click.Url = Url.Action("Update", "EquipmentMeasureCalibrationResult", new { Area = "Equipment" });
+                                de.Click.EventMask.ShowMask = true;
+                                de.Click.Success = "this.up('window').close();App.StoreCalibrationResult.reload();";
+                                de.Click.FormID = "frmEquipmentCalibrationResult";
+                            })
+        , Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();"))
+)

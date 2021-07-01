@@ -1,0 +1,422 @@
+﻿@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using Ext.Net;
+@using iDAS.Utilities;
+@model iDAS.Items.CustomerCampaignItem
+@{
+    var X = Html.X();
+    var StoreParam =new StoreParameter();
+}
+<script>
+    var showIncorrectInsert = function (grid) {
+        IncorrectGridPanel = grid;
+        var url = '@(Url.Action("InsertView", "Incorrect", new { Area = "Quality" }))';
+        var params = {
+            urlSubmit: '@(Url.Action("InsertView", "Incorrect", new { Area = "Quality" }))',
+            Name: '@(StoreParam.Name)',
+            Value: '@(StoreParam.Value)',
+            Mode: '@(StoreParam.Mode)',
+        };
+        onDirectMethod(url, params);
+    };
+</script>
+@(Html.X().Window()
+.ID("WinCustomerCompaignDetail1")
+.Title("Đánh giá")
+.Icon(Icon.ApplicationForm)
+.Maximized(true)
+.BodyPadding(0)
+.Margin(0)
+.Height(400)
+.Constrain(true)
+.Layout(LayoutType.Fit)
+.Border(true)
+.Modal(true)
+.Resizable(false)
+.Items(
+   // Html.X().HiddenFor(m=>m.ID).ID("hdfID"),
+        Html.X().GridPanel()
+        .Header(false)
+        .Region(Region.Center)
+        .Split(true)
+        .Border(false)
+        .TitleAlign(TitleAlign.Center)
+        .Layout(LayoutType.Fit)
+        .Collapsible(true)
+        .ForceFit(true)
+        .ColumnLines(true)
+        .RowLines(true)
+        .TopBar(
+            Html.X().Toolbar().Items(
+                    Html.X().Button().Icon(Icon.Add).Handler("App.winInsert.show();"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Icon(Icon.Pencil).ItemID("btnUpdate").Handler("updateFormAudit(this.up('gridpanel'));").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Icon(Icon.Delete).ItemID("btnDelete").Handler("deleteRecordAudit(this.up('gridpanel'));").Disabled(true),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Disabled(true).Icon(Icon.Zoom).ItemID("btnDetail").Handler("showFormDetail(this.up('gridpanel'));").Disabled(true),
+                Html.X().ToolbarSeparator(),
+              // Html.X().ButtonIncorrect().UrlSubmit(urlSubmitIncorrect).UrlStore(urlStoreIncorrect).ParamStore(paramStoreIncorrect).AddWindowIncorrect()
+                  //  .Listeners(ls => ls.Focus.Handler = "showAuditIncorrect(this.up('gridpanel'))").ItemID("btnIncorrect").Disabled(true)
+                Html.X().Button().Text("Sự không phù hợp").Icon(Icon.ApplicationOsx).ItemID("btnIncorrect").Disabled(false).Handler("App.winIncorrect.show();")
+            )
+        )
+        .Store(
+            Html.X().Store()
+                     .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerCampaign", "CustomerCampaign", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                .AutoLoad(true)
+                
+                .Model(
+                    Html.X().Model().IDProperty("ID")
+                    .Fields(
+                             Html.X().ModelField().Name("ID"),
+                                    Html.X().ModelField().Name("Name"),
+                                    Html.X().ModelField().Name("Cost"),
+                                    Html.X().ModelField().Name("Income"),
+                                    Html.X().ModelField().Name("StartTime"),
+                                    Html.X().ModelField().Name("EndTime"),
+                                    Html.X().ModelField().Name("IsEdit"),
+                                    Html.X().ModelField().Name("Status")
+                    )
+                )
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column().Text("Nội dung đánh giá").DataIndex("Name").Flex(1),
+            //Html.X().Column()
+            //    .Text("Bộ tiêu chí đánh giá")
+                
+            //    .Align(Alignment.Left)
+            //        .DataIndex("Name")
+            //    .Width(250),
+            Html.X().DateColumnExtend()
+                .Text("Thời gian")
+                
+                .Align(Alignment.Center)
+                .Format("dd/MM/yyyy")
+                .DataIndex("AuditAt")
+                .Width(140),
+            Html.X().Column()
+                .Text("Kết quả")
+                
+                .DataIndex("Result")
+                .Width(100)
+                .Align(Alignment.Center),
+            Html.X().ComponentColumn().Text("Tổng số điểm không phù hợp").Columns(
+                Html.X().Column().Text("Obs")
+                .Width(80)
+                .DataIndex("Obs")
+                .Align(Alignment.Right),
+            Html.X().Column()
+                .Text("M")
+                .Width(80)
+                .DataIndex("Maximum")
+                .Align(Alignment.Right),
+            Html.X().Column()
+                .Text("m")
+                .Width(80)
+                .DataIndex("Medium")
+                .Align(Alignment.Right)
+            )
+        )
+      //  .Listeners(ls => ls.SelectionChange.Handler = "checkStatusAudit(this);")
+        //.SelectionModel(Html.X().RowSelectionModel().Mode(SelectionMode.Multi))
+            .BottomBar(
+                    Html.X().CustomPagingToolbar())
+         
+    )
+.Buttons(Html.X().Button().Text("Đóng").Icon(Icon.Cancel).OnClientClick("this.up('window').close();")) ) 
+@(
+ Html.X().Window()//.Maximized(true)
+ .Title("Thêm mới đánh giá")
+ .ID("winInsert").Hidden(true)
+ .Width(800)
+.Layout(LayoutType.Fit)
+.Items(
+             Html.X().Container()
+                                        .Padding(10)
+                                        .Layout(LayoutType.Form)
+                                        .Items(
+                                            Html.X().Hidden()
+                                            .ID("hdfAuditId")
+                                            .Value(0),
+                                            Html.X().ComboBox().Value(15)
+                                            .FieldLabel("Bộ tiêu chí")
+                                            .EmptyText("Chọn bộ tiêu chí đánh giá")
+                                   
+                                                .ID("cbCriteriaCategoryID")
+                                            .Editable(false)
+                                            .DisplayField("Name")
+                                            .ValueField("ID")
+                                            .Store(
+                                            Html.X().Store()
+                                                .ID("StoreCriteriaCategory")
+                                                .AutoLoad(true)
+                                                     .Proxy(Html.X().AjaxProxy()
+                                                            .Url(Url.Action("LoadData", "CriteriaCategory", new { area = "Quality" }))
+                                                            .Reader(Html.X().JsonReader().Root("data")
+                                                            )
+                                                            )
+                                                .Model(Html.X().Model()
+                                                    .Fields(
+                                                        new ModelField("Name"),
+                                                        new ModelField("ID")
+                                                    )
+                                                )
+                                            )
+                                            .Listeners(ls => ls.Select.Handler = "refresh(null);"),
+                                            Html.X().Container()
+                                            .Layout(LayoutType.Column)
+                                            .Items(
+                                                Html.X().DateField()
+                                                .ColumnWidth(0.7)
+                                                .FieldLabel("Thời gian" + Html.Required())
+                                                .SelectedDate(DateTime.Now)
+                                                .Format("dd/MM/yyyy")
+                                            ),
+                                            Html.X().Container().Layout(LayoutType.Column).Items(
+                                            Html.X().ComboBox().ColumnWidth(0.7).FieldLabel("Kết quả" + Html.Required()).Editable(false)
+                                                .Items(
+                                                    new ListItem("Đạt", true),
+                                                    new ListItem("Không đạt", false)
+                                                )
+                                                .SelectedItems(new ListItem("Không đạt", false))
+                                            ),
+                                            Html.X().TextArea().Height(120).FieldLabel("Nội dung" + Html.Required())
+                                   .EmptyText("Chi tiết nội dung đánh giá")
+                                            .Text("Nội dung đã từng đánh giá")
+                                            ,
+                                            Html.X().TextArea().Height(120).FieldLabel("Nhận xét")
+                                            .Text("nhận xét từ trước đó ")
+                                            .EmptyText("Nhận xét đánh giá chung")
+                                        )
+)
+
+
+)
+
+@(
+ Html.X().Window().ID("winIncorrect").Hidden(true).Title("Sự không phù hợp")
+.Maximized(true)
+.Layout(LayoutType.Fit)
+.Items(
+     Html.X().GridPanel()
+    .Header(false)
+    .Border(false)
+    .ColumnLines(true)
+    .ForceFit(true)
+    .TopBar(
+        Html.X().Toolbar()
+            .Layout(LayoutType.HBox)
+            .Items(
+                Html.X().Button().ItemID("btnAddIncorect").Icon(Icon.Add).Disabled(false).Handler("showIncorrectInsert(this.up('gridpanel'));"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().ItemID("btnUpdateIncorect").Icon(Icon.Pencil).Disabled(true).Handler("showIncorrectUpdate(this.up('gridpanel'));"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Icon(Icon.Delete).ItemID("btnDeleteIncorect").Disabled(true).Handler("deleteIncorect(this.up('gridpanel'));"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().ToolTip("Xem chi tiết").ItemID("btnDetailIncorect").Icon(Icon.Zoom).Disabled(true).Handler("showIncorrectDetail(this.up('gridpanel'));"),
+                Html.X().ToolbarSeparator(),
+                Html.X().Button().Text("Khắc phục phòng ngừa").ItemID("btnPrevent").Icon(Icon.PictureEdit).Handler("App.winPrevent.show();")
+            )
+        )
+        .Store(
+            Html.X().Store().AutoLoad(true)
+          //  .Proxy(Html.X().AjaxProxy().Url(ViewData["StoreUrl"].ToString()).Reader(Html.X().JsonReader().Root("data")))
+            //.Parameters(a => a.Add(StoreParam))
+            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerCampaign", "CustomerCampaign", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+            .RemoteSort(false)
+            .RemotePaging(true)
+            .PageSize(15)
+            .Model(
+                Html.X().Model().IDProperty("ID")
+                .Fields(
+                    new ModelField("ID"),
+                    new ModelField("DepartmentID", ModelFieldType.Int),
+                    new ModelField("Name", ModelFieldType.String),
+                    new ModelField("IsObs", ModelFieldType.Boolean),
+                    new ModelField("IsMaximum", ModelFieldType.Boolean),
+                    new ModelField("IsMedium", ModelFieldType.Boolean),
+                    new ModelField("Time", ModelFieldType.String),
+                    new ModelField("Status", ModelFieldType.String)
+                )
+            )
+        )
+        .ColumnModel(
+            Html.X().RowNumbererColumn().Text("STT").Width(40).Align(Alignment.Center),
+            Html.X().Column().DataIndex("Name").Text("Điểm không phù hợp").Flex(1),
+            Html.X().ComponentColumn().Text("Phân loại").Columns(
+            Html.X().CheckColumn().DataIndex("IsObs").Text("Obs").Width(80).Align(Alignment.Center),
+            Html.X().CheckColumn().DataIndex("IsMedium").Text("m").Width(80).Align(Alignment.Center),
+            Html.X().CheckColumn().DataIndex("IsMaximum").Text("M").Width(80).Align(Alignment.Center)
+            ),
+
+            Html.X().DateColumnExtend().DataIndex("Time").Format("dd/MM/yyyy").Text("Ngày phát sinh").Align(Alignment.Center).Width(100)
+            //,
+            //Html.X().Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(100),
+            //Html.X().Column().DataIndex("Status").Text("Kết quả").Align(Alignment.Center).Width(100)
+        )
+        //.Listeners(ls => ls.SelectionChange.Handler = "CheckStatusListIncorect(this);")
+        .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single))
+        .BottomBar(
+                Html.X().CustomPagingToolbar())
+    )
+)
+@(Html.X().Window().ID("winPrevent").Hidden(true).Title("Khắc phục phòng ngừa")
+.Maximized(true)
+.Layout(LayoutType.Fit)
+.Items(
+        Html.X().GridPanel()
+                .Region(Region.Center)
+                .Layout(LayoutType.Fit)
+                    .ID("grPrevent")
+                .Header(false)
+                .Border(false)
+                .ColumnLines(true)
+                .ForceFit(true)
+                .TopBar(
+                    Html.X().Toolbar()
+                    .Layout(LayoutType.HBox)
+                    .Items(
+Html.X().Button().Icon(Icon.Add).Disabled(false).Text("Yêu cầu khắc phục phòng ngừa").Handler("App.RequirePrevent.show();"),
+Html.X().ToolbarSeparator(),
+Html.X().Button().ItemID("btnUpdatePrevent").Handler("showPreventUpdate(this.up('gridpanel'));").Icon(Icon.Pencil).Disabled(true),
+Html.X().ToolbarSeparator(),
+Html.X().Button().Icon(Icon.Delete).ItemID("btnDeletePrevent").Handler("deletePrevent(this.up('gridpanel'));").Disabled(true),
+Html.X().ToolbarSeparator(),
+Html.X().Button().ToolTip("Xem chi tiết").ItemID("btnDetailPrevent").Icon(Icon.Zoom).Handler("showPreventDetail(this.up('gridpanel'));").Disabled(true),
+Html.X().ToolbarSeparator(),           
+Html.X().Button().Icon(Icon.ImageEdit).Text("Hành động khắc phục phòng ngừa").ItemID("btnTaskPrevent1").Handler("App.ActionPrevent.show();"),
+Html.X().ToolbarSeparator(),
+Html.X().Button().Icon(Icon.Tick).Text("Phê duyệt").Disabled(true),
+Html.X().ToolbarSeparator(),
+Html.X().Button().Icon(Icon.ImageEdit).Text("công việc").ItemID("btnTaskPrevent").Disabled(true),
+                        Html.X().ToolbarFill(),
+                        Html.X().Button()
+                            .ID("btnExtra")
+                            .Text("Tiện ích")
+                            .Icon(Icon.PackageGreen)
+                            .Menu(new Menu
+                            {
+                                Items = {
+                            new MenuItem { Text = "Nhập khẩu bản ghi từ tệp Excel", Icon = Icon.PageWhiteExcel},
+                            new MenuItem { Text = "Nhập khẩu bản ghi từ tệp XML", Icon = Icon.Xhtml},
+                            Html.X().MenuSeparator(),
+                            new MenuItem { Text = "Xuất khẩu bản ghi ra tệp Excel", Icon = Icon.PageWhiteExcel},
+                            new MenuItem { Text = "Xuất khẩu bản ghi ra tệp Words", Icon = Icon.PageWhiteWord},
+                            new MenuItem { Text = "Xuất khẩu bản ghi ra tệp XML", Icon = Icon.Xhtml}
+                        }
+                            })
+                    )
+            )
+            .Store(
+                Html.X().Store()
+                    .ID("StorePrevent")
+                    .RemotePaging(true)
+                    .PageSize(20)
+                                //.Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadPrevents", "Prevent", new { Area = "Quality" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))
+                    .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadCustomerCampaign", "CustomerCampaign", new { Area = "Customer" })).Reader(Html.X().JsonReader().Root("data")).IDParam("ID"))             
+                    .Parameters(new StoreParameter("incorrectId", "1", ParameterMode.Raw))
+                    .Model(
+                        Html.X().Model().Fields(
+                            Html.X().ModelField().Name("ID"),
+                            Html.X().ModelField().Name("Name"),
+                            Html.X().ModelField().Name("CompleteTime"),
+                            Html.X().ModelField().Name("EndTime"),
+                            Html.X().ModelField().Name("Cost"),
+                            Html.X().ModelField().Name("IsEdit"),
+                            Html.X().ModelField().Name("Status")
+                        )
+                        )
+            )
+            .ColumnModel(
+                Html.X().RowNumbererColumn().Text("STT").Width(30).Align(Alignment.Center),
+                Html.X().Column().DataIndex(Model, m => m.Name).Text("Sự không phù hợp").Width(300).Flex(1),
+                    Html.X().DateColumnExtend().DataIndex("CompleteTime").Text("Ngày hoàn thành").Width(150).Align(Alignment.Center),
+                Html.X().DateColumnExtend().DataIndex("AuditTime").Text("Thời hạn đánh giá").Width(150).Align(Alignment.Center),
+                Html.X().Column().DataIndex("Status").Text("Trạng thái").Align(Alignment.Center).Width(120),
+                Html.X().Column().DataIndex("Status").Text("Kết quả").Align(Alignment.Center).Width(120)
+            )
+            .Listeners(ls => ls.SelectionChange.Handler = "CheckStatusListPrevent(this)")
+            .SelectionModel(Html.X().CheckboxSelectionModel().ShowHeaderCheckbox(false).Mode(SelectionMode.Single))
+            .BottomBar(
+                    Html.X().CustomPagingToolbar())
+)
+)
+@(Html.X().Window().ID("RequirePrevent").Hidden(true).Title("Thêm mới yêu cầu khắc phục phòng ngừa")
+.Width(800)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Padding(10)
+            .Frame(true)
+            .Border(false)
+            .FieldDefaults(lb => lb.LabelWidth = 120)
+            .Items(
+                    Html.X().Hidden().ID("hdfIncorrectID_new1"),
+                Html.X().TextField()
+                    .ID("txtName1")
+                    .FieldLabel("Tên sự không phù hợp").Text("Sự không phù hợp test")
+                    .BlankText("Nội dung này không được bỏ trống!"),
+
+               Html.X().TextField().Text("Phòng ban thực hiện").FieldLabel("Phòng ban").RightButtons(Html.X().Button().Icon(Icon.Pencil)),
+
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().DateField().FieldLabel("Ngày hoàn thành").Value(DateTime.Now).ColumnWidth(0.5)
+                ),
+                Html.X().TextField().Text("Nguyễn văn A").FieldLabel("Người ghi yêu cầu"),
+                Html.X().TextArea()
+                    .FieldLabel("Ghi chú")
+                    .EmptyText("Thông tin ghi chú thêm")
+                    .Height(120)
+))
+)
+@(Html.X().Window().ID("ActionPrevent").Hidden(true).Title("Thêm mới hành động khắc phục phòng ngừa")
+.Width(800)
+.Layout(LayoutType.Fit)
+.Items(
+Html.X().FormPanel()
+            .Layout(LayoutType.Form)
+            .StyleSpec("border: none;")
+            .Padding(10)
+            .Frame(true)
+            .Border(false)
+            .FieldDefaults(lb => lb.LabelWidth = 120)
+            .Items(
+                Html.X().TextFieldFor(m => m.Name)
+                    .ID("txtName")
+                    .FieldLabel("Nội dung hành động" + Html.Required())
+                    .EmptyText("Nội dung hành động khắc phục phòng ngừa")
+           
+                    .BlankText("Nội dung này không được bỏ trống!"),
+
+                Html.X().TextArea()
+           
+                    .FieldLabel("Nguyên nhân" + Html.Required())
+                    .BlankText("Nội dung này không được bỏ trống!")
+                    .EmptyText("Nguồn phát sinh của điểm không phù hợp")
+                    .Height(80),
+
+                Html.X().TextArea()
+               
+                        .FieldLabel("Giải pháp" + Html.Required())
+                        .BlankText("Nội dung này không được bỏ trống!")
+                        .EmptyText("Nguồn phát sinh của điểm không phù hợp")
+                        .Height(80),
+
+                Html.X().Container().Layout(LayoutType.Column).Items(
+                    Html.X().DateField().FieldLabel("Ngày hoàn thành" + Html.Required()).Value(DateTime.Now).ColumnWidth(0.5)
+                ),
+
+                //Html.X().Container().Layout(LayoutType.Column).Items(
+                //    Html.X().DateField().FieldLabel("Thời hạn đánh giá").Value(DateTime.Now).ColumnWidth(0.5)
+                //),
+
+                Html.X().TextArea()
+                    .FieldLabel("Ghi chú")
+                    .EmptyText("Thông tin ghi chú thêm")
+                    .Height(120)
+))
+)

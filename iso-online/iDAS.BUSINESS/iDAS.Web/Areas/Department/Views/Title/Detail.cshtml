@@ -1,0 +1,132 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Utilities
+@using iDAS.Web.ExtExtend;
+@model iDAS.Web.Areas.Department.Models.TitleDTO
+@(Html.X().Window()
+          .ID("winDetailTitle")
+          .Title("Xem chi tiết")
+          .Icon(Icon.Pencil)
+          .Height(240)
+          .Width(500)
+          .BodyPadding(6)
+          .Constrain(true)
+          .Modal(true)
+          .Layout(LayoutType.Fit)
+          .Items(
+            Html.X().FormPanel()
+                .ID("frmTitle")
+                .Layout(LayoutType.Fit)
+                .Frame(true)
+                .StyleSpec("border: none;")
+                .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                .Items(
+                    Html.X().TabPanel().ActiveTabIndex(0).Border(true)
+                        .Items(
+                            Html.X().FormPanel()
+                            .Layout(LayoutType.VBox)
+                            .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                            .Title("Thông tin chức danh")
+                            .BodyPadding(5)
+                            .Frame(true)
+                            .StyleSpec("border: none;")
+                            .FieldDefaults(d => d.LabelAlign = LabelAlign.Left)
+                            .Items(
+                                Html.X().HiddenFor(m=>m.ID),
+                                Html.X().TextFieldFor(m => m.Code)
+                                    .FieldLabel("Mã chức danh")
+                                    .ID("txtCode")
+                                    .AllowBlank(false)
+                                    .LabelWidth(120)
+                                    .BlankText("Mã chức danh không được để rỗng")
+                                    .AllowOnlyWhitespace(false)
+                                    .ReadOnly(true),
+                                Html.X().TextFieldFor(m => m.Name)
+                                    .FieldLabel("Tên chức danh")
+                                    .ID("txtName")
+                                    .AllowBlank(false)
+                                    .LabelWidth(120)
+                                    .BlankText("Tên chức danh không được trống")
+                                    .AllowOnlyWhitespace(false)
+                                    .ReadOnly(true),
+                                Html.X().ComboBoxFor(m => m.IsActive)
+                                    .TabIndex(4)
+                                    .LabelWidth(120)
+                                    .Editable(false)
+                                    .FieldLabel("Tình trạng")
+                                    .ID("cbIsUse")
+                                    .Editable(false)
+                                    .ReadOnly(true)
+                                    .Items(
+                                        new ListItem("Sử dụng", true),
+                                        new ListItem("Không sử dụng", false)
+                                     ),
+                                 Html.X().ComboBoxFor(m => m.PositionId)
+                                    .LabelWidth(120)
+                                    .FieldLabel("Chức vụ")
+                                    .QueryMode(DataLoadMode.Local).Editable(false)
+                                    .EmptyText("Chức vụ ....")
+                                    .ForceSelection(true)
+                                    .DisplayField("PositionName")
+                                    .ValueField("ID")
+                                    .Editable(false)
+                                    .ReadOnly(true)
+                                    .Store(Html.X().Store()
+                                                .AutoLoad(true)
+                                                .Model(Html.X().Model()
+                                                        .IDProperty("ID")
+                                                        .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                new ModelField("PositionName", ModelFieldType.String)))
+                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetPosition"))
+                                                                .Reader(Html.X().JsonReader().Root("data")))
+                                                                )
+                               ),
+                            Html.X().Panel()
+                                .Layout(LayoutType.Fit)
+                                .Title("Đơn vị sử dụng")
+                                .Frame(true)
+                                .StyleSpec("border: none;")
+                                .Items(
+                                    Html.X().Hidden().ID("ViewDeleteRole").Value(false),
+                                    Html.X().Hidden().ID("SortRole").Value(true),
+                                    Html.X().GridPanel()
+                                        .ID("DepartTitlePanel")
+                                        .Header(false)
+                                        .ColumnLines(true)
+                                        .Border(false)
+                                        .ForceFit(true)
+                                        .Collapsible(true)
+                                        .Split(true)
+                                        .Icon(Icon.TextListBullets)
+                                        .Store(Html.X().Store()
+                                            .ID("stDepartmentTitle")
+                                            .Proxy(Html.X().AjaxProxy().Url(Url.Action("LoadData1", "DepartmentTitle")).Reader(Html.X().JsonReader().Root("data")))
+                                            .Parameters(ps =>
+                                            {
+                                                ps.Add(new StoreParameter("titleID", Model.ID.ToString(), ParameterMode.Value));
+                                                ps.Add(new StoreParameter("viewDelete", "App.ViewDeleteRole.value", ParameterMode.Raw));
+                                            })
+                                            .Model(
+                                                Html.X().Model()
+                                                    .Fields(
+                                                        Html.X().ModelField().Name("ID").Type(ModelFieldType.Int),
+                                                        Html.X().ModelField().Name("DepartmentName").Type(ModelFieldType.String),
+                                                        Html.X().ModelField().Name("ReportToName").Type(ModelFieldType.String)
+                                                    )
+                                            )
+                                        )
+                                        .SortableColumns(false)
+                                        .ColumnModel(
+                                            Html.X().RowNumbererColumn().Text("STT").Width(33).Align(Alignment.Center),
+                                            Html.X().Column().Text("ID").DataIndex("ID").Hidden(true).Width(40),
+                                            Html.X().Column().DataIndex("DepartmentName").Text("Tên đơn vị").Flex(1).MenuDisabled(true),
+                                            Html.X().Column().DataIndex("ReportToName").Text("Báo cáo tới").Flex(1).MenuDisabled(true)
+                                        )
+                                )
+                         )
+                    )
+            )
+            .Buttons(
+                Html.X().ButtonExit()
+            )
+)

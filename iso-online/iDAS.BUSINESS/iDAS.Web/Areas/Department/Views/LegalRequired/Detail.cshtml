@@ -1,0 +1,55 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@model iDAS.Items.DepartmentLegalItem
+@{
+    var X = Html.X();
+}
+@(Html.X().CustomWindow()
+        .Title("Chi tiết Luật định")
+    .Icon(Icon.Zoom)
+    .Border(false)
+    .Items(
+           X.Panel().Layout(LayoutType.Fit)
+                    .StyleSpec("border: none;")
+                    .Border(false).BodyPadding(0)
+                    .Items(
+                            X.TabPanel()
+                                .Items(
+                                    X.CustomFormPanel().Title("Thông tin luật định")
+                                    .Items(
+                                            X.HiddenFor(m => m.ID),
+                                            X.TextFieldFor(m => m.Name).FieldLabel("Tên luật định").ReadOnly(true),
+                                            Html.X().ComboBoxFor(m => m.ISOID).FieldLabel("Tên ISO").ReadOnly(true)
+                                                                    .QueryMode(DataLoadMode.Local).Editable(false)
+                                                                    .EmptyText("Tiêu chuẩn ISO ....")
+                                                                    .ForceSelection(true)
+                                                                    .DisplayField("Name")
+                                                                    .ValueField("ID")
+                                                                    .Store(Html.X().Store()
+                                                                                .AutoLoad(true)
+                                                                                .Model(Html.X().Model()
+                                                                                        .IDProperty("ID")
+                                                                                        .Fields(new ModelField("ID", ModelFieldType.Int),
+                                                                                                new ModelField("Name", ModelFieldType.String)))
+                                                                                .Proxy(Html.X().AjaxProxy().Url(Url.Action("GetISO"))
+                                                                                                .Reader(Html.X().JsonReader().Root("data")))
+                                                                                                ), 
+                                            X.CheckboxFor(m => m.IsUse).FieldLabel("Sử dụng").ReadOnly(true),
+                                            X.DepartmentFieldFor(m => m.DepartmentApply).Multiple(true).ReadOnly(true).FieldLabel("Đối tượng áp dụng").Height(23).MarginSpec("0 1 0 0")
+                                                            .Hidden(Model.IsApplyAll),
+                                            X.CheckboxFor(m => m.IsApplyAll).BoxLabel("Tất cả phòng ban (quy định chung)").FieldLabel("Đối tượng áp dụng").Hidden(!Model.IsApplyAll).ReadOnly(true),
+                                            X.TextAreaFor(m => m.Description).FieldLabel("Mô tả").ReadOnly(true)
+                                                        .EmptyText("Nhập mô tả...").MinHeight(100).Flex(1),
+                                            X.FileUploadFieldFor(m => m.AttachmentFiles).ReadOnly(true)
+                                            ),
+                                    X.Panel().Title("Nội dung").Layout(LayoutType.Fit).Padding(1)
+                                        .Items(
+                                            X.TextAreaFor(m => m.Content).ReadOnly(true)
+                                                        .HideLabel(true).MinHeight(200)
+                                        )
+                                )
+                        )
+            )
+.Buttons( Html.X().ButtonExit())
+)

@@ -1,0 +1,86 @@
+﻿@using Ext.Net;
+@using Ext.Net.MVC;
+@using iDAS.Web.ExtExtend;
+@using iDAS.Utilities
+@model iDAS.Items.CustomerCampaignItem
+@{
+    var urlStore = Url.Action("LoadTargets", "CustomerCampaignTarget", new { area = "Customer" });
+    var urlPlanStore = Url.Action("LoadPlans", "CustomerCampaignPlan", new { area = "Customer" });
+    var urlTargetStore = Url.Action("LoadTargets", "CustomerCampaignTarget", new { area = "Customer" });
+}
+@(
+ Html.X().ApprovalWindow()
+    .UrlSubmit(Url.Action("Appproved"))
+    .ItemsExtend(
+         Html.X().TabPanel()
+                .ID("TabPanel1")
+                .Region(Region.Center)
+                .ActiveTabIndex(0)
+                .Border(true)
+                .Items(
+                     Html.X().FormPanel().ID("frmContent")
+                        .Title("Nội dung chiến dịch")
+                        .AutoScroll(true)
+                        .Layout(LayoutType.VBox)
+                        .LayoutConfig(new VBoxLayoutConfig { Align = VBoxAlign.Stretch })
+                        .Frame(true)
+                        .FieldDefaults(df => { df.LabelWidth = 120; df.LabelStyle = "padding-left: 5px;"; })
+                        .PaddingSpec("5 10 0 0")
+                        .StyleSpec("border: none;")
+                        .Items(
+                            Html.X().HiddenFor(m => m.ID),
+                            Html.X().TextFieldFor(m => m.Name)
+                                            .FieldLabel("Chiến dịch")
+                                            .ReadOnly(true),
+                            Html.X().Container().Layout(LayoutType.Column).MarginSpec("0 -2 2 0")
+                                .Items(
+                                    Html.X().DateTimeFieldFor(m => m.StartTime).FieldLabel("Bắt đầu").ReadOnly(true).ColumnWidth(0.55),
+                                    Html.X().DateTimeFieldFor(m => m.EndTime).FieldLabel("Kết thúc").LabelWidth(70).ReadOnly(true).ColumnWidth(0.45)
+                                ),
+                            Html.X().Container().Layout(LayoutType.Column).MarginSpec("2 -1 4 0")
+                                .Items(
+                                    Html.X().NumberFieldFor(m => m.Cost).FieldLabel("Chi phí")
+                                            .Icon(Icon.MoneyDollar)
+                                            .ColumnWidth(0.55)
+                                            .ReadOnly(true),
+                                    Html.X().NumberFieldFor(m => m.Income).FieldLabel("Doanh thu")
+                                            .Icon(Icon.MoneyDollar)
+                                            .LabelWidth(70)
+                                            .ColumnWidth(0.45)
+                                            .ReadOnly(true),
+                                    Html.X().DisplayFieldFor(m => m.Status)
+                                            .FieldLabel("Trạng thái")
+                                            .ColumnWidth(0.55)
+                                            .ReadOnly(true),
+                                    Html.X().DisplayFieldFor(m => m.ActiveStatus)
+                                            .LabelWidth(70)
+                                            .FieldLabel("Hoạt động")
+                                            .ColumnWidth(0.45)
+                                            .ReadOnly(true)
+
+                                ),
+
+                            Html.X().TextAreaFor(m => m.Note)
+                                .FieldLabel("Ghi chú")
+                                    .ReadOnly(true)
+                                .MinHeight(100).Flex(1)
+                                .EmptyText("Nhập nội ghi chú thông tin Chiến dịch ...")
+                        ),
+                    Html.X().Panel().Height(305)
+                            .ID("frmTarget")
+                            .Title("Danh sách mục tiêu").Border(false)
+                            .StyleSpec("border: none;")
+                            .Padding(0)
+                            .Layout(LayoutType.Fit)
+                            .ItemsFromAction("TargetIndexView", "Target", new { area = "Quality", urlStore = urlStore, paramID = Model.ID })
+                        ,
+                     Html.X().Panel()
+                            .ID("frmPlan").Height(305)
+                            .Title("Danh sách kế hoạch").Border(false)
+                            .StyleSpec("border: none;")
+                            .Padding(0)
+                            .Layout(LayoutType.Fit)
+                            .ItemsFromAction("PlanIndexView", "Plan", new { area = "Quality", urlPlanStore = urlPlanStore, urlTargetStore = urlTargetStore, paramID = Model.ID })
+                     )
+        )
+)

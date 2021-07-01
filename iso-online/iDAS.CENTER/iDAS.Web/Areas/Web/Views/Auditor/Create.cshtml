@@ -1,0 +1,81 @@
+﻿@using Ext.Net.MVC
+@using Ext.Net
+@using iDAS.Web.ExtExtend
+@model iDAS.Items.AuditorItem
+
+@(Html.X().Window()
+    .Title("Thêm mới thông tin chuyên gia")
+    .Icon(Icon.Add)
+    .Height(350)
+    .Constrain(true)
+    .Width(700)
+    .Center()
+    .Resizable(false)
+    .Modal(true)
+    .Maximizable(true)
+    .Layout(LayoutType.Fit)
+    .Items(
+        Html.X().FormPanel()
+        .ID("frmCreate")
+        .Frame(true)
+        .Border(false)
+        .Padding(1)
+        .StyleSpec("border: none;")
+        .Layout(LayoutType.Fit)
+        .Items(
+            Html.X().TabPanel()
+            .Items(
+                Html.X().Panel().Title("Thông tin").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Form)
+                .Items(
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().Container().ColumnWidth(0.76).Layout(LayoutType.Form).Items(
+                            Html.X().TextFieldFor(m => m.Name).EmptyText("Họ tên chuyên gia").AllowBlank(false).BlankText("Bắt buộc nhập !").FieldLabel("Họ tên *"),
+                            Html.X().TextFieldFor(m => m.Role).FieldLabel("Chức danh"),
+                            Html.X().TextFieldFor(m => m.Scope).FieldLabel("Lĩnh vực"),
+                            Html.X().TextAreaFor(m => m.Description).FieldLabel("Mô tả").Height(55)
+                        ),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().Container().ColumnWidth(0.2).Layout(LayoutType.Form).Items(
+                            Html.X().ImageUploadFieldFor(m => m.Image).ImagePreviewHeight(86).ButtonOnly(true)
+                        )
+                    ),
+                    Html.X().TextFieldFor(m => m.Tags).FieldLabel("Tags"),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                    ),
+                    Html.X().Container().Layout(LayoutType.Column).Items(
+                        Html.X().NumberFieldFor(m => m.YearOfExperience).ColumnWidth(0.3).FieldLabel("Năm kinh nghiệm").Value(1),
+                        Html.X().Container().ColumnWidth(0.04),
+                        Html.X().NumberFieldFor(m => m.Position).ColumnWidth(0.3).FieldLabel("Vị trí hiển thị").Value(0),
+                        Html.X().Container().ColumnWidth(0.06),
+                        Html.X().CheckboxFor(m => m.IsActive).ColumnWidth(0.3).HideLabel(true).Value(true).BoxLabel("Kích hoạt")
+                    )
+                ),
+                Html.X().Panel().Title("Hồ sơ").Frame(true).StyleSpec("border: none; border-radius:0")
+                .Layout(LayoutType.Fit)
+                .Items(
+                    Html.X().HtmlEditorFieldFor(m => m.Profile)
+                )
+            )
+        )
+    )
+    .Buttons(
+        Html.X().Button()
+        .Text("Lưu lại")
+        .Icon(Icon.Disk)
+        .DirectEvents(de =>
+        {
+            de.Click.FormID = "frmCreate";
+            de.Click.Before = @"if (!App.frmCreate.getForm().isValid()) { return false; } ";
+            de.Click.Url = Url.Action("Create");
+            de.Click.EventMask.ShowMask = true;
+            de.Click.Success = "if (result.result) {this.up('window').close(); reloadAuditor();}";
+        }),
+
+        Html.X().Button()
+        .Text("Thoát")
+        .Icon(Icon.Cancel)
+        .OnClientClick("this.up('window').close();")
+    )
+)
+
